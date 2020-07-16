@@ -1,0 +1,61 @@
+<?php
+
+namespace App\YourEdu;
+
+use App\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+
+class Profile extends Model
+{
+    //
+    protected $fillable = [
+        'user_id', 'name', 'about', 'interests', 'occupation', 'website', 'company', 'location', 'address',
+    ];
+
+    protected $appends = [
+        'url'
+    ];
+
+    public function getUrlAttribute()
+    {
+        return $this->images()->exists() ? 
+        asset("asset/{$this->images()->latest()->get()->path}") :
+        asset('storage/default.webp');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function profileable()
+    {
+        return $this->morphTo();
+    }
+
+    public function socials()
+    {
+        return $this->hasMany(SocialMedia::class);
+    }
+
+    public function files()
+    {
+        return $this->morphToMany(File::class,'fileable','fileables');
+    }
+
+    public function audios()
+    {
+        return $this->morphToMany(Audio::class,'audioable','audioables');
+    }
+
+    public function videos()
+    {
+        return $this->morphToMany(Video::class,'videoable','videoables');
+    }
+
+    public function images()
+    {
+        return $this->morphToMany(Image::class,'imageable','imageables');
+    }
+}
