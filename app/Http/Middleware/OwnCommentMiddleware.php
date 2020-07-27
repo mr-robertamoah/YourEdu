@@ -21,13 +21,13 @@ class OwnCommentMiddleware
         
         if(!$mainComment){
             return response()->json([
-                'message' => "unsuccessful. post not found."
+                'message' => "unsuccessful. comment not found."
             ]);
         }
 
         if($mainComment->commentedby->user_id !== auth()->id()){
             return response()->json([
-                'message' => "unsuccessful. you do not own this post."
+                'message' => "unsuccessful. you do not own this comment."
             ]);
         }
         return $next($request);

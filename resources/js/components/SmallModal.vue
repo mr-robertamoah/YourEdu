@@ -89,7 +89,7 @@ import AutoAlert from './AutoAlert'
 <style lang="scss" scoped>
 $wrapper-background: transparent;
 $modal-background: whitesmoke;
-$modal-width: 50%;
+$modal-width: 35%;
 $modal-height: 35vh;
 $modal-margin-width: (100% - $modal-width)/2;
 $modal-margin-height: (100vh - $modal-height)/2;
@@ -190,7 +190,7 @@ $modal-margin-height: (100vh - $modal-height)/2;
 
 
 @media screen and (min-width:800px) and (max-width:1100px){
-$modal-width: 60%;
+$modal-width: 50%;
 $modal-margin-width: (100% - $modal-width)/2;
 $modal-margin-height: (100vh - $modal-height)/2;
 
@@ -207,7 +207,7 @@ $modal-margin-height: (100vh - $modal-height)/2;
 
 
 @media screen and (max-width:800px){
-$modal-width: 95%;
+$modal-width: 80%;
 $modal-margin-width: (100% - $modal-width)/2;
 $modal-margin-height: (100vh - $modal-height)/2;
 

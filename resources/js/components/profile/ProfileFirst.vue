@@ -121,7 +121,7 @@ import { mapGetters } from 'vuex'
             background-color: inherit;
             min-height: 130px;
             width: 45%;
-            margin: -50px 0 -60px 50px;
+            margin: -50px 0 -90px 50px;
             padding: 10px;
             // border: 2px solid $profile-picture-color;
             font-size:16px;
@@ -219,7 +219,7 @@ import { mapGetters } from 'vuex'
 
         .profile-about {
             width: 60%;
-            margin: -50px 0 -40px 50px;
+            margin: -50px 0 -70px 50px;
 
             .follows{
                 margin: -10px 0 0 20%;
@@ -265,7 +265,7 @@ import { mapGetters } from 'vuex'
         .profile-about {
             font-size: 14px;
             width: 60%;
-            margin: -50px 0 -25px 50px;
+            margin: -50px 0 -40px 50px;
 
             .follows{
                 margin: -10px 0 0 12%;

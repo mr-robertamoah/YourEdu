@@ -121,7 +121,7 @@ $modal-margin-height: (100vh - $modal-height)/2;
         position: fixed;
         background-color: $wrapper-background;
         top: 5vh;
-        left: 25vw;
+        left: 20vw;
         width: 60vw;
         height: 90vh;
         padding: 10px;

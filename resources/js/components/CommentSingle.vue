@@ -1,7 +1,7 @@
 <template>
     <div class="wrapper" v-if="showCommentSingle">
         <div class="edit"
-            @click="showOptions = computedOwner"
+            @click="clickedShowOptions"
             v-if="computedOwner"
         >
             <font-awesome-icon
@@ -50,7 +50,7 @@
                 {{`${likes} likes`}}
             </number-of>
             <div class="comment-number" 
-                v-if="comments > -1"
+                v-if="computedCommentNumber"
                 @click="clickedViewComments"
                 :title="commentTitle"
             >
@@ -244,6 +244,10 @@ import { mapGetters, mapActions } from 'vuex'
                     return {}
                 },
             },
+            showCommentNumber: {
+                typpe: Boolean,
+                default: true
+            }
         },
         watch: {
             showOptions(newValue, oldValue) {
@@ -273,6 +277,7 @@ import { mapGetters, mapActions } from 'vuex'
             showEdit(newValue){
                 if (newValue) {
                     this.editComment = true
+                    this.showAddComment = true
                 } else {
                     this.editComment = false
                 }
@@ -306,6 +311,9 @@ import { mapGetters, mapActions } from 'vuex'
             computedBody() {
                 return this.comment && this.comment.hasOwnProperty('body') ? 
                     strings.content(this.comment.body,200) : null
+            },
+            computedCommentNumber(){
+                return this.showCommentNumber && this.comments > -1 ? true : false
             },
             // computedComments(){
             //     return this.comment && this.comment.comments ? 
@@ -363,7 +371,7 @@ import { mapGetters, mapActions } from 'vuex'
                     setTimeout(() => {
                         this.commentSuccess = false
                     }, 2000);
-                } else {
+                } else if (data === 'unsuccessful') {
                     this.commentFail = true
                     setTimeout(() => {
                         this.commentFail = false
@@ -413,6 +421,10 @@ import { mapGetters, mapActions } from 'vuex'
             viewModalDisappear(){
                 this.showViewComments = false
             },
+            clickedShowOptions(){
+                this.showAddComment = false
+                this.showOptions = this.computedOwner
+            },
             alertDisappear() {
                 
             },
@@ -454,6 +466,7 @@ import { mapGetters, mapActions } from 'vuex'
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','commentSingle')
                 } else {
+                    this.editComment = false
                     this.showAddComment = true
                 }
             },
@@ -461,6 +474,8 @@ import { mapGetters, mapActions } from 'vuex'
                 this.smallModalLoading = true
                 let data = {
                     commentId: this.comment.id,
+                    owner: this.comment.commentable_type,
+                    ownerId: this.comment.commentable_id,
                     account: this.profile.params.account,
                     accountId: this.profile.params.accountId,
                 }

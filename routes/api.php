@@ -23,8 +23,9 @@ Route::get('/posts', 'Api\YourEduController@posts');
 Route::get('/posts/{account}/{accountId}', 'Api\YourEduController@postsGet')
     ->middleware(['CheckAccount']);
 Route::get('/post/{post}', 'Api\YourEduController@postGet');
-Route::get('/comment/{comment}', 'Api\YourEduController@commentGet');
-Route::get('/{item}/{itemId}/comments/', 'Api\YourEduController@commentsGet')
+
+Route::get('/comment/{comment}', 'Api\CommentController@commentGet');
+Route::get('/{item}/{itemId}/comments/', 'Api\CommentController@commentsGet')
     ->middleware(['CheckItem']);
 
 
@@ -57,12 +58,12 @@ Route::group(['middleware' => 'auth:api'], function () {
     
     Route::delete('/like/{like}', 'Api\LikeController@likeDelete');
     
-    Route::post('/comment/{comment/{account}/{accountId}}', 'Api\YourEduController@commentEdit')
+    Route::post('/comment/{comment}', 'Api\CommentController@commentEdit')
         ->middleware(['CheckAccount','OwnComment']);
-    Route::delete('/comment/{comment}/{account}/{accountId}', 'Api\YourEduController@commentDelete')
-        ->middleware(['CheckAccount','OwnComment']);
+    Route::delete('/comment/{comment}', 'Api\CommentController@commentDelete')
+        ->middleware(['OwnComment']);
 
-    Route::post('/{item}/{itemId}/comment', 'Api\YourEduController@commentCreate')
+    Route::post('/{item}/{itemId}/comment', 'Api\CommentController@commentCreate')
         ->middleware(['CheckItem']);
     Route::post('/{item}/{itemId}/like', 'Api\LikeController@likeCreate')
         ->middleware(['CheckItem']);

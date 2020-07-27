@@ -1,5 +1,5 @@
 <template>
-    <fade-left>
+    <fade-left-fast>
         <template slot="transition"
             v-if="showAddComment">
             <div class="add-comment-wrapper"
@@ -57,9 +57,9 @@
                             v-if="!computedCommenting"
                         ></main-textarea>
                         <post-button 
-                            buttonText="add"
+                            :buttonText="buttonText"
                             @click="addComment"
-                            v-if="(file || commentText.length) && !computedCommenting"
+                            v-if="computedPost"
                         ></post-button>
                         <div class="profiles"
                             v-if="showProfiles"
@@ -96,7 +96,7 @@
                         class="d-none">
             </div>
         </template>
-    </fade-left>
+    </fade-left-fast>
 </template>
 
 <script>
@@ -107,7 +107,7 @@ import ProfilePicture from './profile/ProfilePicture'
 import FilePreview from './FilePreview'
 import AutoAlert from './AutoAlert'
 import JustFade from './transitions/JustFade'
-import FadeLeft from './transitions/FadeLeft'
+import FadeLeftFast from './transitions/FadeLeftFast'
 import ProfileBar from './profile/ProfileBar'
 import { mapGetters, mapActions } from 'vuex'
 
@@ -115,7 +115,7 @@ import { mapGetters, mapActions } from 'vuex'
         components: {
             DotLoader,
             ProfileBar,
-            FadeLeft,
+            FadeLeftFast,
             JustFade,
             AutoAlert,
             FilePreview,
@@ -161,17 +161,39 @@ import { mapGetters, mapActions } from 'vuex'
                 alertMessage: '',
                 alertSuccess: false,
                 alertDanger: false,
+                buttonText: 'add',
             }
         },
         watch: {
+            showAddComment: {
+                immediate: true,
+                handler(newValue){
+                    if (!newValue) {
+                        this.commentText = ''
+                    }
+                }
+            },
             editableData: {
                 immediate: true,
                 handler(newValue, oldValue){
                     if (newValue) {
                         
+                        
                     }
                 },
                 deep: true
+            },
+            edit: {
+                immediate: true,
+                handler(newValue){
+                    if (newValue) {
+                        this.commentText = this.editableData.body
+                        this.buttonText = 'save'
+                    } else {
+                        this.commentText = ''
+                        this.buttonText = 'add'
+                    }
+                },
             }
         },
         computed: {
@@ -181,7 +203,7 @@ import { mapGetters, mapActions } from 'vuex'
                 return this.getProfiles ? this.getProfiles : []
             },
             computedCommenting(){
-                return this['profile/getCommentingStatus'] && this.commentText.length ?
+                return this['profile/getCommentingStatus'] &&  this.commentText && this.commentText.length ?
                     true : false
             },
             computedProfileUrl(){
@@ -191,11 +213,15 @@ import { mapGetters, mapActions } from 'vuex'
                     this['getActiveProfile'].url : ''
             },
             computedShowIcons(){
-                return this.commentText.length && !this.file ? true : false
+                return this.commentText && this.commentText.length && !this.file ? true : false
             },
             computedShowComponent(){
                 return what.length && id > 0 ? true : false
             },
+            computedPost(){
+                return (this.file || (this.commentText && this.commentText.length)) && 
+                    !this.computedCommenting ? true : false
+            }
         },
         methods: {
             hideAutoAlert(){
@@ -254,12 +280,28 @@ import { mapGetters, mapActions } from 'vuex'
                 event.target.value = ''
             },
             addComment() {
-                if (this.commentText.length) {
-                    this.showProfiles = true
+                if (this.edit) {
+                    let who = {}
+                    if (this.editableData.commentedby_type.toLocaleLowerCase().includes('parent')) {
+                        who['account'] = 'parent'
+                    } else if (this.editableData.commentedby_type.toLocaleLowerCase().includes('learner')) {
+                        who['account'] = 'learner'
+                    } else if (this.editableData.commentedby_type.toLocaleLowerCase().includes('professional')) {
+                        who['account'] = 'professional'
+                    } else if (this.editableData.commentedby_type.toLocaleLowerCase().includes('facilitator')) {
+                        who['account'] = 'facilitator'
+                    }
+                    who['accountId'] = this.editableData.commentedby_id
 
-                    setTimeout(() => {
-                        this.showProfiles = false
-                    }, 4000);
+                    this.clickedProfile(who)
+                } else {
+                    if (this.commentText.length) {
+                        this.showProfiles = true
+
+                        setTimeout(() => {
+                            this.showProfiles = false
+                        }, 4000);
+                    }
                 }
             },
             async clickedProfile(who){
@@ -273,30 +315,46 @@ import { mapGetters, mapActions } from 'vuex'
                 if (this.commentText.length) {
                     formData.append('body', this.commentText.trim())
                 }
+
                 formData.append('account', who.account)
-                formData.append('accountId', who.accountId)
+                formData.append('accountId', who.accountId)                
                 
-                let data = {
-                    item: this.what,
-                    itemId: this.id,
+                let response = null
+                if (this.edit) {
+                    let data = {
+                        itemId: this.editableData.id,
+                    }
+                    response = await this['profile/updateComment']({data,formData})
+                } else {
+                    let data = {
+                        item: this.what,
+                        itemId: this.id,
+                    }
+
+                    response = await this['profile/createComment']({data,formData})
                 }
-                let response = await this['profile/createComment']({data,formData})
+                
                 
                 if (response === 'successful') {
                     this.file = null
                     this.alertSuccess = true
                     this.alertDanger = false
-                    this.alertMessage = this['profile/getMsg']
+                    // this.alertMessage = this['profile/getMsg']
                     this.commentText = ''
-                    this.$emit('postAddComplete','successful')
+                    if (!this.edit) {
+                        this.$emit('postAddComplete','successful')
+                    }
+                    
                 } else {
                     this.alertSuccess = false
                     this.alertDanger = true
-                    this.alertMessage = this['profile/getMsg']
-                    this.$emit('postAddComplete','unsuccessful')
+                    // this.alertMessage = this['profile/getMsg']
+                    if (!this.edit) {
+                        this.$emit('postAddComplete','unsuccessful')
+                    }
                 }
             },
-            ...mapActions(['profile/createComment']),
+            ...mapActions(['profile/createComment','profile/updateComment']),
         },
     }
 </script>

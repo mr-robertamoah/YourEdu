@@ -9,6 +9,7 @@
                     <div class="main-comment" v-if="mainComment">
                         <comment-single
                             :comment="mainComment"
+                            :showCommentNumber="false"
                         ></comment-single>
                     </div>
                     <div class="main-comment" v-if="!mainComment">
@@ -182,7 +183,22 @@ import { mapGetters, mapActions } from 'vuex';
 
         .comment{
             width: 100%;
+            margin-top: 40px;
             margin-bottom: 5px;
         }
     }
+
+@media screen and (max-width:800px) {
+    
+    .main-comment{
+        margin: 10px auto 10px;
+    }
+
+    .view-comments{
+
+        .comment{
+            margin-top: 0;
+        }
+    }
+}
 </style>

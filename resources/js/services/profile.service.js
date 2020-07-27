@@ -51,9 +51,9 @@ const ProfileService = {
         }
     },
     async commentDelete(data){
-        let {account,accountId, commentId} = data
+        let {commentId} = data
         try {
-            let response = await ApiService.delete(`/api/comment/${commentId}/${account}/${accountId}`)
+            let response = await ApiService.delete(`/api/comment/${commentId}`)
     
             return response
         } catch (error) {
@@ -65,6 +65,18 @@ const ProfileService = {
         try {
             let {data, formData} = main
             let response = await ApiService.post(`/api/${data.item}/${data.itemId}/comment`,
+                formData,true)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async commentUpdate(main){
+        
+        try {
+            let {data, formData} = main
+            let response = await ApiService.post(`/api/comment/${data.itemId}`,
                 formData,true)
     
             return response

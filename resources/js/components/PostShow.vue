@@ -104,7 +104,7 @@
                                     ></profile-bar>
                                 </div>
                             </div>
-                            <div
+                            <div class="comment"
                                 titleText="add a comment"
                                 @click="clickedAddComment"
                                 v-if="!showAddComment"
@@ -117,15 +117,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="comment-section">
-                    <template v-if="computedComments">
-                        <comment-single
-                            :key="key" v-for="(comment, key) in computedComments"
-                            :comment="comment"
-                            @askLoginRegister="askLoginRegister"
-                        ></comment-single>
-                    </template>
-                </div>
                 <div class="add-comment">
                     <add-comment
                         what="post"
@@ -134,6 +125,15 @@
                         @hideAddComment="showAddComment = false"
                         @postAddComplete="postAddComplete"
                     ></add-comment>
+                </div>
+                <div class="comment-section">
+                    <template v-if="computedComments">
+                        <comment-single
+                            :key="key" v-for="(comment, key) in computedComments"
+                            :comment="comment"
+                            @askLoginRegister="askLoginRegister"
+                        ></comment-single>
+                    </template>
                 </div>
             </div>
         </div>
@@ -686,6 +686,10 @@ import { mapGetters, mapActions } from 'vuex'
                                 padding: 5px;
                                 margin-right: 5px;
                                 font-size: 14px;
+                                cursor: pointer;
+                            }
+
+                            .comment{
                                 cursor: pointer;
                             }
 

@@ -137,7 +137,26 @@ const profile = {
             }
         },
         COMMENT_DELETE_SUCCESS(state,data){
-
+            if (data.owner.toLocaleLowerCase().includes('post')) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.ownerId
+                })
+                if (postIndex > -1) {
+                    let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.posts[postIndex].comments.splice(commentIndex,1)
+                    }
+                } else if (data.owner.toLocaleLowerCase().includes('post')) {
+                    let commentIndex = state.comments.findIndex(comment=>{
+                        return comment.id === data.commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.comments.splice(commentIndex,1)
+                    }
+                }
+            }
         },
         COMMENTS_SUCCESS(state,data){
             if (data.data.length) {
@@ -156,7 +175,9 @@ const profile = {
                     state.posts[postIndex].comments.push(data.comment)
                 }
             } else if (data.comment.commentable_type.toLocaleLowerCase().includes('comment')) {
-                
+                if (state.comments && state.comments.length) {
+                    state.comments.unshift(data.comment)
+                }
                 // let commentIndex = state.comments.findIndex(comment=>{
                 //     return comment.id === item.itemId
                 // })
@@ -421,8 +442,10 @@ const profile = {
             console.log('update post', response)
             if (response.data.message === 'successful') {
                 commit('COMMENT_UPDATE_SUCCESS',response.data)
+                return 'successful'
             }else {
                 commit('PROFILE_FAILURE','post update unsuccessful')
+                return 'unsuccessful'
             }
         },
 
