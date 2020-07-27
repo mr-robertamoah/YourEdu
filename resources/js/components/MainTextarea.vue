@@ -1,9 +1,13 @@
 <template>
-    <textarea :name="textName" :id="textId" class="form-control" 
-            :placeholder="textPlaceholder" @input="$emit('change',$event.target.value)"></textarea>
+    <textarea :name="textName" :id="textId" class="form-control" :disabled="disabled"
+        :placeholder="textPlaceholder" 
+        @input="$emit('change',$event.target.value)"
+        :value="value"
+    ></textarea>
 </template>
 
 <script>
+
     export default {
         model:{
             prop: '',
@@ -11,6 +15,14 @@
         },
         props: {
             textName: {
+                type: String,
+                default: ''
+            },
+            disabled: {
+                type: Boolean,
+                default: false
+            },
+            value: {
                 type: String,
                 default: ''
             },
@@ -36,12 +48,20 @@ $input-main-border-color: rgba(105, 105, 105,1);
         font-size: 16px;
         border: none;
         border-radius: 0;
-    }
+        background-color: inherit;
 
-    textarea:active,
-    textarea:focus{
-        box-shadow: none;
-        border: none;
+        &:active,
+        &:disabled,
+        &:focus{
+            box-shadow: none;
+            border: none;
+            background-color: inherit;
+        }
+
+        &:disabled{
+            resize: vertical;
+            min-height: 60px;
+        }
     }
 
 

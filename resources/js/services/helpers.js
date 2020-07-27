@@ -1,7 +1,52 @@
 const _MS_PER_DAY = 1000 * 60 * 60 * 24;
+const _MS_PER_HOUR = 1000 * 60 * 60;
+const _MS_PER_SECOND = 1000 ;
 
 const dates = {
-    
+    dayShort(int){
+        if (int === 0) {
+            return 'Sun'
+        } else if (int === 1) {
+            return 'Mon'
+        } else if (int === 2) {
+            return 'Tue'
+        } else if (int === 3) {
+            return 'Wed'
+        } else if (int === 4) {
+            return 'Thu'
+        } else if (int === 5) {
+            return 'Fri'
+        } else if (int === 6) {
+            return 'Sat'
+        }
+    },
+    monthShort(int){
+        if (int === 0) {
+            return 'Jan'
+        } else if (int === 1) {
+            return 'Feb'
+        } else if (int === 2) {
+            return 'Mar'
+        } else if (int === 3) {
+            return 'Apr'
+        } else if (int === 4) {
+            return 'May'
+        } else if (int === 5) {
+            return 'Jun'
+        } else if (int === 6) {
+            return 'Jul'
+        } else if (int === 7) {
+            return 'Aug'
+        } else if (int === 8) {
+            return 'Sep'
+        } else if (int === 9) {
+            return 'Oct'
+        } else if (int === 10) {
+            return 'Nov'
+        } else if (int === 11) {
+            return 'Dec'
+        }
+    },
     toDate(date){
         return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
     },
@@ -12,6 +57,72 @@ const dates = {
     dateReadable(date, format = null){
         return format ? new Date(date).toDateString(format) : new Date(date).toDateString()
     },
+    createdAt(date){
+        let theDate = new Date(date)
+        // console.log('updated_at', theDate)
+        let now = new Date
+        let div = (now - theDate)
+        let divInSeconds = div/_MS_PER_SECOND
+        let divInHours = div/_MS_PER_HOUR
+        let divInDays = div/_MS_PER_DAY
+
+        if (divInSeconds < 60) {
+            return 'now'
+        } else if (divInSeconds > 60 && divInSeconds < 300) {
+            return 'few minutes ago'
+        } else if (divInSeconds > 60 && divInSeconds < 300) {
+            return `${Math.floor(divInSeconds/60)} minutes ago`
+        } else if (divInHours > 1 && divInHours < 2) {
+            return 'an hour ago'
+        } else if (divInHours > 2 && divInHours < 24) {
+            return `today`
+        } else if (divInDays > 1 && divInDays < 2) {
+            return `yesterday`
+        } else if (divInDays > 2 && divInDays < 3) {
+            return `2 days ago`
+        } else if (divInDays > 3) {
+            return `${this.dayShort(theDate.getDay())}, ${theDate.getDate()} ${this.monthShort(theDate.getMonth())}, ${theDate.getFullYear()}`
+        }
+    },
 }
 
-export {dates}
+const files = {
+    fileType(file){
+        if (file.type.includes('image')) {
+            return 'image'
+        } else if (file.type.includes('video')) {
+            return 'video'
+        } else if (file.type.includes('audio')) {
+            return 'audio'
+        } else if (file.type.includes('application')) {
+            return 'application'
+        }
+    }
+}
+
+const strings = {
+    content(string, int = 100, isArray = false){
+        if (string) {
+            let newString = ''
+            if (isArray) {
+                for (let i = 0; i < string.length; i++) {
+                    if (i === string.length - 1) {
+                        newString += string[i]
+                    } else {
+                        newString += string[i] + "\n\n"
+                    }
+                }
+            } else {
+                newString = string
+            }
+            
+            if (newString.length > int) {
+                return `${newString.slice(0,int)}...`
+            } else {
+                return newString
+            }
+        }
+    }
+}
+
+export {dates, files, strings}

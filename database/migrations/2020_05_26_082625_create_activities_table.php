@@ -15,6 +15,7 @@ class CreateActivitiesTable extends Migration
     {
         Schema::create('activities', function (Blueprint $table) {
             $table->id();
+            $table->morphs('owned'); // facilitator professional school parent learner member group collaboration
             $table->nullableMorphs('activityby'); //facilitator learner parent school professional
             $table->nullableMorphs('activityfor'); //lesson post
             $table->text('description')->nullable();

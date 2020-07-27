@@ -54,4 +54,14 @@ class Collaboration extends Model
     {
         return $this->morphMany(Share::class,'shareable');
     }
+
+    public function questionsOwned()
+    {
+        return $this->morphMany(Question::class,'owned');
+    }
+
+    public function activitiesOwned()
+    {
+        return $this->morphMany(Activity::class,'owned');
+    }
 }

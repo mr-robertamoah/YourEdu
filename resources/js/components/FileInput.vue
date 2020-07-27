@@ -326,7 +326,7 @@ $border-color-main : rgba(22, 233, 205, 1);
             background-color: white;
             
             .input-text{
-                min-width: 80%;
+                // min-width: 80%;
                 border: none;
                 font-size: 16px;
                 box-shadow: none;

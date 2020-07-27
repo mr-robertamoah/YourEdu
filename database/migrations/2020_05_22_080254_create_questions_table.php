@@ -15,8 +15,9 @@ class CreateQuestionsTable extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
-            $table->morphs('questionedby'); // facilitator professional school parent learner member
-            $table->morphs('questionable'); // assessmentsection post discussion message
+            $table->nullableMorphs('owned'); // facilitator professional school parent learner member group collaboration
+            $table->nullableMorphs('questionedby'); // facilitator professional parent learner member
+            $table->nullableMorphs('questionable'); // assessmentsection post discussion message
             $table->text('question');
             $table->enum('state',['PENDING','ANSWERED','COMPLETE'])->nullable();
             $table->timestamp('published')->nullable();

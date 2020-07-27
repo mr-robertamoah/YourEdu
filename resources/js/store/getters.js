@@ -28,7 +28,11 @@ const getters = {
     },
 
     getUser(state){
-        return state.user
+        return state.user ? state.user : null
+    },
+
+    getUserId(state){
+        return state.user ? state.user.id : null
     },
     
     isSuperadmin(state){
@@ -69,6 +73,41 @@ const getters = {
     
     hasSchools(state){
         return state.user ? state.user.has_schools : false
+    },
+    
+    getProfiles(state){
+        // return state.user ? state.user.has_schools : false
+        let profilesArray = []
+        let computedArray = []
+
+        if (state.user) {
+            profilesArray = state.user.owned_profiles
+        } else {
+            return null
+        }
+
+        if (profilesArray) {
+            computedArray = profilesArray.map(el=>{
+                return {
+                    name: el.profile_name ? el.profile_name : 'no name',
+                    url: el.profile_url ? el.profile_url: '',
+                    profile: el.profile ? el.profile : '',
+                    params: {
+                        account: el.account_type,
+                        accountId: el.account_id,
+                    }
+                }
+            })
+
+            return computedArray
+        } else {
+            return null
+        }
+    },
+    
+    getActiveProfile(state,getters){
+        return state.profile.activeProfile ? state.profile.activeProfile : 
+            getters.getProfiles ? getters.getProfiles[0] : null
     },
     // getParent(state){
     //     return state.user ? state.user.parent: null

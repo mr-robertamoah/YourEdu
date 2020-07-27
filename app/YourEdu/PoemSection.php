@@ -10,6 +10,10 @@ class PoemSection extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'body', 
+    ];
+
     public function poem()
     {
         return $this->belongsTo(Poem::class);

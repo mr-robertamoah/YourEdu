@@ -13,6 +13,7 @@
 
 <script>
 import FadeRight from './transitions/FadeRight'
+import { mapActions } from 'vuex'
     export default {
         props: {
             message: {
@@ -45,6 +46,7 @@ import FadeRight from './transitions/FadeRight'
                         setTimeout(() => {
                             this.show = false
                             this.$emit('hideAlert', this.message)
+                            this['profile/clearMsg']()
                         }, 2000);
                     }
                 }
@@ -54,6 +56,9 @@ import FadeRight from './transitions/FadeRight'
             computedMessage() {
                 return this.message != '' || this.message != null ? true : false
             }
+        },
+        methods: {
+            ...mapActions(['profile/clearMsg']),
         },
     }
 </script>
@@ -76,6 +81,7 @@ $shadow-color: aliceblue;
         justify-content: center;
         align-items: center;
         border-radius: 5px;
+        z-index: 30000;
     }
 
     .danger{

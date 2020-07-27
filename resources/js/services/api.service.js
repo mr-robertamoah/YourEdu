@@ -20,8 +20,17 @@ const ApiService = {
         return axios.get(resource)
     },
 
-    post(resource,data, config = null){
-        return axios.post(resource,data, config)
+    post(resource,data, hasMultipart = false){
+        if (hasMultipart) {
+            return axios.post(resource,data, {
+                headers:{
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+        } else {
+            return axios.post(resource,data)
+        }
+        
     },
 
     put(resource,data){

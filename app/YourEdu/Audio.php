@@ -9,6 +9,19 @@ class Audio extends Model
 {
     //
     use SoftDeletes;
+    
+    protected $fillable = [
+        'path', 'mime', 'size',
+    ];
+    
+    protected $appends = [
+        'url',
+    ];
+
+    public function getUrlAttribute()
+    {
+        return asset($this->path);
+    }
 
     public function ownedby()
     {
@@ -22,52 +35,62 @@ class Audio extends Model
 
     public function questions()
     {
-        return $this->morphedByMany(Question::class,'audioable','audioables');
+        return $this->morphedByMany(Question::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function answers()
     {
-        return $this->morphedByMany(Answer::class,'audioable','audioables');
+        return $this->morphedByMany(Answer::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function profiles()
     {
-        return $this->morphedByMany(Profile::class,'audioable','audioables');
+        return $this->morphedByMany(Profile::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function posts()
     {
-        return $this->morphedByMany(Post::class,'audioable','audioables');
+        return $this->morphedByMany(Post::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function comments()
     {
-        return $this->morphedByMany(Comment::class,'audioable','audioables');
+        return $this->morphedByMany(Comment::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'audioable','audioables');
+        return $this->morphedByMany(Lesson::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function activities()
     {
-        return $this->morphedByMany(Activity::class,'audioable','audioables');
+        return $this->morphedByMany(Activity::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function lessonRequirements()
     {
-        return $this->morphedByMany(LessonRequirement::class,'audioable','audioables');
+        return $this->morphedByMany(LessonRequirement::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function books()
     {
-        return $this->morphedByMany(Book::class,'audioable','audioables');
+        return $this->morphedByMany(Book::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function contribution()
     {
-        return $this->morphedByMany(Contribution::class,'audioable','audioables');
+        return $this->morphedByMany(Contribution::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function permissions()

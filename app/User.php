@@ -91,6 +91,7 @@ class User extends Authenticatable
                     'account_type' => 'parent',
                     'profile_name' => $profile->name,
                     'profile_url' => $profile->url,
+                    'profile' => $profile->profileable_type,
                 ];
             }
             if ($profile->profileable_type === 'App\\YourEdu\\Facilitator') {
@@ -99,6 +100,7 @@ class User extends Authenticatable
                     'account_type' => 'facilitator',
                     'profile_name' => $profile->name,
                     'profile_url' => $profile->url,
+                    'profile' => $profile->profileable_type,
                 ];
             }
             
@@ -108,6 +110,7 @@ class User extends Authenticatable
                     'account_type' => 'learner',
                     'profile_name' => $profile->name,
                     'profile_url' => $profile->url,
+                    'profile' => $profile->profileable_type,
                 ];
             }
             
@@ -117,6 +120,7 @@ class User extends Authenticatable
                     'account_type' => 'professional',
                     'profile_name' => $profile->name,
                     'profile_url' => $profile->url,
+                    'profile' => $profile->profileable_type,
                 ];
             }
 

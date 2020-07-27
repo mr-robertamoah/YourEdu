@@ -1,8 +1,10 @@
 <template>
     <div>
         <div class="login">
-            <div class="loading-state" v-if="authenticating">
-                loading...
+            <div class="loading-state">
+                <sync-loader
+                    :loading="authenticating"
+                ></sync-loader>
             </div>
             <validation-error class="validation" 
                 @clearValidation='issueClearValidation()'
@@ -58,10 +60,12 @@
 
 <script>
 import ValidationError from "./ValidationError";
+import SyncLoader from 'vue-spinner/src/SyncLoader'
 import { mapGetters, mapActions } from "vuex";
 
     export default {
         components: {
+            SyncLoader,
             ValidationError,
         },
         data() {
@@ -115,6 +119,7 @@ import { mapGetters, mapActions } from "vuex";
                     this.specialErrorMessage = 'The server may be down. Please try again in a few minutes. Apologizes'
                     return true
                 } else if (errorMessage === 'Unauthorized') {
+                    this.specialErrorMessage = 'Please enter the correct username or email and password combination'
                     return true
                 } else if (errorMessage === 'Unauthenticated') {
                     this.specialErrorMessage = 'Please you are unauthorized. Log in again'
@@ -184,10 +189,10 @@ $sectionMainBackground: rgba(22, 233, 205, 0.65);
 
     .loading-state{
         width: 40%;
-        background-color: rgba(153, 205, 50, 0.4);
-        color: rgba(153, 205, 50, 0.9);
-        font-weight: 800;
-        padding: 10px;
+        // background-color: rgba(153, 205, 50, 0.4);
+        // color: rgba(153, 205, 50, 0.9);
+        // font-weight: 800;
+        // padding: 10px;
         text-align: center;
         position: absolute;
         top: -8%;

@@ -16,8 +16,7 @@ class CreateFileablesTable extends Migration
         Schema::create('fileables', function (Blueprint $table) {
             $table->unsignedBigInteger('file_id');
             $table->morphs('fileable'); //question answer profile comment lesson
-            $table->enum('state',['PUBLIC','PRIVATE'])->nullable();
-            $table->softDeletes();
+            $table->enum('state',['PUBLIC','PRIVATE'])->default('PUBLIC');
             $table->timestamps();
 
 

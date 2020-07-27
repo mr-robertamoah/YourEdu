@@ -1,10 +1,9 @@
 <template>
     <div class="file-preview-wrapper"
-        @mouseover="showEdit = true"
-        @mouseleave="showEdit = false"
     >
         <div class="edit"
             @click="clickedRemove"
+            v-if="showRemove"
         >
             <black-white-badge
                 text='remove'
@@ -25,10 +24,11 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                 default: false
             },
             file: {
-                type: File,
+                // type: File,
             },
-            file: {
-                type: File,
+            showRemove: {
+                type: Boolean,
+                default: true,
             },
         },
         components: {
@@ -37,7 +37,7 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
         data() {
             return {
                 message: '',
-                showEdit: false,
+                showEdit: true,
             }
         },
         watch: {

@@ -16,8 +16,7 @@ class CreateVideoablesTable extends Migration
         Schema::create('videoables', function (Blueprint $table) {
             $table->unsignedBigInteger('video_id');
             $table->morphs('videoable'); //question answer profile comment lesson activity
-            $table->enum('state',['PUBLIC','PRIVATE'])->nullable();
-            $table->softDeletes();
+            $table->enum('state',['PUBLIC','PRIVATE'])->default('PUBLIC');
             $table->timestamps();
 
 

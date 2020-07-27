@@ -5,30 +5,470 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProfileResource;
 use App\User;
+use App\helper;
+use App\Http\Resources\CommentResource;
+use App\Http\Resources\PostCollection;
+use App\Http\Resources\PostResource;
+use App\YourEdu\Admin;
+use App\YourEdu\Admission;
+use App\YourEdu\Ban;
+use App\YourEdu\Character;
+use App\YourEdu\ClassModel;
+use App\YourEdu\Comment;
+use App\YourEdu\Discussion;
 use App\YourEdu\Facilitator;
+use App\YourEdu\Flag;
+use App\YourEdu\Image;
 use App\YourEdu\Learner;
+use App\YourEdu\Lesson;
 use App\YourEdu\ParentModel;
+use App\YourEdu\Post;
 use App\YourEdu\Professional;
 use App\YourEdu\Profile;
+use App\YourEdu\Read;
+use App\YourEdu\Request as YourEduRequest;
 use App\YourEdu\School;
 use Carbon\Carbon;
 use Illuminate\Http\Request ;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
 class YourEduController extends Controller
 {
     //
 
+    public function getFileDetails($actualFile)
+    {
+        $file = $actualFile;
+        $fileArray['mime'] = $file->getClientMimeType();
+        $fileArray['size'] = $file->getSize();
+        $fileArray['path'] = uploadYourEduFile($file);
+
+        return $fileArray;
+    }
+
+    public function accountCreateFile(String $mime, $account, $fileDetails, $associate = null)
+    {
+        if(Str::contains($mime, 'image')){
+            $file = $account->addedImages()->create($fileDetails);
+            if($associate){
+                $associate->images()->attach($file);
+            }
+        } else if(Str::contains($mime, 'video')){
+            $file = $account->vidoes()->create($fileDetails);
+            if($associate){
+                $associate->addedVideos()->attach($file);
+            }
+        } else if(Str::contains($mime, 'audio')){
+            $file = $account->addedAudios()->create($fileDetails);
+            if($associate){
+                $associate->audios()->attach($file);
+            }
+        } else if(Str::contains($mime, 'file')){
+            $file = $account->addedFiles()->create($fileDetails);
+            if($associate){
+                $associate->files()->attach($file);
+            }
+        }
+        // if($associate){
+        //     $associate->save();
+        // }
+        return $file;
+    }
+//////////////////////////////////////////////////////////
+    public function commentCreate(Request $request, $item, $itemId)
+    {
+        // return $request;
+        $request->validate([
+            'body' => 'nullable|string',
+            'account' => 'required|string',
+            'accountId' => 'required|string',
+            'file' => 'nullable|file',
+        ]);
+        
+        if(is_null($request->body) && is_null($request->file)){
+            return response()->json([
+                'message' => "unsuccessful. there is nothing to add as comment."
+            ],422);
+        }
+
+        $comment = null;
+        $account = null;
+        $file = null;
+        $accountId = $request->accountId;
+        if ($request->account === 'learner') {
+            $account = Learner::find($accountId);
+        } else if ($request->account === 'parent') {
+            $account = ParentModel::find($accountId);
+        } else if ($request->account === 'facilitator') {
+            $account = Facilitator::find($accountId);
+        } else if ($request->account === 'professional') {
+            $account = Professional::find($accountId);
+        } else if ($request->account === 'admin') {
+            $account = Admin::find($accountId);
+        } else {
+            return response()->json([
+                'message' => "unsuccessful. {$request->account} does not exist."
+            ],422);
+        }
+
+        if (!$account) {
+            return response()->json([
+                'message' => "unsuccessful. there is no such {$request->account}."
+            ]);
+        }
+
+        if ($account->user_id !== auth()->id()) {
+            return response()->json([
+                'message' => "unsuccessful. you do not own this account."
+            ]);
+        }
+
+        try {
+            if ($account->user_id === Auth::id()) {
+                DB::beginTransaction();
+                $comment = $account->comments()->create([
+                    'body' => $request->body
+                ]);
+                
+                $file = null;
+                if ($request->hasFile('file')) {
+                    $fileDetails = [];
+                    $fileDetails = $this->getFileDetails($request->file('file'));
+
+                    $file = $this->accountCreateFile(
+                        $fileDetails['mime'],
+                        $account, 
+                        $fileDetails,
+                        $comment
+                    );
+                }
+            } else {
+                return response()->json([
+                    'message' => "unsuccessful. {$request->account} does not exist 0r does not belong to you."
+                ]);
+            }
+    
+            if ($item === 'post') {
+                $post = Post::find($itemId);
+    
+                if ($comment && $post) {
+                    $comment->commentable()->associate($post);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'comment') {
+                $oldComment = Comment::find($itemId);
+
+                if ($comment && $oldComment) {
+                    $comment->commentable()->associate($oldComment);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'lesson') {
+                $lesson = Lesson::find($itemId);
+
+                if ($comment && $lesson) {
+                    $comment->commentable()->associate($lesson);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'class') {
+                $class = ClassModel::find($itemId);
+
+                if ($comment && $class) {
+                    $comment->commentable()->associate($class);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'request') {
+                $eduRequest = YourEduRequest::find($itemId);
+
+                if ($comment && $eduRequest) {
+                    $comment->commentable()->associate($eduRequest);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'admission') {
+                $admission = Admission::find($itemId);
+
+                if ($comment && $admission) {
+                    $comment->commentable()->associate($admission);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'ban') {
+                $ban = Ban::find($itemId);
+
+                if ($comment && $ban) {
+                    $comment->commentable()->associate($ban);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'flag') {
+                $flag = Flag::find($itemId);
+
+                if ($comment && $flag) {
+                    $comment->commentable()->associate($flag);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'keyword') {
+    
+            } else if ($item === 'word') {
+    
+            } else if ($item === 'expression') {
+                
+            } else if ($item === 'character') {
+                $character = Character::find($itemId);
+
+                if ($comment && $character) {
+                    $comment->commentable()->associate($character);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'school') {
+                $school = School::find($itemId);
+
+                if ($comment && $school) {
+                    $comment->commentable()->associate($school);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            }
+        } catch (\Throwable $th) {
+            if($file){
+                Storage::delete($file->path);
+            }
+            DB::rollback();
+            // return response()->json([
+            //     'message' => "Unsuccessful. Something might have gone wrong. Please try again later."
+            // ]);
+            throw $th;
+        }
+        
+    }
+
+    public function commentEdit(Request $request, $comment)
+    {
+        return $comment;
+    }
+
+    public function commentDelete($comment)
+    {
+        // return $comment;
+        $mainComment = Comment::find($comment);
+        
+        try {
+            $mainComment->delete();
+            return response()->json([
+                'message' => "successful"
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
+            return response()->json([
+                'message' => "unsuccessful"
+            ]);
+        }
+    }
+
+    public function commentsGet(Request $request, $item, $itemId)
+    {
+        $mainItem = null;
+        // $comments = null;
+        if($item === 'post'){
+            $mainItem = Post::find($itemId);
+        } else if($item === 'comment'){
+            $mainItem = Comment::find($itemId);
+        } else if($item === 'school'){
+            $mainItem = School::find($itemId);
+        } else if($item === 'class'){
+            $mainItem = ClassModel::find($itemId);
+        } else if($item === 'lesson'){
+            $mainItem = Lesson::find($itemId);
+        } else if($item === 'discussion'){
+            $mainItem = Discussion::find($itemId);
+        } else if($item === 'read'){
+            $mainItem = Read::find($itemId);
+        } else {
+            return response()->json([
+                'message' => "unsuccessful. {$item} is not valid for comments."
+            ]);
+        }
+
+        if($mainItem){
+            return CommentResource::collection($mainItem->comments()->latest()->paginate(5));
+            
+            // return response()->json([
+            //     'message' => "successful",
+            //     'comments' => $comments,
+            // ]);
+        } else {
+            return response()->json([
+                'message' => "unsuccessful. {$item} was not found"
+            ]);
+        }
+    }
+
+    public function commentGet(Request $request,$comment)
+    {
+        $item = null;
+        $item = Comment::find($comment);
+
+        if (!$item) {
+            return response()->json([
+                'message' => 'unsuccessful. comment does not exist.'
+            ]);
+        }
+        return response()->json([
+            'message' => "successful",
+            'comment' => new CommentResource($item)
+        ]);
+    }
+/////////////////////////////////////////////////////////////////
     public function postCreate(Request $request)
     {
         $user = auth()->user();
-        $id = $request->account_id;
+        $id = null;
         $account = null;
         $post = null;
-
+        $type = null;
+        // dd($request->content);
         if ($request->has('account')) {
-            
+            $id = $request->account_id;
             if ($request->account === 'learner') {
                 $account = $user->learner;
             } else if ($request->account === 'parent') {
@@ -50,7 +490,6 @@ class YourEduController extends Controller
                     ], 422);
                 }
             }
-
         } else {
             return response()->json([
                 'message' => 'inadequate data. Account required.'
@@ -58,61 +497,399 @@ class YourEduController extends Controller
         }
 
         DB::beginTransaction();
-        if($account){
-            $post = $account->posts()->create([
-                'content' => $request->content,
-            ]);
-        } else {
-            DB::rollback();
+        try {
+            if($account){
+                $request->validate([
+                    'content' => 'nullable|string',
+                ]);
+                if ($account->user_id === $user->id) {
+                    $post = $account->posts()->create([
+                        'content' => $request->content,
+                    ]);
+                } else {
+                    return response()->json([
+                        'message' => "The {$request->account} account does'nt belong to you."
+                    ], 422);
+                }
+            } else {
+                DB::rollback();
+                return response()->json([
+                    'message' => "{$request->account} does'nt exist."
+                ], 422);
+            }
+
+            if (!$post) {
+                DB::rollback();
+                return response()->json([
+                    'message' => 'post creation unsuccessful'
+                ], 422);
+            } else {
+                $request->validate([
+                    'file' => 'nullable|file',
+                    'fileType' => 'nullable|string',
+                ]);
+
+                $file = null;
+                if ($request->hasFile('file')) {
+                    $fileDetails = $this->getFileDetails($request->file('file'));
+                    // $fileArray['mime'] = $file->getClientMimeType();
+                    // $fileArray['size'] = $file->getSize();
+                    // $fileArray['path'] = uploadYourEduFile($file);
+                    // $createdFile = null;
+                    // if ($request->fileType === 'image') {
+                    //     $createdFile = $account->addedImages()->create($fileArray);
+                    //     $post->images()->attach($createdFile);
+                    // } else if ($request->fileType === 'video') {
+                    //     $createdFile = $account->addedVideos()->create($fileArray);
+                    //     $post->videos()->attach($createdFile);
+                    // } else if ($request->fileType === 'audio') {
+                    //     $createdFile = $account->addedAudio()->create($fileArray);
+                    //     $post->audios()->attach($createdFile);
+                    // } else if ($request->fileType === 'file') {
+                    //     $createdFile = $account->addedAudio()->create($fileArray);
+                    //     $post->files()->attach($createdFile);
+                    // }
+                    
+                    $file = $this->accountCreateFile(
+                        $fileDetails['mime'],
+                        $account, 
+                        $fileDetails,
+                        $post
+                    );
+                }
+
+                // dd(['file'=> $file,'filetype'=> $fileArray]);
+            }
+
+            $input = [];
+            if ($request->has('type')) {
+
+                if ($request->type === 'book') {
+                    $request->validate([
+                        'title' => 'required|string',
+                        'author' => 'nullable|string',
+                        'about' => 'nullable|string',
+                        'published' => 'nullable|date',
+                        'previewFile' => 'nullable|file',
+                        'previewFileType' => 'nullable|string',
+                    ]);
+
+                    $input['title'] = $request->title;
+                    $input['author'] = $request->author;
+                    $input['about'] = $request->about;
+                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
+                    $type = $account->booksAdded()->create($input);
+                    $type->bookable()->associate($post);
+                    $type->save();
+                    // dd($type);
+                } else if ($request->type === 'riddle') {
+                    $request->validate([
+                        'riddle' => 'required|string',
+                        'author' => 'nullable|string',
+                        'published' => 'nullable|date',
+                        'previewFile' => 'nullable|file',
+                        'previewFileType' => 'nullable|string',
+                    ]);
+
+                    $input['author'] = $request->author;
+                    $input['riddle'] = $request->riddle;
+                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
+                    // $type = $post->riddles()->create($input); 
+                    $type = $account->riddlesAdded()->create($input);
+                    $type->riddleable()->associate($post);
+                    $type->save();
+                } else if ($request->type === 'poem') {
+                    $request->validate([
+                        'title' => 'required|string',
+                        'author' => 'nullable|string',
+                        'about' => 'nullable|string',
+                        'sections' => 'required|string',
+                        'published' => 'nullable|date',
+                        'previewFile' => 'nullable|file',
+                        'previewFileType' => 'nullable|string',
+                    ]);
+
+                    $input['title'] = $request->title;
+                    $input['author'] = $request->author;
+                    $input['about'] = $request->about;
+                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
+                    // $type = $post->riddles()->create($input); 
+                    $type = $account->poemsAdded()->create($input);
+                    $type->poemable()->associate($post);
+                    $type->save();
+                    $sections = json_decode($request->sections);
+                    foreach ($sections as $key => $section) {
+                        $type->poemSections()->create([
+                            'body' => $section
+                        ]);
+                    }
+                } else if ($request->type === 'activity') {
+                    $request->validate([
+                        'description' => 'nullable|string',
+                        'published' => 'nullable|date',
+                        'previewFile' => 'required|file',
+                        'previewFileType' => 'required|string',
+                    ]);
+
+                    $input['description'] = $request->description;
+                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
+                    $type = $account->activitiesAdded()->create($input);
+                    $type->activityfor()->associate($post);
+                    $type->save();
+                } else if ($request->type === 'question') {
+                    $request->validate([
+                        'question' => 'required|string',
+                        'published' => 'nullable|date',
+                        'previewFile' => 'nullable|file',
+                        'previewFileType' => 'nullable|string',
+                    ]);
+
+                    $input['question'] = $request->question;
+                    $input['state'] = 'PENDING';
+                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
+                    // $type = $post->questions()->create($input);
+                    $type = $account->questionsAdded()->create($input);
+                    $type->questionable()->associate($post);
+                    $type->save();
+                } 
+
+                if ($type) {
+
+                    $file = null;
+                    if ($request->hasFile('previewFile')) {
+                        $fileDetails = $this->getFileDetails($request->file('previewFile'));
+
+                        $file = $this->accountCreateFile(
+                            $fileDetails['mime'],
+                            $account, 
+                            $fileDetails,
+                            $type
+                        );
+                    }
+                    DB::commit();
+                    return response()->json([
+                        'message' => 'successful',
+                        'post' => new PostResource($post),
+                    ]);
+                } else {
+                    DB::rollback();
+                    return response()->json([
+                        'message' => 'unsuccessful',
+                        'post' => $post,
+                    ]);
+                }
+            }
+
+            DB::commit();
             return response()->json([
-                'message' => "{$request->account} doen'st exist."
-            ], 422);
+                'message' => 'successful',
+                'post' => new PostResource($post),
+            ]);
+        } catch (\Throwable $th) {
+            if($file){
+                Storage::delete($file->path);
+            }
+            DB::rollback();
+            // return response()->json([
+            //     'message' => 'unsuccessful',
+            //     'post' => $post,
+            //     'type' => $type,
+            // ]);
+            throw $th;
         }
 
-        if (!$post) {
-            DB::rollback();
+    }
+
+    public function posts()
+    {
+        $posts = null;
+        try {
+            $posts = Post::all();
+            $profiles = Profile::all();
+            // dd($posts->merge($profiles));
+            $all = paginate($posts->merge($profiles),5);
             return response()->json([
-                'message' => 'post creation unsuccessful'
-            ], 422);
+                'message' => 'successful',
+                'posts' => $all
+            ]);            
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
+            ]);
+            // throw $th;
         }
+    }
+
+    public function postEdit(Request $request,$post, $account, $accountId)
+    {
+        $mainPost = Post::find($post);
+        
+        if ($account === 'learner') {
+            $mainAccount = Learner::find($accountId);
+        } else if ($account === 'parent') {
+            $mainAccount = ParentModel::find($accountId);
+        } else if ($account === 'facilitator') {
+            $mainAccount = Facilitator::find($accountId);
+        } else if ($account === 'professional') {
+            $mainAccount = Professional::find($accountId);
+        } else if ($account === 'school') {
+            $mainAccount = School::find($accountId);
+        }
+
+        if($mainAccount->user_id !== auth()->id()){
+            return response()->json([
+                'message' => 'unsuccessful. you do not own this account'
+            ]);
+        }
+
+        $request->validate([
+            'content' => 'nullable|string'
+        ]);
+
+        DB::beginTransaction();
+        $mainPost->update([
+            'content' => $request->content
+        ]);
 
         $input = [];
         if ($request->has('type')) {
 
             if ($request->type === 'book') {
+                $request->validate([
+                    'title' => 'required|string',
+                    'author' => 'nullable|string',
+                    'about' => 'nullable|string',
+                    'published' => 'nullable|date',
+                    'previewFile' => 'nullable|file',
+                    'previewFileType' => 'nullable|string',
+                ]);
+
                 $input['title'] = $request->title;
                 $input['author'] = $request->author;
                 $input['about'] = $request->about;
                 $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $post->books()->create($input);
+                $type = $mainAccount->booksAdded()->where('id',$request->typeId)->first();
+                if ($type) {
+                    $type->update($input);
+                }
             } else if ($request->type === 'riddle') {
+                $request->validate([
+                    'riddle' => 'required|string',
+                    'author' => 'nullable|string',
+                    'published' => 'nullable|date',
+                    'previewFile' => 'nullable|file',
+                    'previewFileType' => 'nullable|string',
+                ]);
+
+                $input['author'] = $request->author;
+                $input['riddle'] = $request->riddle;
+                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
+                $type = $mainAccount->riddlesAdded()->where('id',$request->typeId)->first();
+                if ($type) {
+                    $type->update($input);
+                }
+            } else if ($request->type === 'poem') {
+                $request->validate([
+                    'title' => 'required|string',
+                    'author' => 'nullable|string',
+                    'about' => 'nullable|string',
+                    'sections' => 'required|string',
+                    'published' => 'nullable|date',
+                    'previewFile' => 'nullable|file',
+                    'previewFileType' => 'nullable|string',
+                ]);
+
                 $input['title'] = $request->title;
                 $input['author'] = $request->author;
-                $input['riddle'] = $request->about;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $post->riddles()->create($input); 
+                $input['about'] = $request->about;
+                $input['published'] = Carbon::parse($request->published)->toDateTimeString(); 
+                $type = $mainAccount->poemsAdded()->where('id',$request->typeId)->type();
+                if ($type) {
+                    $type->update($input);
+                } else {
+                    DB::rollback();
+                    return response()->json([
+                        'message' => 'unsuccessful. poem was not found'
+                    ]);
+                }
+                $sections = json_decode($request->sections);
+                foreach ($sections as $key => $section) {
+                    $poemSection = $type->poemSections()->where('id',$section->id)->first();
+                    if($poemSection){
+                        $poemSection->update([
+                            'body' => $section->body
+                        ]);
+                    } else {
+                        DB::rollback();
+                        return response()->json([
+                            'message' => 'unsuccessful. poem section was not found'
+                        ]);
+                    }
+                }
             } else if ($request->type === 'activity') {
+                $request->validate([
+                    'description' => 'nullable|string',
+                    'published' => 'nullable|date',
+                    'previewFile' => 'required|file',
+                    'previewFileType' => 'required|string',
+                ]);
+
                 $input['description'] = $request->description;
-                $type = $post->activities()->create($input);
+                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
+                $type = $mainAccount->activitiesAdded()->where('id',$request->typeId)->furst();
+                if ($type) {
+                    $type->update($input);
+                } else {
+                    DB::rollback();
+                    return response()->json([
+                        'message' => 'unsuccessful. activity was not found'
+                    ]);
+                }
             } else if ($request->type === 'question') {
+                $request->validate([
+                    'question' => 'required|string',
+                    'published' => 'nullable|date',
+                    'previewFile' => 'nullable|file',
+                    'previewFileType' => 'nullable|string',
+                ]);
+
                 $input['question'] = $request->question;
                 $input['state'] = 'PENDING';
-                $type = $post->questions()->create($input);
+                $input['published'] = Carbon::parse($request->published)->toDateTimeString(); 
+                $type = $mainAccount->questionsAdded()->where('id',$request->typeId)->first();
+                if ($type) {
+                    $type->update($input);
+                }  else {
+                    DB::rollback();
+                    return response()->json([
+                        'message' => 'unsuccessful. question was not found'
+                    ]);
+                }
             } 
 
             if ($type) {
+
+                $file = null;
+                if ($request->hasFile('previewFile')) {
+                    $fileDetails = $this->getFileDetails($request->file('previewFile'));
+
+                    $file = $this->accountCreateFile(
+                        $fileDetails['mime'],
+                        $mainAccount, 
+                        $fileDetails,
+                        $type
+                    );
+                }
                 DB::commit();
                 return response()->json([
                     'message' => 'successful',
-                    'post' => $post,
-                    'type' => $type,
+                    'post' => new PostResource($mainPost),
                 ]);
             } else {
                 DB::rollback();
                 return response()->json([
                     'message' => 'unsuccessful',
-                    'post' => $post,
-                    'type' => $type,
+                    'post' => $mainPost,
                 ]);
             }
         }
@@ -120,26 +897,65 @@ class YourEduController extends Controller
         DB::commit();
         return response()->json([
             'message' => 'successful',
-            'post' => $post,
+            'post' => new PostResource($mainPost),
         ]);
-
     }
 
-    public function postEdit(Request $request, $post)
+    public function postDelete($post, $account, $accountId)
     {
+        $mainPost = Post::find($post);
         
+        try {
+                
+            $mainPost->delete();
+            return response()->json([
+                'message' => "successful"
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
+            return response()->json([
+                'message' => "unsuccessful"
+            ]);
+        }
     }
 
-    public function postGet(Request $request, $post)
+    public function postGet(Request $request,$post)
     {
-        
+        $item = null;
+        $item = Post::find($post);
+
+        if (!$item) {
+            return response()->json([
+                'message' => 'unsuccessful. post does not exist.'
+            ]);
+        }
+        return new PostResource($item);
     }
 
-    public function postsGet(Request $request, $post)
+    public function postsGet(Request $request, $account, $accountId)
     {
-        
-    }
+        $mainAccount = null;
+        if ($account === 'learner') {
+            $mainAccount = Learner::find($accountId);
+        } else if ($account === 'parent') {
+            $mainAccount = ParentModel::find($accountId);
+        } else if ($account === 'facilitator') {
+            $mainAccount = Facilitator::find($accountId);
+        } else if ($account === 'school') {
+            $mainAccount = School::find($accountId);            
+        } else if ($account === 'professional') {
+            $mainAccount = Professional::find($accountId);
+        }
 
+        if (!$mainAccount) {
+            return response()->json([
+                'message' => 'unsuccessful. account does not exist.'
+            ]);
+        }
+
+        return PostResource::collection($mainAccount->posts()->latest()->paginate(5));
+    }
+///////////////////////////////////////////////////////////////////
     public function profileUpdate(Request $request, $data)
     {
         $profile = null;
@@ -195,12 +1011,6 @@ class YourEduController extends Controller
                 $mainAccount = School::find($accountId);            
             } else if ($account === 'professional') {
                 $mainAccount = Professional::find($accountId);
-            } else {
-                return response()->json([
-                    'status' => false,
-                    'account' => $account,
-                    'message' => "Account cannot be anything apart from learner, parent, facilitator, professional and school.",
-                ], 422);
             }
     
             if ($mainAccount && $mainAccount->profile) {

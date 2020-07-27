@@ -4,6 +4,7 @@
             <div class="post-top">
                 <div class="icons"
                     @click.prevent="clickFile('image')"
+                    v-if="mainPreviewData.length === 0 "
                 >
                     <font-awesome-icon
                         :icon="['fa','file-image']"
@@ -11,6 +12,7 @@
                 </div>
                 <div class="icons"
                     @click.prevent="clickFile('video')"
+                    v-if="mainPreviewData.length === 0"
                 >
                     <font-awesome-icon
                         :icon="['fa','file-video']"
@@ -18,34 +20,83 @@
                 </div>
                 <div class="icons"
                     @click.prevent="clickFile('audio')"
+                    v-if="mainPreviewData.length === 0"
                 >
                     <font-awesome-icon
                         :icon="['fa','file-audio']"
                     ></font-awesome-icon>
                 </div>
-                <post-button buttonText="post"
-                    @click.prevent="post"
-                ></post-button>
+                <fade-right>
+                    <template slot="transition">
+                        <post-button 
+                            buttonText="post"
+                            @click="createPost"
+                            v-if="computedPost"
+                        ></post-button>
+                    </template>
+                </fade-right>
+            </div>
+            <div class="profiles"
+                v-if="showProfiles"
+            >
+                <div :key="key" v-for="(profile,key) in computedProfiles">
+                    <profile-bar
+                        :name="profile.name"
+                        :type="profile.params.account_type"
+                        :smallType="true"
+                        :routeParams="profile.params"
+                        :navigate="false"
+                        @clickedProfile="clickedProfile"
+                    ></profile-bar>
+                </div>
+                <!-- <div>
+                    <profile-bar
+                        :name="profile.name"
+                        :type="profile.name"
+                        :smallType="true"
+                    ></profile-bar>
+                    <profile-bar
+                        name="john arhin"
+                        type="professional"
+                        :smallType="true"
+                    ></profile-bar>
+                </div> -->
             </div>
             <div class=" post-middle">
                 <div class="post-picture">
-                    <profile-picture
-
-                    ></profile-picture>
+                    <profile-picture>
+                        <template slot="image">
+                            <img :src="computedProfileUrl">
+                        </template>
+                    </profile-picture>
                 </div>
                 <div class="post-textarea">
                     <main-textarea 
                         :textPlaceholder="textPlaceholder"
                         v-model="textareaContent"
                     ></main-textarea>
-                    <file-preview
-                        :show="showPreview"
-                        :file="file"
-                        @removeFile="removeFile"
-                    ></file-preview>
-                    <div class="other-preview">
-                        
-                    </div>
+                    <just-fade>
+                        <template slot="transition" v-if="showPreview">
+                            <file-preview
+                                :show="showPreview"
+                                :file="file"
+                                @removeFile="removeFile"
+                            ></file-preview>
+                        </template>
+                    </just-fade>
+                    <just-fade>
+                        <template slot="transition" v-if="showMainPreview">
+                            <main-preview
+                                @clickedBadge="removePreview"
+                                :file='computedPreviewFile'
+                                :body='computedPreviewBody'
+                                :title='computedPreviewTitle'
+                                :heading='computedPreviewHeading'
+                                :hasFile='hasPreviewFile'
+                            >
+                            </main-preview>
+                        </template>
+                    </just-fade>
                 </div>
                 <div class="error"  v-if="showValidation">
                     <validation-error
@@ -60,24 +111,19 @@
             <div class="post-bottom">
                 <post-button buttonText="B" 
                     @click="formType = 'book'"
-                    :mainActive="activeBook"
                     titleText="post a book"></post-button>
                 <post-button buttonText="R" 
                     @click="formType = 'riddle'"
-                    :mainActive="activeRiddle"
                     titleText="post a riddle"
                 ></post-button>
                 <post-button buttonText="P" 
                     @click="formType = 'poem'"
-                    :mainActive="activePoem"
                     titleText="post a poem"></post-button>
                 <post-button buttonText="Q" 
                     @click="formType = 'question'"
-                    :mainActive="activeQuestion"
                     titleText="post a question"></post-button>
                 <post-button buttonText="A" 
                     @click="formType = 'activity'"
-                    :mainActive="activeActivity"
                     :active="true"
                     titleText="post an activity"></post-button>
             </div>
@@ -101,15 +147,23 @@ import PostButton from '../components/PostButton'
 import FilePreview from '../components/FilePreview'
 import CreatePost from '../components/forms/CreatePost'
 import JustFade from '../components/transitions/JustFade'
+import FadeRight from '../components/transitions/FadeRight'
 import ProfilePicture from '../components/profile/ProfilePicture'
 import MainTextarea from '../components/MainTextarea'
+import MainPreview from '../components/MainPreview'
+import ProfileBar from '../components/profile/ProfileBar'
 import ValidationError from '../components/ValidationError'
+import {files} from '../services/helpers'
+import {mapActions, mapGetters} from 'vuex'
 
     export default {
         components: {
             ValidationError,
+            ProfileBar,
+            MainPreview,
             MainTextarea,
             ProfilePicture,
+            FadeRight,
             JustFade,
             CreatePost,
             FilePreview,
@@ -127,87 +181,209 @@ import ValidationError from '../components/ValidationError'
                 showValidation: false,
                 showPreview: false,
                 showModal: false,
-                activeBook: false,
-                activeActivity: false,
-                activeQuestion: false,
-                activePoem: false,
-                activeRiddle: false,
                 formType: '',
                 files : null,
                 textPlaceholder: "do you have anything in mind?",
+                showMainPreview: false,
+                mainPreviewData: [],
+                hasPreviewFile: false,
+                showProfiles: false,
+                previewType: '',
+                account: '',
+                account_id: null,
             }
         },
         watch: {
-            formType(newValue) {
-                if (newValue === 'book') { 
-                    // this.activeBook = true
-                    // this.activeRiddle = false
-                    // this.activeQuestion = false
-                    // this.activeActivity = false
-                    this.activePoem = false
-                } else if (newValue === 'riddle') {
-                    // this.activeBook = false
-                    // this.activeRiddle = true
-                    // this.activeQuestion = false
-                    // this.activeActivity = false
-                    // this.activePoem = false
-                } else if (newValue === 'poem') {
-                    // this.activeBook = false
-                    // this.activeRiddle = false
-                    // this.activeQuestion = false
-                    // this.activeActivity = false
-                    // this.activePoem = true
-                } else if (newValue === 'riddle') {
-                    // this.activeBook = false
-                    // this.activeRiddle = true
-                    // this.activeQuestion = false
-                    // this.activeActivity = false
-                    // this.activePoem = false
-                } else if (newValue === 'activity') {
-                    // this.activeBook = false
-                    // this.activeRiddle = false
-                    // this.activeQuestion = false
-                    // this.activeActivity = true
-                    // this.activePoem = false
+            formType: {
+                immediate: true,
+                handler(newValue){ //for showing modal of and removing preview of post types
+                    if (newValue && newValue != '') {
+                        this.showModal = true
+                        this.removeFile()
+                        this.removePreview()
+                    }
                 }
-                this.showModal = true
-            }
+            },
         },
         computed: {
+            ...mapGetters(['getProfiles', 'getActiveProfile', 
+                'profile/getActiveProfile']),
+            computedPost(){
+                return this.textareaContent != '' || this.file || 
+                    (this.mainPreviewData && this.mainPreviewData.hasOwnProperty('published')) ?
+                    true : false
+            },
+            computedProfiles(){
+                return this.getProfiles ? this.getProfiles : []
+                // let profilesArray = []
+                // let computedArray = []
+                // if (this.getUser) {
+                //     profilesArray = this['getUser'].owned_profiles
+                // } else {
+                //     return null
+                // }
+
+                // if (profilesArray) {
+                //     computedArray = profilesArray.map(el=>{
+                //         return {
+                //             name: el.profile_name ? el.profile_name : 'no name',
+                //             params: {
+                //                 account: el.account_type,
+                //                 accountId: el.account_id,
+                //             }
+                //         }
+                //     })
+
+                //     return computedArray
+                // } else {
+                    
+                // }
+            },
+            computedProfileUrl(){
+                return this['profile/getActiveProfile'] ? 
+                    this['profile/getActiveProfile'].url : 
+                    this['getActiveProfile'] ?
+                    this['getActiveProfile'].url : ''
+            },
             computedFile() {
                 return typeof this.file === File ? this.file : new File(["foo"], "foo.txt",{
                     type: 'text/plain'
                 }) 
-            }
+            },
+            computedPreviewFile(){
+                return this.mainPreviewData && this.mainPreviewData.file ?
+                    this.mainPreviewData.file[0] : {}
+            }, 
+            computedPreviewTitle(){
+                return this.mainPreviewData ?
+                    this.previewType === 'book' || 
+                    this.previewType === 'poem' ?
+                    this.mainPreviewData.title : '' : ''
+            },       
+            computedPreviewHeading(){
+                return this.mainPreviewData ?
+                    this.previewType : ''
+            },      
+            computedPreviewBody(){
+                if (this.mainPreviewData) {
+                    if (this.previewType === 'book') {
+                        return this.mainPreviewData.about
+                    } else if (this.previewType === 'poem') {
+                        return this.mainPreviewData.sections[0]
+                    } else if (this.previewType === 'question') {
+                        return this.mainPreviewData.question
+                    } else if (this.previewType === 'activity') {
+                        return this.mainPreviewData.description
+                    } else if (this.previewType === 'riddle') {
+                        return this.mainPreviewData.riddle
+                    }
+                }
+            },    
+            computedPreviewAuthor(){ //will have to adjust this when author search and add author
+                return this.mainPreviewData ?
+                    this.mainPreviewData.author : ''
+            }, 
         },
         methods: {
-            clickedCreate(data){
-                console.log(data)
-                this.closeCreatePost()
+            clickedProfile(data){
+                this.account_id = data.account_id
+                this.account = data.account
+                this.showProfiles = false
+                this.createPost()
             },
-            uploadedFiles(data){
-                this.files = data
+            ...mapActions(['profile/createPost']),
+            removePreview(){
+                this.showMainPreview = false
+                this.hasPreviewFile = false
+                this.previewType = ''
+                this.mainPreviewData = []
+            },
+            clickedCreate(data){
+                this.mainPreviewData = data
+                this.previewType = this.formType
+                this.showMainPreview = true
+                this.hasPreviewFile = true
+                this.closeCreatePost()
             },
             closeCreatePost(){
                 this.showModal = false
+                this.formType= ''
             },
             removeFile(){
                 this.file = null
                 this.clickedButton = ''
+                this.showPreview = false
             },
             post(){
-                let fileType = ''
-                if (this.file) {
-                    fileType = this.clickedbutton
+                if (this.computedProfiles.length > 1 && this.$route.name === "home") {
+                    this.showProfiles = true
+                } else {
+                    this.account = this.computedProfiles[0].params.account_type
+                    this.account_id = this.computedProfiles[0].params.account_id
+                    this.createPost()
                 }
-                
-                if (this.videoType.includes(this.file.type)) {
-                    fileType = 'video'
-                } else if (this.audioType.includes(this.file.type)) {
-                    fileType = 'audio'
+            },
+            createPost(){
+                let fileType = ''
+                let formData = new FormData
+
+                // if (!this.showPreview) {
+                if (this.file) {
+                    formData.append('file', this.file)
+                    formData.append('fileType', files.fileType(this.file))
+                } else {
+                    console.log('enters')
+                    if (this.previewType != '') {
+                        formData.append('type', this.previewType)
+                    }
+                    
+                    if (this.previewType === 'book') {
+                        formData.append('title', this.mainPreviewData.title)
+                        formData.append('author', this.mainPreviewData.author)
+                        formData.append('about', this.mainPreviewData.about)
+                        formData.append('published', this.mainPreviewData.published)
+                    } else if (this.previewType === 'poem') {
+                        formData.append('title', this.mainPreviewData.title)
+                        formData.append('author', this.mainPreviewData.author)
+                        formData.append('about', this.mainPreviewData.about)
+                        formData.append('sections', JSON.stringify(this.mainPreviewData.sections))
+                        formData.append('published', this.mainPreviewData.published)
+                    } else if (this.previewType === 'riddle') {
+                        formData.append('author', this.mainPreviewData.author)
+                        formData.append('riddle', this.mainPreviewData.riddle)
+                        formData.append('published', this.mainPreviewData.published)
+                    } else if (this.previewType === 'question') {
+                        formData.append('question', this.mainPreviewData.question)
+                        formData.append('published', this.mainPreviewData.published)
+                    } else if (this.previewType === 'activity') {
+                        formData.append('description', this.mainPreviewData.description)
+                        formData.append('published', this.mainPreviewData.published)
+                    }
+
+                    if (this.mainPreviewData && this.mainPreviewData.file &&
+                        this.mainPreviewData.file.length > 0) {
+                        formData.append('previewFile', this.mainPreviewData.file[0])
+                        formData.append('previewFileType', files.fileType(this.mainPreviewData.file[0]))
+                    }
                 }
 
+                if (this.account_id) {
+                    formData.append('account', this.account)
+                    formData.append('account_id', this.account_id)
+                } else {
+                    formData.append('account', this.$route.params.account)
+                    formData.append('account_id', this.$route.params.accountId)
+                }
+
+                formData.append('content', this.textareaContent)                
                 
+                this['profile/createPost'](formData)
+
+                this.removePreview()
+                this.textareaContent = ''
+                this.file = null
+                this.account = ''
+                this.account_id = ''
             },
             clearValidation(){
                 this.error = ''
@@ -232,7 +408,6 @@ import ValidationError from '../components/ValidationError'
                 this.error = ''
                 this.showValidation = false
                 this.showPreview = true
-                // console.log('file', file)
                 if (this.clickedButton === 'image') {
                     if (this.imageType.includes(file.type)) {
                         this.file = file
@@ -270,6 +445,7 @@ import ValidationError from '../components/ValidationError'
         padding: 10px;
         margin: 10px auto;
         border-right: 2px solid rgb(105, 105, 105);
+        background-color: inherit;
 
         .activity-post{
             position: relative;
@@ -322,6 +498,12 @@ import ValidationError from '../components/ValidationError'
                 button{
                     margin: 10px 5px;
                 }
+            }
+
+            .profiles{
+                position: absolute;
+                width: 200px;
+                right: 0;
             }
         }
     }

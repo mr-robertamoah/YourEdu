@@ -1,9 +1,11 @@
 <template>
     <div>
-        <div class="loading" v-if="authenticatingUser || getLoading">
-            loading...
+        <div class="loading">
+            <sync-loader
+                :loading="computedLoading"
+            ></sync-loader>
         </div>
-        <div v-else>
+        <div v-if="!computedLoading">
             <app-nav
                 :profileAccountId="profileAccountId"
                 :profileAccount="profileAccount"
@@ -24,6 +26,9 @@
                 ></profile-first>
                 <profile-second
                     @editProfile="showEditProfile = true"
+                    @askLoginRegister="askLoginRegister"
+                    :account="profileAccount"
+                    :accountId="profileAccountId"
                 ></profile-second>
             </div>
         </div>
@@ -34,6 +39,21 @@
                     @closeModal="showEditProfile = false"
                     :showForm='showEditProfile'
                 ></edit-profile>
+            </template>
+        </fade-up>
+
+        <fade-up>
+            <template slot="transition" v-if="showLoginRegister">
+                <small-modal
+                    @disappear="showLoginRegister = false"
+                    :showForm='showLoginRegister'
+                    title="welcome to this new community."
+                >
+                    <template slot="other">
+                        <router-link to="/login">login</router-link> or 
+                        <router-link to='/register'>register</router-link> to interact and grow in a positve way.
+                    </template>
+                </small-modal>
             </template>
         </fade-up>
     </div>
@@ -48,12 +68,14 @@ import MainList from '../components/MainList'
 import SmallModal from '../components/SmallModal'
 import ProfileFirst from '../components/profile/ProfileFirst'
 import ProfileSecond from '../components/profile/ProfileSecond'
+import SyncLoader from 'vue-spinner/src/SyncLoader'
 import { mapGetters, mapActions } from "vuex";
 
     export default {
         components: {
             AppNav,
             FadeUp,
+            SyncLoader,
             EditProfile,
             PostButton,
             SmallModal,
@@ -62,13 +84,17 @@ import { mapGetters, mapActions } from "vuex";
             ProfileSecond
         },
         computed: {
-            ...mapGetters(['authenticatingUser','getUser','getLoading','profile/getProfile']),
+            ...mapGetters(['authenticatingUser','getUser','getLoading','profile/getProfile',
+                ]),
             computedItemList(){
                 return ['learner', 'parent', 'facilitator','schools','professionals']
             },
             computedSwitch(){
                 // return true
-                return this.getUser && this.getUser.id === this['profile/getProfile'].user_id ? true : false
+                return this.getUser && this['profile/getProfile'] && this.getUser.id === this['profile/getProfile'].user_id ? true : false
+            },
+            computedLoading(){
+                return this.authenticatingUser || this.getLoading ? true : false
             },
         },
         data() {
@@ -77,8 +103,10 @@ import { mapGetters, mapActions } from "vuex";
                 itemList: [],
                 switchButtonText: 'switch account',
                 showEditProfile: false,
-                profileAccountId: '',
+                profileAccountId: null,
                 profileAccount: '',
+                nextPage: 0,
+                showLoginRegister: '', //for asking guests to login or register
             }
         },
         beforeRouteEnter(to, from, next) {
@@ -86,15 +114,44 @@ import { mapGetters, mapActions } from "vuex";
                 vm.profileAccountId = to.params.accountId
                 vm.profileAccount = to.params.account
                 vm.getData()
+                vm.getPosts()
             });
         },
         beforeRouteUpdate(to, from, next) {
             this.profileAccountId = to.params.accountId
             this.profileAccount = to.params.account
             this.getData()
+            this.getPosts()
             next();
         },
+        mounted () {
+            // Echo.channel(`test`)
+            //     .listen('Test',(e) => {
+            //         console.log(e)
+            //     })
+        },
         methods: {
+            askLoginRegister(){
+                this.showLoginRegister = true
+            },
+            getPosts(){
+                let account = this.profileAccount
+                let accountId = this.profileAccountId
+                // let nextPage= this.nextPage
+
+                // let data = {
+
+                // }
+
+                this['profile/getProfilePosts']({
+                    account, accountId
+                })
+                
+            // console.log('response data',response)
+            //     if (response !== 'unsuccessful') {
+            //         this.nextPage = response
+            //     }
+            },
             editProfile(){
                 this.showEditProfile = true
             },
@@ -118,13 +175,17 @@ import { mapGetters, mapActions } from "vuex";
                     account, accountId
                 })
             },
-            ...mapActions(['profileGet']),
+            ...mapActions(['profileGet','profile/getProfilePosts',]),
         },
     }
 </script>
 
 <style lang="scss" scoped>
     $profile-picture-main-width: 150px;
+
+    .loading{
+        text-align: center;
+    }
 
     .profile-wrapper{
         position: relative;
@@ -136,7 +197,7 @@ import { mapGetters, mapActions } from "vuex";
             display: block;
             z-index: 1000;
             width: 40%;
-            text-align: center;
+            text-align: end;
         }
 
         .activity {

@@ -1,6 +1,12 @@
 <template>
-    <main-modal v-if="showForm" @mainModalDisappear='closeModal'>   
-        <template slot="loading" v-if="computedLoading">
+    <main-modal v-if="showForm" @mainModalDisappear='closeModal'
+         :loading="computedLoading"
+         :alertMessage="computedMsg"
+         :alertError="computedMsg && computedMsg.includes('unsuccessful')"
+         :alertSuccess="computedMsg && !computedMsg.includes('unsuccessful')"
+         @clearAlert="clearMsg"
+    >   
+        <template slot="loading">
             loading...
         </template>
         <template slot="main" >
@@ -109,6 +115,8 @@ import { mapActions, mapGetters } from 'vuex'
                         this.inputOccupation = this.inputOccupation ? this.inputOccupation : this['profile/getProfile'].occupation
                         this.inputAddress = this.inputAddress ? this.inputAddress : this['profile/getProfile'].address
                         this.inputLocation = this.inputLocation ? this.inputLocation : this['profile/getProfile'].location
+                        
+                        this['profile/clearMsg']()
                     }
                 }
             },
@@ -142,7 +150,7 @@ import { mapActions, mapGetters } from 'vuex'
                 return this.mainLoading 
             },
             computedMsg(){
-                return this['profile/getMsg']
+                return this['profile/getMsg'] ? this['profile/getMsg'] : ""
             },
             successMsg(){
                 return this['profile/getMsg'] ? 
@@ -157,6 +165,9 @@ import { mapActions, mapGetters } from 'vuex'
             },
         },
         methods: {
+            clearMsg(){
+                this['profile/clearMsg']()
+            },
             alertDisappear(){
                 this.showAlert = false
                 this.alertMsg = ''

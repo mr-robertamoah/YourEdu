@@ -18,6 +18,10 @@ class Riddle extends Model
         'published' => 'datetime',
     ];
 
+    // protected $touches = [
+    //     'posts'
+    // ];
+
     public function addedby()
     {
         return $this->morphTo();
@@ -36,5 +40,23 @@ class Riddle extends Model
     public function answers()
     {
         return $this->morphMany(Answer::class,'answerfor');
+    }
+
+    public function images()
+    {
+        return $this->morphToMany(Image::class,'imageable')
+        ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function videos()
+    {
+        return $this->morphToMany(Video::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function audios()
+    {
+        return $this->morphToMany(Audio::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 }

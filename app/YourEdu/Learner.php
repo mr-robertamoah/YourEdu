@@ -34,7 +34,7 @@ class Learner extends Model
         return $this->morphOne(Follow::class,'followable');
     }
 
-    public function activities()
+    public function activitiesAdded()
     {
         return $this->morphMany(Activity::class,'activityby');
     }
@@ -193,6 +193,11 @@ class Learner extends Model
     public function flags()
     {
         return $this->morphMany(Flag::class,'flaggable');
+    }
+
+    public function questionsAdded()
+    {
+        return $this->morphMany(Question::class,'questionedby');
     }
 
     public function booksAuthored()

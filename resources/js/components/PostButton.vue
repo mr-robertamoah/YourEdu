@@ -6,7 +6,7 @@
         @click="clicked"
     >
         {{buttonText}}
-        <slot v-if="!buttonText" name="icon"></slot>
+        <slot v-if="!buttonText.length" name="icon"></slot>
     </button>
 </template>
 
@@ -16,7 +16,7 @@
         props: {
             buttonText: {
                 type: String,
-                default: 'click'
+                default: ''
             },
             buttonStyle: {
                 type: String,

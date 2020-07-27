@@ -1,11 +1,11 @@
 <template>
     <div>
-        <post-create></post-create>
+        <comment-single></comment-single>
     </div>
 </template>
 
 <script>
-import PostCreate from '../components/PostCreate'
+// import CommentSingle from '../components/CommentSingle'
 
     export default {
         data() {
@@ -16,7 +16,7 @@ import PostCreate from '../components/PostCreate'
 
         },
         components: {
-            PostCreate
+            // CommentSingle
         },
         methods: {
             getContent(data) {

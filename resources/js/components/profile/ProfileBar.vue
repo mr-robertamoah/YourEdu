@@ -1,9 +1,11 @@
 <template>
     <div class="profile-bar"
-        @click="goToRoute">
+        @click="goToRoute"
+        :class="{small:smallType}"
+    >
         <div class="profile">
             <profile-picture
-                v-if="src"
+                v-if="src.length > 0"
             >
                 <template slot="image">
                     <img :src="src" alt="profile picture">
@@ -31,6 +33,10 @@ import ProfilePicture from './ProfilePicture'
                 type: String,
                 default: 'profile name'
             },
+            smallType: {
+                type: Boolean,
+                default: false
+            },
             type: {
                 type: String,
                 default: 'account type'
@@ -44,15 +50,29 @@ import ProfilePicture from './ProfilePicture'
                 default(){
                     return {}
                 }
+            },
+            navigate: {
+                type: Boolean,
+                default: true
             }
         },
         methods: {
             goToRoute() {
-                let routeObject = {
-                        name: this.routeName,
-                        params: this.routeParams,
+                if (this.navigate) {
+                    let routeObject = {
+                            name: this.routeName,
+                            params: {
+                                account: this.routeParams.account, 
+                                accountId: `${this.routeParams.accountId}`
+                            },
+                    }
+                    this.$router.push(routeObject)
+                } else {
+                    this.$emit('clickedProfile',{
+                        account: this.routeParams.account, 
+                        accountId: this.routeParams.accountId
+                    })
                 }
-                this.$router.push(routeObject)
             }
         },
         computed: {
@@ -112,6 +132,26 @@ import ProfilePicture from './ProfilePicture'
             text-align: center;
             white-space: nowrap;
             text-transform: capitalize;
+        }
+    }
+
+    .small{
+        padding: 5px;
+        width: 100%;
+
+        .profile{
+            width: 0;
+            height: 0;
+        }
+        
+        .name{
+            font-size: 11px;
+            width: 60%;
+        }
+
+        .type{
+            font-size: 10px;
+            width: 35%;
         }
     }
 

@@ -5,6 +5,7 @@ import Dashboard from '../views/Dashboard.vue'
 import Welcome from "../views/Welcome.vue";
 import About from "../views/About.vue";
 import Profile from "../views/Profile.vue";
+import ViewComments from "../views/ViewComments.vue";
 import CatchAll from "../views/CatchAll.vue";
 
 import Testing from "../views/Testing.vue";
@@ -47,6 +48,12 @@ const routes =  [
         meta:{
             requiresLogin:false  //change to true
         }
+    },
+    {
+        name: 'comments',
+        path: '/comment/:commentId/comments',
+        component: ViewComments,
+        props: true
     },
     {
         name: 'about',

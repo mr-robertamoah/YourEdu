@@ -17,7 +17,7 @@ class CreateRiddlesTable extends Migration
             $table->id();
             $table->nullableMorphs('addedby'); // learner facilitator professional parent school
             $table->nullableMorphs('authoredby'); // learner facilitator professional parent
-            $table->morphs('riddleable'); // post lesson
+            $table->nullableMorphs('riddleable'); // post lesson
             // $table->string('title'); 
             $table->string('author')->nullable();
             $table->text('riddle')->nullable();

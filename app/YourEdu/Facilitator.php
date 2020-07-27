@@ -129,7 +129,7 @@ class Facilitator extends Model
         return $this->morphMany(Lesson::class,'lessonable');
     }
 
-    public function activities()
+    public function activitiesAdded ()
     {
         return $this->morphMany(Activity::class,'activityby');
     }
@@ -294,6 +294,11 @@ class Facilitator extends Model
     public function booksAdded()
     {
         return $this->morphMany(Book::class,'addedby');
+    }
+
+    public function questionsAdded()
+    {
+        return $this->morphMany(Question::class,'questionedby');
     }
 
     public function readsJoined()

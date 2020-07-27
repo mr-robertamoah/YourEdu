@@ -64,7 +64,7 @@ class Professional extends Model
         return $this->morphOne(Verification::class,'verifiable');
     }
 
-    public function activities()
+    public function activitiesAdded()
     {
         return $this->morphMany(Activity::class,'activityby');
     }
@@ -256,6 +256,11 @@ class Professional extends Model
     public function permissions()
     {
         return $this->morphMany(Permission::class,'permitting');
+    }
+
+    public function questionsAdded()
+    {
+        return $this->morphMany(Question::class,'questionedby');
     }
 
     public function booksAuthored()

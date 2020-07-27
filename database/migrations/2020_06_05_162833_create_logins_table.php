@@ -16,6 +16,8 @@ class CreateLoginsTable extends Migration
         Schema::create('logins', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
+            $table->enum('type',['LOGIN', 'RELOAD'])->nullable();
+            $table->string('url')->nullable();
             $table->enum('as',['PARENT','LEARNER','ADMIN','PROFESSIONAL','FACILITATOR'])->nullable();
             $table->timestamps();
 

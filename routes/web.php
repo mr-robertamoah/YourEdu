@@ -11,6 +11,12 @@
 |
 */
 
+use App\Events\Test;
+
+// Route::get('/broadcast', function ()
+// {
+//     broadcast(new Test) ;
+// });
 Route::get('/{any}', 'Api\YourEduController@index')->where('any', '.*');
 
 // Route::get('/', function () {

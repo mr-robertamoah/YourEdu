@@ -17,7 +17,7 @@ class CreateBooksTable extends Migration
             $table->id();
             $table->nullableMorphs('addedby'); // learner facilitator professional parent
             $table->nullableMorphs('authoredby'); // learner facilitator professional school parent
-            $table->morphs('bookable'); // post lesson
+            $table->nullableMorphs('bookable'); // post lesson
             $table->string('title'); 
             $table->string('author')->nullable();
             $table->text('about')->nullable();

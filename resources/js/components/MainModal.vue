@@ -15,7 +15,9 @@
             </template>
             <fade-right>
                 <template slot="transition"  v-if="showAlert">
-                    <div class="alert">
+                    <div class="alert"
+                        :class="{alertError:alertError,alertSuccess:alertSuccess}"
+                    >
                         {{alertMessage}}
                     </div>
                 </template>
@@ -40,6 +42,14 @@ import FadeRight from "./transitions/FadeRight";
                 type: String,
                 default: ''
             },
+            alertError: {
+                type: Boolean,
+                default: false
+            },
+            alertSuccess: {
+                type: Boolean,
+                default: false
+            },
         },
         components: {
             FadeRight,
@@ -57,14 +67,21 @@ import FadeRight from "./transitions/FadeRight";
                         this.$emit('mainModalAppear')
                     }
                 }
+            },
+            alertMessage: {
+                immediate:true,
+                handler(newValue){
+                    if(this.alertMessage.length > 0){
+                        setTimeout(() => {
+                            this.$emit('clearAlert') 
+                        }, 2000);
+                    }
+                }
             }
         },
         computed: {
             showAlert() {
-                if(this.alertMessage,length){
-                    setTimeout(() => {
-                        this.alertMessage=''
-                    }, 2000);
+                if(this.alertMessage.length > 0){
                     return true
                 } else {
                     return false
@@ -140,6 +157,29 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 justify-content: center;
                 align-items: center;
                 min-height: 75%;
+            }
+
+            .alert{
+                width: 100%;
+                text-align: center;
+                padding: 10px;
+                background-color: rgba(8, 170, 245, 0.486);
+                color: rgba(8, 170, 245,1);
+                border: 2px solid rgba(8, 170, 245,1);
+                position: absolute;
+                top: 45%;
+            }
+
+            .alertError{
+                color: rgba(201, 6, 6, 0.9);
+                background-color: rgba(201, 6, 6, 0.4);
+                border: 2px solid rgba(201, 6, 6, 0.4);
+            }
+
+            .alertSuccess{
+                color: rgba(0, 128, 0, 0.9);
+                background-color: rgba(0, 128, 0, 0.4);
+                border: 2px solid rgba(0, 128, 0, 0.4);
             }
         }
     }

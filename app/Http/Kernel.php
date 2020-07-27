@@ -2,8 +2,12 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\CheckAccountMiddleware;
+use App\Http\Middleware\CheckItemMiddleware;
 use App\Http\Middleware\OwnAccountMiddleware;
-use App\Http\Middleware\PostMiddleware;
+use App\Http\Middleware\OwnCommentMiddleware;
+use App\Http\Middleware\OwnLikeMiddleware;
+use App\Http\Middleware\OwnPostMiddleware;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
@@ -63,8 +67,12 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'ownaccount' => OwnAccountMiddleware::class,
-        'ownpost' => PostMiddleware::class,
+        
+        'OwnAccount' => OwnAccountMiddleware::class,
+        'OwnPost' => OwnPostMiddleware::class,
+        'OwnComment' => OwnCommentMiddleware::class,
+        'CheckAccount' => CheckAccountMiddleware::class,
+        'CheckItem' => CheckItemMiddleware::class,
     ];
 
     /**

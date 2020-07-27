@@ -359,5 +359,15 @@ class School extends Model
         return $this->morphMany(Character::class,'characterable');
     }
 
+    public function questionsOwned()
+    {
+        return $this->morphMany(Question::class,'owned');
+    }
+
+    public function activitiesOwned()
+    {
+        return $this->morphMany(Activity::class,'owned');
+    }
+
     
 }

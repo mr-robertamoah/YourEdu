@@ -34,7 +34,7 @@ class ParentModel extends Model
         return $this->morphOne(Verification::class,'verifiable');
     }
 
-    public function activities()
+    public function activitiesAdded()
     {
         return $this->morphMany(Activity::class,'activityby');
     }
@@ -182,6 +182,11 @@ class ParentModel extends Model
         return $this->morphMany(Riddle::class,'addedby');
     }
 
+    public function questionsAdded()
+    {
+        return $this->morphMany(Question::class,'questionedby');
+    }
+
     public function riddlesAuthored()
     {
         return $this->morphMany(Riddle::class,'authoredby');
@@ -205,5 +210,25 @@ class ParentModel extends Model
     public function members()
     {
         return $this->morphMany(Member::class,'memberable');
+    }
+    
+    public function addedImages()
+    {
+        return $this->morphMany(Image::class,'addedby');
+    }
+    
+    public function addedFiles()
+    {
+        return $this->morphMany(File::class,'addedby');
+    }
+    
+    public function addedVideos()
+    {
+        return $this->morphMany(Video::class,'addedby');
+    }
+    
+    public function addedAudio()
+    {
+        return $this->morphMany(Audio::class,'addedby');
     }
 }

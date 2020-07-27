@@ -17,7 +17,7 @@ class CreateCommentsTable extends Migration
             $table->id();
             $table->string('body');
             $table->morphs('commentedby'); // facilitator learner parent school professional
-            $table->morphs('commentable'); // summary read school class lesson post request admission ban flag keyword word expression character
+            $table->nullableMorphs('commentable'); // summary read school class lesson post request admission ban flag keyword word expression character
             $table->timestamps();
         });
     }

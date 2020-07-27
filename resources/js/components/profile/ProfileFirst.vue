@@ -66,21 +66,27 @@ import { mapGetters } from 'vuex'
         computed: {
             ...mapGetters(['profile/getProfile','profile/getAccount']),
             computedName(){
-                return this['profile/getProfile'].name ? this['profile/getProfile'].name :
-                    this['profile/getProfile'].owner_name ? this['profile/getProfile'].owner_name :
+                return this['profile/getProfile'] && this['profile/getProfile'].name ? 
+                    this['profile/getProfile'].name :
+                    this['profile/getProfile'] && this['profile/getProfile'].owner_name ? 
+                    this['profile/getProfile'].owner_name :
                     this['profile/getProfile'].user_full_name
             },
             computedUsername(){
-                return this['profile/getProfile'].username
+                return this['profile/getProfile'] ? 
+                    this['profile/getProfile'].username : ''
             },
             computedAccount(){
-                return this['profile/getAccount']
+                return this['profile/getAccount'] ? 
+                    this['profile/getAccount'] : ''
             },
             computedFollowings(){
-                return this['profile/getProfile'].followings
+                return this['profile/getProfile'] ? 
+                    this['profile/getProfile'].followings : 0
             },
             computedFollows(){
-                return this['profile/getProfile'].follows
+                return this['profile/getProfile'] ? 
+                    this['profile/getProfile'].follows : 0
             },
             computedVerification(){
                 return typeof this['profile/getProfile'].owner != undefined && this['profile/getProfile'].owner.verification.status === 'VERIFIED' ?
@@ -90,7 +96,8 @@ import { mapGetters } from 'vuex'
                 return dates.dateReadable(this['profile/getProfile'].created_at)
             },
             computedUrl(){
-                return this['profile/getProfile'].url
+                return this['profile/getProfile'] ? 
+                    this['profile/getProfile'].url : ''
             }
         },
     }

@@ -67,10 +67,10 @@ return [
     ],
 
     'links' => [
-        public_path('assets/videos') => storage_path('app/vidoes'),
-        public_path('assets/images') => storage_path('app/images'),
-        public_path('assets/audio') => storage_path('app/audio'),
-        public_path('assets/files') => storage_path('app/files'),
+        public_path('assets\videos') => storage_path('app/vidoes'),
+        public_path('assets\images') => storage_path('app/images'),
+        public_path('assets\audio') => storage_path('app/audio'),
+        public_path('assets\files') => storage_path('app/files'),
         public_path('storage') => storage_path('app/public'),
     ],
 

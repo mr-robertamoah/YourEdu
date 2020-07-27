@@ -11,10 +11,12 @@ import ApiService from './services/api.service'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, faTrash, 
         faBan, faSearch, faUserCircle, faExclamationCircle, faEdit,
-        faFileImage,faFileVideo,faFileAudio, faPlus} from "@fortawesome/free-solid-svg-icons"
+        faFileImage,faFileVideo,faFileAudio, faPlus, faMinus, faThumbsUp, faFlag,
+        faChevronDown, faComment, faChevronLeft} from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { BootstrapVue } from 'bootstrap-vue'
 import AppNav from './components/Nav.vue'
+import VuePageTransition from 'vue-page-transition'
 
 
 require('./bootstrap');
@@ -24,10 +26,12 @@ require("flatpickr");
 window.Vue = require('vue');
 // Install BootstrapVue
 Vue.use(BootstrapVue)
+Vue.use(VuePageTransition)
 
 library.add(faUserCircle, faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, 
     faTrash, faBan, faSearch, faExclamationCircle, faEdit,faFileAudio,
-    faFileImage,faFileVideo, faPlus);
+    faFileImage,faFileVideo, faPlus, faMinus,faThumbsUp,faFlag, faChevronDown,
+    faComment, faChevronLeft);
 
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
@@ -47,6 +51,8 @@ Vue.component('app-nav', AppNav);
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default))
 
 Vue.component('example-component', require('./components/ExampleComponent.vue').default);
+Vue.component('comment-single', require('./components/CommentSingle.vue').default);
+// Vue.component('view-comments', require('./components/ViewComments.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to

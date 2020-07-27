@@ -14,6 +14,10 @@ class Book extends Model
         'title', 'author', 'about', 'published'
     ];
 
+    // protected $touches = [
+    //     'bookable'
+    // ];
+
     protected $casts = [
         'published' => 'datetime',
     ];
@@ -38,10 +42,10 @@ class Book extends Model
         return $this->morphOne(Price::class,'priceable');
     }
 
-    public function posts()
-    {
-        return $this->morphMany(Post::class,'postable');
-    }
+    // public function posts()
+    // {
+    //     return $this->morphMany(Post::class,'postable');
+    // }
 
     public function reads()
     {
@@ -50,22 +54,25 @@ class Book extends Model
 
     public function files()
     {
-        return $this->morphToMany(File::class,'fileable','fileables');
+        return $this->morphToMany(File::class,'fileable');
     }
 
     public function audios()
     {
-        return $this->morphToMany(Audio::class,'audioable','audioables');
+        return $this->morphToMany(Audio::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function videos()
     {
-        return $this->morphToMany(Video::class,'videoable','videoables');
+        return $this->morphToMany(Video::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function images()
     {
-        return $this->morphToMany(Image::class,'imageable','imageables');
+        return $this->morphToMany(Image::class,'imageable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
 }

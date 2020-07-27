@@ -98,12 +98,13 @@ $buttonColor : rgba(2, 104, 90, .6);
         }
 
         .form-control{
-            min-width: 90%;
+            // min-width: 90%;
             margin: 0 !important;
         }
         
         .form-control-append{
             width: 10%;
+            margin-right: 5px;
             display: flex;
             justify-content: center;
             align-items: center;

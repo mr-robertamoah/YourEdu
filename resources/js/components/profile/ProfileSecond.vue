@@ -74,9 +74,29 @@
                 </group-section>
             </div>
             <div class="activity" v-if="activitySection || activateActivity">
-                <post-create></post-create>
-                <post-show></post-show>
-                <post-none></post-none>
+                <div class="spinner">
+                    <sync-loader 
+                        :loading="computedPostCreating"
+                    ></sync-loader>
+                </div>
+                <post-create
+                    v-if="computedPostCreate"
+                ></post-create>
+                <template v-if="computedPosts">
+                    <post-show
+                        @askLoginRegister="askLoginRegister"
+                        :key="key"
+                        v-for="(post,key) in computedPosts"
+                        :post="post"
+                    ></post-show>
+                </template>
+                <post-none v-else></post-none>
+                <div class="none" v-if="complete">
+                    no more posts
+                </div>
+                <infinite-loading
+                    @infinite="infiniteHandler"
+                ></infinite-loading>
             </div>
         </div>
     </div>
@@ -85,6 +105,7 @@
 <script>
 import PostButton from '../PostButton'
 import Badge from '../Badge'
+import InfiniteLoading from 'vue-infinite-loading'
 import DetailShowcase from './DetailShowcase'
 import ProfilePicture from './ProfilePicture'
 import ProfileDetail from './ProfileDetail'
@@ -92,26 +113,39 @@ import MainTextarea from '../MainTextarea'
 import FadeLeft from '../transitions/FadeLeft'
 import BlackWhiteBadge from '../BlackWhiteBadge'
 import PostCreate from '../PostCreate'
+import SyncLoader from 'vue-spinner/src/SyncLoader'
 import PostShow from '../PostShow'
 import PostNone from '../PostNone'
 import GroupSection from './GroupSection'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 
     export default {
         name: 'SecondSection',
         components: {
+            InfiniteLoading,
             Badge,
             DetailShowcase,
             PostButton,
             GroupSection,
             PostNone,
             PostShow,
+            SyncLoader,
             PostCreate,
             BlackWhiteBadge,
             FadeLeft,
             MainTextarea,
             ProfileDetail,
             ProfilePicture,
+        },
+        props: {
+            account: {
+                type: String,
+                default: ''
+            },
+            accountId: {
+                type: String,
+                default: ''
+            },
         },
         data() {
             return {
@@ -121,24 +155,35 @@ import { mapGetters } from 'vuex'
                 activateActivity: false,
                 activitySection: false,
                 showEdit: false,
+                complete: false,
             }
         },
         computed: {
-            ...mapGetters(['profile/getProfile','profile/getAccount',]),
+            computedPosts(){
+                return this['profile/getPosts'] && this['profile/getPosts'].length > 0 ? 
+                    this['profile/getPosts'] : null
+            },
+            ...mapGetters(['profile/getProfile','profile/getAccount','getUserId',
+                'profile/getMsg','profile/getPostingStatus','profile/getPosts',
+                'profile/getLoadingStatus','profile/getPostsDone','profile/getNextPage']),
             computedAbout() {
-                return this['profile/getProfile'].about ? this['profile/getProfile'].about : 'nothing yet'
+                return this['profile/getProfile'] && this['profile/getProfile'].about ?
+                    this['profile/getProfile'].about : 'nothing yet'
             },
             computedCompany() {
-                return this['profile/getProfile'].company ? this['profile/getProfile'].company : 'nothing yet'
+                return this['profile/getProfile'] && this['profile/getProfile'].company ? 
+                    this['profile/getProfile'].company : 'nothing yet'
             },
             computedInterests() {
-                return this['profile/getProfile'].interests ? this['profile/getProfile'].interests : 'nothing yet'
+                return this['profile/getProfile'] && this['profile/getProfile'].interests ?
+                    this['profile/getProfile'].interests : 'nothing yet'
             },
             computedOccupation() {
-                return this['profile/getProfile'].occupation ? this['profile/getProfile'].occupation : 'nothing yet'
+                return this['profile/getProfile'] && this['profile/getProfile'].occupation ?
+                    this['profile/getProfile'].occupation : 'nothing yet'
             },
             computedLocation() {
-                return this['profile/getProfile'].hasOwnProperty('location') &&
+                return this['profile/getProfile'] && this['profile/getProfile'].hasOwnProperty('location') &&
                     this['profile/getProfile'].location != null ? 
                     this['profile/getProfile'].location : 'nothing yet'
             },
@@ -182,9 +227,36 @@ import { mapGetters } from 'vuex'
                     this['profile/getProfile'].extracurriculums != null ? 
                     this['profile/getProfile'].extracurriculums : []
             },
-
+            computedPostCreate(){
+                return this['profile/getPostingStatus'] ? false : 
+                    this.getUserId &&  this.getUserId === this['profile/getProfile'].user_id ?
+                    true : false
+            },
+            computedPostCreating(){
+                return this['profile/getPostingStatus']
+            },
         },
         methods: {
+            askLoginRegister(){
+                this.$emit('askLoginRegister','profileSsecond')
+            },
+            infiniteHandler($state){
+                // console.log('at infinite')
+                if (!this['profile/getPostsDone']) {
+                    let data = {
+                        account: this.account,
+                        accountId: this.accountId,
+                        nextPage: this['profile/getNextPage']
+                    }
+                    this['profile/getProfilePosts'](data)
+                    // $state.loaded()
+                    this.complete = false
+                } else {
+                    $state.complete()
+                    this.complete = true
+                }
+            },
+            ...mapActions(['profile/getProfilePosts']),
             editProfile(){
                 this.$emit('editProfile')
             },
@@ -228,7 +300,7 @@ import { mapGetters } from 'vuex'
                     }
                         
                 }
-            }
+            },
         },
         created () {
             if (window.innerWidth <= 1100) {
@@ -303,6 +375,12 @@ import { mapGetters } from 'vuex'
                 margin: 10px 0;
                 min-height: 50vh;
                 padding: 10px
+            }
+
+            .activity{
+                .spinner{
+                    text-align: center;
+                }
             }
         }
     }

@@ -93,4 +93,34 @@ class Admin extends Model
     {
         return $this->morphMany(Discussion::class,'markedby');
     }
+
+    public function questionsAdded()
+    {
+        return $this->morphMany(Question::class,'questionedby');
+    }
+
+    public function activitiesAdded()
+    {
+        return $this->morphMany(Activity::class,'activityby');
+    }
+    
+    public function addedImages()
+    {
+        return $this->morphMany(Image::class,'addedby');
+    }
+    
+    public function addedFiles()
+    {
+        return $this->morphMany(File::class,'addedby');
+    }
+    
+    public function addedVideos()
+    {
+        return $this->morphMany(Video::class,'addedby');
+    }
+    
+    public function addedAudio()
+    {
+        return $this->morphMany(Audio::class,'addedby');
+    }
 }

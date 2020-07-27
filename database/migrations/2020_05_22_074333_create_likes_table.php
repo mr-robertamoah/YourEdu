@@ -15,10 +15,14 @@ class CreateLikesTable extends Migration
     {
         Schema::create('likes', function (Blueprint $table) {
             $table->id();
-            $table->morphs('likedby');//the entities which can like
-            $table->morphs('likeable'); //things that will be liked keyword
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->nullableMorphs('likedby');//the entities which can like
+            $table->nullableMorphs('likeable'); //things that will be liked keyword
             $table->tinyInteger('level')->default(1);
             $table->timestamps();
+
+
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

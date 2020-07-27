@@ -91,8 +91,17 @@ $input-color: rgba(22, 233, 205, 1);
                     top: 0;
                     right: 0;
                     font-size: 16px;
-                    padding: 5px;
                     color: $input-color;
+                    cursor: pointer;
+                }
+
+                .minus{
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    margin-top: 25px;
+                    font-size: 16px;
+                    color: red;
                     cursor: pointer;
                 }
 

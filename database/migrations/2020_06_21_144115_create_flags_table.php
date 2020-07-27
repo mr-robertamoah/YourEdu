@@ -17,7 +17,7 @@ class CreateFlagsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->morphs('flaggedby'); // parent learner facilitator professional
-            $table->morphs('flaggable'); // post course lesson facilitator professional school learner extracurriculum
+            $table->morphs('flaggable'); // comment post course lesson facilitator professional school learner extracurriculum
             $table->enum('status',['PENDING','APPROVED','CANCELLED'])->default('PENDING');
             $table->softDeletes();
             $table->timestamps();

@@ -9,13 +9,15 @@
     "license": "MIT",
     "require": {
         "php": "^7.2.5",
+        "beyondcode/laravel-websockets": "^1.4",
         "fideloper/proxy": "^4.2",
-        "laravel/cashier": "^11.2",
         "guzzlehttp/guzzle": "^6.3",
+        "laravel/cashier": "^11.2",
         "laravel/framework": "^7.0",
         "laravel/passport": "^8.4",
         "laravel/tinker": "^2.0",
-        "mtolhuys/laravel-schematics": "^0.10.3"
+        "mtolhuys/laravel-schematics": "^0.10.3",
+        "pusher/pusher-php-server": "~3.0"
     },
     "require-dev": {
         "facade/ignition": "^2.0",

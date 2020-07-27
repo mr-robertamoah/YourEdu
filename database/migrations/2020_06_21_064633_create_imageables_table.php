@@ -16,10 +16,8 @@ class CreateImageablesTable extends Migration
         Schema::create('imageables', function (Blueprint $table) {
             $table->unsignedBigInteger('image_id');
             $table->morphs('imageable'); //question answer profile comment lesson post activity
-            $table->enum('state',['PUBLIC','PRIVATE'])->nullable();
-            $table->softDeletes();
+            $table->enum('state',['PUBLIC','PRIVATE'])->default('PUBLIC');
             $table->timestamps();
-
 
             $table->foreign('image_id')->references('id')->on('images')->cascadeOnDelete();
         });

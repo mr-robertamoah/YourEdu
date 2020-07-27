@@ -9,6 +9,19 @@ class File extends Model
 {
     //
     use SoftDeletes;
+    
+    protected $fillable = [
+        'path', 'mime', 'size',
+    ];
+    
+    protected $appends = [
+        'url',
+    ];
+
+    public function getUrlAttribute()
+    {
+        return asset($this->path);
+    }
 
     public function ownedby()
     {
@@ -22,52 +35,62 @@ class File extends Model
 
     public function questions()
     {
-        return $this->morphedByMany(Question::class,'fileable','fileables'); 
+        return $this->morphedByMany(Question::class,'fileable')
+        ->withPivot(['state'])->withTimestamps(); 
     }
 
     public function answers()
     {
-        return $this->morphedByMany(Answer::class,'fileable','fileables');
+        return $this->morphedByMany(Answer::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function profiles()
     {
-        return $this->morphedByMany(Profile::class,'fileable','fileables');
+        return $this->morphedByMany(Profile::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function posts()
     {
-        return $this->morphedByMany(Post::class,'fileable','fileables');
+        return $this->morphedByMany(Post::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function comments()
     {
-        return $this->morphedByMany(Comment::class,'fileable','fileables');
+        return $this->morphedByMany(Comment::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'fileable','fileables');
+        return $this->morphedByMany(Lesson::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function lessonRequirements()
     {
-        return $this->morphedByMany(LessonRequirement::class,'fileable','fileables');
+        return $this->morphedByMany(LessonRequirement::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function books()
     {
-        return $this->morphedByMany(Book::class,'fileable','fileables');
+        return $this->morphedByMany(Book::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function helps()
     {
-        return $this->morphedByMany(Help::class,'fileable','fileables');
+        return $this->morphedByMany(Help::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function contribution()
     {
-        return $this->morphedByMany(Contribution::class,'fileable','fileables');
+        return $this->morphedByMany(Contribution::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function permissions()

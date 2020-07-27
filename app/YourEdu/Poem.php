@@ -14,6 +14,10 @@ class Poem extends Model
         'title', 'author', 'about', 'published'
     ];
 
+    // protected $touches = [
+    //     'posts'
+    // ];
+
     protected $casts = [
         'published' => 'datetime'
     ];
@@ -36,5 +40,23 @@ class Poem extends Model
     public function poemSections()
     {
         return $this->hasMany(PoemSection::class);
+    }
+
+    public function images()
+    {
+        return $this->morphToMany(Image::class,'imageable')
+        ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function videos()
+    {
+        return $this->morphToMany(Video::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function audios()
+    {
+        return $this->morphToMany(Audio::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 }

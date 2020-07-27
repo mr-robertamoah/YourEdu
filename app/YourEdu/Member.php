@@ -19,4 +19,14 @@ class Member extends Model
     {
         return $this->morphMany(Payment::class,'paidby');
     }
+
+    public function questionsAdded()
+    {
+        return $this->morphMany(Question::class,'questionedby');
+    }
+
+    public function activitiesAdded()
+    {
+        return $this->morphMany(Activity::class,'activityby');
+    }
 }

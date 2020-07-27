@@ -15,7 +15,7 @@ class CreateVideosTable extends Migration
     {
         Schema::create('videos', function (Blueprint $table) {
             $table->id();
-            $table->morphs('ownedby'); //facilitator learner school professional collaboration
+            $table->nullableMorphs('ownedby'); //facilitator learner school professional collaboration
             $table->morphs('addedby'); //facilitator learner school professional 
             $table->string('path');
             $table->string('mime');

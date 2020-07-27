@@ -44,6 +44,7 @@
                             v-if="dashboardRoutePath" 
                             to="/dashboard">Dashboard</router-link>
                         <div class="a-profile"
+                            v-if="computedProfiles"
                             @click.prevent="showProfiles = !showProfiles"
                         >Profiles</div>
                     </div>
@@ -108,8 +109,12 @@ import { mapActions, mapGetters } from "vuex";
             ...mapGetters(['getUser']),
             computedProfiles(){
                 let profilesArray = []
-                profilesArray = this['getUser'].owned_profiles
                 let computedArray = []
+                if (this.getUser) {
+                    profilesArray = this['getUser'].owned_profiles
+                } else {
+                    return null
+                }
                         
                 // console.log(profilesArray)
 
@@ -125,7 +130,7 @@ import { mapActions, mapGetters } from "vuex";
                         }
                     })
                         
-                return computedArray
+                    return computedArray
                 } else {
                     return null
                 }

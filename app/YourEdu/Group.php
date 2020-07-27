@@ -89,4 +89,14 @@ class Group extends Model
     {
         return $this->morphMany(Discussion::class,'discussionable');
     }
+
+    public function questionsOwned()
+    {
+        return $this->morphMany(Question::class,'owned');
+    }
+
+    public function activitiesOwned()
+    {
+        return $this->morphMany(Activity::class,'owned');
+    }
 }

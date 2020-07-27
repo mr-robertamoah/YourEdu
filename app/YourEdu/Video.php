@@ -9,6 +9,19 @@ class Video extends Model
 {
     //
     use SoftDeletes;
+    
+    protected $fillable = [
+        'path', 'mime', 'size',
+    ];
+    
+    protected $appends = [
+        'url',
+    ];
+
+    public function getUrlAttribute()
+    {
+        return asset($this->path);
+    }
 
     public function ownedby()
     {
@@ -22,57 +35,68 @@ class Video extends Model
 
     public function questions()
     {
-        return $this->morphedByMany(Question::class,'imageable','imageables');
+        return $this->morphedByMany(Question::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function answers()
     {
-        return $this->morphedByMany(Answer::class,'videoable','videoables');
+        return $this->morphedByMany(Answer::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function profiles()
     {
-        return $this->morphedByMany(Profile::class,'videoable','videoables');
+        return $this->morphedByMany(Profile::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function posts()
     {
-        return $this->morphedByMany(Post::class,'videoable','videoables');
+        return $this->morphedByMany(Post::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function comments()
     {
-        return $this->morphedByMany(Comment::class,'videoable','videoables');
+        return $this->morphedByMany(Comment::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function helps()
     {
-        return $this->morphedByMany(Help::class,'videoable','videoables');
+        return $this->morphedByMany(Help::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function activitiess()
     {
-        return $this->morphedByMany(Activity::class,'videoable','videoables');
+        return $this->morphedByMany(Activity::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'videoable','videoables');
+        return $this->morphedByMany(Lesson::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function lessonRequirements()
     {
-        return $this->morphedByMany(LessonRequirement::class,'videoable','videoables');
+        return $this->morphedByMany(LessonRequirement::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function books()
     {
-        return $this->morphedByMany(Book::class,'videoable','videoables');
+        return $this->morphedByMany(Book::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function contribution()
     {
-        return $this->morphedByMany(Contribution::class,'videoable','videoables');
+        return $this->morphedByMany(Contribution::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function permissions()

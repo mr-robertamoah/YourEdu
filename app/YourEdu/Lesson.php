@@ -110,22 +110,26 @@ class Lesson extends Model
 
     public function files()
     {
-        return $this->morphToMany(File::class,'fileable','fileables');
+        return $this->morphToMany(File::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function audios()
     {
-        return $this->morphToMany(Audio::class,'audioable','audioables');
+        return $this->morphToMany(Audio::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function videos()
     {
-        return $this->morphToMany(Video::class,'videoable','videoables');
+        return $this->morphToMany(Video::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function images()
     {
-        return $this->morphToMany(Image::class,'imageable','imageables');
+        return $this->morphToMany(Image::class,'imageable')
+        ->withPivot(['state'])->withTimestamps();
     }
 
     public function comments()

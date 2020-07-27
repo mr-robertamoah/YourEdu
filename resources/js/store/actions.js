@@ -100,6 +100,7 @@ const actions = {
         }catch (e){
             TokenService.removeToken()
             // router.push('/login')
+            console.log(e)
             if (e && e.response.config.url.includes('api/user')) {
                 commit('RELOAD_FAILURE',e.response.data.message)
             }
