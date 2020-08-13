@@ -5,12 +5,14 @@ namespace App;
 use App\YourEdu\Account;
 use App\YourEdu\Admin;
 use App\YourEdu\Facilitator;
+use App\YourEdu\Follow;
 use App\YourEdu\Learner;
 use App\YourEdu\Login;
 use App\YourEdu\ParentModel;
 use App\YourEdu\PhoneNumber;
 use App\YourEdu\Professional;
 use App\YourEdu\Profile;
+use App\YourEdu\Request;
 use App\YourEdu\School;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
@@ -60,9 +62,20 @@ class User extends Authenticatable
     protected $appends = ['full_name','age','is_superadmin',
         'is_supervisoradmin','is_groupadmin','is_classadmin',
         'is_schooladmin','is_learner','is_parent','is_facilitator',
-        'has_professionals','has_schools', 'owned_profiles'
+        'has_professionals','has_schools', 'owned_profiles','follow_requests'
     ];
 
+    public function getFollowRequestsAttribute()
+    {
+        $requests = Request::where('requestable_type','App\YourEdu\Follow')
+            ->where('state','PENDING')
+            ->whereHasMorph('requestto','*',function(Builder $builder){
+                $builder->where('user_id',$this->id);
+            })->count();
+
+        return $requests;
+    }
+    
     public function getFullNameAttribute()
     {
         if (!$this->other_names || $this->other_names === "") {
@@ -118,6 +131,16 @@ class User extends Authenticatable
                 $data[$i] = [
                     'account_id' => $profile->profileable_id,
                     'account_type' => 'professional',
+                    'profile_name' => $profile->name,
+                    'profile_url' => $profile->url,
+                    'profile' => $profile->profileable_type,
+                ];
+            }
+            
+            if ($profile->profileable_type === 'App\\YourEdu\\School') {
+                $data[$i] = [
+                    'account_id' => $profile->profileable_id,
+                    'account_type' => 'school',
                     'profile_name' => $profile->name,
                     'profile_url' => $profile->url,
                     'profile' => $profile->profileable_type,
@@ -251,5 +274,9 @@ class User extends Authenticatable
         return $this->morphMany(PhoneNumber::class,'phoneable');
     }
 
+    public function follows()
+    {
+        return $this->hasMany(Follow::class);
+    }
     
 }

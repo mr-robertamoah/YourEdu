@@ -21,6 +21,7 @@ class CreateRiddlesTable extends Migration
             // $table->string('title'); 
             $table->string('author')->nullable();
             $table->text('riddle')->nullable();
+            $table->mediumInteger('score_over')->nullable();
             $table->timestamp('published')->nullable();
             $table->softDeletes();
             $table->timestamps();

@@ -9,19 +9,55 @@ const profile = {
         post: null,
         nextPage: 0,
         commentNextPage: 0,
+        postNextPage: 0,
         done: false,
         posts: [],
         comments: [],
         postingStatus: null,
         commentingStatus: null,
         commentsDone: false,
+        postsDone: false,
         loading: null,
         activeProfile: null, //the account the user is currently using
+        media: [],
+        mediaType: '',
+        moreMedia: false,
     }),
 
 
 
     mutations: {
+        CLEAR_MEDIA(state){
+            state.media = []
+            state.mediaType = ''
+            state.moreMedia = false
+        },
+        PUBLIC_MEDIA_SUCCESS(state, data){
+            if (data.media === 'images') {
+                state.profile.images.unshift(data.main.media)
+            } else if (data.media === 'videos') {
+                state.profile.videos.unshift(data.main.media)
+            } else if (data.media === 'audios') {
+                state.profile.audios.unshift(data.main.media)
+            }
+        },
+        GET_MEDIA_SUCCESS(state,media){
+            let {mainData, data} = media
+            console.log('get media', state.media)
+            if (data.media === 'images') {
+                state.mediaType = 'image'
+            } else if (data.media === 'videos') {
+                state.mediaType = 'video'
+            } else if (data.media === 'audios') {
+                state.mediaType = 'audio'
+            }
+            if (mainData.links.next) {
+                state.moreMedia = true
+            } else {
+                state.moreMedia = false
+            }
+            state.media.push(...mainData.data)
+        },
         GET_PROFILE_SUCCESS(state,data){
             state.message = 'successfully got the requested profile'
             state.account = data.account
@@ -31,16 +67,107 @@ const profile = {
             state.message = 'successfully updated your profile'
             state.profile = data.profile
         },
+        UPDATE_PROFILE_PIC_SUCCESS(state,data){
+            state.profile.url = data.image.url
+        },
+        UPLOAD_FILE_SUCCESS(state,data){
+            if (data.hasOwnProperty('image')) {
+                state.profile.images.unshift(data.image)
+            } else if (data.hasOwnProperty('video')) {
+                state.profile.videos.unshift(data.video)
+            } else if (data.hasOwnProperty('audio')) {
+                state.profile.audios.unshift(data.audio)
+            }
+        },
         PROFILE_FAILURE(state, msg){
             state.message = msg
         },
         CLEAR_PROFILE_MSG(state){
             state.message = null
         },
+        ADD_INFO_SUCCESS(state,responseData,data){
+            if (data.hasOwnProperty('email')) {
+                state.profile.owner.emails.unshift(responseData.email)
+            } else if (data.hasOwnProperty('social')){
+                state.profile.socials.unshift(responseData.social)
+            } else if (data.hasOwnProperty('phone')){
+                state.profile.owner.phoneNumbers.unshift(responseData.phone)
+            }
+        },
+        MARK_INFO_SUCCESS(state,data){
+            if (data.item === 'email') {
+                let emailIndex = state.profile.owner.emails.findIndex(email=>{
+                    return email.id === data.id
+                })
+
+                if (emailIndex > -1) {
+                    // console.log(state.profile.owner.emails[emailIndex].show)
+                    state.profile.owner.emails[emailIndex].show = !state.profile.owner.emails[emailIndex].show
+                }
+            } else if (data.item === 'social'){
+                let socailIndex = state.profile.socials.findIndex(social=>{
+                    return social.id === data.id
+                })
+
+                if (socailIndex > -1) {
+                    state.profile.socails[socailIndex].show = !state.profile.socails[socailIndex].show
+                }
+            } else if (data.item === 'phone'){
+                let phoneIndex = state.profile.owner.phoneNumbers.findIndex(phone=>{
+                    return phone.id === data.id
+                })
+
+                if (phoneIndex > -1) {
+                    state.profile.owner.phoneNumbers[phoneIndex].show = !state.profile.owner.phoneNumbers[phoneIndex].show
+                }
+            }
+        },
+        REMOVE_INFO_SUCCESS(state,data){
+            if (data.item === 'email') {
+                let emailIndex = state.profile.owner.emails.findIndex(email=>{
+                    return email.id === data.id
+                })
+
+                if (emailIndex > -1) {
+                    state.profile.owner.emails.splice(emailIndex,1)
+                }
+            } else if (data.item === 'social'){
+                let socailIndex = state.profile.socials.findIndex(social=>{
+                    return social.id === data.id
+                })
+
+                if (socailIndex > -1) {
+                    state.profile.socails.splice(socailIndex,1)
+                }
+            } else if (data.item === 'phone'){
+                let phoneIndex = state.profile.owner.phoneNumbers.findIndex(phone=>{
+                    return phone.id === data.id
+                })
+
+                if (phoneIndex > -1) {
+                    state.profile.owner.phoneNumbers.splice(phoneIndex,1)
+                }
+            }
+        },
+
+        ////////////////////////////////////////////////////////// follow
+
+        FOLLOW_SUCCESS(state,data){
+            state.profile.follows.unshift(data.follow)
+        },
+        UNFOLLOW_SUCCESS(state,data){
+            let followIndex = state.profile.follows.findIndex(follow=>{
+                return follow.id === data.followId
+            })
+
+            if (followIndex > -1) {
+                state.profile.follows.splice(followIndex,1)
+            }
+        },
 
         /////////////////////////////////////////////////////////// posts
         CLEAR_POSTS(state){
-            state.post = null
+            state.posts = []
             state.nextPage = 0
         },
         POST_CREATE_SUCCESS(state,data){
@@ -75,9 +202,9 @@ const profile = {
         POSTS_SUCCESS(state,data){
             if (data.data.length) {
                 state.posts.push(...data.data)
-                state.nextPage = data.meta.current_page + 1
+                state.postNextPage = data.meta.current_page + 1
             } else{
-                state.done = true
+                state.postDone = true
             }
         },
         POST_START(state){
@@ -158,21 +285,21 @@ const profile = {
                 }
             }
         },
-        COMMENTS_SUCCESS(state,data){
-            if (data.data.length) {
-                state.posts.push(...data.data)
-                state.nextPage = data.meta.current_page + 1
-            } else{
-                state.done = true
-            }
-        },
+        // COMMENTS_SUCCESS(state,data){
+        //     if (data.data.length) {
+        //         state.posts.push(...data.data)
+        //         state.nextPage = data.meta.current_page + 1
+        //     } else{
+        //         state.done = true
+        //     }
+        // },
         COMMENT_SUCCESS(state, data){
             if (data.comment.commentable_type.toLocaleLowerCase().includes('post')) {
                 let postIndex = state.posts.findIndex(post=>{
                     return post.id === data.comment.commentable_id
                 })
                 if (postIndex > -1) {
-                    state.posts[postIndex].comments.push(data.comment)
+                    state.posts[postIndex].comments.unshift(data.comment)
                 }
             } else if (data.comment.commentable_type.toLocaleLowerCase().includes('comment')) {
                 if (state.comments && state.comments.length) {
@@ -332,6 +459,54 @@ const profile = {
 
 
     actions: {
+
+        async follow({commit}, data){
+            console.log('data in profile',data)
+            let response = await ProfileService.followCreate(data)
+
+            console.log('response in profile',response.data)
+            if (response.data.message === 'successful') {
+                commit('FOLLOW_SUCCESS',response.data)
+                return 'successful'
+            }else {
+                commit('PROFILE_FAILURE','following was unsuccessul')
+                return 'unsuccessful'
+            }
+        },
+        async unfollow({commit}, data){
+            
+            let response = await ProfileService.followDelete(data)
+
+            if (response.data.message === 'successful') {
+                commit('UNFOLLOW_SUCCESS',data)
+                return 'successful'
+            }else {
+                commit('PROFILE_FAILURE','unfollowing was unsuccessul')
+                return 'unsuccessful'
+            }
+        },
+
+        ///////////////////////////////////////////// profile
+
+        async deleteMedia({commit},data){
+            let response = await ProfileService.profileMediaDelete(data)
+
+            if (response.data.message === 'successful') {
+                return 'successful'
+            }else {
+                return 'unsuccessful'
+            }
+        },
+        async changeMedia({commit},data){
+            let response = await ProfileService.profileMediaChange(data)
+
+            if (response.data.message === 'successful') {
+                commit('PUBLIC_MEDIA_SUCCESS',{main: response.data,data})
+                return 'successful'
+            }else {
+                return 'unsuccessful'
+            }
+        },
         setActiveProfile({commit, rootGetter},data){
             let profilesArray = []
             let computedArray = []
@@ -356,17 +531,98 @@ const profile = {
             }
             commit('SET_ACTIVE_PROFILE', null)
         },
-
         async updateProfile({commit},data){
 
             let response = await ProfileService.profileUpdate(data)
 
             if (response.data.message === 'successful') {
-                commit('UPDATE_PROFILE_SUCCESS',response.data)
+                commit('UPDATE_PROFILE_SUCCESS',response.data,data)
             }else {
                 commit('PROFILE_FAILURE','update was unsuccessul')
             }
         },
+        async updateProfilePic({commit},data){
+
+            let response = await ProfileService.profilePicUpdate(data)
+
+            if (response.data.message === 'successful') {
+                commit('UPDATE_PROFILE_PIC_SUCCESS',response.data)
+                return response.data.message
+            }else {
+                return response.data.message
+            }
+        },
+        async uploadFile({commit},data){
+
+            let response = await ProfileService.profileFileUpload(data)
+
+            if (response.data.message === 'successful') {
+                commit('UPLOAD_FILE_SUCCESS',response.data)
+                return response.data.message
+            }else {
+                return response.data.message
+            }
+        },
+        clearMedia({commit}){
+            commit("CLEAR_MEDIA")
+        },
+        async getMedia({commit},data){
+            // commit('CLEAR_MEDIA')
+            let response = await ProfileService.profileMediaGet(data)
+
+            if (response.data.data) {
+                // commit('GET_MEDIA_SUCCESS',{mainData: response.data,data})
+                return response.data
+            }else {
+                return 'unsuccessful'
+            }
+        },
+        async getPrivateMedia({commit},data){
+            // dispatch('clearMedia')
+            let response = await ProfileService.profilePrivateMediaGet(data)
+
+            if (response.data.data) {
+                // commit('GET_MEDIA_SUCCESS',{mainData: response.data,data})
+                return response.data
+            }else {
+                return 'unsuccessful'
+            }
+        },
+        async addInfo({commit},data){
+
+            let response = await ProfileService.profileAddInfo(data)
+
+            if (response.data.message === 'successful') {
+                commit('ADD_INFO_SUCCESS',response.data,data)
+                return 'successful'
+            }else {
+                return response.data.errors
+            }
+        },
+        async markInfo({commit},data){
+
+            let response = await ProfileService.profileMarkInfo(data)
+
+            if (response.data.message === 'successful') {
+                commit('MARK_INFO_SUCCESS',data)
+                return 'successful'
+            }else {
+                return 'unsuccessful'
+            }
+        },
+        async removeInfo({commit},data){
+
+            let response = await ProfileService.profileDeleteInfo(data)
+
+            if (response.data.message === 'successful') {
+                commit('REMOVE_INFO_SUCCESS',data)
+                return 'successful'
+            }else {
+                return 'unsuccessful'
+            }
+        },
+
+        ///////////////////////////////////////////////////
 
         clearMsg({commit}){
             commit('CLEAR_PROFILE_MSG')
@@ -412,43 +668,40 @@ const profile = {
             commit('COMMENTING_END')
             if (response.data.message === 'successful') {
                 commit('COMMENT_SUCCESS',response.data)
-                return 'successful'
+                return response.data
             }else {
                 commit('PROFILE_FAILURE','commenting unsuccessful')
                 return 'unsuccessful'
             }
         },
-
         async deleteComment({commit},data){
             commit('COMMENTING_START')
             let response = await ProfileService.commentDelete(data)
 
             commit('COMMENTING_END')
-            console.log('deleted comment', response)
+            // console.log('deleted comment', response)
             if (response.data.message === 'successful') {
                 commit('COMMENT_DELETE_SUCCESS',data)
-                return 'successful'
+                return data
             }else {
                 commit('PROFILE_FAILURE','comment update unsuccessful')
                 return 'unsuccessful'
             }
         },
-
         async updateComment({commit},data){
             commit('COMMENTING_START')
             let response = await ProfileService.commentUpdate(data)
 
             commit('COMMENTING_END')
-            console.log('update post', response)
+            // console.log('update post', response)
             if (response.data.message === 'successful') {
                 commit('COMMENT_UPDATE_SUCCESS',response.data)
-                return 'successful'
+                return response.data
             }else {
                 commit('PROFILE_FAILURE','post update unsuccessful')
                 return 'unsuccessful'
             }
         },
-
         async getComment({commit}, data){
             let response = await ProfileService.commentGet(data)
             if (response.data.message === 'successful') {
@@ -458,23 +711,18 @@ const profile = {
                 return 'unsuccessful'
             }
         },
-
         async getComments({commit},data){
             commit('COMMENTING_START')
             let response = await ProfileService.commentsGet(data)
 
             commit('COMMENTING_END')
-            console.log('update post', response)
             if (response.data.data) {
-                commit('COMMENTS_GET_SUCCESS',response.data)
-                // if (response.data.links.next) {
-                //     return response.data.meta.current_page + 1
-                // } else {
-                //     return response.data.meta.current_page
-                // }
-                return 'successful'
+                return {
+                        status:response.data.links.next,
+                        data: response.data
+                    }
             }else {
-                commit('PROFILE_FAILURE','post update unsuccessful')
+                commit('PROFILE_FAILURE','commenting was unsuccessful')
                 return 'unsuccessful'
             }
         },
@@ -483,7 +731,70 @@ const profile = {
             commit('COMMENTS_CLEAR')
         },
 
+        ///////////////////////////////////////// answers
+        
+        async createAnswer({commit},mainData){
+            commit('COMMENTING_START')
+            let response = await ProfileService.answerCreate(mainData)
+            // console.log('comment data', data)
+            commit('COMMENTING_END')
+            if (response.data.message === 'successful') {
+                // commit('COMMENT_SUCCESS',response.data)
+                return response.data
+            }else {
+                commit('PROFILE_FAILURE','creation of answer unsuccessful')
+                return response.data.message
+            }
+        },
+        async deleteAnswer({commit},data){
+            commit('COMMENTING_START')
+            let response = await ProfileService.answerDelete(data)
+
+            commit('COMMENTING_END')
+            // console.log('deleted comment', response)
+            if (response.data.message === 'successful') {
+                // commit('COMMENT_DELETE_SUCCESS',data)
+                return response.data
+            }else {
+                commit('PROFILE_FAILURE','comment update unsuccessful')
+                return 'unsuccessful'
+            }
+        },
+        async updateAnswer({commit},data){
+            commit('COMMENTING_START')
+            let response = await ProfileService.answerUpdate(data)
+
+            commit('COMMENTING_END')
+            // console.log('update post', response)
+            if (response.data.message === 'successful') {
+                // commit('COMMENT_UPDATE_SUCCESS',response.data)
+                return response.data
+            }else {
+                commit('PROFILE_FAILURE','post update unsuccessful')
+                return response.data.message
+            }
+        },
+        async getAnswers({commit},data){
+            commit('COMMENTING_START')
+            let response = await ProfileService.answersGet(data)
+
+            commit('COMMENTING_END')
+            if (response.data.data) {
+                return {
+                        status:response.data.links.next,
+                        data: response.data
+                    }
+            }else {
+                commit('PROFILE_FAILURE','commenting was unsuccessful')
+                return 'unsuccessful'
+            }
+        },
+
         ////////////////////////////////// posts
+
+        clearPosts({commit}){
+            commit('CLEAR_POSTS')
+        },
         async createPost({commit},data){
             commit('POST_START')
             let response = await ProfileService.postCreate(data)
@@ -492,8 +803,10 @@ const profile = {
             // console.log('comment data', response)
             if (response.data.message === 'successful') {
                 commit('POST_CREATE_SUCCESS',response.data)
+                return 'success'
             }else {
                 commit('PROFILE_FAILURE','post unsuccessful')
+                return 'unsuccessful'
             }
         },
 
@@ -529,26 +842,32 @@ const profile = {
 
         async getPosts({commit,state},data){
             commit('LOADING_START')
-            commit('CLEAR_POSTS')
-            let response = await ProfileService.postsGet(data,state.nextPage)
+            let response = await ProfileService.postsGet(data)
             // console.log(response.data)
             commit('LOADING_END')
             if (response.data.data) {
                 commit('POSTS_SUCCESS',response.data)
+                return response.data.links.next
             }else {
                 commit('PROFILE_FAILURE','retrieving posts unsuccessful')
+                return 'unsuccessful'
             }
         },
 
         async getProfilePosts({commit},data){
             commit('LOADING_START')
-            // commit('CLEAR_POSTS')
             console.log('responsedata',data)
             let response = await ProfileService.profilePostsGet(data)
             commit('LOADING_END')
             if (response.data.data) {
                 commit('POSTS_SUCCESS',response.data)
-                
+                console.log('next',response.data.links.next)
+                if (response.data.links.next) {
+                    
+                    return response.data.links.next
+                } else {
+                    return null
+                }
             }else {
                 commit('PROFILE_FAILURE','retrieving posts unsuccessful')
                 // return 'unsuccessful'
@@ -578,7 +897,7 @@ const profile = {
         getCommentingStatus(state){
             return state.commentingStatus ? true : false
         },
-        getPosts(state){
+        getHomePosts(state){
             return state.posts.length ? state.posts : null
         },
         getPostsDone(state){
@@ -598,6 +917,18 @@ const profile = {
         },
         getCommentNextPage(state){
             return state.commentNextPage
+        },
+        getPostNextPage(state){
+            return state.postNextPage
+        },
+        getMoreMedia(state){
+            return state.moreMedia
+        },
+        getStateMedia(state){
+            return { 
+                media: state.media,
+                mediaType: state.mediaType
+            }
         },
     }
 }

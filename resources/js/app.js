@@ -12,7 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, faTrash, 
         faBan, faSearch, faUserCircle, faExclamationCircle, faEdit,
         faFileImage,faFileVideo,faFileAudio, faPlus, faMinus, faThumbsUp, faFlag,
-        faChevronDown, faComment, faChevronLeft} from "@fortawesome/free-solid-svg-icons"
+        faChevronDown, faComment, faChevronLeft, faCheck, faCommentAlt} from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { BootstrapVue } from 'bootstrap-vue'
 import AppNav from './components/Nav.vue'
@@ -31,7 +31,7 @@ Vue.use(VuePageTransition)
 library.add(faUserCircle, faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, 
     faTrash, faBan, faSearch, faExclamationCircle, faEdit,faFileAudio,
     faFileImage,faFileVideo, faPlus, faMinus,faThumbsUp,faFlag, faChevronDown,
-    faComment, faChevronLeft);
+    faComment, faChevronLeft,faCheck,faCommentAlt);
 
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
@@ -52,7 +52,13 @@ Vue.component('app-nav', AppNav);
 
 Vue.component('example-component', require('./components/ExampleComponent.vue').default);
 Vue.component('comment-single', require('./components/CommentSingle.vue').default);
-// Vue.component('view-comments', require('./components/ViewComments.vue').default);
+Vue.component('view-comments', require('./components/ViewComments.vue').default);
+Vue.component('small-modal', require('./components/SmallModal.vue').default);
+Vue.component('main-modal', require('./components/MainModal.vue').default);
+Vue.component('media-modal', require('./components/MediaModal.vue').default);
+Vue.component('post-modal', require('./components/PostModal.vue').default);
+Vue.component('welcome-form', require('./components/welcome/WelcomeForm.vue').default);
+Vue.component('just-fade', require('./components/transitions/JustFade.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to

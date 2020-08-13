@@ -17,7 +17,86 @@ function uploadYourEduFiles($files)
     return $uploadedFilePaths;
 }
 
-function uploadYourEduFile($file)
+function getFileDetails($actualFile, $save = true)
+{
+    $file = $actualFile;
+    $fileArray['mime'] = $file->getClientMimeType();
+    $fileArray['size'] = $file->getSize();
+    if ($save) {
+        $fileArray['path'] = uploadYourEduFile($actualFile);
+    }
+
+    return $fileArray;
+}
+
+function imageResize($file, $save = true)
+{
+    $width = imagesx($file);
+    $height = imagesy($file);
+    $newWidth = 100;
+    $newHeight = $newWidth/$width * $height;
+
+    $newFile = imagescale($file,$newWidth,$newHeight);
+
+    $fileArray['mime'] = $file->getClientMimeType();
+    $fileArray['size'] = $file->getSize();
+    if ($save) {
+        $fileArray['path'] = uploadYourEduFile($newFile);
+    }
+
+    return $fileArray;
+}
+
+function accountCreateFile(String $mime, $account, $fileDetails, $associate = null)
+{
+    if(Str::contains($mime, 'image')){
+        $file = $account->addedImages()->create($fileDetails);
+        if($associate){
+            $associate->images()->attach($file);
+        }
+    } else if(Str::contains($mime, 'video')){
+        $file = $account->addedVidoes()->create($fileDetails);
+        if($associate){
+            $associate->videos()->attach($file);
+        }
+    } else if(Str::contains($mime, 'audio')){
+        $file = $account->addedAudios()->create($fileDetails);
+        if($associate){
+            $associate->audios()->attach($file);
+        }
+    } else if(Str::contains($mime, 'file')){
+        $file = $account->addedFiles()->create($fileDetails);
+        if($associate){
+            $associate->files()->attach($file);
+        }
+    }
+
+    return $file;
+}
+
+// function createThumbnail($path, $width, $height)
+// {
+//     $img = Image::make($path)->resize($width, $height, function ($constraint) {
+//         $constraint->aspectRatio();
+//     });
+//     $img->save($path);
+// }
+
+function saveFileWithDetails($file, $newFile)
+{
+    if ($file) {
+        $originalFileName = $file->getClientOriginalName();
+        $originalFileExtension = $file->getClientOriginalExtension();
+        $fileNameOnly = pathinfo($originalFileName, PATHINFO_FILENAME);
+        $fileName = Str::slug($fileNameOnly . time()) . "." . $originalFileExtension;
+
+        $path = $newFile->save(public_path("assets/images/{$fileName}"));
+
+        return $path;
+    }
+}
+
+function uploadYourEduFile($file, $hasThumbnail = false)
 {
     if ($file) {
         $originalFileName = $file->getClientOriginalName();
@@ -25,6 +104,12 @@ function uploadYourEduFile($file)
         $originalFileExtension = $file->getClientOriginalExtension();
         $fileNameOnly = pathinfo($originalFileName, PATHINFO_FILENAME);
         $fileName = Str::slug($fileNameOnly . time()) . "." . $originalFileExtension;
+        $fileNameSmall = '';
+        $fileNameMedium = '';
+        if ($hasThumbnail) {
+            $fileNameSmall = Str::slug($fileNameOnly. 'small' . time()) . "." . $originalFileExtension;
+            $fileNameMedium = Str::slug($fileNameOnly. 'medium' . time()) . "." . $originalFileExtension;
+        }
         if (Str::contains($originalMime, 'image')) {
             $dir = 'images';
         } else if (Str::contains($originalMime, 'video')) {
@@ -35,9 +120,21 @@ function uploadYourEduFile($file)
             $dir = 'file';
         }
         
-        $path = $file->storeAs($dir,$fileName);
+        if ($hasThumbnail) {
 
-        return $path;
+            $paths = [];
+            
+            $paths['main'] = $file->storeAs($dir,$fileName);
+            $paths['small'] = $file->storeAs($dir,$fileNameSmall);
+            $paths['medium'] = $file->storeAs($dir,$fileNameMedium);
+
+            return $paths;
+        } else {
+
+            $path = $file->storeAs($dir,$fileName);
+
+            return $path;
+        }
     }
 }
 

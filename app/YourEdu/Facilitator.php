@@ -88,7 +88,6 @@ class Facilitator extends Model
     public function phoneNumbers(){
         return $this->morphMany(PhoneNumber::class,'phoneable');
     }
-    
 
     public function emails(){
         return $this->morphMany(Email::class,'emailable');
@@ -176,7 +175,7 @@ class Facilitator extends Model
     
     public function answers()
     {
-        return $this->morphMany(Answer::class,'answerable');
+        return $this->morphMany(Answer::class,'answeredby');
     }
 
     public function marks()

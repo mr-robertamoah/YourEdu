@@ -39,7 +39,7 @@ class Riddle extends Model
     
     public function answers()
     {
-        return $this->morphMany(Answer::class,'answerfor');
+        return $this->morphMany(Answer::class,'answerable');
     }
 
     public function images()

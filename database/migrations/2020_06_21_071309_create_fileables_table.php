@@ -14,6 +14,7 @@ class CreateFileablesTable extends Migration
     public function up()
     {
         Schema::create('fileables', function (Blueprint $table) {
+            $table->id();
             $table->unsignedBigInteger('file_id');
             $table->morphs('fileable'); //question answer profile comment lesson
             $table->enum('state',['PUBLIC','PRIVATE'])->default('PUBLIC');

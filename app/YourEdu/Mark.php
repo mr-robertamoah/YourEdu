@@ -10,6 +10,8 @@ class Mark extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = ['remark','score','score_over'];
+
     public function markable()
     {
         return $this->morphTo();

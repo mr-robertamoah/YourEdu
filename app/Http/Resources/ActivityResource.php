@@ -33,6 +33,7 @@ class ActivityResource extends JsonResource
             'id' => $this->id,
             'description' => $this->description,
             'published' => $this->published,
+            'comments_number' => $this->comments()->count(),
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,

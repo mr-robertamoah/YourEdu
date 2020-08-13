@@ -1,16 +1,22 @@
 <template>
     <div class="modal-wrapper" v-if="show" @click.self="disappear">
-        <div class="main-modal">
+        <div class="main-modal" @click.self="clickedMain">
             <div class="close" @click="disappear">
                 <font-awesome-icon :icon="['fas','times']"></font-awesome-icon>
             </div>
             <template v-if="!showAlert">
+                <div class="heading" v-if="computedHeading">
+                    <slot name="heading"></slot>
+                </div>
                 <div class="loading-errors" v-if="loading">
                     <slot name="loading"></slot>
                     <slot name="errors"></slot>
                 </div>
-                <div class="main" v-else>
+                <div class="main" v-if="computedMain">
                     <slot name="main"></slot>
+                </div>
+                <div class="main-other" v-if="!loading">
+                    <slot name="main-other"></slot>
                 </div>
             </template>
             <fade-right>
@@ -34,9 +40,17 @@ import FadeRight from "./transitions/FadeRight";
                 type: Boolean,
                 default: true,
             },
+            main: {
+                type: Boolean,
+                default: true,
+            },
             loading: {
                 type: Boolean,
                 default: false,
+            },
+            heading: {
+                type: String,
+                default: ''
             },
             alertMessage: {
                 type: String,
@@ -74,7 +88,7 @@ import FadeRight from "./transitions/FadeRight";
                     if(this.alertMessage.length > 0){
                         setTimeout(() => {
                             this.$emit('clearAlert') 
-                        }, 2000);
+                        }, 3000);
                     }
                 }
             }
@@ -86,12 +100,22 @@ import FadeRight from "./transitions/FadeRight";
                 } else {
                     return false
                 }
-            }
+            },
+            computedMain(){
+                return this.loading ? false :
+                    this.main ? true : false
+            },
+            computedHeading(){
+                return this.heading.length > 0 ? true : false
+            },
         },
         methods: {
             disappear() {
                 this.$emit('mainModalDisappear')
-            }
+            },
+            clickedMain(){
+                this.$emit('clickedMain')
+            },
         },
     }
 </script>
@@ -143,6 +167,14 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 }
             }
 
+            .heading{
+                width: 100%;
+                text-align: center;
+                font-size: 18px;
+                font-weight: 500;
+                text-transform: capitalize;
+            }
+
             .loading-errors{
                 width: 80%;
                 position: relative;
@@ -180,6 +212,22 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 color: rgba(0, 128, 0, 0.9);
                 background-color: rgba(0, 128, 0, 0.4);
                 border: 2px solid rgba(0, 128, 0, 0.4);
+            }
+        }
+
+        .main-other{
+            display: block;
+            padding: 10px;
+            padding-top: 50px;
+
+            .show-more{
+                color: gray;
+                background-color: azure;
+                width: 50%;
+                margin: 10px auto;
+                text-align: center;
+                padding: 5px;
+                border-radius: 10px;
             }
         }
     }

@@ -125,10 +125,10 @@ import { mapActions, mapGetters } from "vuex";
                     this.errorMessage = 'Please enter your password in the field.'
                     this.passwordError = true
                 }else if (this.username.trim().length < 8) {
-                    this.errorMessage = 'Please enter your password is too short.'
+                    this.errorMessage = 'Please your username is too short.'
                     this.usernameError = true
                 }else if (this.password.trim().length < 8) {
-                    this.errorMessage = 'Please enter your password is too short.'
+                    this.errorMessage = 'Please your password is too short.'
                     this.emailError = true
                 }else{
                     //only send login data based on users choice

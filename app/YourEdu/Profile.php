@@ -19,8 +19,8 @@ class Profile extends Model
 
     public function getUrlAttribute()
     {
-        return $this->images()->exists() ? 
-        asset("asset/{$this->images()->latest()->get()->path}") :
+        return $this->images()->where('state','PUBLIC')->where('thumbnail',1)->exists() ? 
+        asset("assets/{$this->images()->where('state','PUBLIC')->where('thumbnail',1)->latest()->take(1)->first()->path}") :
         asset('storage/default.webp');
     }
 
@@ -60,6 +60,6 @@ class Profile extends Model
     public function images()
     {
         return $this->morphToMany(Image::class,'imageable')
-        ->withPivot(['state'])->withTimestamps();
+        ->withPivot(['state','thumbnail'])->withTimestamps();
     }
 }

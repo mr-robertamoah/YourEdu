@@ -18,11 +18,11 @@
                 type: String,
                 default: ''
             },
-            onClick: {
-                type: Function,
-                required: false,
-                default: ()=>{ return ''}
-            },
+        },
+        methods: {
+            onClick() {
+                this.$emit('click')
+            }
         },
     }
 </script>

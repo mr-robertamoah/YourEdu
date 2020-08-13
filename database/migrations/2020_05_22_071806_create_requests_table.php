@@ -15,10 +15,11 @@ class CreateRequestsTable extends Migration
     {
         Schema::create('requests', function (Blueprint $table) {
             $table->id();
-            $table->morphs('requestable'); // permission group collaboration extracurriculum subject grade class
-            $table->morphs('requestfrom'); // professional school group facilitator
-            $table->morphs('requestto'); // parent school professional facilitator learner
+            $table->nullableMorphs('requestable'); // follow permission group collaboration extracurriculum subject grade class
+            $table->nullableMorphs('requestfrom'); // professional school group facilitator
+            $table->nullableMorphs('requestto'); // parent school professional facilitator learner
             $table->enum('state',['PENDING','ACCEPTED','DECLINED'])->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

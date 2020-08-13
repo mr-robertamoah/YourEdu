@@ -1,9 +1,10 @@
 <template>
     <div class="profile-bar"
-        @click="goToRoute"
-        :class="{small:smallType}"
+        @click.self="goToRoute"
+        :class="{small:smallType,max:maxType}"
     >
-        <div class="profile">
+        <div class="profile"
+            @click="goToRoute">
             <profile-picture
                 v-if="src.length > 0"
             >
@@ -12,20 +13,62 @@
                 </template>
             </profile-picture>
         </div>
-        <div class="name">
+        <div class="name"
+            @click="goToRoute">
             {{name}}
         </div>
-        <div class="type">
+        <div class="type"
+            @click="goToRoute">
             {{type}}
+        </div>
+        <div class="actions" v-if="actions">
+            <div class="loading" v-if="loading">
+                <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
+            </div>
+            <action-button
+                @click="clickedAccept"
+                :green="true"
+                :title="greenActionTitle"
+                v-if="!loading"
+            >
+                <template slot="icon">
+                    <font-awesome-icon
+                        :icon="['fa','check']"
+                    ></font-awesome-icon>
+                </template>
+            </action-button>
+            <action-button
+                @click="clickedDecline"
+                :red="true"
+                :title="redActionTitle"
+                v-if="!loading"
+            >
+                <template slot="icon">
+                    <font-awesome-icon
+                        :icon="['fa','times']"
+                    ></font-awesome-icon>
+                </template>
+            </action-button>
         </div>
     </div>
 </template>
 
 <script>
 import ProfilePicture from './ProfilePicture'
+import ActionButton from '../ActionButton'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
+
     export default {
         props: {
             src: {
+                type: String,
+                default: ''
+            },
+            greenActionTitle: {
+                type: String,
+                default: ''
+            },
+            redActionTitle: {
                 type: String,
                 default: ''
             },
@@ -33,7 +76,19 @@ import ProfilePicture from './ProfilePicture'
                 type: String,
                 default: 'profile name'
             },
+            id: {
+                type: Number,
+                default: null
+            },
             smallType: {
+                type: Boolean,
+                default: false
+            },
+            loading: {
+                type: Boolean,
+                default: false
+            },
+            maxType: {
                 type: Boolean,
                 default: false
             },
@@ -54,9 +109,36 @@ import ProfilePicture from './ProfilePicture'
             navigate: {
                 type: Boolean,
                 default: true
-            }
+            },
+            actions: {
+                type: Boolean,
+                default: false
+            },
+        },
+        components: {
+            ActionButton,
+            ProfilePicture,
+            PulseLoader,
         },
         methods: {
+            clickedDecline(){
+                this.$emit('clickedAction',{
+                    account: this.routeParams.account, 
+                    accountId: this.routeParams.accountId,
+                    requestId: this.id,
+                    action: 'decline'
+                })
+                // this.$emit('clickedProfileBar')
+            },
+            clickedAccept(){
+                this.$emit('clickedAction',{
+                    account: this.routeParams.account, 
+                    accountId: this.routeParams.accountId,
+                    requestId: this.id,
+                    action: 'accept'
+                })
+                // this.$emit('clickedProfileBar')
+            },
             goToRoute() {
                 if (this.navigate) {
                     let routeObject = {
@@ -73,6 +155,7 @@ import ProfilePicture from './ProfilePicture'
                         accountId: this.routeParams.accountId
                     })
                 }
+                this.$emit('clickedProfileBar')
             }
         },
         computed: {
@@ -82,9 +165,6 @@ import ProfilePicture from './ProfilePicture'
                     params: this.routeParams 
                 }
             }
-        },
-        components: {
-            ProfilePicture,
         },
     }
 </script>
@@ -133,6 +213,10 @@ import ProfilePicture from './ProfilePicture'
             white-space: nowrap;
             text-transform: capitalize;
         }
+
+        .actions{
+            width: 0;
+        }
     }
 
     .small{
@@ -152,6 +236,36 @@ import ProfilePicture from './ProfilePicture'
         .type{
             font-size: 10px;
             width: 35%;
+        }
+
+        .actions{
+            width: 0;
+        }
+    }
+
+    .max{
+        padding: 5px;
+        width: 100%;
+
+        .profile{
+            width: 0;
+            height: 0;
+        }
+        
+        .name{
+            font-size: 11px;
+            width: 60%;
+        }
+
+        .type{
+            font-size: 10px;
+            width: 35%;
+        }
+
+        .actions{
+            min-width: 15%;
+            display: inline-flex;
+            justify-content: space-between;
         }
     }
 

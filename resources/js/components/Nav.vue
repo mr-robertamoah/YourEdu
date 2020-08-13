@@ -1,5 +1,9 @@
 <template>
-    <div class="outer" @click.self="showOrHide()">
+    <div class="nav-outer">
+        <div class="nav-shadow-wrapper" 
+            @click.self="showOrHide()"
+            v-if="show"
+        ></div>
         <div class="nav-menu-container" @click="showOrHide()">
             <div class="nav-container-outer">
                 <div class="nav-container-inner">
@@ -24,24 +28,28 @@
                     <div class="nav-main-login">
                         <div class="nav-login-section">
                             <router-link 
-                                v-if="registerRoutePath"
+                                v-if="computedRegistration"
                                 to="/register">Register</router-link>
                             <router-link 
-                                v-if="loginRoutePath"
+                                v-if="computedLogin"
                                 to="/login">Login</router-link>
                             <a href="#" 
-                                v-if="isUser" 
+                                v-if="getUser" 
                                 @click.prevent="navLogout()">Logout</a>
+                            <a href="#" 
+                                v-if="getProfiles" 
+                                @click="clickedRequest">Requests
+                                </a>
                         </div>
                     </div>
                 </div>
                 <div class="nav-main-other">
                     <div class="nav-other-section">
                         <router-link 
-                            v-if="welcomeRoutePath"
+                            v-if="computedWelcome"
                             to="/welcome">Welcome</router-link>
                         <router-link 
-                            v-if="dashboardRoutePath" 
+                            v-if="computedDashboard" 
                             to="/dashboard">Dashboard</router-link>
                         <div class="a-profile"
                             v-if="computedProfiles"
@@ -56,7 +64,7 @@
                                     profileAccountId != profile.params.accountId"
                                 :name="profile.name"
                                 :type="profile.params.account"
-                                :src="profile.src"
+                                :src="profile.url"
                                 :routeParams="profile.params"
                             ></profile-bar>
                         </div>
@@ -64,12 +72,79 @@
                 </div>
             </div>
         </transition>
+        <just-fade>
+            <template slot="transition" v-if="showRequestModal">
+                <main-modal
+                    :show="showRequestModal"
+                    @mainModalDisappear="requestsModalDisappear"
+                    @clickedMain="showFollowProfiles = false"
+                    :main="false"
+                >
+                    <template slot="main-other">
+                        <fade-left-fast>
+                            <template slot="transition"
+                                v-if="showFollowProfiles"
+                            >
+                                <div class="profiles">
+                                    <span>
+                                        follow as
+                                    </span>
+                                    <div :key="key" v-for="(profile,key) in computedProfiles">
+                                        <profile-bar
+                                            :name="profile.name"
+                                            :type="profile.params.account"
+                                            :smallType="true"
+                                            :routeParams="profile.params"
+                                            :navigate="false"
+                                            @clickedProfile="clickedProfile"
+                                        ></profile-bar>
+                                    </div>
+                                </div>
+                            </template>
+                        </fade-left-fast>
+                        <div class="no-requests" 
+                            v-if="!computedRequests">
+                            there are no requests
+                        </div>
+                        <fade-right>
+                            <template slot="transition">
+                                <profile-bar
+                                    v-for="request in requests"
+                                    :key="request.id"
+                                    @clickedAction="clickedRequestAction"
+                                    :id="request.id"
+                                    :name="request.name"
+                                    greenActionTitle="follow back"
+                                    redActionTitle="decline"
+                                    :routeParams="request.params"
+                                    :type="request.params.account"
+                                    :navigate="false"
+                                    :actions="true"
+                                    :maxType="true"
+                                    @clickedProfileBar="showFollowProfiles = false"
+                                ></profile-bar>
+                            </template>
+                        </fade-right>
+                        <div class="show-more"
+                            @click="infiniteHandler"
+                            v-if="showMoreRequests"
+                        >
+                            show more
+                        </div>
+                        <!-- <infinite-loader @infinite="infiniteHandler"></infinite-loader> -->
+                    </template>
+                </main-modal>
+            </template>
+        </just-fade>
     </div>
 </template>
 
 <script>
 import ProfilePicture from "../components/profile/ProfilePicture";
 import ProfileBar from "../components/profile/ProfileBar";
+import FadeRight from "../components/transitions/FadeRight";
+import FadeLeftFast from "../components/transitions/FadeLeftFast";
+import InfiniteLoader from "vue-infinite-loading";
 import { mapActions, mapGetters } from "vuex";
 
     export default {
@@ -83,6 +158,13 @@ import { mapActions, mapGetters } from "vuex";
                 default: ''
             },
         },
+        components: {
+            InfiniteLoader,
+            FadeLeftFast,
+            FadeRight,
+            ProfileBar,
+            ProfilePicture,
+        },
         data() {
             return {
                 navState: ['fa','bars'],
@@ -95,49 +177,137 @@ import { mapActions, mapGetters } from "vuex";
                 dashboardRoutePath:null,
                 profileRoutePath:null,
                 showProfiles: false,
+                ///follow requests
+                showRequestModal: false,
+                requestNextPage: 1,
+                requests: [],
+                noRequests : false,
+                showRequestAlt: false,
+                showMoreRequests: false,
+                actionLoading: false,
+                showFollowProfiles: false,
+                requestId : null,
+            }
+        },
+        watch: {
+            showRequestModal(newValue) {
+                if (newValue) {
+                    
+                }
             }
         },
         beforeRouteUpdate(to, from, next) {
             this.showProfiles = false
             next();
         },
-        components: {
-            ProfileBar,
-            ProfilePicture,
-        },
         computed:{
-            ...mapGetters(['getUser']),
-            computedProfiles(){
-                let profilesArray = []
-                let computedArray = []
+            ...mapGetters(['getProfiles','getUser', 'getLoggedin','getUserFollowRequest']),
+            computedRequests(){
                 if (this.getUser) {
-                    profilesArray = this['getUser'].owned_profiles
-                } else {
-                    return null
-                }
-                        
-                // console.log(profilesArray)
+                    if (this.getUser.follow_requests) {
+                        this.noRequests = false
+                    } else{
+                        this.noRequests = true
+                    }
 
-                if (profilesArray) {
-                    computedArray =  profilesArray.map(el => {
-                        return {
-                            name: el.profile_name ? el.profile_name : 'no name',
-                            src: el.profile_url,
-                            params: {
-                                account: el.account_type,
-                                accountId: el.account_id,
-                            },
-                        }
-                    })
-                        
-                    return computedArray
+                    return this.getUser.follow_requests
                 } else {
-                    return null
+                    return 0
                 }
-
+            },
+            computedRegistration(){
+                return this.getLoggedin ? false : 
+                    this.registerRoutePath ? true : false
+            },
+            computedLogin(){
+                return this.getLoggedin ? false : 
+                    this.loginRoutePath ? true : false
+            },
+            computedWelcome(){
+                return this.getLoggedin ? 
+                    this.$route.name === 'welcome' ? false : true : false
+            },
+            computedDashboard(){
+                return this.getLoggedin ? 
+                    this.$route.name === 'dashboard' ? false : true : false
+            },
+            computedProfiles(){ //replace with get profiles
+                return this.getProfiles
             },
         },
         methods: {
+            requestsModalDisappear(){
+                this.showRequestModal = false
+                this.showFollowProfiles = false
+                this.requests = []
+            },
+            async clickedProfile(who){
+                this.showFollowProfiles = false
+                let data = {
+                    requestId: this.requestId,
+                    account: who.account,
+                    accountId: who.accountId,
+                }
+                let response = await this.acceptFollowRequest(data)
+
+                if (response === 'successful') {
+                    this.removeRequest()
+                }
+            },
+            removeRequest(){ //remove request on success
+                this.showFollowProfiles = false
+                    let requestIndex = this.requests.findIndex(request=>{
+                        return request.id === this.requestId
+                    })
+                    if (requestIndex > -1) {
+                        this.requests.splice(requestIndex,1)
+                    }
+            },
+            async clickedRequestAction(barData){
+                let response = null
+                // this.showFollowProfiles = false
+                this.requestId = barData.requestId
+                let data = {
+                    requestId: barData.requestId,
+                }
+                if (barData.action === 'accept') {
+                    this.showFollowProfiles = true
+                    // setTimeout(() => {
+                    //     this.showFollowProfiles = false
+                    // }, 4000);
+                } else if (barData.action === 'decline') {
+                    response = await this.declineFollowRequest(data)
+                }
+                if (response === 'successful') {
+                    this.removeRequest()
+                }
+            },
+            async clickedRequest(){
+                if (this.computedRequests) {
+                    this.infiniteHandler()
+                }
+                this.showRequestModal = true
+            },
+            async infiniteHandler(){
+                let data = {
+                    nextPage: this.requestNextPage,
+                }
+
+                let response = await this.userFollowRequests(data)
+
+                if (response !== 'unsuccessful' ) {
+                    this.requests.push(...response.data)
+                    if (response.links.next) {
+                        this.requestNextPage += 1
+                        this.showMoreRequests = true
+                    } else {
+                        this.showMoreRequests= false
+                    }
+                } else {
+                    $state.complete()
+                    this.showMoreRequests = true
+                }
+            },
             showOrHide() {
                 if (this.navState[1] ==='bars') {
                     this.navState[1] ='times'
@@ -145,60 +315,20 @@ import { mapActions, mapGetters } from "vuex";
                 } else {
                     this.navState[1] ='bars'
                     this.show = false
+                    this.showProfiles = false
                 }
+                
             },
             navLogout(){
                 this.logout()
             },
             ...mapActions([
-                'logout',  
+                'logout', 'acceptFollowRequest','declineFollowRequest',
+                'userFollowRequests',
             ]),
-            navCurrentLocation(){
-                let navRoutePath = this.$router.history.current.name
-                if (this.isUser) {
-                    this.registerRoutePath = false
-                    this.loginRoutePath = false
-                    this.welcomeRoutePath = true
-                    this.profileRoutePath = true
-                    this.dashboardRoutePath = true
-
-                    if (navRoutePath==='welcome') {
-                        this.welcomeRoutePath = false
-                    } else {
-                        this.welcomeRoutePath = true
-                    }
-
-                    if (navRoutePath==='dashboard') {
-                        this.dashboardRoutePath = false
-                    } else {
-                        this.dashboardRoutePath = true
-                    }
-
-                    if (navRoutePath==='profile') {
-                        this.profileRoutePath = false
-                    } else {
-                        this.profileRoutePath = true
-                    }
-                } else {
-
-                    if (navRoutePath==='register') {
-                        this.registerRoutePath = false
-                    } else {
-                        this.registerRoutePath = true
-                    }
-
-                    if (navRoutePath==='login') {
-                        this.loginRoutePath = false
-                    } else {
-                        this.loginRoutePath = true
-                    }
-                }
-
-            }
         },
         created () {
             this.isUser = this.getUser
-            this.navCurrentLocation()
             
         },
     }
@@ -224,12 +354,20 @@ $homeLogoColor : rgba(2, 104, 90, .6);
     transition: all 1s ease-in-out;
 }
 
-.outer{
+.nav-outer{
     position: fixed;
     width: 100%;
     z-index: 1000;
     bottom: 30px;
     display: flex;
+
+    .nav-shadow-wrapper{
+        width: 100vw;
+        height: 100vh;
+        top: 0;
+        position: inherit;
+        background: none;
+    }
 
     .nav-menu-container{
         position: absolute;
@@ -314,6 +452,13 @@ $homeLogoColor : rgba(2, 104, 90, .6);
             }
         }
     }
+
+    .no-requests{
+        min-height: 100px;
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+    }
 }
 
 @media only screen and (max-width: 400px){
@@ -326,7 +471,7 @@ $homeLogoColor : rgba(2, 104, 90, .6);
 }
 
 @media only screen and (max-width: 800px){
-    .outer{
+    .nav-outer{
 
         .nav-main-container{
 
@@ -371,7 +516,7 @@ $homeLogoColor : rgba(2, 104, 90, .6);
 
 @media only screen and (min-width: 800px){
     
-    .outer{
+    .nav-outer{
 
         .nav-main-container{
         .nav-main-main{

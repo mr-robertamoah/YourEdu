@@ -9,7 +9,7 @@
                     <template slot="transition">
                         <black-white-badge
                             @click="clicked"
-                            v-if="show"
+                            v-if="computedShow"
                         >
                             <template slot="badge">
                                 <font-awesome-icon :icon="['fa','edit']"></font-awesome-icon>
@@ -55,7 +55,9 @@ import JustFade from "../transitions/JustFade";
             },
         },
         computed: {
-
+            computedShow(){
+                return this.showEdit ? this.show ? true : false : false
+            },
         },
     }
 </script>
@@ -77,7 +79,6 @@ import JustFade from "../transitions/JustFade";
     }
 
     .profile-picture-in {
-        
         width: $the-width * 0.85;
         height: $the-width * 0.85;
         border-radius: inherit;
@@ -85,6 +86,7 @@ import JustFade from "../transitions/JustFade";
         justify-content: center;
         align-items: center;
         position: relative;
+        background-color: gray;
 
         .edit{
             position: absolute;
@@ -93,12 +95,12 @@ import JustFade from "../transitions/JustFade";
             font-size: 12px;
             margin: 5px 10px 0 0;
         }
-    }
     
-    img {
-        width: inherit;
-        height: inherit;
-        border-radius: inherit;
+        img {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+        }
     }
 
 @media screen and (max-width: 800px){

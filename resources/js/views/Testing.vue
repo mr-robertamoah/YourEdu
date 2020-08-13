@@ -1,11 +1,12 @@
 <template>
     <div>
-        <comment-single></comment-single>
+        <answer-single
+        ></answer-single>
     </div>
 </template>
 
 <script>
-// import CommentSingle from '../components/CommentSingle'
+import AnswerSingle from '../components/AnswerSingle'
 
     export default {
         data() {
@@ -16,7 +17,7 @@
 
         },
         components: {
-            // CommentSingle
+            AnswerSingle
         },
         methods: {
             getContent(data) {

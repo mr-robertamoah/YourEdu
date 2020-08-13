@@ -1,7 +1,15 @@
 <template> 
-    <main-modal v-if="showForm" @mainModalDisappear='closeModal'>   
-        <template slot="loading" v-if="computedLoading">
-            loading...
+    <main-modal v-if="showForm" 
+        @mainModalDisappear='closeModal'
+        @clearAlert='clearModalAlert'
+        :loading="computedLoading"
+        heading="edit user information"
+        :alertMessage="modalAlertMessage"
+        :alertError="modalAlertError"
+        :alertSuccess="modalAlertSuccess"
+    >   
+        <template slot="loading">
+            <sync-loader :loading="computedLoading"></sync-loader>
         </template>
         <template slot="main" >
             <welcome-form>
@@ -31,6 +39,15 @@
                             v-model="inputEmail"></text-input>
                     </div>
 
+                    <div class="form-edit">
+                        <date-picker 
+                            :flatPickrConfig="flatPickrConfig"
+                            :placeHolder="computedDob"
+                            @datePicked="dobPicked"
+                            :bottomBorder="true"
+                        ></date-picker>
+                    </div>
+
                     <main-list @listItemSelected='selectGender'
                         :multiple='false'
                         :selectedItem="inputGender"
@@ -56,7 +73,7 @@
                     <main-list @listItemSelected='selectAnswer'
                         :multiple='false'
                         v-if="showAnswerList"
-                        select='choose a your answer'
+                        select='choose your answer'
                         :itemList="possibleAnswers"
                     ></main-list>
                 </template>
@@ -71,12 +88,13 @@
 </template>
 
 <script>
-import WelcomeForm from '../welcome/WelcomeForm'
-import MainModal from '../MainModal'
+import DatePicker from '../DatePicker'
 import PostButton from '../PostButton'
 import MainList from '../MainList'
+import SyncLoader from 'vue-spinner/src/SyncLoader'
 import TextInput from '../TextInput'
 import { mapActions, mapGetters } from 'vuex'
+import { dates } from '../../services/helpers'
 
     export default {
         props: {
@@ -97,24 +115,34 @@ import { mapActions, mapGetters } from 'vuex'
                 inputGender: null,
                 inputOtherNames: null,
                 inputAnswer: null,
+                inputDob: null,
                 mainLoading: false,
                 showAnswerList: false,
-                mainLoading: false,
                 showAnswerText: false,
                 secretQuestionId: null,
                 possibleAnswers: [],
+                flatPickrConfig: {
+                    maxDate: 'today',
+                    dateFormat: 'F j, Y',
+                    altFormat: "F j, Y",
+                },
+                modalAlertMessage: '',
+                modalAlertError: false,
+                modalAlertSuccess: false,
             }
         },
         components: {
-            WelcomeForm,
             TextInput,
+            SyncLoader,
             MainList,
             PostButton,
-            MainModal,
+            DatePicker,
         },
         computed: {
             computedShowSecret(){
-                return this.getUser.hasOwnProperty('secret_answer') && 
+                //have to change this part so you get secret questions even if you have not answered yours
+                return this.getUser.secret_answer ? false :
+                    this.getUser.hasOwnProperty('secret_answer') && 
                     !this.getUser.secret_answer && 
                     this['miscellaneous/getSecretQuestions'].length > 0 ? 
                     true : false
@@ -125,6 +153,15 @@ import { mapActions, mapGetters } from 'vuex'
             computedLoading(){
                 return this['miscellaneous/getLoadingContent'] ? 
                     this['miscellaneous/getLoadingContent'] : this.mainLoading
+            },
+            computedDob(){
+                if (this.getUser) {
+                    if (dates.toDate(new Date(this.getUser.created_at)) !== 
+                        dates.toDate(new Date(this.getUser.dob))) {
+                        return dates.dateReadable(this.getUser.dob).slice(4)
+                    } 
+                }
+                return 'your date of birth'
             },
             loading(){
                 return this['miscellaneous/getLoadingContent']
@@ -149,18 +186,24 @@ import { mapActions, mapGetters } from 'vuex'
                 this.inputEmail = this.inputEmail ? this.inputEmail : this.getUser.email
             },
         },
-        beforeUpdate () {
-
-        },
         methods: {
+            clearModalAlert(){
+                this.modalAlertMessage = ''
+                this.modalAlertError = false
+                this.modalAlertSuccess = false
+            },
+            dobPicked(date){
+                this.inputDob = date
+            },
             closeModal(){
                 this.$emit('mainModalDisappear')
             },
             getSecretQuestions(){
                 this['miscellaneous/getSecret']()
             },
-            clickedCreate(){    
+            async clickedCreate(){    
                 this.mainLoading = true
+                let error = false
 
                 let inputFirstName = this.inputFirstName === null ? this.inputFirstName : this.inputFirstName.trim()
                 let inputLastName = this.inputLastName === null ? this.inputLastName : this.inputLastName.trim()
@@ -175,27 +218,49 @@ import { mapActions, mapGetters } from 'vuex'
                     inputGender = this.inputGender === 'male'? 'MALE' : 'FEMALE'
                 }
                 
-                if (this.getUser.secret_answer) {
-                    inputAnswer = this.inputAnswer.trim()
-                    inputQuestionId = this.inputQuestionId
+                if (!this.getUser.secret_answer && this.inputDob) {
+                    data['question_id'] = this.inputDob.trim()
+                    if (this.inputAnswer && this.inputAnswer.length &&
+                        this.inputAnswer.trim() === '') {
+                        data['answer'] = this.inputAnswer.trim()
+                    } else {
+                        this.modalAlertMessage = 'please answer the question you selected'
+                    }
+                    
                 }
 
-                data = {
-                    first_name: inputFirstName,
-                    last_name: inputLastName,
-                    other_names: inputOtherNames,
-                    email: inputEmail,
-                    gender: inputGender,
-                    answer: inputAnswer,
-                    question_id: inputQuestionId,
+                if (error) {
+                    
+                } else {
+                    data = {
+                        first_name: inputFirstName,
+                        last_name: inputLastName,
+                        other_names: inputOtherNames,
+                        email: inputEmail,
+                        gender: inputGender,
+                    }
+
+                    if (this.inputDob && this.inputDob !== this.computedDob) {
+                        data['dob'] = this.inputDob.trim()
+                    }
+
+                    let response = await this.editUser({
+                        user_id: this.getUser.id,
+                        data
+                    })
+
+                    this.mainLoading = false
+                    if (response === 'successful') {
+                        this.modalAlertSuccess = true
+                        this.modalAlertError = false
+                        this.modalAlertMessage = 'update was successful'
+                    } else {
+                        this.modalAlertSuccess = false
+                        this.modalAlertError = true
+                        this.modalAlertMessage = 'update was unsuccessful'
+                    }
                 }
-
-                this.editUser({
-                    user_id: this.getUser.id,
-                    data
-                })
-
-                this.mainLoading = false
+                
             },
             selectAnswer(item){
                 this.inputAnswer = item

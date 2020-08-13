@@ -9,13 +9,15 @@ class Answer extends Model
 {
     //
     use SoftDeletes;
+
+    protected $fillable = ['answer','work_id','possible_answer_id'];
     
     public function answerable()
     {
         return $this->morphTo();
     }
     
-    public function answerfor()
+    public function answeredby()
     {
         return $this->morphTo();
     }
@@ -25,14 +27,9 @@ class Answer extends Model
         return $this->belongsTo(Work::class);
     }
 
-    public function question()
+    public function marks()
     {
-        return $this->belongsTo(Work::class);
-    }
-
-    public function mark()
-    {
-        return $this->hasOne(Mark::class);
+        return $this->hasMany(Mark::class);
     }
 
     public function files()
@@ -57,5 +54,15 @@ class Answer extends Model
     {
         return $this->morphToMany(Image::class,'imageable')
         ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function comments()
+    {
+        return $this->morphMany(Comment::class,'commentable');
+    }
+
+    public function possibleAnswer()
+    {
+        return $this->belongsTo(PossibleAnswer::class);
     }
 }

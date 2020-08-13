@@ -17,7 +17,7 @@ class CreateEmailsTable extends Migration
             $table->id();
             $table->string('email');
             $table->boolean('show')->default(true);
-            $table->morphs('emailable'); //facilitator professional
+            $table->morphs('emailable'); //facilitator professional school
             $table->softDeletes();
             $table->timestamps();
         });

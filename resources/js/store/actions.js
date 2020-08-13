@@ -5,18 +5,71 @@ import { TokenService } from "../services/token.service";
 
 const actions = {
 
+    async acceptFollowRequest({commit}, data){
+        commit('START_REQUEST')
+
+        let response = await UserService.acceptFollowRequest(data)
+
+        commit('END_REQUEST')
+        if (response.data.message === 'successful') {
+            commit('FOLLOW_BACK_SUCCESS')
+            return 'successful'
+        } else{
+            return 'unsuccessful'
+        }
+
+    },
+
+    async declineFollowRequest({commit}, data){
+        commit('START_REQUEST')
+
+        let response = await UserService.declineFollowRequest(data)
+
+        commit('END_REQUEST')
+        if (response.data.message === 'successful') {
+            // commit('FOLLOW_SUCCESS', data)
+            return 'successful'
+        } else{
+            return 'unsuccessful'
+        }
+
+    },
     async editUser({commit},data){
         commit('miscellaneous/LOAD_CONTENT')
 
         let response = await UserService.editUser(data)
 
+        commit('miscellaneous/LOAD_CONTENT_COMPLETE')
         if (response.data.message === 'successful') {
             commit('RELOAD_SUCCESS', response.data.user)
+            return 'successful'
         } else{
-            
+            return 'unsuccessful'
         }
+    },
+    async userFollowRequests({},data){
+        let response = await UserService.userFollowRequests(data)
 
-        commit('miscellaneous/LOAD_CONTENT_COMPLETE')
+        // commit('miscellaneous/LOAD_CONTENT_COMPLETE')
+        if (response.data.data) {
+            // commit('RELOAD_SUCCESS', response.data.user)
+            return response.data
+        } else{
+            return 'unsuccessful'
+        }
+    },
+
+    ////////////////////////////// profiles
+
+    async createAccount({commit}, data){
+        let response = await UserService.accountCreate(data)
+
+        if (response.data.status) {
+            commit('ACCOUNT_CREATE_SUCCESS', response.data)
+        } else {
+
+        }
+        return response.data
     },
 
     async profileGet({commit},{account, accountId}){
@@ -54,6 +107,9 @@ const actions = {
 
         commit('LOAD_PROFILE_COMPLETE')
     },
+
+    ///////////////////////////////////////////////////////////////////
+
     async login ({commit}, credentials){
         commit('LOGIN_REQUEST')
         commit('RELOAD_REQUEST')
@@ -76,6 +132,7 @@ const actions = {
                 commit('LOGIN_FAILURE',e)
             }
             commit('LOGIN_FAILURE',e)
+            // console.log('error in login actions',error)
         }
 
     },
@@ -115,7 +172,7 @@ const actions = {
 
         try {
             const data = await UserService.register(credentials)
-            // console.log('data',data)
+            console.log('data in actions',data)
             if (!data.errors) {
                 commit('LOGIN_SUCCESS', data.token)
                 commit('RELOAD_SUCCESS', data.user)
@@ -123,17 +180,20 @@ const actions = {
                 if (data.token) {
                     router.push( router.history.current.query.redirectTo || '/welcome')
                 }
-                
+                return 'successful'
             } else {
+                console.log('error in actions',data)
                 commit('VALIDATION_ERRORS', data)
+                return 'unsuccessful'
             }
             
         } catch (e) {
+            console.log('action errors', e.errors)
             if (e instanceof AuthenticationError) {
-                console.log('action errors', e.errors)
 
                 commit('LOGIN_FAILURE',e)
                 commit('VALIDATION_ERRORS', e)
+                return 'unsuccessful'
             }
         }
     },

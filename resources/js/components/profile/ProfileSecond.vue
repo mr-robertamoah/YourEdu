@@ -31,14 +31,68 @@
                 @mouseleave="showEdit = false"
             > 
                 <div>
-                    <profile-detail v-if="computedCompany">
-                        <div slot="top">
-                            Company
-                        </div>
-                        <div slot="text">
-                            {{computedCompany}}
-                        </div>
-                    </profile-detail>
+                    <group-section heading="images" 
+                        @clickedIcon="clickedIcon"
+                        @getMedia="showMediaModalPublic"
+                        @getPrivateMedia="showMediaModalPrivate"
+                        :showIcon="true"
+                        :showPrivate="computedOwner"
+                    >
+                        <template slot="body" v-if="computedImages">
+                            <div class="content"
+                                :key="image.id"
+                                @click="clickedProfileMedia(image,'image')"
+                                v-for="image in computedImages"
+                            >
+                                <img 
+                                    :src="image.url" 
+                                >
+                            </div>
+                        </template>
+                        <template slot="body" v-if="!computedImages">
+                            no images
+                        </template>
+                    </group-section>
+                    <group-section heading="videos" 
+                        @clickedIcon="clickedIcon"
+                        @getMedia="showMediaModalPublic"
+                        @getPrivateMedia="showMediaModalPrivate"
+                        :showIcon="true"
+                        :showPrivate="computedOwner"
+                    >
+                        <template slot="body" v-if="computedVideos">
+                            <video
+                                v-for="video in computedVideos"
+                                :key="video.id"
+                                :src="video.url"
+                                @click="clickedProfileMedia(video,'video')"
+                                controlslist="nodownload"
+                            ></video>
+                        </template>
+                        <template slot="body" v-if="!computedVideos">
+                            no videos
+                        </template>
+                    </group-section>
+                    <group-section heading="audios" 
+                        @clickedIcon="clickedIcon"
+                        @getMedia="showMediaModalPublic"
+                        @getPrivateMedia="showMediaModalPrivate"
+                        :showIcon="true"
+                        :showPrivate="computedOwner"
+                    >
+                        <template slot="body" v-if="computedAudios">
+                            <audio 
+                                v-for="audio in computedAudios"
+                                :key="audio.id"
+                                :src="audio.url" 
+                                @click="clickedProfileMedia(audio,'audio')"
+                                controlslist="nodownload"
+                            ></audio>
+                        </template>
+                        <template slot="body" v-if="!computedAudios">
+                            no audios
+                        </template>
+                    </group-section>
                     <profile-detail v-if="computedAbout">
                         <div slot="top">
                             About
@@ -53,6 +107,91 @@
                         </div>
                         <div slot="text">
                             {{computedInterests}}
+                        </div>
+                    </profile-detail>
+                    <profile-detail v-if="computedPhoneNumbers"
+                        :showIcon="true"
+                        :title="'phones'"
+                        @clickedIcon="clickedIcon"
+                    >
+                        <div slot="top">
+                            phone numbers
+                        </div>
+                        <template slot="link">
+                            <link-item
+                                v-for="(phone) in computedPhoneNumbers"
+                                :key="phone.id"
+                                :id="phone.id"
+                                :title="'phone'"
+                                :seen="phone.show"
+                                :unseen="!phone.show"
+                                :item="phone.phone_number"
+                                :actions="true"
+                                @clickedShow="clickedShow"
+                                @clickedRemove="clickedRemove"
+                            ></link-item>
+                        </template>
+                    </profile-detail>
+                    <profile-detail v-if="computedSocials"
+                        :showIcon="true"
+                        :title="'socials'"
+                        @clickedIcon="clickedIcon"
+                    >
+                        <div slot="top">
+                            link to media accounts
+                        </div>
+                        <template slot="link">
+                            <link-item
+                                v-for="(social) in computedSocials"
+                                :key="social.id"
+                                :id="social.id"
+                                :title="'social'"
+                                :seen="social.show"
+                                :unseen="!social.show"
+                                :item="social.url"
+                                :actions="true"
+                                @clickedShow="clickedShow"
+                                @clickedRemove="clickedRemove"
+                            ></link-item>
+                        </template>
+                    </profile-detail>
+                    <profile-detail v-if="computedEmails"
+                        :showIcon="true"
+                        :title="'emails'"
+                        @clickedIcon="clickedIcon"
+                    >
+                        <div slot="top">
+                            emails
+                        </div>
+                        <template slot="link">
+                            <link-item
+                                v-for="(email) in computedEmails"
+                                :key="email.id"
+                                :id="email.id"
+                                :title="'email'"
+                                :seen="email.show"
+                                :unseen="!email.show"
+                                :item="email.email"
+                                :actions="true"
+                                @clickedShow="clickedShow"
+                                @clickedRemove="clickedRemove"
+                            ></link-item>
+                        </template>
+                    </profile-detail>
+                    <profile-detail v-if="computedInterests">
+                        <div slot="top">
+                            interests
+                        </div>
+                        <div slot="text">
+                            {{computedInterests}}
+                        </div>
+                    </profile-detail>
+                    <profile-detail v-if="computedCompany">
+                        <div slot="top">
+                            Company
+                        </div>
+                        <div slot="text">
+                            {{computedCompany}}
                         </div>
                     </profile-detail>
                     <profile-detail v-if="computedOccupation">
@@ -73,7 +212,10 @@
                     </template>
                 </group-section>
             </div>
-            <div class="activity" v-if="activitySection || activateActivity">
+            <div class="activity" 
+                v-if="activitySection || activateActivity"
+                
+            >
                 <div class="spinner">
                     <sync-loader 
                         :loading="computedPostCreating"
@@ -85,27 +227,162 @@
                 <template v-if="computedPosts">
                     <post-show
                         @askLoginRegister="askLoginRegister"
+                        @clickedShowPostComments="clickedShowPostComments"
+                        @clickedShowPostPreview="clickedShowPostPreview"
                         :key="key"
                         v-for="(post,key) in computedPosts"
                         :post="post"
+                        @clickedMedia="clickedMedia"
                     ></post-show>
                 </template>
                 <post-none v-else></post-none>
                 <div class="none" v-if="complete">
                     no more posts
                 </div>
-                <infinite-loading
-                    @infinite="infiniteHandler"
-                ></infinite-loading>
             </div>
         </div>
+        <just-fade>
+            <template slot="transition" v-if="showModal"
+                @mainModalDisappear="modalDisappear"
+            >
+                <main-modal
+                    @mainModalDisappear="showModal=false"
+                    :alertMessage="modalAlertMessage"
+                    :alertError="modalAlertError"
+                    :alertSuccess="modalAlertSuccess"
+                    @clearAlert="clearAlert"
+                    :loading="modalLoading"
+                >
+                    <template slot="loading">
+                        <sync-loader :loading="modalLoading"></sync-loader>
+                    </template>
+                    <template slot="main">
+                        <welcome-form>
+                            <template slot="input">
+                                <div class="profile-section">
+                                    <text-input
+                                        v-model="inputText"
+                                        :type="inputType"
+                                        :placeholder="inputPlaceholder"
+                                        :bottomBorder="true"
+                                    ></text-input>
+                                    <div class="option-section">
+                                        <span>show on profile?</span>
+                                        <div class="option" @click="clickedYes"
+                                            :class="{yes:yes}"
+                                        >
+                                            yes
+                                        </div>
+                                        <div class="option" @click="clickedNo"
+                                            :class="{no:no}"
+                                        >
+                                            no
+                                        </div>
+                                    </div>
+                                    <div class="option-info">
+                                        it will be shown on your profile by default
+                                    </div>
+                                </div>
+                            </template>
+                            <template slot="buttons">
+                                <post-button
+                                    buttonText="add"
+                                    @click="clickedAdd"
+                                ></post-button>
+                            </template>
+                        </welcome-form>
+                    </template>
+                </main-modal>
+            </template>
+        </just-fade>
+        <just-fade>
+            <template slot="transition" 
+                v-if="showFileModal"
+            >
+                <main-modal
+                    @mainModalDisappear="fileModalDisappear"
+                    :alertMessage="modalAlertMessage"
+                    :alertError="modalAlertError"
+                    :alertSuccess="modalAlertSuccess"
+                    @clearAlert="clearAlert"
+                    :loading="modalLoading"
+                >
+                    <template slot="loading">
+                        <sync-loader :loading="modalLoading"></sync-loader>
+                    </template>
+                    <template slot="main">
+                        <welcome-form>
+                            <template slot="input">
+                                <file-preview
+                                    :show="showMediaPreview"
+                                    :file="file"
+                                    @removeFile="removeMedia"
+                                ></file-preview>
+                                <div class="upload" 
+                                    @click="clickedAddFile"
+                                    :title="addMediaTitle"
+                                >
+                                    <font-awesome-icon
+                                        :icon="addMediaIcon"
+                                    ></font-awesome-icon>
+                                </div>
+                                <div class="profile-section">
+                                    <div class="option-section">
+                                        <span>show on profile?</span>
+                                        <div class="option" @click="clickedYes"
+                                            :class="{yes:yes}"
+                                        >
+                                            yes
+                                        </div>
+                                        <div class="option" @click="clickedNo"
+                                            :class="{no:no}"
+                                        >
+                                            no
+                                        </div>
+                                    </div>
+                                    <div class="option-info">
+                                        it will be shown on your profile by default
+                                    </div>
+                                </div>
+                                <input type="file" ref="inputfile" class="d-none"
+                                    @change="inputFileChange">
+                            </template>
+                            <template slot="buttons" v-if="showMediaAdd">
+                                <post-button
+                                    buttonText="add"
+                                    @click="clickedAddMedia"
+                                ></post-button>
+                            </template>
+                        </welcome-form>
+                    </template>
+                </main-modal>
+            </template>
+        </just-fade>
+        <just-fade>
+            <template slot="transition" v-if="showMediaModal">
+                <media-modal
+                    @mainModalDisappear="mediaModalDisappear"
+                    @mainModalAppear="mediaModalAppear"
+                    :mediaData="mediaData"
+                    :show="showMediaModal"
+                    :loading="mediaLoading"
+                    :showMore="showMediaMore"
+                    :main="showMediaMain"
+                    @showMoreMedia="showMoreMedia"
+                    @clickedMediaIcon="clickedMediaIcon"
+                >
+                    <template slot="loading">
+                        <sync-loader :loading="mediaLoading"></sync-loader>
+                    </template>
+                </media-modal>
+            </template>
+        </just-fade>
     </div>
 </template>
 
 <script>
 import PostButton from '../PostButton'
 import Badge from '../Badge'
-import InfiniteLoading from 'vue-infinite-loading'
 import DetailShowcase from './DetailShowcase'
 import ProfilePicture from './ProfilePicture'
 import ProfileDetail from './ProfileDetail'
@@ -115,6 +392,9 @@ import BlackWhiteBadge from '../BlackWhiteBadge'
 import PostCreate from '../PostCreate'
 import SyncLoader from 'vue-spinner/src/SyncLoader'
 import PostShow from '../PostShow'
+import LinkItem from '../profile/LinkItem'
+import FilePreview from '../FilePreview'
+import TextInput from '../TextInput'
 import PostNone from '../PostNone'
 import GroupSection from './GroupSection'
 import { mapGetters, mapActions } from 'vuex'
@@ -122,12 +402,14 @@ import { mapGetters, mapActions } from 'vuex'
     export default {
         name: 'SecondSection',
         components: {
-            InfiniteLoading,
             Badge,
             DetailShowcase,
             PostButton,
             GroupSection,
             PostNone,
+            TextInput,
+            FilePreview,
+            LinkItem,
             PostShow,
             SyncLoader,
             PostCreate,
@@ -156,16 +438,71 @@ import { mapGetters, mapActions } from 'vuex'
                 activitySection: false,
                 showEdit: false,
                 complete: false,
+                showModal: false,
+                yes: false,
+                no: false,
+                inputText: '',
+                inputType: 'text',
+                addType: '',
+                inputPlaceholder: '',
+                modalLoading: false,
+                nextPage: 1,
+                //add media
+                showFileModal: false,
+                showMediaPreview: false,
+                addMediaIcon: ['fa','file-image'],
+                file: null,
+                mediaAcceptType: '',
+                showMediaAdd: true,
+                addMediaTitle: '',
+                //alert
+                modalAlertMessage: '',
+                modalAlertError: false,
+                modalAlertSuccess: false,
+                mediaData: {
+                    media: [],
+                    mediaType: ''
+                },
+                mediaLoading: false,
+                showMediaModal: false,
+                showMediaMain: false,
+                showMediaMore: false,
+                showMoreText: '',
+                getMediaType: 'public',
+                mediaType: '',
             }
         },
         computed: {
-            computedPosts(){
-                return this['profile/getPosts'] && this['profile/getPosts'].length > 0 ? 
-                    this['profile/getPosts'] : null
+            computedOwner(){
+                if (this.getUserId && this['profile/getProfile']) {
+                    
+                    return this.getUserId === this['profile/getProfile'].user_id ? true : false
+                }
+                return false
             },
             ...mapGetters(['profile/getProfile','profile/getAccount','getUserId',
-                'profile/getMsg','profile/getPostingStatus','profile/getPosts',
-                'profile/getLoadingStatus','profile/getPostsDone','profile/getNextPage']),
+                'profile/getMsg','profile/getPostingStatus','profile/getHomePosts',
+                'profile/getLoadingStatus','profile/getPostsDone','profile/getNextPage',
+                'profile/getStateMedia','profile/getMoreMedia']),
+            computedImages(){
+                return this['profile/getProfile'] ? this['profile/getProfile'].images : null 
+            },
+            computedVideos(){
+                return this['profile/getProfile'] ? this['profile/getProfile'].videos : null 
+            },
+            computedAudios(){
+                return this['profile/getProfile'] ? this['profile/getProfile'].audios : null 
+            },
+            computedEmails(){
+                return this['profile/getProfile'] ? this['profile/getProfile'].owner.emails : null 
+            },
+            computedSocials(){
+                return this['profile/getProfile'] ? this['profile/getProfile'].socials : null
+            },
+            computedPosts(){
+                return this['profile/getHomePosts'] && this['profile/getHomePosts'].length > 0 ? 
+                    this['profile/getHomePosts'] : null
+            },
             computedAbout() {
                 return this['profile/getProfile'] && this['profile/getProfile'].about ?
                     this['profile/getProfile'].about : 'nothing yet'
@@ -188,8 +525,7 @@ import { mapGetters, mapActions } from 'vuex'
                     this['profile/getProfile'].location : 'nothing yet'
             },
             computedPhoneNumbers() {
-                return this['profile/getProfile'].hasOwnProperty('phoneNumbers') &&
-                    this['profile/getProfile'].phoneNumbers != null ? 
+                return this['profile/getProfile'] && this['profile/getProfile'].hasOwnProperty('phoneNumbers') ? 
                     this['profile/getProfile'].phoneNumbers : []
             },
             computedSubjects() {
@@ -237,26 +573,345 @@ import { mapGetters, mapActions } from 'vuex'
             },
         },
         methods: {
+            clickedShowPostComments(data){
+                this.$emit('clickedShowPostComments',data)
+            },
+            clickedShowPostPreview(data){
+                this.$emit('clickedShowPostPreview',data)
+            },
+            async clickedMediaIcon(iconData){
+                let data = {
+                    account: this.$route.params.account,
+                    accountId: this.$route.params.accountId,
+                    media: this.mediaType,
+                    mediaId: iconData.mediaId
+                }
+                let response = null
+                if (iconData.type === 'change') {
+                    response = await this['profile/changeMedia'](data)
+                } else if (iconData.type === 'delete') {
+                    response = await this['profile/deleteMedia'](data)
+                }
+
+                if (response !== 'unsuccessful') {
+                    let mediaIndex = this.mediaData.media.findIndex(media=>{
+                        return media.id === iconData.mediaId
+                    })
+                    if (mediaIndex > -1) {
+                        this.mediaData.media.splice(mediaIndex,1)
+                    }
+                }
+            },
+            showMediaModalPrivate(data){ //method to indicate its private and get modal up 
+                this.getMediaType = 'private'
+                this.showMediaModal = true
+                this.mediaType = data
+                this.mediaData.mediaType = data
+            },
+            showMediaModalPublic(data){
+                this.getMediaType = 'public'
+                this.showMediaModal = true
+                this.mediaType = data
+                this.mediaData.mediaType = data
+            },
+            mediaModalAppear(){
+                if (this.getMediaType === 'public') {
+                    this.getMedia(this.mediaType)
+                } else if (this.getMediaType === 'private') {
+                    this.getPrivateMedia(this.mediaType)
+                }
+            },
+            showMoreMedia(){
+                if (this['profile/getMoreMedia']) {
+                    if (this.getMediaType === 'public') {
+                        this.getMedia(this.mediaType)
+                    } else if (this.getMediaType === 'private') {
+                        this.getPrivateMedia(this.mediaType)
+                    }
+                }
+            },
+            async getMedia(mediaType){
+                this.getMediaType = 'public'
+                this.mediaLoading = true
+                let data = {
+                    account: this.$route.params.account,
+                    accountId: this.$route.params.accountId,
+                    nextPage: this.nextPage
+                }
+                if (mediaType.includes('image')) {
+                    data['media'] = 'images'
+                } else if (mediaType.includes('audio')) {
+                    data['media'] = 'videos'
+                } else if (mediaType.includes('video')) {
+                    data['media'] = 'audios'
+                }
+
+                let response = await this['profile/getMedia'](data)
+
+                this.mediaLoading = false
+                if (response !== 'unsuccessful' && response.data.length) {
+                    console.log(response.data)
+                    response.data.forEach(media=>{
+                        this.mediaData.media.push(media)
+                    })
+                }
+                if (response.links.next) {
+                    this.nextPage += 1
+                    this.showMoreMedia = true
+                } else {
+                    this.showMoreMedia = false
+                }
+            },
+            async getPrivateMedia(mediaType){
+                this.getMediaType = 'private'
+                this.mediaLoading = true
+                let data = {
+                    account: this.$route.params.account,
+                    accountId: this.$route.params.accountId,
+                    nextPage: this.nextPage
+                }
+                if (mediaType.includes('image')) {
+                    data['media'] = 'images'
+                } else if (mediaType.includes('audio')) {
+                    data['media'] = 'videos'
+                } else if (mediaType.includes('video')) {
+                    data['media'] = 'audios'
+                }
+
+                let response = await this['profile/getPrivateMedia'](data)
+
+                this.mediaLoading = false
+                if (response !== 'unsuccessful' && response.data.length) {
+                    console.log(response.data)
+                    response.data.forEach(media=>{
+                        this.mediaData.media.push(media)
+                    })
+                }
+                if (response.links.next) {
+                    this.nextPage += 1
+                    this.showMoreMedia = true
+                } else {
+                    this.showMoreMedia = false
+                }
+            },
+            clickedProfileMedia(media,mediaType){
+                this.clickedMedia({media,mediaType})
+            },
+            clickedMedia(data){
+                this.$emit('clickedMedia',data)
+            },
+            async clickedShow(clickedData){
+                let data = {}
+
+                if (clickedData.title === 'email') {
+                    data['item'] = 'email'
+                } else if (clickedData.title === 'social') {
+                    data['item'] = 'social'
+                } else if (clickedData.title === 'phone') {
+                    data['item'] = 'phone'
+                }
+                data['id'] = clickedData.id
+
+                let response = await this['profile/markInfo'](data)
+
+                if (response === 'successful') {
+                    
+                }
+
+            },
+            async clickedRemove(clickedData){
+                let data = {}
+
+                if (clickedData.title === 'email') {
+                    data['item'] = 'email'
+                } else if (clickedData.title === 'social') {
+                    data['item'] = 'social'
+                } else if (clickedData.title === 'phone') {
+                    data['item'] = 'phone'
+                }
+                data['id'] = clickedData.id
+
+                let response = await this['profile/removeInfo'](data)
+
+                if (response === 'successful') {
+                    
+                }
+            },
+            clearAlert(){
+                this.modalAlertSuccess = false
+                this.modalAlertError = false
+                this.modalAlertMessage = ''
+            },
+            clickedAddFile(){ 
+                this.showMediaPreview = false
+                this.$refs.inputfile.setAttribute('accept', this.mediaAcceptType)
+                this.$refs.inputfile.click()
+            },
+            mediaModalDisappear(){
+                this.showMediaModal = false
+                this.mediaData.media = []
+                this.mediaData.mediaType = ''
+                this.nextPage = 1
+            },
+            fileModalDisappear(){
+                this.showFileModal=false
+                this.removeMedia()
+            },
+            removeMedia(){
+                this.file = null
+            },
+            async clickedAddMedia(){
+                if (this.file) {
+                    this.modalLoading = true
+                    this.showMediaAdd = false
+                    let formData = new FormData
+                    let profileId = this['profile/getProfile'].id
+
+                    formData.append('file', this.file)
+                    formData.append('account', this.$route.params.account)
+                    formData.append('accountId', this.$route.params.accountId)
+
+                    if (this.no) {
+                        formData.append('show','PRIVATE')
+                    } else {
+                        formData.append('show','PUBLIC')
+                    }
+
+                    let data = {
+                        profileId, formData
+                    }
+                    let response = await this['profile/uploadFile'](data)
+
+                    this.modalLoading = false
+                    if (response === 'successful') {
+                        this.modalAlertSuccess = true
+                        this.modalAlertMessage = `successfully uploaded of ${this.addType}`
+                    } else {
+                        this.modalAlertError = true
+                        this.modalAlertMessage = `upload of ${this.addType} was unsuccessful`
+                        this.showMediaAdd = true
+                    }
+                } else {
+                    this.modalAlertError = true
+                    this.modalAlertMessage = this.addType !== 'video' ?
+                        `please select an ${this.addType} first` : 'please select a video first'
+                }
+            },
+            async clickedAdd(){
+                if (this.inputText && this.inputText !== '') {
+                    this.modalLoading = true
+                    let data = {}
+
+                    if (this.addType === 'email') {
+                        data['email'] = this.inputText.trim()
+                    } else if (this.addType === 'social') {
+                        data['social'] = this.inputText.trim()
+                    } else if (this.addType === 'phone') {
+                        data['phone'] = this.inputText.trim()
+                    }
+
+                    if (this.no) {
+                        data['show'] = false
+                    } else {
+                        data['show'] = true
+                    }
+
+                    let mainData = {
+                        profile_id: this['profile/getProfile'].id,
+                        data
+                    }
+
+                    let response = await this['profile/addInfo'](mainData)
+
+                    this.modalLoading = false
+                    if (response === 'successful') {
+                        this.modalAlertSuccess = true
+                        this.modalAlertError = false
+                        this.modalAlertMessage = this.addType === 'email' ? 
+                            'email was successfully added' : 
+                            this.addType === 'social' ? 'social medai link was successfully added' : 
+                            this.addType === 'phone' ? 'phone number was successfully added' : ''
+                    } else{
+                        this.modalAlertSuccess = false
+                        this.modalAlertError = true
+
+                        if (response.hasOwnProperty('email')) {
+                            this.modalAlertMessage = response.email.toString()
+                        } else if (response.hasOwnProperty('phone')) {
+                            this.modalAlertMessage = response.phone.toString()
+                        } else if (response.hasOwnProperty('url')) {
+                            this.modalAlertMessage = response.phone.toString()
+                        }
+                        
+                    }
+
+                } else {
+                    this.modalAlertError = true
+                    this.modalAlertMessage = this.addType === 'email' ? 
+                        'Please enter an email.' : 'Please enter a link to your social media account.'
+                }
+            },
+            inputFileChange(event){
+                let file = event.target.files[0]
+                this.showMediaPreview = true
+                this.file = file
+            },
+            clickedYes(){
+                this.no = false
+                this.yes = true
+            },
+            clickedNo(){
+                this.yes = false
+                this.no = true
+            },
+            clickedIcon(data){
+                if (data === 'emails') {
+                    this.inputPlaceholder = 'your email'
+                    this.addType = 'email'
+                    this.inputType = 'email'
+                    this.showModal = true
+                } else if (data === 'socials') {
+                    this.inputPlaceholder = 'your social media url'
+                    this.addType = 'social'
+                    this.inputType = 'text'
+                    this.showModal = true
+                } else if (data === 'phones') {
+                    this.inputPlaceholder = 'your phone number'
+                    this.addType = 'phone'
+                    this.inputType = 'text'
+                    this.showModal = true
+                } else if (data === 'images') {
+                    this.inputPlaceholder = 'your phone number'
+                    this.addType = 'image'
+                    this.addMediaTitle = 'add an image'
+                    this.addMediaIcon = ['fa','file-image']
+                    this.mediaAcceptType = 'image/apng,image/bmp,image/gif,image/x-icon,image/jpeg,image/png,image/svg+xml,image/webp'
+                    this.showFileModal = true
+                } else if (data === 'videos') {
+                    this.inputPlaceholder = 'your phone number'
+                    this.addType = 'video'
+                    this.addMediaTitle = 'add a video'
+                    this.addMediaIcon = ['fa','file-video']
+                    this.mediaAcceptType = 'video/webm,video/mp4,video/ogg'
+                    this.showFileModal = true
+                } else if (data === 'audios') {
+                    this.inputPlaceholder = 'your phone number'
+                    this.addType = 'audio'
+                    this.addMediaTitle = 'add an audio'
+                    this.addMediaIcon = ['fa','file-audio']
+                    this.mediaAcceptType = 'audio/mpeg,audio/ogg,audio/wav'
+                    this.showFileModal = true
+                }
+            },
+            modalDisappear(){
+                this.showModal = false
+            },
             askLoginRegister(){
                 this.$emit('askLoginRegister','profileSsecond')
             },
-            infiniteHandler($state){
-                // console.log('at infinite')
-                if (!this['profile/getPostsDone']) {
-                    let data = {
-                        account: this.account,
-                        accountId: this.accountId,
-                        nextPage: this['profile/getNextPage']
-                    }
-                    this['profile/getProfilePosts'](data)
-                    // $state.loaded()
-                    this.complete = false
-                } else {
-                    $state.complete()
-                    this.complete = true
-                }
-            },
-            ...mapActions(['profile/getProfilePosts']),
+            ...mapActions(['profile/getProfilePosts','profile/addInfo','profile/markInfo',
+                'profile/removeInfo','profile/uploadFile','profile/getMedia',
+                'profile/getPrivateMedia','profile/changeMedia','profile/deleteMedia']),
             editProfile(){
                 this.$emit('editProfile')
             },
@@ -328,7 +983,6 @@ import { mapGetters, mapActions } from 'vuex'
 
     .second-section{
         background-color: aliceblue;
-        position: relative;
         top: 10vw;
         width: 100%;
             
@@ -383,6 +1037,50 @@ import { mapGetters, mapActions } from 'vuex'
                 }
             }
         }
+
+        .profile-section{
+            display: inline-block;
+            width: 100%;
+
+            .option-section{
+                font-size: 14px;
+                display: inline-flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                margin-top: 5px;
+
+                .option{
+                    font-size: 14px;
+                    padding: 5px;
+                    cursor: pointer;
+                    margin-left: 5px;
+
+                    &:hover{
+                        box-shadow: 0 0 3px gray;
+                        transition: all 1s ease;
+                    }
+                }
+
+                .yes{
+                    color: green;
+                    box-shadow: 0 0 3px gray;
+                }
+
+                .no{
+                    color: red;
+                    box-shadow: 0 0 3px gray;
+                }
+            }
+
+            .option-info{
+                font-size: 12px;
+                color: gray;
+                font-weight: 400;
+                width: 100%;
+                text-align: start;
+            }
+        }
     }
 
 
@@ -394,10 +1092,8 @@ import { mapGetters, mapActions } from 'vuex'
 
         
     .second-section{
-        
             
         .top{
-            
 
             .user:hover,
             .activity:hover{
@@ -438,10 +1134,8 @@ import { mapGetters, mapActions } from 'vuex'
 
         
     .second-section{
-        
             
         .top{
-            
 
             .user:hover,
             .activity:hover{
@@ -467,6 +1161,16 @@ import { mapGetters, mapActions } from 'vuex'
                 margin: 10px 0;
                 min-height: 50vh;
                 padding: 10px
+            }
+        }
+
+        .profile-section{
+
+            .option-section{
+
+                .option{
+                    font-size: 12px;
+                }
             }
         }
     }

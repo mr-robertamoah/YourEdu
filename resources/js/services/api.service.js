@@ -53,8 +53,13 @@ const ApiService = {
             (error)=>{
                 if (error.response.status == 401) {
                     if (error.config.url.includes('/api/login') ||
-                        error.config.url.includes('/api/register') ||
-                        error.config.url.includes('/api/refresh')) {
+                        error.config.url.includes('/api/register')) {
+                        // store.dispatch('logout')
+                        TokenService.removeToken()
+                        throw error
+                    } 
+
+                    if (error.config.url.includes('/api/refresh')) {
                         store.dispatch('logout')
                         throw error
                     } 

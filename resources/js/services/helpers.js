@@ -77,7 +77,7 @@ const dates = {
         } else if (divInHours > 2 && divInHours < 24) {
             return `today`
         } else if (divInDays > 1 && divInDays < 2) {
-            return `yesterday`
+            return `${Math.floor(divInHours)} hours ago`
         } else if (divInDays > 2 && divInDays < 3) {
             return `2 days ago`
         } else if (divInDays > 3) {
@@ -101,26 +101,38 @@ const files = {
 }
 
 const strings = {
-    content(string, int = 100, isArray = false){
+    content(string, int = 100,){
         if (string) {
-            let newString = ''
-            if (isArray) {
-                for (let i = 0; i < string.length; i++) {
-                    if (i === string.length - 1) {
-                        newString += string[i]
-                    } else {
-                        newString += string[i] + "\n\n"
-                    }
-                }
+            if (string.length > int) {
+                return `${string.slice(0,int)}...`
             } else {
-                newString = string
+                return string
             }
-            
-            if (newString.length > int) {
-                return `${newString.slice(0,int)}...`
+        }
+    },
+    arrayToNewLineStrings(array){ //for turning arrays to strings with newlines
+        let newString = ''
+        for (let i = 0; i < array.length; i++) {
+            if (i === array.length - 1) {
+                newString += array[i]
             } else {
-                return newString
+                newString += array[i] + "\n\n"
             }
+        }
+
+        return newString
+    },
+    getAccount(account){
+        if (account.toString().toLocaleLowerCase().includes('learner')) {
+            return 'learner'
+        } else if (account.toString().toLocaleLowerCase().includes('parent')) {
+            return 'parent'
+        } else if (account.toString().toLocaleLowerCase().includes('facilitator')) {
+            return 'facilitator'
+        } else if (account.toString().toLocaleLowerCase().includes('professional')) {
+            return 'professional'
+        } else if (account.toString().toLocaleLowerCase().includes('school')) {
+            return 'school'
         }
     }
 }

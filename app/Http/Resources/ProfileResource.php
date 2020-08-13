@@ -22,13 +22,20 @@ class ProfileResource extends JsonResource
             'owner' => $this->profileable,
             'owner_name' => $this->profileable->name,
             'username' => $this->profileable->user->username,
-            'follows' => $this->profileable->follows()->count(),
-            'followings' => $this->profileable->followings()->count(),
+            'followings' => $this->profileable->followings()->whereNotNull('user_id')->count(),
             'socials' => $this->socials,
             'videos' => $this->when(
-                $this->videos()->exists() && 
-                $this->videos->state === 'PUBLIC',
-                $this->videos
+                $this->videos()->exists(),
+                VideoResource::collection($this->videos()->where('state','PUBLIC')->latest()->take(4)->get())
+            ),
+            'images' => $this->when(
+                $this->images()->exists(),
+                ImageResource::collection($this->images()->where('state','PUBLIC')
+                ->where('thumbnail', 0)->latest()->take(4)->get())
+            ),
+            'audios' => $this->when(
+                $this->audios()->exists(),
+                AudioResource::collection($this->audios()->where('state','PUBLIC')->latest()->take(4)->get())
             ),
             'gender' => $this->when(
                 $this->profileable->user->gender,$this->profileable->user->gender
@@ -43,9 +50,15 @@ class ProfileResource extends JsonResource
             'url' => $this->url,
             // 'address' => $this->address,
         ];
+        if ($this->profileable->follows) {
+            $array['follows'] = FollowResource::collection($this->profileable->follows);
+        } else {
+            $array['follows'] = [];
+        }
+        // dd($array);
 
         if ($this->profileable_type === "App\\YourEdu\\Learner") {
-            $array['owner'] = new LearnerResource($this->profileable);
+            $array['owner'] = $this->profileable;
         } else if ($this->profileable_type === "App\\YourEdu\\ParentModel") {
             $array['owner'] = new ParentModelResource($this->profileable);
         } else if ($this->profileable_type === "App\\YourEdu\\Facilitator") {

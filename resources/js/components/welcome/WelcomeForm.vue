@@ -58,6 +58,14 @@ $input-color: rgba(22, 233, 205, 1);
                 margin: 10px auto;
             }
 
+            .upload{
+                width: auto;
+                padding: 5px;
+                cursor: pointer;
+                text-align: end;
+                border-bottom: 1px solid $input-color;
+            }
+
             .form-input{
                 border: none;
                 border-bottom: 1px solid $input-color;
@@ -81,36 +89,62 @@ $input-color: rgba(22, 233, 205, 1);
                 margin: 10px auto;
             }
 
-            .section{
+            .ask-answers{
                 width: 100%;
-                position: relative;
-                display: block;
+                display: inline-flex;
+                align-items: center;
+                font-size: 12px;
 
-                .add{
-                    position: absolute;
-                    top: 0;
-                    right: 0;
-                    font-size: 16px;
-                    color: $input-color;
-                    cursor: pointer;
-                }
-
-                .minus{
-                    position: absolute;
-                    top: 0;
-                    right: 0;
-                    margin-top: 25px;
-                    font-size: 16px;
+                .no{
                     color: red;
+                    padding: 5px;
+                    font-size: 12px;
+                    margin-left: 5px;
                     cursor: pointer;
+
+                    &:hover{
+                        box-shadow: 0 0 3px gray;
+                        transition: all 1s ease;
+                    }
                 }
 
-                .lower{
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
+                .yes{
+                    color: green;
+                    box-shadow: 0 0 3px gray;
+                    transition: all 1s ease;
                 }
             }
+
+            // .section{
+            //     width: 100%;
+            //     position: relative;
+            //     display: block;
+
+            //     .add{
+            //         position: absolute;
+            //         top: 0;
+            //         right: 0;
+            //         font-size: 16px;
+            //         color: $input-color;
+            //         cursor: pointer;
+            //     }
+
+            //     .minus{
+            //         position: absolute;
+            //         top: 0;
+            //         right: 0;
+            //         margin-top: 25px;
+            //         font-size: 16px;
+            //         color: red;
+            //         cursor: pointer;
+            //     }
+
+            //     .lower{
+            //         display: flex;
+            //         justify-content: space-between;
+            //         align-items: center;
+            //     }
+            // }
         }
     }
 

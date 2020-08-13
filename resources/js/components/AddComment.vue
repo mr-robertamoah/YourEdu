@@ -124,11 +124,15 @@ import { mapGetters, mapActions } from 'vuex'
             MainTextarea,
         },
         props: {
-            what: {
+            what: { //what the comment or answer goes to
                 type: String,
                 default: ''
             },
             edit: {
+                type: Boolean,
+                default: false
+            },
+            onPostModal: { // true means its on the post modal
                 type: Boolean,
                 default: false
             },
@@ -177,7 +181,6 @@ import { mapGetters, mapActions } from 'vuex'
                 immediate: true,
                 handler(newValue, oldValue){
                     if (newValue) {
-                        
                         
                     }
                 },
@@ -327,6 +330,7 @@ import { mapGetters, mapActions } from 'vuex'
                     response = await this['profile/updateComment']({data,formData})
                 } else {
                     let data = {
+                        onPostModal: this.onPostModal,
                         item: this.what,
                         itemId: this.id,
                     }
@@ -335,7 +339,7 @@ import { mapGetters, mapActions } from 'vuex'
                 }
                 
                 
-                if (response === 'successful') {
+                if (response !== 'unsuccessful') {
                     this.file = null
                     this.alertSuccess = true
                     this.alertDanger = false
@@ -343,6 +347,11 @@ import { mapGetters, mapActions } from 'vuex'
                     this.commentText = ''
                     if (!this.edit) {
                         this.$emit('postAddComplete','successful')
+                        if (this.onPostModal) {
+                            this.$emit('postModalCommentCreated',response.comment)
+                        }                    
+                    } else {
+                        this.$emit('postModalCommentEdited',response.comment)
                     }
                     
                 } else {

@@ -14,27 +14,30 @@ class AuthenticationError extends Error{
 
 const loginRegister = {
     async loginRegisterTry(url, sentData){
-        const {username,email,password, 
-            passwordConfirmation, firstName, lastName,
-            otherNames, dob} = sentData
-        
-        const response = await ApiService.post(url, {username, email, password, 
-            passwordConfirmation, firstName, lastName, 
-            otherNames, dob})
-        // console.log(response)
-        let token = response.data.token
-        // let user = response.data.user
+        let response = null
+        if (url.includes('login')) {
+            const {username,email,password} = sentData
+            
+            response = await ApiService.post(url, {username, email, password})
+        } else if (url.includes('register')) {
+            // console.log(sentData)
+            const {username,email,password, 
+                password_confirmation, first_name, last_name,
+                other_names, dob} = sentData
+            
+            response = await ApiService.post(url, {username, email, password, 
+                password_confirmation, first_name, last_name, 
+                other_names, dob})
+        }
 
-        // if (user) {
-        //     TokenService.setUser(user)
-        // }
+        let token = response.data.token
+
         if (token) {
             TokenService.setToken(token)
             ApiService.setHeaderAuth()
         }
 
-        // ApiService.mount401Interceptor()
-
+        // console.log('response from main', response)
         return response.data
     },
 
@@ -42,12 +45,65 @@ const loginRegister = {
 
         const response = await ApiService.get(url)
 
-        // console.log('user',response)
         return response.data
     }
 }
 
 const UserService = {
+
+    ////////////////////////////////////////////////////////////////////account
+
+    async accountCreate(data){
+        
+        try {
+            let response = await ApiService.post(`/api/create`,data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
+////////////////////////////////////////////////////// requests
+    async declineFollowRequest(data){
+        let {requestId} = data
+        try {
+            let response = await ApiService.post(`/api/decline/request/${requestId}`)
+            
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async acceptFollowRequest(data){
+        let {requestId, account, accountId} = data
+        try {
+            let response = await ApiService.post(`/api/accept/request/${requestId}`,{
+                account, accountId
+            })
+            
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getFollowRequests(data){
+        let {nextPage} = data
+
+        try {
+            let response = null
+            if (!nextPage) {
+                response = await ApiService.get(`/api/requests/follow`)
+            } else {
+                response = await ApiService.get(`/api/requests/follow?page=${nextPage}`)
+            }
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    
+////////////////////////////////////////////////////////////////////
 
     async editUser(mainData){
         let {user_id, data} = mainData
@@ -72,33 +128,42 @@ const UserService = {
             return error.response
         }
     },
-
     login : async function(data){
         try {
             return await loginRegister.loginRegisterTry('/api/login', data)
         } catch (error) {
+            // console.log('error in login user.service',error)
             // throw new AuthenticationError(error.response.status, error.response.data.details)
             throw new AuthenticationError(error.response.status, 
                 error.response.statusText, error.response.data.errors)
         }
     },
-
     register : async function(data){
         try {
             return await loginRegister.loginRegisterTry('/api/register', data)
         } catch (error) {
-            // console.log('thow new', error.response)
+        // console.log('thow new', error.response)
             throw new AuthenticationError(error.response.status, 
                 error.response.statusText, error.response.data.errors)
         }
     },
-
     refreshUser: async function () {
         try {
             return await loginRegister.getUser('/api/user')
         } catch (error) {
             // console.log('thown in refreshUser', error)
             throw error
+        }
+    },
+    async userFollowRequests(data){
+        try {
+            let {nextPage} = data
+
+            let response = await ApiService.get(`/api/user/followrequests?page=${nextPage}`)
+
+            return response
+        } catch (error) {
+            return error.response
         }
     },
 

@@ -1,16 +1,16 @@
 <template>
     <div class="validation">
         <div>
-            <div v-if="errorString != '' || errorString !=  null">
+            <div v-if="isString">
                 {{errorString}}
             </div>
             <div v-else v-for="(error,key) in errors" :key="key">
-                <div class="validation-errors" v-if="error && error[key]">
-                    {{error[key]}}
+                <div class="validation-errors">
+                    {{error.toString()}}
                 </div>
-                <div class="validation-errors" v-else>
+                <!-- <div class="validation-errors" v-else>
                     {{error}}
-                </div>
+                </div> -->
             </div>
         </div>
         <div class="cursor-pointer" 
@@ -24,6 +24,10 @@
 <script>
     export default {
         props: {
+            isString: {
+                type: Boolean,
+                default: true
+            },
             errorString: {
                 type: String,
                 default: ''
@@ -60,7 +64,7 @@
             disappearSoon(){
                 setTimeout(function() {
                     this.$emit('clearValidation')
-                }.bind(this),2000)
+                }.bind(this),5000)
             }
         },
     }

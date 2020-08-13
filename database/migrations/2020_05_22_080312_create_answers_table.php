@@ -15,16 +15,17 @@ class CreateAnswersTable extends Migration
     {
         Schema::create('answers', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('answerable'); // learner facilitator professional 
+            $table->nullableMorphs('answerable'); // riddle question
             $table->unsignedBigInteger('work_id')->nullable();
-            $table->unsignedBigInteger('question_id')->nullable();
-            $table->nullableMorphs('answerfor'); // riddle
+            $table->unsignedBigInteger('possible_answer_id')->nullable();
+            $table->string('answer')->nullable();
+            $table->nullableMorphs('answeredby'); // parent learner facilitator professional 
             $table->softDeletes();
             $table->timestamps();
 
 
             // $table->foreign('work_id')->references('id')->on('work')->cascadeOnDelete();
-            $table->foreign('question_id')->references('id')->on('questions')->cascadeOnDelete();
+            $table->foreign('possible_answer_id')->references('id')->on('possible_answers')->cascadeOnDelete();
         });
     }
 

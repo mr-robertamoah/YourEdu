@@ -43,9 +43,13 @@ class AuthController extends Controller
             $input['email'] = $user->email === $request->email ? 
                 $user->email: $request->email;
 
+            if ($request->has('dob')) {
+                $input['dob'] = Carbon::parse($user->dob)->toDateTimeString();
+            }
+            
             $input['secret_question_id'] = null;
             $input['secret_answer'] = null;
-            if ($request->question_id && $request->answer) {
+            if ($request->has('question_id') && $request->has('answer')) {
                 $question = SecretQuestion::find($request->question_id);
 
                 if ($question) {
@@ -61,14 +65,17 @@ class AuthController extends Controller
             try {
                 DB::beginTransaction();
 
-                $user->first_name = $input['first_name'];
-                $user->last_name = $input['last_name'];
-                $user->other_names = $input['other_names'];
-                $user->email = $input['email'];
-                $user->gender = $input['gender'];
-                $user->secret_question_id = $input['secret_question_id'];
-                $user->secret_answer = $input['secret_answer'];
-                $user->save();
+                // $user->first_name = $input['first_name'];
+                // $user->last_name = $input['last_name'];
+                // $user->other_names = $input['other_names'];
+                // $user->email = $input['email'];
+                // $user->gender = $input['gender'];
+                // $user->secret_question_id = $input['secret_question_id'];
+                // $user->secret_answer = $input['secret_answer'];
+                // $user->save();
+                $user->update([
+                    $input
+                ]);
 
                 DB::commit();
                 return response()->json([
@@ -246,10 +253,10 @@ class AuthController extends Controller
             'username'=> 'required|alpha_dash|min:8|max:100|unique:users',
             'email' => 'nullable|email|unique:users',
             'password' => 'required|confirmed',
-            'password-confirmation'=>'required|string',
-            'first-name' => 'nullable|string',
-            'last-name' => 'nullable|string',
-            'other-names' => 'nullable|string',
+            'password_confirmation'=>'required|string',
+            'first_name' => 'nullable|string',
+            'last_name' => 'nullable|string',
+            'other_names' => 'nullable|string',
             'dob' => 'nullable|date',
         ]);
 
@@ -307,6 +314,7 @@ class AuthController extends Controller
                 $user = Auth::user();
                 $user->logins()->create();
                 $token = $user->createToken('YourEdu')->accessToken;
+                // return $token;
                 return response()->json([
                     'success'=> (bool) $user,
                     'user'=> $user,

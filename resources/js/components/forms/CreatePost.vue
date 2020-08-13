@@ -5,46 +5,30 @@
         :alertError="alertError"
         @clearAlert="clearAlert"
      >  
-
         <template slot="loading" v-if="computedLoading">
-            loading...
+            <pulse-loader :loading="computedLoading"></pulse-loader>
         </template>
         <template slot="main" v-else>
             <welcome-form>
                 <template slot="input">
                     
+                    <div class="form-edit" v-if="computedAuthor">
+                        <text-input
+                            placeholder="author"  
+                            :bottomBorder="true"
+                            v-model="inputAuthor"></text-input>
+                    </div>
                     <div class="form-edit" v-if="computedBody">
                         <main-textarea type="text" 
                             placeholder="what do you have in mind*" 
                             v-model="textareaContent"></main-textarea>
                     </div>
-
                     <div class="form-edit" v-if="computedQuestion">
                         <text-textarea type="text" 
                             placeholder="question*" 
                             :error="errorQuestion"
                             :bottomBorder="true"
                             v-model="inputQuestion"></text-textarea>
-                    </div>
-                    <div class="form-edit" v-if="computedTitle">
-                        <text-input type="text" 
-                            placeholder="title*" 
-                            :error="errorTitle"
-                            :bottomBorder="true"
-                            v-model="inputTitle"></text-input>
-                    </div>
-                    <div class="form-edit" v-if="computedAuthor">
-                        <text-input type="text" 
-                            placeholder="author"  
-                            :bottomBorder="true"
-                            v-model="inputAuthor"></text-input>
-                    </div>
-                    <div class="form-edit" v-if="computedDescription">
-                        <text-textarea type="text" 
-                            placeholder="description*" 
-                            :error="errorDescription" 
-                            :bottomBorder="true"
-                            v-model="inputDescription"></text-textarea>
                     </div>
                     <div class="form-edit" v-if="computedRiddle">
                         <text-textarea type="text" 
@@ -53,6 +37,48 @@
                             :bottomBorder="true"
                             v-model="inputRiddle"></text-textarea>
                     </div>
+                    <div class="form-edit" v-if="computedRiddle || computedQuestion">
+                        <text-input inputType="number"
+                            title = 'answers scored over...'
+                            placeholder="answers scored over*" 
+                            :error="errorScore"
+                            :bottomBorder="true"
+                            @input="getInputScore"
+                            v-model="inputScore"></text-input>
+                    </div>
+                    <div class="ask-answers" v-if="computedRiddle || computedQuestion">
+                       max value is 100 and min value is 5
+                    </div>
+                    <div class="ask-answers" v-if="computedQuestion">
+                        does it have possible answers? <div class="no"
+                            :class="{yes:answerYes}"
+                            @click="clickedAnswerYes"
+                        >yes</div>
+                    </div>
+                    <template v-if="showPossibleAnswers">
+                        <text-array
+                            :show="showPossibleAnswers"
+                            :error="errorAnswers"
+                            :propsArray="answersArray"
+                            :edit="editAnswersArray"
+                            placeholder="possible answers"
+                            @textArrayData="answerArrayData"
+                        ></text-array>
+                    </template>
+                    <div class="form-edit" v-if="computedTitle">
+                        <text-input
+                            placeholder="title*" 
+                            :error="errorTitle"
+                            :bottomBorder="true"
+                            v-model="inputTitle"></text-input>
+                    </div>
+                    <div class="form-edit" v-if="computedDescription">
+                        <text-textarea type="text" 
+                            placeholder="description*" 
+                            :error="errorDescription" 
+                            :bottomBorder="true"
+                            v-model="inputDescription"></text-textarea>
+                    </div>
 
                     <div class="form-edit" v-if="computedAbout">
                         <text-textarea type="text" 
@@ -60,50 +86,16 @@
                             :bottomBorder="true"
                             v-model="inputAbout"></text-textarea>
                     </div>
-                    
-                    <div class="section my-2" v-if="computedSection">
-                        <div class="add" 
-                            @click="pushSection"
-                            title="add another section"
-                        >
-                            <font-awesome-icon
-                                :icon="['fa','plus']"
-                            ></font-awesome-icon>
-                        </div>
-                        <div class="minus" 
-                            @click="popSection"
-                            v-if="poemSectionsObject.length > 0"
-                            title="remove current section"
-                        >
-                            <font-awesome-icon
-                                :icon="['fa','minus']"
-                            ></font-awesome-icon>
-                        </div>
-                        <div class="form-edit"
-                        >
-                            <text-textarea type="text"  
-                                @keyup.enter="pushSection"
-                                placeholder="poem section" 
-                                :error="errorSection" 
-                                :bottomBorder="true"
-                                v-model="inputSection"></text-textarea>
-                        </div>
-                        <div class="lower">
-                            <post-button
-                                buttonText="previous"
-                                :makeDisabled="disablePrevious"
-                                @click="clickedPrevious"
-                                title="previous section"
-                            ></post-button>
-                            <post-button
-                                buttonText="next"
-                                :makeDisabled="disableNext"
-                                @click="clickedNext"
-                                title="next section"
-                            ></post-button>
-                        </div>
-                    </div>
-
+                    <template v-if="computedSection">
+                        <text-array
+                            :show="computedSection"
+                            :error="errorSection"
+                            :propsArray="poemSectionsObject"
+                            :edit="editPoemSections"
+                            placeholder="poem section"
+                            @textArrayData="poemArrayData"
+                        ></text-array>
+                    </template>
                     <div class="form-edit" v-if="computedPublished">
                         <date-picker 
                             :flatPickrConfig="flatPickrConfig"
@@ -137,12 +129,13 @@
 import TextInput from '../TextInput'
 import FileInput from '../FileInput'
 import {dates} from '../../services/helpers'
-import MainModal from '../MainModal'
 import DatePicker from '../DatePicker'
-import WelcomeForm from '../welcome/WelcomeForm'
 import TextTextarea from '../TextTextarea'
+import TextArray from '../TextArray'
 import MainTextarea from '../MainTextarea'
 import PostButton from '../PostButton'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
+
     export default {
         props: {
             type: {
@@ -167,12 +160,12 @@ import PostButton from '../PostButton'
             },
         },
         components: {
+            PulseLoader,
             PostButton,
             MainTextarea,
+            TextArray,
             TextTextarea,
-            WelcomeForm,
             DatePicker,
-            MainModal,
             FileInput,
             TextInput,
         },
@@ -192,6 +185,7 @@ import PostButton from '../PostButton'
                 inputSection: '',
                 inputRiddle: '',
                 alertMessage: '',
+                inputScore: '',
                 alertError: false,
                 inputFile: null,
                 temporarySection: '',
@@ -199,11 +193,24 @@ import PostButton from '../PostButton'
                 errorFile: false,
                 errorTitle: false,
                 errorQuestion: false,
+                errorScore: false,
                 errorDescription: false, // to make inputs show error
+                //for poem sections
                 errorSection: false,
                 poemSections : 0,
                 currentPoemSections : 0, // holds the current value of the poem input section
                 poemSectionsObject : [], // array of poem sections
+                editPoemSections: false,
+                //for possible answers
+                errorAnswers: false,
+                inputAnswer: '',
+                temporaryInputAnswer: '',
+                answerArrayPositions : 0,
+                answerArrayCurrentPosition : 0, // holds the current value of the poem input section
+                answersArray : [], // array of possible answers
+                editAnswersArray: false,
+                answerYes: false,
+                showPossibleAnswers: false,
             }
         },
         watch: {
@@ -213,25 +220,15 @@ import PostButton from '../PostButton'
             inputRiddle(newValue) {
                 this.errorRiddle = false
             },
-            inputSection(newValue) {
-                this.errorSection = false
-                if (newValue && newValue != '' && 
-                    this.currentPoemSections < this.poemSections) {
-                    // this.temporarySection = newValue
-                    this.poemSectionsObject[this.currentPoemSections] = newValue //editing existing section
-                }
-            },
             inputQuestion(newValue) {
                 this.errorQuestion = false
-            },
-            currentPoemSections(newValue) {
-                if (newValue) {
-                    // this.inputSection = this.poemSectionsObject[newValue]
-                }
             },
             editableData: {
                 immediate: true,
                 handler(newValue){
+                    if (!this.edit) {
+                        return
+                    }
                     this.textareaContent = newValue.content
                     // this.type = newValue.typeName
                     if (newValue && newValue.type) {
@@ -245,7 +242,8 @@ import PostButton from '../PostButton'
                             this.inputTitle = newValue.type[0].title
                             this.inputAbout = newValue.type[0].about
                             this.poemSectionsObject = newValue.type[0].sections
-                            this.poemSections = newValue.type[0].sections.length
+                            this.editPoemSections = this.edit ? true : false
+                            this.poemSections = newValue.type[0].sections.length - 1
                             this.inputAuthor = newValue.type[0].author
                             // this.inputEditPublished = new Date(newValue.type[0].published).toDateString().slice(4)
                         } else if (newValue.typeName === 'riddle') {
@@ -280,13 +278,6 @@ import PostButton from '../PostButton'
             computedRiddle(){
                 return this.type === 'riddle' ? true : 
                     this.edit && this.editableData.typeName === 'riddle' ? true : false
-            },
-            disablePrevious(){
-                return this.currentPoemSections -1  < 0 ? true : false
-            },
-            disableNext(){
-                return this.inputSection && this.inputSection.trim() != '' ?
-                    false : this.currentPoemSections +1  > this.poemSections ? true : false
             },
             computedTitle() {
                 return this.type === 'book' || this.type === 'poem' ? true : 
@@ -325,68 +316,37 @@ import PostButton from '../PostButton'
             },
         },
         methods: {
+            getInputScore(value){
+                this.inputScore = value
+            },
+            clickedAnswerYes(){
+                this.answerYes = !this.answerYes
+                if (this.answerYes) {
+                    this.showPossibleAnswers = true
+                } else {
+                    this.showPossibleAnswers = false
+                }
+            },
+            poemArrayData(data){
+                this.poemSectionsObject = data.inputArray
+                this.temporarySection = data.temporaryInput
+                this.currentPoemSections = data.currentPosition
+                this.inputSection = data.input
+                this.poemSections = data.positions
+            },
+            answerArrayData(data){
+                this.answersArray = data.inputArray
+                this.temporaryInputAnswer = data.temporaryInput
+                this.answerArrayCurrentPosition = data.currentPosition
+                this.inputAnswer = data.input
+                this.answerArrayPositions = data.positions
+            },
             datePicked(data){
                 this.inputPublished = data
             },
             clearAlert(){
                 this.alertMessage = ''
                 this.alertError = false
-            },
-            popSection(){
-
-                if (this.currentPoemSections === this.poemSections) {
-                    this.inputSection = ''
-                } else {
-                    this.poemSectionsObject.pop(this.currentPoemSections)
-                    if (this.currentPoemSections - 1 >= 0) {
-                        this.currentPoemSections -= 1
-                    }
-
-                    if (this.poemSections - 1 >= 0) {
-                        this.poemSections -= 1
-                    }
-                }
-                if (this.currentPoemSections === 0 && this.poemSections === 0) {
-                    this.inputSection = ''
-                }
-            },
-            pushSection(){
-                if (this.inputSection && this.inputSection.trim() != '') {
-                    if (this.poemSections === this.currentPoemSections) {
-                        this.poemSectionsObject.push(this.inputSection)
-                    } else {
-                        this.poemSectionsObject[this.currentPoemSections] = this.inputSection
-                    }
-                    this.inputSection = ''
-                    this.poemSections++
-                    this.currentPoemSections++
-                }else {
-                    this.errorSection = true
-                }
-            },
-            clickedPrevious(){
-                if (this.currentPoemSections === this.poemSections) {
-                    this.temporarySection = this.inputSection
-                }
-                
-                this.currentPoemSections-=1
-                this.inputSection = this.poemSectionsObject[this.currentPoemSections]
-            },
-            clickedNext(){
-                if (this.currentPoemSections === this.poemSections) {
-                    this.poemSections+=1
-                    this.currentPoemSections+=1
-                    this.poemSectionsObject.push(this.inputSection)
-                } else{
-                    this.currentPoemSections+=1
-                }
-
-                if (this.currentPoemSections === this.poemSections) {
-                    this.inputSection = this.temporarySection
-                }else {
-                    this.inputSection = this.poemSectionsObject[this.currentPoemSections]
-                }
-                
             },
             uploadedFiles(data){
                 this.inputFile = data
@@ -425,13 +385,16 @@ import PostButton from '../PostButton'
                     } else {
                         let sections = this.poemSectionsObject
                         if (this.poemSections === this.currentPoemSections) {
-                            if (this.inputSection && this.inputSection.trim() != '') {
+                            if (this.inputSection && this.inputSection.trim() !== '') {
                                 sections.push(this.inputSection.trim())
                             } else {
-                                sections.push(this.temporarySection)
+                                sections.push(this.temporarySection.trim())
+                            }
+                        } else {
+                            if (this.temporarySection && this.temporarySection.trim() !== '') {
+                                sections.push(this.temporarySection.trim())
                             }
                         }
-
                         data = {
                             title: this.inputTitle,
                             author: this.inputAuthor,
@@ -447,23 +410,57 @@ import PostButton from '../PostButton'
                         this.alertMessage='please enter the question'
                         this.errorQuestion = true
                         error = true
+                    } else if (this.answerYes && this.answersArray.length < 2  &&
+                        this.inputAnswer === '') {
+                        this.alertError=true
+                        this.alertMessage='please enter at least 2 possible answers'
+                        this.errorAnswers = true
+                        error = true
+                    } else if (this.inputScore.trim() === '') {
+                        this.alertError=true
+                        this.alertMessage='please enter number for scoring answers'
+                        this.errorScore = true
+                        error = true
                     } else {
                         data = {
                             question: this.inputQuestion,
+                            score: this.inputScore,
                             published: this.inputPublished,
                             file: this.inputFile,
                         }
+                        if (this.answerYes) {
+                            let sections = this.answersArray
+                            if (this.answerArrayPositions === this.answerArrayCurrentPosition) {
+                                if (this.inputAnswer && this.inputAnswer.trim() !== '') {
+                                    sections.push(this.inputAnswer.trim())
+                                } else {
+                                    sections.push(this.temporaryInputAnswer.trim())
+                                }
+                            } else {
+                                if (this.temporaryInputAnswer && this.temporaryInputAnswer.trim() !== '') {
+                                    sections.push(this.temporaryInputAnswer.trim())
+                                }
+                            }
+                            data.possibleAnswers = sections
+                        }
                     }
+
                 } else if (this.type === 'riddle') {
                      if (this.inputRiddle.trim() === '') {
                         this.alertError=true
                         this.alertMessage='please enter the riddle'
                         this.errorRiddle = true
                         error = true
+                    } else if (this.inputScore.trim() === '') {
+                        this.alertError=true
+                        this.alertMessage='please enter number for scoring answers'
+                        this.errorScore = true
+                        error = true
                     } else {
                         data = {
                             author: this.inputAuthor,
                             riddle: this.inputRiddle,
+                            score: this.inputScore,
                             published: this.inputPublished,
                             file: this.inputFile,
                         }
@@ -491,12 +488,6 @@ import PostButton from '../PostButton'
                     }
                 }
 
-                // if (condition) {
-                    
-                // }
-
-                // console.log('data before clicked edit', data)
-
                 if (!error) {
                     if (this.edit) {
                         data['type'] = this.editableData.typeName
@@ -518,6 +509,7 @@ import PostButton from '../PostButton'
                 this.inputPublished = ''
                 this.inputQuestion = ''
                 this.inputRiddle = ''
+                this.inputScore = '',
                 this.inputFile = {}
 
                 this.textareaContent = ''

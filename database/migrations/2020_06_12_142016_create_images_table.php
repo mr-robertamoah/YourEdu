@@ -15,8 +15,8 @@ class CreateImagesTable extends Migration
     {
         Schema::create('images', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('ownedby'); //facilitator learner school professional collaboration
-            $table->morphs('addedby'); //facilitator learner school professional
+            $table->nullableMorphs('ownedby'); //facilitator parent learner school professional collaboration
+            $table->morphs('addedby'); //facilitator learner admin professional parent
             $table->string('path');
             $table->string('mime');
             $table->string('size');

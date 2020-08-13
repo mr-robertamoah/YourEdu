@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="loading" v-if="authenticatingUser">
-            loading..
+            <sync-loader :loading="authenticatingUser"></sync-loader>
         </div>
         <div v-else>
             <app-nav></app-nav>
@@ -127,7 +127,7 @@
                         <div class="who-heading">
                             your role in this new community
                         </div>
-                        <div class="create-section">
+                        <div class="create-section" v-if="computedCreationSection">
                             <div class="title">
                                 creation of the various community members
                             </div>
@@ -178,12 +178,24 @@
             <template slot="transition">
                 <main-modal :show='showModal' 
                     @mainModalAppear='modalAppear'
-                    @mainModalDisappear='modalDisappear'>
-                    <template slot='loading' v-if="modalLoading">
-                        loading...
+                    @mainModalDisappear='modalDisappear'
+                    :loading="modalLoading"
+                    :alertMessage="modalAlertMessage"
+                    :alertError="true"
+                    :showAlert="showModalAlert"
+                    @clearAlert="clearModalAlert"
+                >
+                    <template slot='loading'>
+                        <sync-loader :loading="modalLoading"></sync-loader>
                     </template>
                     <template slot="main">
-                        <welcome-form :title="title" v-if="!editUserForm">
+                        <auto-alert
+                            :message="alertMessage"
+                            :success="alertSuccess"
+                            :danger="alertDanger"
+                            @hideAlert="hideAlert"
+                        ></auto-alert>
+                        <welcome-form :title="title" v-if="!alertMessage.length">
                             <template slot="input">
                                 <input type="text" class="form-control form-input" placeholder="name*" 
                                 v-model="inputName">
@@ -194,6 +206,7 @@
                                 <main-list v-if="list" @listItemSelected='selection'
                                     :multiple='multiple'
                                     :itemList='itemList'
+                                    :select="computedSelectList"
                                 ></main-list>
 
                                 <input type="text" class="form-control form-input" placeholder="other" 
@@ -228,17 +241,18 @@ import FadeInOut from '../components/transitions/FadeInOut'
 import FadeUp from '../components/transitions/FadeUp'
 import FadeLeft from '../components/transitions/FadeLeft'
 import WelcomeButton from '../components/welcome/WelcomeButton'
+import AutoAlert from '../components/AutoAlert'
 import PostButton from '../components/PostButton'
-import MainModal from '../components/MainModal'
-import WelcomeForm from '../components/welcome/WelcomeForm'
 import EditUser from '../components/forms/EditUser'
 import MainList from '../components/MainList'
 import BlackWhiteBadge from '../components/BlackWhiteBadge'
-import { mapGetters } from 'vuex'
+import SyncLoader from 'vue-spinner/src/SyncLoader'
+import { mapGetters, mapActions } from 'vuex'
 import { dates } from "../services/helpers";
 
     export default {
         components: {
+            AutoAlert,
             WelcomeButton,
             EditUser,
             FadeUp,
@@ -246,8 +260,7 @@ import { dates } from "../services/helpers";
             FadeLeft,
             PlaceDescription,
             PostButton,
-            WelcomeForm,
-            MainModal,
+            SyncLoader,
             BlackWhiteBadge,
             MainList,
         },
@@ -276,11 +289,13 @@ import { dates } from "../services/helpers";
                 parent: false,
                 inputName: '',
                 inputOther: '',
+                inputRole: '',
                 inputDescription: '',
                 who: '',
                 what: '',
                 title: '',
                 formType: '',
+                formError: '',
                 description: false,
                 list: false,
                 multiple: false,
@@ -288,7 +303,13 @@ import { dates } from "../services/helpers";
                 other: false,
                 become: 'become learner',
                 showEditBadge: false,
-                modalLoading: false // for modal loading effect
+                modalLoading: false, // for modal loading effect
+                //////for alert
+                alertMessage: '',
+                alertSuccess: false,
+                alertDanger: false,
+                modalAlertMessage: '',
+                showModalAlert: false,
             }
         },
         watch: {
@@ -358,14 +379,95 @@ import { dates } from "../services/helpers";
             },
         },
         created () {
-            this.learner = true
+            // this.learner = true
         },
         methods: {
+            ...mapActions(['createAccount']),
+            clearModalAlert(){
+                this.modalAlertMessage = ''
+                this.showModalAlert = false
+            },
+            hideAlert(data){
+                if (this.alertDanger) {
+                    
+                } else {
+                    this.modalDisappear()
+                }
+                this.alertMessage = ''
+            },
             editUser(){
                 this.editUserForm = true
             },
-            clickedCreate(){
+            async clickedCreate(){
+                let data = {
+                    creator: 'user'
+                }
+                if (this.formType === 'learner') {
+                    if (this.inputName === '') {
+                        this.modalAlertMessage = 'Please enter name of learner'
+                    } else {
+                        data['create'] = 'learner'
+                        data['name'] = this.inputName ? this.inputName.trim() : ''
+                    }
+                } else if (this.formType === 'facilitator') {
+                    if (this.inputName === '') {
+                        this.modalAlertMessage = 'Please enter name of facilitator'
+                    } else {
+                        data['create'] = 'facilitator'
+                        data['name'] = this.inputName ? this.inputName.trim() : ''
+                    }
+                } else if (this.formType === 'parent') {
+                    if (this.inputName === '') {
+                        this.modalAlertMessage = 'Please enter name of parent'
+                    } else {
+                        data['create'] = 'parent'
+                        data['name'] = this.inputName ? this.inputName.trim() : ''
+                    }
+                    data['create'] = 'parent'
+                } else if (this.formType === 'professional') {
+                    if (this.inputName === '') {
+                        this.modalAlertMessage = 'Please enter name of professional'
+                    } else if (this.inputRole === '') {
+                        this.modalAlertMessage = 'Please select role of professional'
+                    } else {
+                        data['create'] = 'professional'
+                        data['name'] = this.inputName ? this.inputName.trim() : ''
+                        data['role'] = this.inputRole ? this.inputRole.trim() : ''
+                        if (this.other) {
+                            data['other_name'] = this.inputOther ? this.inputOther.trim() : ''
+                        }                    
+                        data['description'] = this.inputDescription ? this.inputDescription.trim() : ''
+                    }
+                } else if (this.formType === 'school') {
+                    if (this.inputName === '') {
+                        this.modalAlertMessage = 'Please enter name of school'
+                    } else if (this.inputRole === '') {
+                        this.modalAlertMessage = 'Please select role of school'
+                    } else {
+                        data['create'] = 'school'
+                        data['company_name'] = this.inputName ? this.inputName.trim() : ''
+                        data['role'] = this.inputRole ? this.inputRole.trim() : ''
+                    }
+                }
 
+                if (!this.modalAlertMessage.length) {
+                    this.modalLoading = true
+                    let response = await this.createAccount(data)
+                    this.modalLoading = false
+
+                    if (response.status) {
+                        this.alertSuccess = true
+                        this.alertDanger = false
+                        // this.showModal = false
+                        this.alertMessage = `successfully created ${this.formType}` 
+                    } else {
+                        this.alertSuccess = false
+                        this.alertDanger = true
+                        this.alertMessage = `${this.formType} creation was unsuccessful.` 
+                    }
+                }
+
+                
             },
             modalAppear(){
                 // this.showModal = true
@@ -374,8 +476,11 @@ import { dates } from "../services/helpers";
                 this.showModal=false
                 this.inputName = ''
                 this.inputOther = ''
+                this.inputRole = ''
+                this.other = false
                 this.inputDescription = ''
                 this.editUserForm = false
+                this.showModal = false
             },
             becomeClicked(buttonText){
                 if (this.learner) {
@@ -392,7 +497,12 @@ import { dates } from "../services/helpers";
                 this.showModal = true
             },
             selection(data){
-                console.log(data.name)
+                // console.log(data.name)
+                if (this.formType === 'professional' && data.name === 'other') {
+                    this.other = true
+                } else {
+                    this.inputRole = data.name
+                }
             },
         },
         computed: {
@@ -406,7 +516,14 @@ import { dates } from "../services/helpers";
                     return dates.dateDiff(dates.toDate(createdAt),dates.toDate(today)) === 0 ? true : false
                 }
                 return false
-            }
+            },
+            computedCreationSection(){
+                return this.learner || this.facilitator || this.parent || this.school 
+                    || this.professional ? true : false
+            },
+            computedSelectList(){
+                return `select role of ${this.formType}`
+            },
         },
     }
 </script>
@@ -414,6 +531,14 @@ import { dates } from "../services/helpers";
 <style lang="scss" scoped>
 
 $welcome-main-color: rebeccapurple;
+
+    .loading{
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 
     .welcome-wrapper{
         background-color: aliceblue;

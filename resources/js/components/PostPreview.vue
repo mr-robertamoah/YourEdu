@@ -1,32 +1,71 @@
 <template>
-    <div class="post-preview-wrapper">
-        <div class="author" v-if="computedAuthor.length">
-            authored by {{computedAuthor}}
+    <div class="post-preview-wrapper"
+        @dblclick="clickedShowPostPreview"
+        :class="{typeMediaFull:typeMediaFull}"
+    >
+        <div class="author">
+            <div class="answers" 
+                v-if="computedMustAnswer"
+            >
+                <div class="text">
+                    answers
+                </div>
+                <div class="numbers">
+                    {{computedAnswers}}
+                </div>
+            </div>
+            <div :class="{pushRight:!computedMustAnswer}">
+                authored by {{computedAuthor}}
+            </div>
         </div>
         <div class="top-section">
-            <div class="heading" v-if="computedHeading">
+            <div class="heading">
                 {{computedHeading}}
             </div>
-            <div class="type" v-if="computedType">
+            <div class="type">
                 {{computedType}}
             </div>
         </div>
         <div class="middle">
-            <div class="body" v-if="computedBody">
+            <div class="body" v-if="computedBody"
+                @dblclick="clickedShowPostPreview"
+            >
                 <main-textarea
                     :value="typeValue"
                     :disabled="true"
                 ></main-textarea>
+                <div class="possible-answers" v-if="!typeMediaFull && computedPossibleAnswers"
+                    @click="clickedShowPostPreview">
+                    <div class="answer"
+                        :key="key"
+                        v-for="(answer,key) in type.possible_answers"
+                    >
+                        {{answer.option}}
+                    </div>
+                </div>
             </div>
-            <div class="preview">
-                <img :src="computedImageUrl" v-if="showImage">
-                <audio :src="computedAudioUrl" controls controlslist='nodownload'
+            <div class="preview" 
+                :class="{typeMediaFull:typeMediaFull}"
+                @dblclick="clickedShowPostPreview"
+            >
+                <img :src="computedImageUrl" v-if="showImage"
+                    @click="clickedMedia(computedImageUrl,'image')"
+                >
+                <audio :src="computedAudioUrl" controlslist='nodownload'
                     v-if="showVideo"
+                    @click="clickedMedia(computedAudioUrl,'audio')"
                 ></audio>
-                <video :src="computedVideoUrl" controls controlslist='nodownload'
+                <video :src="computedVideoUrl" controlslist='nodownload'
                     v-if="showAudio"
+                    @click="clickedMedia(computedVideoUrl,'video')"
                 ></video>
             </div>
+        </div>
+        <div class="bottom" v-if="showButton && typeMediaFull">
+            <post-button
+                buttonText="answer"
+                @click="clickedAnswer"
+            ></post-button>
         </div>
     </div>
 </template>
@@ -34,6 +73,7 @@
 <script>
 import {strings} from '../services/helpers'
 import MainTextarea from './MainTextarea'
+import PostButton from './PostButton'
 
     export default {
         props: {
@@ -43,12 +83,27 @@ import MainTextarea from './MainTextarea'
                     return {}
                 }
             },
+            post: {
+                type: Object,
+                default(){
+                    return {}
+                }
+            },
             typeName: {
                 type: String,
                 default: '',
             },
+            typeMediaFull: { //this is true when in post modal
+                type: Boolean,
+                default: false
+            },
+            showButton: {
+                type: Boolean,
+                default: false
+            },
         },
         components: {
+            PostButton,
             MainTextarea,
         },
         data() {
@@ -56,7 +111,7 @@ import MainTextarea from './MainTextarea'
                 showImage: false,
                 showVideo: false,
                 showAudio: false,
-                typeValue:'',
+                typeValue:'', //main value shown for each type
             }
         },
         watch: {
@@ -81,6 +136,19 @@ import MainTextarea from './MainTextarea'
             }
         },
         computed: {
+            computedMustAnswer(){
+                if (this.typeName === 'riddle' || this.typeName === 'question') {
+                    return true
+                }
+                return false
+            },
+            computedAnswers(){
+                if (this.computedMustAnswer) {
+                    return this.type.answers_number
+                } else {
+                    return ''
+                }
+            },
             computedImageUrl() {
                 return this.type.images ?  this.type.images[0].url : ''
             },
@@ -91,7 +159,7 @@ import MainTextarea from './MainTextarea'
                 return this.type.audios ?  this.type.audios[0].url : ''
             },
             computedHeading() {
-                return this.title ? this.title : ''
+                return this.type.title && this.type.title.length ? this.type.title : ''
             },
             computedType() {
                 return this.typeName ? this.typeName : ''                
@@ -100,18 +168,46 @@ import MainTextarea from './MainTextarea'
                  return this.type && this.type.hasOwnProperty('author') ? 
                     this.type.author : ''
             },
+            computedPossibleAnswers(){
+                if (this.type.hasOwnProperty('possible_answers') &&
+                    this.type.possible_answers.length) {
+                    return true
+                }
+                return false
+            },
             computedBody() {
                 if (this.type) {
                     if (this.typeName === 'book') {
-                        this.typeValue = strings.content(this.type.about)
+                        if (this.type.about && this.type.about.length) {
+                            this.typeValue = this.typeMediaFull ? this.type.about : strings.content(this.type.about)
+                        } else {
+                            return false
+                        }
                     } else if (this.typeName === 'poem') {
-                        this.typeValue =  strings.content(this.type.sections.map(el=>el.body),200,true)
+                        if (this.type.sections && this.type.sections.length) {
+                            let mappedString = strings.arrayToNewLineStrings(this.type.sections.map(el=>el.body))
+                            this.typeValue =  this.typeMediaFull ? mappedString : strings.content(mappedString,200,true)
+                        } else {
+                            return false
+                        }
                     } else if (this.typeName === 'question') {
-                        this.typeValue =  strings.content(this.type.question)
+                        if (this.type.question && this.type.question.length) {
+                            this.typeValue = this.typeMediaFull ? this.type.question :  strings.content(this.type.question)
+                        } else {
+                            return false
+                        }
                     } else if (this.typeName === 'activity') {
-                        this.typeValue =  strings.content(this.type.description)
+                        if (this.type.description && this.type.description.length) {
+                            this.typeValue =  this.typeMediaFull ? this.type.description : strings.content(this.type.description)
+                        } else {
+                            return false
+                        }
                     } else if (this.typeName === 'riddle') {
-                        this.typeValue =  strings.content(this.type.riddle)
+                        if (this.type.riddle && this.type.riddle.length) {
+                            this.typeValue =  this.typeMediaFull ? this.type.riddle : strings.content(this.type.riddle)
+                        } else {
+                            return false
+                        }
                     } else{
                         this.typeValue =  ''
                     }
@@ -119,6 +215,27 @@ import MainTextarea from './MainTextarea'
                     return false
                 }
                 return true          
+            },
+        },
+        methods: {
+            clickedAnswer(){
+                this.$emit('clickedAnswer')
+            },
+            clickedMedia(url,mediaType){
+                this.$emit('clickedMedia',{url,mediaType})
+            },
+            clickedShowPostPreview(){
+                this.$emit('clickedShowPostPreview',{
+                    data: {
+                        type: this.type,
+                        typeName: this.typeName,
+                        owner: {
+                            account: strings.getAccount(this.post.postedby_type),
+                            accountId: this.post.postedby_id
+                        }
+                    }, 
+                    type: 'posttype'
+                })
             },
         },
     }
@@ -138,6 +255,37 @@ import MainTextarea from './MainTextarea'
         .author{
             text-align: end;
             border-bottom: 1px solid dimgray;
+            font-size: small;
+            display: inline-flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+
+            .answers{
+                display: inline-flex;
+                align-items: flex-end;
+                position: relative;
+
+                .text{
+                    font-size: 14px;
+                }
+
+                .numbers{
+                    color: gray;
+                    border-radius: 50%;
+                    padding: 2px;
+                    font-size: 10px;
+                    background-color: rgba(128, 128, 128, 0.157);
+                    position: absolute;
+                    left: 100%;
+                    bottom: 0;
+                    margin-bottom: 5px;
+                }
+            }
+
+            .pushRight{
+                margin-left: auto;
+            }
         }
 
         .top-section{
@@ -174,12 +322,33 @@ import MainTextarea from './MainTextarea'
                 width: 100%;
                 font-size: 14px;
                 text-align: justify;
+
+                .possible-answers{
+                    max-width: 60%;
+                    min-width: 30%;
+                    text-align: center;
+                    margin-left: auto;
+                    margin-right: 10px;
+                    margin-bottom: 5px;
+                    background-color: gainsboro;
+
+                    .answer{
+                        font-size: 12px;
+                        padding: 5px;
+                        color: gray;
+                        font-weight: 450;
+                        cursor: pointer;
+                        @include text-overflow()
+                    }
+                }
             }
 
             .preview{
                 width: 100%;
-                padding-left: 5%;
-                padding-right: 5%;
+                padding-left: 10px;
+                padding-right: 10px;
+                max-height: 120px;
+                overflow: hidden;
 
                 audio,
                 video{
@@ -188,10 +357,27 @@ import MainTextarea from './MainTextarea'
                 }
 
                 img{
-                    width: 60%;
+                    width: inherit;
                     height: auto;
                 }
-            }                
+            }  
+
+            .typeMediaFull{
+                max-height: none;
+                overflow: visible;
+            }              
+        }
+
+        .bottom{
+            text-align: center;
+            margin-top: 10px;
+        }
+    }
+
+    .typeMediaFull{
+
+        .author{
+            padding: 5px;
         }
     }
 </style>

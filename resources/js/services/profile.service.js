@@ -1,6 +1,33 @@
 import ApiService from "./api.service";
 
 const ProfileService = {
+
+    /////////////////////////////////////////////////////follows
+
+    async followCreate(main){
+        try {
+            let {accountId, account, follow, followId} = main
+            let response = await ApiService.post(`/api/follow/${follow}/${followId}`,{
+                account, accountId
+            })
+    
+            console.log('response in profile sevice',response.data)
+            return response
+        } catch (error) {
+            console.log('error in profile sevice',error)
+            return error.response
+        }
+    },
+    async followDelete(data){
+        try {
+            let response = await ApiService.delete(`/api/follow/${data.followId}`)
+            
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
     //////////////////////////////////// likes
 
     async likeCreate(main){
@@ -18,6 +45,57 @@ const ProfileService = {
     async likeDelete(data){
         try {
             let response = await ApiService.delete(`/api/like/${data.likeId}`)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
+    //////////////////////////////////////////// answers
+    
+    async answersGet(data){
+        let {item, itemId, nextPage} = data
+        try {
+            let response = null
+            if (!nextPage) {
+                response = await ApiService.get(`/api/${item}/${itemId}/answers`)
+            } else {
+                response = await ApiService.get(`/api/${item}/${itemId}/answers?page=${nextPage}`)
+            }
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async answerDelete(data){
+        let {answerId} = data
+        try {
+            let response = await ApiService.delete(`/api/answer/${answerId}`)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async answerCreate(main){
+        
+        try {
+            let {data, formData} = main
+            let response = await ApiService.post(`/api/${data.item}/${data.itemId}/answer`,
+                formData,true)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async answerUpdate(main){
+        
+        try {
+            let {data, formData} = main
+            let response = await ApiService.post(`/api/answer/${data.itemId}`,
+                formData,true)
     
             return response
         } catch (error) {
@@ -85,7 +163,7 @@ const ProfileService = {
         }
     },
 
-    ////////////////////////////////////////////
+    //////////////////////////////////////////// profile
 
     async profileGet(data){
 
@@ -103,6 +181,119 @@ const ProfileService = {
         try {
             let {profile_id, data} = mainData
             let response = await ApiService.post(`/api/profile/${profile_id}/update`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profileMediaChange(mainData){ //change the state of the media 
+        try {
+            let {account, accountId, media, mediaId} = mainData
+            let response = await ApiService
+                .post(`/api/${media}/${mediaId}/change`,{account,accountId})
+                
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profileMediaDelete(mainData){
+        try {
+            let {account, accountId, media, mediaId} = mainData
+            let response = await ApiService
+                .post(`/api/${media}/${mediaId}/delete`,{account,accountId})
+                
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profileMediaGet(mainData){
+
+        try {
+            let {account, accountId, nextPage, media} = mainData
+            let response = null
+            if (!nextPage) {
+                response = await ApiService
+                .get(`/api/${account}/${accountId}/${media}`)
+            } else {
+                response = await ApiService
+                .get(`/api/${account}/${accountId}/${media}?page=${nextPage}`)
+            }
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profilePrivateMediaGet(mainData){
+
+        try {
+            let {account, accountId, nextPage, media} = mainData
+            let response = null
+            if (!nextPage) {
+                response = await ApiService
+                .get(`/api/${account}/${accountId}/${media}/private`)
+            } else {
+                response = await ApiService
+                .get(`/api/${account}/${accountId}/${media}/private?page=${nextPage}`)
+            }
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profileFileUpload(mainData){
+
+        try {
+            let {profileId, formData} = mainData
+            let response = await ApiService.post(`/api/profile/${profileId}/uploadfile`,
+                formData, true)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profileAddInfo(mainData){
+
+        try {
+            let {profile_id, data} = mainData
+            let response = await ApiService.post(`/api/profile/${profile_id}/addinfo`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profileMarkInfo(data){
+
+        try {
+            let response = await ApiService.post(`/api/markinfo`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profileDeleteInfo(data){
+
+        try {
+            let response = await ApiService.post(`/api/deleteinfo`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async profilePicUpdate(data){
+        let {profileId, formData} = data
+
+        try {
+            let response = await ApiService.post(`/api/profile/${profileId}/profilepic`,
+                formData,true)
     
             return response
         } catch (error) {
@@ -143,14 +334,14 @@ const ProfileService = {
             return error.response
         }
     },
-    async postsGet(data,nextPage){
-        let {account, accountId} = data
+    async postsGet(nextPage){
         try {
+            console.log(nextPage)
             let response = null
             if (nextPage) {
-                response = await ApiService.get(`/api/posts/${account}/${accountId}?page=${nextPage}`)
+                response = await ApiService.get(`/api/posts?page=${nextPage}`)
             } else{
-                response = await ApiService.get(`/api/posts/${account}/${accountId}`)
+                response = await ApiService.get(`/api/posts`)
             }
     
             return response

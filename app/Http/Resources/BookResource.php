@@ -34,6 +34,7 @@ class BookResource extends JsonResource
             'title' => $this->title,
             'author' => $this->author,
             'about' => $this->about,
+            'comments_number' => $this->comments()->count(),
             'published' => $this->published,
             'images' => $images,
             'videos' => $videos,

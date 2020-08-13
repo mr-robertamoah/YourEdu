@@ -148,7 +148,7 @@ class Professional extends Model
     
     public function answers()
     {
-        return $this->morphMany(Answer::class,'answerable');
+        return $this->morphMany(Answer::class,'answeredby');
     }
 
     public function marks()

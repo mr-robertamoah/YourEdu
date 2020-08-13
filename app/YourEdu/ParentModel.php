@@ -64,6 +64,11 @@ class ParentModel extends Model
             belongsToMany(Learner::class,'learner_parent','parent_id','learner_id')
             ->withPivot(['level','role'])->withTimestamps();
     }
+    
+    public function answers()
+    {
+        return $this->morphMany(Answer::class,'answeredby');
+    }
 
     public function paymentsMade()
     {
@@ -78,6 +83,10 @@ class ParentModel extends Model
     public function phoneNumbers()
     {
         return $this->morphMany(PhoneNumber::class,'phoneable');
+    }
+
+    public function emails(){
+        return $this->morphMany(Email::class,'emailable');
     }
 
     public function keywords()
@@ -108,6 +117,11 @@ class ParentModel extends Model
     public function admissionsReceived()
     {
         return $this->morphMany(Admission::class,'admissionto');
+    }
+    
+    public function requestsSent()
+    {
+        return $this->morphMany(Request::class,'requestfrom');
     }
     
     public function requestsReceived()

@@ -1,6 +1,24 @@
 <template>
     <div class="section">
         <div class="activity-post">
+            <div class="clear"
+                :class="{clearActive:clearActive}"
+                @click="clickedClearActive"
+                v-if="computedPost"
+            >
+                clear
+            </div>
+            <div class="messaging">
+                <div class="loading" v-if="loading">
+                    <pulse-loader :loading="loading"></pulse-loader>
+                </div>
+                <div class="alert-message" 
+                    v-if="alertMessage.length"
+                    :class="{success:alertSuccess,error:alertError}"
+                >
+                    {{alertMessage}}
+                </div>
+            </div>
             <div class="post-top">
                 <div class="icons"
                     @click.prevent="clickFile('image')"
@@ -30,37 +48,28 @@
                     <template slot="transition">
                         <post-button 
                             buttonText="post"
-                            @click="createPost"
+                            @click="clickedCreatePost"
                             v-if="computedPost"
                         ></post-button>
                     </template>
                 </fade-right>
-            </div>
-            <div class="profiles"
-                v-if="showProfiles"
-            >
-                <div :key="key" v-for="(profile,key) in computedProfiles">
-                    <profile-bar
-                        :name="profile.name"
-                        :type="profile.params.account_type"
-                        :smallType="true"
-                        :routeParams="profile.params"
-                        :navigate="false"
-                        @clickedProfile="clickedProfile"
-                    ></profile-bar>
+                <div class="profiles"
+                    v-if="showProfiles"
+                >
+                    <span>
+                        post as
+                    </span>
+                    <div :key="key" v-for="(profile,key) in computedProfiles">
+                        <profile-bar
+                            :name="profile.name"
+                            :type="profile.params.account"
+                            :smallType="true"
+                            :routeParams="profile.params"
+                            :navigate="false"
+                            @clickedProfile="clickedProfile"
+                        ></profile-bar>
+                    </div>
                 </div>
-                <!-- <div>
-                    <profile-bar
-                        :name="profile.name"
-                        :type="profile.name"
-                        :smallType="true"
-                    ></profile-bar>
-                    <profile-bar
-                        name="john arhin"
-                        type="professional"
-                        :smallType="true"
-                    ></profile-bar>
-                </div> -->
             </div>
             <div class=" post-middle">
                 <div class="post-picture">
@@ -90,6 +99,9 @@
                                 @clickedBadge="removePreview"
                                 :file='computedPreviewFile'
                                 :body='computedPreviewBody'
+                                :options='computedPreviewOptions'
+                                :hasScore='computedHasScore'
+                                :scoredOver='computedScore'
                                 :title='computedPreviewTitle'
                                 :heading='computedPreviewHeading'
                                 :hasFile='hasPreviewFile'
@@ -153,11 +165,13 @@ import MainTextarea from '../components/MainTextarea'
 import MainPreview from '../components/MainPreview'
 import ProfileBar from '../components/profile/ProfileBar'
 import ValidationError from '../components/ValidationError'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
 import {files} from '../services/helpers'
 import {mapActions, mapGetters} from 'vuex'
 
     export default {
         components: {
+            PulseLoader,
             ValidationError,
             ProfileBar,
             MainPreview,
@@ -171,6 +185,11 @@ import {mapActions, mapGetters} from 'vuex'
         },
         data() {
             return {
+                alertMessage: '',
+                alertSuccess: false,
+                alertError: false,
+                clearActive: false,
+                loading: false,
                 textareaContent: '',
                 error: '',
                 imageType: 'image/apng,image/bmp,image/gif,image/x-icon,image/jpeg,image/png,image/svg+xml,image/webp',
@@ -204,6 +223,16 @@ import {mapActions, mapGetters} from 'vuex'
                     }
                 }
             },
+            alertMessage:{
+                immediate: true,
+                handler(value){
+                    if (value.length) {
+                        setTimeout(() => {
+                            this.alertMessage = ''
+                        }, 3000);
+                    }
+                }
+            }
         },
         computed: {
             ...mapGetters(['getProfiles', 'getActiveProfile', 
@@ -215,29 +244,6 @@ import {mapActions, mapGetters} from 'vuex'
             },
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
-                // let profilesArray = []
-                // let computedArray = []
-                // if (this.getUser) {
-                //     profilesArray = this['getUser'].owned_profiles
-                // } else {
-                //     return null
-                // }
-
-                // if (profilesArray) {
-                //     computedArray = profilesArray.map(el=>{
-                //         return {
-                //             name: el.profile_name ? el.profile_name : 'no name',
-                //             params: {
-                //                 account: el.account_type,
-                //                 accountId: el.account_id,
-                //             }
-                //         }
-                //     })
-
-                //     return computedArray
-                // } else {
-                    
-                // }
             },
             computedProfileUrl(){
                 return this['profile/getActiveProfile'] ? 
@@ -278,15 +284,40 @@ import {mapActions, mapGetters} from 'vuex'
                         return this.mainPreviewData.riddle
                     }
                 }
-            },    
+            },
+            computedScore(){
+                if (this.computedHasScore) {
+                    return this.mainPreviewData.score
+                }
+            },
+            computedHasScore(){
+                if (this.mainPreviewData && (this.previewType == 'question' ||
+                    this.previewType === 'riddle')) {
+                    return true
+                }
+                return false
+            },
+            computedPreviewOptions(){
+                if (this.mainPreviewData && this.previewType == 'question' &&
+                    this.mainPreviewData.hasOwnProperty('possibleAnswers')) {
+                    return this.mainPreviewData.possibleAnswers
+                }
+            },
             computedPreviewAuthor(){ //will have to adjust this when author search and add author
                 return this.mainPreviewData ?
                     this.mainPreviewData.author : ''
             }, 
         },
         methods: {
+            clickedClearActive(){
+                this.textareaContent = ''
+                this.file = null
+                this.account = ''
+                this.account_id = ''
+                this.removePreview()
+            },
             clickedProfile(data){
-                this.account_id = data.account_id
+                this.account_id = data.accountId
                 this.account = data.account
                 this.showProfiles = false
                 this.createPost()
@@ -314,16 +345,23 @@ import {mapActions, mapGetters} from 'vuex'
                 this.clickedButton = ''
                 this.showPreview = false
             },
-            post(){
+            clickedCreatePost(){
                 if (this.computedProfiles.length > 1 && this.$route.name === "home") {
                     this.showProfiles = true
-                } else {
+                    setTimeout(() => {
+                        this.showProfiles = false
+                    }, 5000);
+                } else if (this.computedProfiles.length === 1 && this.$route.name === "home") {
                     this.account = this.computedProfiles[0].params.account_type
                     this.account_id = this.computedProfiles[0].params.account_id
                     this.createPost()
+                } else {
+                    this.account_id = null
+                    this.createPost()
                 }
             },
-            createPost(){
+            async createPost(){
+                this.loading = true
                 let fileType = ''
                 let formData = new FormData
 
@@ -351,9 +389,14 @@ import {mapActions, mapGetters} from 'vuex'
                     } else if (this.previewType === 'riddle') {
                         formData.append('author', this.mainPreviewData.author)
                         formData.append('riddle', this.mainPreviewData.riddle)
+                        formData.append('score', this.mainPreviewData.score)
                         formData.append('published', this.mainPreviewData.published)
                     } else if (this.previewType === 'question') {
                         formData.append('question', this.mainPreviewData.question)
+                        formData.append('score', this.mainPreviewData.score)
+                        if (this.mainPreviewData.hasOwnProperty('possibleAnswers')) {                        formData.append('riddle', this.mainPreviewData.riddle)
+                            formData.append('possibleAnswers', JSON.stringify(this.mainPreviewData.possibleAnswers))
+                        }
                         formData.append('published', this.mainPreviewData.published)
                     } else if (this.previewType === 'activity') {
                         formData.append('description', this.mainPreviewData.description)
@@ -377,13 +420,17 @@ import {mapActions, mapGetters} from 'vuex'
 
                 formData.append('content', this.textareaContent)                
                 
-                this['profile/createPost'](formData)
+                let response = await this['profile/createPost'](formData)
 
-                this.removePreview()
-                this.textareaContent = ''
-                this.file = null
-                this.account = ''
-                this.account_id = ''
+                this.loading = false
+                if (response !== 'unsuccessful') {
+                    this.alertMessage = 'post created successfully'
+                    this.alertSuccess = true
+                    this.clickedClearActive()
+                } else {
+                    this.alertMessage = 'post creation failed'
+                    this.alertError = true
+                }
             },
             clearValidation(){
                 this.error = ''
@@ -447,6 +494,42 @@ import {mapActions, mapGetters} from 'vuex'
         border-right: 2px solid rgb(105, 105, 105);
         background-color: inherit;
 
+        .clear{
+            padding: 5px;
+            color: gray;
+            cursor: pointer;
+            transition: all 1s ease;
+            margin: 5px;
+            width: fit-content;
+            font-size: 14px;
+
+            &:hover{
+                box-shadow: 0 0 3px gray;
+            }
+        }
+
+        .clearActive{
+            box-shadow: 0 0 3px gray;
+            transition: all 1s ease;
+        }
+
+        .messaging{
+            width: 100%;
+            text-align: center;
+            background-color: gainsboro;
+            font-size: 14px;
+
+            .success{
+                background-color: rgba(0, 128, 0, 0.328);
+                color: green;
+            }
+
+            .error{
+                background-color: rgba(255, 0, 0, 0.308);
+                color: red;
+            }
+        }
+
         .activity-post{
             position: relative;
 
@@ -494,6 +577,8 @@ import {mapActions, mapGetters} from 'vuex'
             .post-bottom{
                 display: flex;
                 justify-content: flex-end;
+                width: 100%;
+                flex-wrap: wrap;
 
                 button{
                     margin: 10px 5px;
@@ -504,6 +589,10 @@ import {mapActions, mapGetters} from 'vuex'
                 position: absolute;
                 width: 200px;
                 right: 0;
+                top: 20px;
+                text-align: justify;
+                font-size: 14px;
+                color: black;
             }
         }
     }
@@ -547,8 +636,8 @@ import {mapActions, mapGetters} from 'vuex'
             
             .post-middle{
                 .post-picture{
-                    width: 60px;
-                    height: 60px;
+                    width: 45px;
+                    height: 45px;
                 }
 
                 .post-textarea{

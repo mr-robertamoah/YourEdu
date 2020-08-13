@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -9,6 +10,8 @@ class Request extends Model
 {
     //
     use SoftDeletes;
+
+    protected $fillable = ['state'];
 
     public function price()
     {

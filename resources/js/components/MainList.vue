@@ -1,8 +1,7 @@
 <template>
-    <div class="list-wrapper"
-            >
+    <div class="list-wrapper">
         <div v-if="loading" class="loading">
-            loading items...
+            <pulse-loader :loading="loading"></pulse-loader>
         </div>
         <div v-else>
             <div class="select">
@@ -27,11 +26,18 @@
                     {{item.name ? item.name : item}}
                 </div>
             </template>
+            <div class="list-button" 
+                v-if="showListButton"
+                @click="clickedListButton"
+            >
+                {{buttonText}}
+            </div>
         </div>
     </div>
 </template>
 
 <script>
+import PulseLoader from 'vue-spinner/src/PulseLoader';
     export default {
         props: {
             itemList: {
@@ -41,6 +47,12 @@
                         {name:'example 1'},
                         {name: 'example 2', title:'this is for example 2'}
                     ]
+                }
+            },
+            editableData: {
+                type: Object,
+                default(){
+                    return {}
                 }
             },
             select: {
@@ -55,6 +67,14 @@
                 type: Boolean,
                 default: false
             },
+            edit: {
+                type: Boolean,
+                default: false
+            },
+            buttonText: {
+                type: String,
+                default: ''
+            },
             multiple: {
                 type: Boolean,
                 default: false
@@ -64,23 +84,46 @@
                 default: true
             }
         },
-        computed: {
-
+        components: {
+            PulseLoader,
         },
         data() {
             return {
                 active : false,
                 items : [],
                 item : '',
+                showListButton: false,
             }
         },
         methods: {
+            clickedListButton(){
+                if (!this.item.hasOwnProperty('id') && 
+                    !this.item.hasOwnProperty('option')) {
+                    return
+                }
+                let who = {}
+                if (this.edit) {
+                    if (this.editableData.answeredby_type.toLocaleLowerCase().includes('parent')) {
+                        who['account'] = 'parent'
+                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('learner')) {
+                        who['account'] = 'learner'
+                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('professional')) {
+                        who['account'] = 'professional'
+                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('facilitator')) {
+                        who['account'] = 'facilitator'
+                    }
+                    who['accountId'] = this.editableData.answeredby_id
+                    who['itemId'] = this.editableData.id
+                } 
+                this.$emit('clickedListButton',who)
+            },
             makeActive(item) { //used to make an item look selected
                 return item === this.selectedItem ||
                     item.name === this.selectedItem ?
                     true : false 
             },
             clicked($event, item) {
+                this.showListButton = false
                 this.active = !this.active
                 let list =  this.$refs.list
                 if (!this.multiple) {
@@ -90,6 +133,7 @@
                         }
                     }
                     $event.target.classList.add('active')
+                    this.showListButton = this.buttonText.length ? true : false
                     this.item = item
                     this.$emit('listItemSelected', this.item)
                 } else{
@@ -123,6 +167,7 @@ $third-color: rgba(102, 51, 153, .2);
             text-align: start;
             margin: 10px;
             font-weight: 450;
+            font-size: 14px;
         }
 
         .loading{
@@ -134,7 +179,7 @@ $third-color: rgba(102, 51, 153, .2);
 
         .list-item{
             width: 90%;
-            margin: 10px;
+            margin: 5px;
             padding: 5px;
             border: 1px solid $second-color;
             font-size: 16px;
@@ -152,9 +197,33 @@ $third-color: rgba(102, 51, 153, .2);
 
         .active{
             border: none;
-            box-shadow: 2px 2px 1px $second-color, -2px -2px 1px $second-color, 
-                1px 1px 2px $third-color, -1px -1px 2px $third-color;
-            // transition: all .5s ease;
+            box-shadow: 1px 1px 1px $second-color, 
+                -1px -1px 1px $second-color, 
+                0 0 3px gray;
+            background-color: gainsboro;
+            transition: all .5s ease;
+        }
+
+        .list-button{
+            font-size: 15px;
+            color: gray;
+            width: fit-content;
+            margin: 10px auto;
+            transition: all 1s ease;
+            cursor: pointer;
+            padding: 5px;
+
+            &:hover{
+                color: black;
+                background-color: gainsboro;
+                box-shadow: 0 0 3px gray;
+            }
+        }
+
+        .listActive{
+            color: black;
+            background-color: gainsboro;
+            box-shadow: 0 0 3px gray;
         }
     }
 

@@ -3,661 +3,32 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FacilitatorResource;
+use App\Http\Resources\LearnerResource;
+use App\Http\Resources\ParentModelResource;
+use App\Http\Resources\ProfessionalResource;
 use App\Http\Resources\ProfileResource;
+use App\Http\Resources\SchoolResource;
 use App\User;
-use App\helper;
-use App\Http\Resources\CommentResource;
-use App\Http\Resources\PostCollection;
-use App\Http\Resources\PostResource;
-use App\YourEdu\Admin;
-use App\YourEdu\Admission;
-use App\YourEdu\Ban;
-use App\YourEdu\Character;
-use App\YourEdu\ClassModel;
-use App\YourEdu\Comment;
-use App\YourEdu\Discussion;
 use App\YourEdu\Facilitator;
-use App\YourEdu\Flag;
-use App\YourEdu\Image;
 use App\YourEdu\Learner;
-use App\YourEdu\Lesson;
 use App\YourEdu\ParentModel;
-use App\YourEdu\Post;
 use App\YourEdu\Professional;
 use App\YourEdu\Profile;
-use App\YourEdu\Read;
-use App\YourEdu\Request as YourEduRequest;
 use App\YourEdu\School;
 use Carbon\Carbon;
 use Illuminate\Http\Request ;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
 class YourEduController extends Controller
 {
     //
-
-    public function getFileDetails($actualFile)
-    {
-        $file = $actualFile;
-        $fileArray['mime'] = $file->getClientMimeType();
-        $fileArray['size'] = $file->getSize();
-        $fileArray['path'] = uploadYourEduFile($file);
-
-        return $fileArray;
-    }
-
-    public function accountCreateFile(String $mime, $account, $fileDetails, $associate = null)
-    {
-        if(Str::contains($mime, 'image')){
-            $file = $account->addedImages()->create($fileDetails);
-            if($associate){
-                $associate->images()->attach($file);
-            }
-        } else if(Str::contains($mime, 'video')){
-            $file = $account->vidoes()->create($fileDetails);
-            if($associate){
-                $associate->addedVideos()->attach($file);
-            }
-        } else if(Str::contains($mime, 'audio')){
-            $file = $account->addedAudios()->create($fileDetails);
-            if($associate){
-                $associate->audios()->attach($file);
-            }
-        } else if(Str::contains($mime, 'file')){
-            $file = $account->addedFiles()->create($fileDetails);
-            if($associate){
-                $associate->files()->attach($file);
-            }
-        }
-        // if($associate){
-        //     $associate->save();
-        // }
-        return $file;
-    }
 //////////////////////////////////////////////////////////
     
 /////////////////////////////////////////////////////////////////
-    public function postCreate(Request $request)
-    {
-        $user = auth()->user();
-        $id = null;
-        $account = null;
-        $post = null;
-        $type = null;
-        // dd($request->content);
-        if ($request->has('account')) {
-            $id = $request->account_id;
-            if ($request->account === 'learner') {
-                $account = $user->learner;
-            } else if ($request->account === 'parent') {
-                $account = $user->parent;
-            } else if ($request->account === 'facilitator') {
-                $account = $user->facilitator;
-            } else if ($request->account === 'professional') {
-                $account = Professional::find($id);
-                if (!$account || $account->user_id != $user->id) {
-                    return response()->json([
-                        'message' => "You are not the owner of this {$request->account}"
-                    ], 422);
-                }
-            } else if ($request->account === 'school') {
-                $account = School::find($id);
-                if (!$account || $account->user_id != $user->id) {
-                    return response()->json([
-                        'message' => "You are not the owner of this {$request->account}"
-                    ], 422);
-                }
-            }
-        } else {
-            return response()->json([
-                'message' => 'inadequate data. Account required.'
-            ], 422);
-        }
-
-        DB::beginTransaction();
-        try {
-            if($account){
-                $request->validate([
-                    'content' => 'nullable|string',
-                ]);
-                if ($account->user_id === $user->id) {
-                    $post = $account->posts()->create([
-                        'content' => $request->content,
-                    ]);
-                } else {
-                    return response()->json([
-                        'message' => "The {$request->account} account does'nt belong to you."
-                    ], 422);
-                }
-            } else {
-                DB::rollback();
-                return response()->json([
-                    'message' => "{$request->account} does'nt exist."
-                ], 422);
-            }
-
-            if (!$post) {
-                DB::rollback();
-                return response()->json([
-                    'message' => 'post creation unsuccessful'
-                ], 422);
-            } else {
-                $request->validate([
-                    'file' => 'nullable|file',
-                    'fileType' => 'nullable|string',
-                ]);
-
-                $file = null;
-                if ($request->hasFile('file')) {
-                    $fileDetails = $this->getFileDetails($request->file('file'));
-                    // $fileArray['mime'] = $file->getClientMimeType();
-                    // $fileArray['size'] = $file->getSize();
-                    // $fileArray['path'] = uploadYourEduFile($file);
-                    // $createdFile = null;
-                    // if ($request->fileType === 'image') {
-                    //     $createdFile = $account->addedImages()->create($fileArray);
-                    //     $post->images()->attach($createdFile);
-                    // } else if ($request->fileType === 'video') {
-                    //     $createdFile = $account->addedVideos()->create($fileArray);
-                    //     $post->videos()->attach($createdFile);
-                    // } else if ($request->fileType === 'audio') {
-                    //     $createdFile = $account->addedAudio()->create($fileArray);
-                    //     $post->audios()->attach($createdFile);
-                    // } else if ($request->fileType === 'file') {
-                    //     $createdFile = $account->addedAudio()->create($fileArray);
-                    //     $post->files()->attach($createdFile);
-                    // }
-                    
-                    $file = $this->accountCreateFile(
-                        $fileDetails['mime'],
-                        $account, 
-                        $fileDetails,
-                        $post
-                    );
-                }
-
-                // dd(['file'=> $file,'filetype'=> $fileArray]);
-            }
-
-            $input = [];
-            if ($request->has('type')) {
-
-                if ($request->type === 'book') {
-                    $request->validate([
-                        'title' => 'required|string',
-                        'author' => 'nullable|string',
-                        'about' => 'nullable|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-
-                    $input['title'] = $request->title;
-                    $input['author'] = $request->author;
-                    $input['about'] = $request->about;
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    $type = $account->booksAdded()->create($input);
-                    $type->bookable()->associate($post);
-                    $type->save();
-                    // dd($type);
-                } else if ($request->type === 'riddle') {
-                    $request->validate([
-                        'riddle' => 'required|string',
-                        'author' => 'nullable|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-
-                    $input['author'] = $request->author;
-                    $input['riddle'] = $request->riddle;
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    // $type = $post->riddles()->create($input); 
-                    $type = $account->riddlesAdded()->create($input);
-                    $type->riddleable()->associate($post);
-                    $type->save();
-                } else if ($request->type === 'poem') {
-                    $request->validate([
-                        'title' => 'required|string',
-                        'author' => 'nullable|string',
-                        'about' => 'nullable|string',
-                        'sections' => 'required|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-
-                    $input['title'] = $request->title;
-                    $input['author'] = $request->author;
-                    $input['about'] = $request->about;
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    // $type = $post->riddles()->create($input); 
-                    $type = $account->poemsAdded()->create($input);
-                    $type->poemable()->associate($post);
-                    $type->save();
-                    $sections = json_decode($request->sections);
-                    foreach ($sections as $key => $section) {
-                        $type->poemSections()->create([
-                            'body' => $section
-                        ]);
-                    }
-                } else if ($request->type === 'activity') {
-                    $request->validate([
-                        'description' => 'nullable|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'required|file',
-                        'previewFileType' => 'required|string',
-                    ]);
-
-                    $input['description'] = $request->description;
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    $type = $account->activitiesAdded()->create($input);
-                    $type->activityfor()->associate($post);
-                    $type->save();
-                } else if ($request->type === 'question') {
-                    $request->validate([
-                        'question' => 'required|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-
-                    $input['question'] = $request->question;
-                    $input['state'] = 'PENDING';
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    // $type = $post->questions()->create($input);
-                    $type = $account->questionsAdded()->create($input);
-                    $type->questionable()->associate($post);
-                    $type->save();
-                } 
-
-                if ($type) {
-
-                    $file = null;
-                    if ($request->hasFile('previewFile')) {
-                        $fileDetails = $this->getFileDetails($request->file('previewFile'));
-
-                        $file = $this->accountCreateFile(
-                            $fileDetails['mime'],
-                            $account, 
-                            $fileDetails,
-                            $type
-                        );
-                    }
-                    DB::commit();
-                    return response()->json([
-                        'message' => 'successful',
-                        'post' => new PostResource($post),
-                    ]);
-                } else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful',
-                        'post' => $post,
-                    ]);
-                }
-            }
-
-            DB::commit();
-            return response()->json([
-                'message' => 'successful',
-                'post' => new PostResource($post),
-            ]);
-        } catch (\Throwable $th) {
-            if($file){
-                Storage::delete($file->path);
-            }
-            DB::rollback();
-            // return response()->json([
-            //     'message' => 'unsuccessful',
-            //     'post' => $post,
-            //     'type' => $type,
-            // ]);
-            throw $th;
-        }
-
-    }
-
-    public function posts()
-    {
-        $posts = null;
-        try {
-            $posts = Post::all();
-            $profiles = Profile::all();
-            // dd($posts->merge($profiles));
-            $all = paginate($posts->merge($profiles),5);
-            return response()->json([
-                'message' => 'successful',
-                'posts' => $all
-            ]);            
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
-            ]);
-            // throw $th;
-        }
-    }
-
-    public function postEdit(Request $request,$post, $account, $accountId)
-    {
-        $mainPost = Post::find($post);
-        
-        if ($account === 'learner') {
-            $mainAccount = Learner::find($accountId);
-        } else if ($account === 'parent') {
-            $mainAccount = ParentModel::find($accountId);
-        } else if ($account === 'facilitator') {
-            $mainAccount = Facilitator::find($accountId);
-        } else if ($account === 'professional') {
-            $mainAccount = Professional::find($accountId);
-        } else if ($account === 'school') {
-            $mainAccount = School::find($accountId);
-        }
-
-        if($mainAccount->user_id !== auth()->id()){
-            return response()->json([
-                'message' => 'unsuccessful. you do not own this account'
-            ]);
-        }
-
-        $request->validate([
-            'content' => 'nullable|string'
-        ]);
-
-        DB::beginTransaction();
-        $mainPost->update([
-            'content' => $request->content
-        ]);
-
-        $input = [];
-        if ($request->has('type')) {
-
-            if ($request->type === 'book') {
-                $request->validate([
-                    'title' => 'required|string',
-                    'author' => 'nullable|string',
-                    'about' => 'nullable|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['title'] = $request->title;
-                $input['author'] = $request->author;
-                $input['about'] = $request->about;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $mainAccount->booksAdded()->where('id',$request->typeId)->first();
-                if ($type) {
-                    $type->update($input);
-                }
-            } else if ($request->type === 'riddle') {
-                $request->validate([
-                    'riddle' => 'required|string',
-                    'author' => 'nullable|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['author'] = $request->author;
-                $input['riddle'] = $request->riddle;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $mainAccount->riddlesAdded()->where('id',$request->typeId)->first();
-                if ($type) {
-                    $type->update($input);
-                }
-            } else if ($request->type === 'poem') {
-                $request->validate([
-                    'title' => 'required|string',
-                    'author' => 'nullable|string',
-                    'about' => 'nullable|string',
-                    'sections' => 'required|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['title'] = $request->title;
-                $input['author'] = $request->author;
-                $input['about'] = $request->about;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString(); 
-                $type = $mainAccount->poemsAdded()->where('id',$request->typeId)->type();
-                if ($type) {
-                    $type->update($input);
-                } else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful. poem was not found'
-                    ]);
-                }
-                $sections = json_decode($request->sections);
-                foreach ($sections as $key => $section) {
-                    $poemSection = $type->poemSections()->where('id',$section->id)->first();
-                    if($poemSection){
-                        $poemSection->update([
-                            'body' => $section->body
-                        ]);
-                    } else {
-                        DB::rollback();
-                        return response()->json([
-                            'message' => 'unsuccessful. poem section was not found'
-                        ]);
-                    }
-                }
-            } else if ($request->type === 'activity') {
-                $request->validate([
-                    'description' => 'nullable|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'required|file',
-                    'previewFileType' => 'required|string',
-                ]);
-
-                $input['description'] = $request->description;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $mainAccount->activitiesAdded()->where('id',$request->typeId)->furst();
-                if ($type) {
-                    $type->update($input);
-                } else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful. activity was not found'
-                    ]);
-                }
-            } else if ($request->type === 'question') {
-                $request->validate([
-                    'question' => 'required|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['question'] = $request->question;
-                $input['state'] = 'PENDING';
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString(); 
-                $type = $mainAccount->questionsAdded()->where('id',$request->typeId)->first();
-                if ($type) {
-                    $type->update($input);
-                }  else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful. question was not found'
-                    ]);
-                }
-            } 
-
-            if ($type) {
-
-                $file = null;
-                if ($request->hasFile('previewFile')) {
-                    $fileDetails = $this->getFileDetails($request->file('previewFile'));
-
-                    $file = $this->accountCreateFile(
-                        $fileDetails['mime'],
-                        $mainAccount, 
-                        $fileDetails,
-                        $type
-                    );
-                }
-                DB::commit();
-                return response()->json([
-                    'message' => 'successful',
-                    'post' => new PostResource($mainPost),
-                ]);
-            } else {
-                DB::rollback();
-                return response()->json([
-                    'message' => 'unsuccessful',
-                    'post' => $mainPost,
-                ]);
-            }
-        }
-
-        DB::commit();
-        return response()->json([
-            'message' => 'successful',
-            'post' => new PostResource($mainPost),
-        ]);
-    }
-
-    public function postDelete($post, $account, $accountId)
-    {
-        $mainPost = Post::find($post);
-        
-        try {
-                
-            $mainPost->delete();
-            return response()->json([
-                'message' => "successful"
-            ]);
-        } catch (\Throwable $th) {
-            throw $th;
-            return response()->json([
-                'message' => "unsuccessful"
-            ]);
-        }
-    }
-
-    public function postGet(Request $request,$post)
-    {
-        $item = null;
-        $item = Post::find($post);
-
-        if (!$item) {
-            return response()->json([
-                'message' => 'unsuccessful. post does not exist.'
-            ]);
-        }
-        return new PostResource($item);
-    }
-
-    public function postsGet(Request $request, $account, $accountId)
-    {
-        $mainAccount = null;
-        if ($account === 'learner') {
-            $mainAccount = Learner::find($accountId);
-        } else if ($account === 'parent') {
-            $mainAccount = ParentModel::find($accountId);
-        } else if ($account === 'facilitator') {
-            $mainAccount = Facilitator::find($accountId);
-        } else if ($account === 'school') {
-            $mainAccount = School::find($accountId);            
-        } else if ($account === 'professional') {
-            $mainAccount = Professional::find($accountId);
-        }
-
-        if (!$mainAccount) {
-            return response()->json([
-                'message' => 'unsuccessful. account does not exist.'
-            ]);
-        }
-
-        return PostResource::collection($mainAccount->posts()->latest()->paginate(5));
-    }
+    
 ///////////////////////////////////////////////////////////////////
-    public function profileUpdate(Request $request, $data)
-    {
-        $profile = null;
-        $input = [];
-
-        $profile = Profile::find($data);
-
-        try {
-            if ($profile) {
-                $input['about'] = $request->has('about') && !is_null($request->about) ? 
-                    $request->about : null;
-                $input['name'] = $request->has('name') && !is_null($request->name) ? 
-                    $request->name : null;
-                $input['interests'] = $request->has('interests') && !is_null($request->interests) ? 
-                    $request->interests : null;
-                $input['company'] = $request->has('company') && !is_null($request->company) ? 
-                    $request->company : null;
-                $input['occupation'] = $request->has('occupation') && !is_null($request->occupation) ? 
-                    $request->occupation : null;
-                $input['address'] = $request->has('address') && !is_null($request->address) ? 
-                    $request->address : null;
-                $input['location'] = $request->has('location') && !is_null($request->location) ? 
-                    $request->location : null;
-
-                $profile->update($input);
-
-                return response()->json([
-                    'message' => "successful",
-                    'profile' => $profile
-                ]);
-            }
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => "unsuccessful"
-            ],422);
-            // throw $th;
-        }
-    }
-
-    public function profileGet($account, $accountId)
-    {
-        // return [$account, $accountId];
-        $mainAccount = null;
-
-        try {
-            if ($account === 'learner') {
-                $mainAccount = Learner::find($accountId);
-            } else if ($account === 'parent') {
-                $mainAccount = ParentModel::find($accountId);
-            } else if ($account === 'facilitator') {
-                $mainAccount = Facilitator::find($accountId);
-            } else if ($account === 'school') {
-                $mainAccount = School::find($accountId);            
-            } else if ($account === 'professional') {
-                $mainAccount = Professional::find($accountId);
-            }
-    
-            if ($mainAccount && $mainAccount->profile) {
-
-                return response()->json([
-                    'status' => true,
-                    'account' => $account,
-                    'profile' => new ProfileResource(Profile::find(
-                        $mainAccount->profile->id
-                    )),
-                ]);
-            }
-    
-            return response()->json([
-                'status' => false,
-                'message' => "profile doesn't exist.",
-            ], 422);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'status' => false,
-                'message' => "something unexpected happened",
-            ], 422);
-            throw $th;
-        }
-    }
 
     public function index ()
     {
@@ -689,7 +60,7 @@ class YourEduController extends Controller
             'first_name' => 'string',
             'last_name' => 'string',
             'other_names' => 'nullable|string',
-            'username' => 'required|string|unique:users,username|min:8',
+            'username' => 'required|alpha_num|unique:users,username|min:8',
             'email' => 'nullable|email|unique:users,email',
             'dob' => 'required|date',
             'password' => 'required|string|min:8|confirmed',
@@ -698,7 +69,7 @@ class YourEduController extends Controller
 
         if ($validator->fails()) {
             return [
-                'status' => 'learner',
+                'status' => false,
                 'errors' => $validator->errors(),
             ];
         }
@@ -777,8 +148,8 @@ class YourEduController extends Controller
                 $parent = null;
                 $learner = null;
 
-                if ($request->user_id) {
-                    $learner = Learner::find($request->user_id);
+                if (auth()->id()) {
+                    $learner = Learner::find(auth()->id());
                 } else if ($request->username) {
                     $learner = User::where('username',$request->username)->first()->learner;
                 }
@@ -970,83 +341,108 @@ class YourEduController extends Controller
             } else if ($request->creator === 'user') {
                 //tested
                 
-                $user = User::find($request->user_id);
-                $parent = null;
+                $userLearner = User::find(auth()->id());
+                $learner = null;
+                $learnerProfile = [];
+                ///////change my mind on the 'you require a parent to be learner' policy
+                // $user = User::find(auth()->id());
+                // $parent = null;
 
-                if ($request->other_id) {
-                    $parent = ParentModel::find($request->other_id);
-                } else if ($request->other_username) {
-                    $parent =User::where('username',$request->other_username)->first()->parent;
-                } else {
-                    $parent = $user->parent;
-                }
+                // if ($request->other_id) {
+                //     $parent = ParentModel::find($request->other_id);
+                // } else if ($request->other_username) {
+                //     $parent =User::where('username',$request->other_username)->first()->parent;
+                // } else {
+                //     $parent = $user->parent;
+                // }
                 
                 try {
                     DB::beginTransaction();
 
-                    if ((!$user->dob || now()->diffInYears($user->dob, true) < 18 || $user->dob->year === $user->created_at->year) && !$parent) {
+                    // if ((!$user->dob || now()->diffInYears($user->dob, true) < 18 || $user->dob->year === $user->created_at->year) && !$parent) {
                         
-                        $userParentArray = $this->userCreate($request);
-                        if ($userParentArray['errors']) {
-                            return response()->json([
-                                'status' => $userParentArray['status'],
-                                'errors' => $userParentArray['errors']
-                            ]);
-                        }
-                        $userParent = $userParentArray['new'];
+                    //     $userParentArray = $this->userCreate($request);
+                    //     if ($userParentArray['errors']) {
+                    //         return response()->json([
+                    //             'status' => $userParentArray['status'],
+                    //             'errors' => $userParentArray['errors']
+                    //         ]);
+                    //     }
+                    //     $userParent = $userParentArray['new'];
 
-                        if (!$userParent->dob || now()->diffInYears($userParent->dob, true) < 18 || $userParent->dob->year === $userParent->created_at->year) {
-                            $parent = $userParent->parent()->create([
-                                'name' => $userParent->full_name
-                            ]);
-                        }
+                    //     if (!$userParent->dob || now()->diffInYears($userParent->dob, true) < 18 || $userParent->dob->year === $userParent->created_at->year) {
+                    //         $parent = $userParent->parent()->create([
+                    //             'name' => $userParent->full_name
+                    //         ]);
+                    //     }
 
-                        if (!$parent) {
-                            DB::rollback();
-                            return response()->json([
-                                'status' => false,
-                                'message' => 'You require a parent. If you are above 18, please do indicate it by editing your user details in the welcome page.'
-                            ]);
-                        }
-                    }
+                    //     if (!$parent) {
+                    //         DB::rollback();
+                    //         return response()->json([
+                    //             'status' => false,
+                    //             'message' => 'You require a parent. If you are above 18, please do indicate it by editing your user details in the welcome page.'
+                    //         ]);
+                    //     }
+                    // }
 
                     if ($request->name ==='') {
-                        $inputName =  $user->full_name;
+                        $inputName =  $userLearner->full_name;
                     } else {
                         $inputName = $request->name;
                     }
 
-                    if ($user) {
+                    if ($userLearner) {
 
-                        if ($user->has('parent')) {
+                        if ($userLearner->has('learner')) {
                             DB::rollback();
                             return response()->json([
                                 'status' => false,
-                                'user' => "You are a parent. You can't be a learner too" //need to make a decision on whether you can be a parent and a learner
-                            ]);
+                                'message' => "You cannot be more than one learner"
+                            ],422);
                         }
-                        $learner = $user->learner()->create([
+
+                        // if ($userLearner->has('parent')) {
+                        //     DB::rollback();
+                        //     return response()->json([
+                        //         'status' => false,
+                        //         'userLearner' => "You are a parent. You can't be a learner too" //need to make a decision on whether you can be a parent and a learner
+                        //     ]);
+                        // }
+                        $learner = $userLearner->learner()->create([
                             'name' => $inputName
                         ]);
 
-                        if ($parent) {
-                            $parent->learners()->attach($learner->id,[
-                                'role' => $request->parent_role
-                            ]);
-                        }
+                        // if ($parent) {
+                        //     $parent->learners()->attach($learner->id,[
+                        //         'role' => $request->parent_role
+                        //     ]);
+                        // }
+
+                        $learnerProfile['account_id'] = $learner->id;
+                        $learnerProfile['account_type'] = $request->create;
+                        $learnerProfile['profile'] = 'App\YourEdu\Learner';
+                        $learnerProfile['profile_name'] = $learner->name;
+                        $learnerProfile['profile_url'] = $learner->profile->url;
+
+                        DB::commit();
+                        return response()->json([
+                            'message' => 'successful',
+                            'learner' => $learner,
+                            'owned_profile' => $learnerProfile,
+                        ]);
                     } else{
                         DB::rollback();
                         return response()->json([
-                            'status' => (bool) $user,
+                            'status' => (bool) $userLearner,
                             'user' => 'user not found'
                         ]);
                     }
 
-                    DB::commit();
-                    return response()->json([
-                        'status' => (bool) $learner,
-                        'learner' => $learner
-                    ]);
+                    // DB::commit();
+                    // return response()->json([
+                    //     'status' => (bool) $learner,
+                    //     'learner' => $learner
+                    // ]);
                 } catch (\Throwable $th) {
                     DB::rollback();
                     throw $th;
@@ -1139,8 +535,9 @@ class YourEduController extends Controller
             
             } else if ($request->creator === 'user') {
                 //tested
-                $user = User::find($request->user_id);
+                $user = User::find(auth()->id());
                 $facilitator = null;
+                $facilitatorProfile = [];
                 try {
                     DB::beginTransaction();
                     if ($user) {
@@ -1149,7 +546,7 @@ class YourEduController extends Controller
                             return response()->json([
                                 'status' => (bool) $user,
                                 'message' => $this->ageInappropriateMessage('facilitator')
-                            ]);
+                            ],422);
                         }
 
                         if ($user->facilitator()->exists()) {
@@ -1170,13 +567,20 @@ class YourEduController extends Controller
                         return response()->json([
                             'status' => (bool) $user,
                             'message' => 'user not found'
-                        ]);
+                        ],422);
                     }
+
+                    $facilitatorProfile['account_id'] = $facilitator->id;
+                    $facilitatorProfile['account_type'] = $request->create;
+                    $facilitatorProfile['profile'] = 'App\YourEdu\Facilitator';
+                    $facilitatorProfile['profile_name'] = $facilitator->name;
+                    $facilitatorProfile['profile_url'] = $facilitator->profile->url;
     
                     DB::commit();
                     return response()->json([
                         'status' => (bool) $facilitator,
-                        'facilitator' => $facilitator
+                        'facilitator' => $facilitator,
+                        'owned_profile' => $facilitatorProfile,
                     ]);
                 } catch (\Throwable $th) {
                     DB::rollback();
@@ -1187,7 +591,9 @@ class YourEduController extends Controller
         } else if ($request->create === 'professional') {
             if ($request->creator==='user') {
                 //tested 
-                $user = User::find($request->user_id);
+                $user = User::find(auth()->id());
+                $professional = null;
+                $professionalProfile = [];
 
                 try {
                     if ($user) {
@@ -1196,7 +602,7 @@ class YourEduController extends Controller
                             return response()->json([
                                 'status' => (bool) $user,
                                 'message' => $this->ageInappropriateMessage('professional')
-                            ]);
+                            ],422);
                         }
 
                         DB::beginTransaction();
@@ -1205,10 +611,38 @@ class YourEduController extends Controller
                         }else{
                             $inputName =  $request->name;
                         }
-    
+                        
+                        if ($request->role ==='') {
+                            $inputRole =  'TRAINER';
+                        }else{
+                            $inputRole =  $request->role;
+                        }
+
+                        if ($request->role ==='OTHER') {
+                            $inputOther =  $request->other_name;
+                        }else{
+                            $inputOther =  null;
+                        }
+                        
+                        if ($user->professionals()->where('role',$inputRole)->first()) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'You already have a professional account with this role. Please use another role for this new one.'
+                            ],422);
+                        }
+
                         $professional = $user->professionals()->create([
                             'name' => $inputName, 
-                            'description' => $request->description]);
+                            'role' => $inputRole,
+                            'other_name' => $inputOther,
+                            'description' => $request->description,
+                        ]);
+
+                        $professionalProfile['account_id'] = $professional->id;
+                        $professionalProfile['account_type'] = $request->create;
+                        $professionalProfile['profile'] = 'App\YourEdu\Professional';
+                        $professionalProfile['profile_name'] = $professional->name;
+                        $professionalProfile['profile_url'] = $professional->profile->url;
                     } else{
                         return response()->json([
                             'status' => (bool) $user,
@@ -1219,7 +653,8 @@ class YourEduController extends Controller
                     DB::commit();
                     return response()->json([
                         'status' => (bool) $professional,
-                        'professional' => $professional
+                        'professional' => $professional,
+                        'owned_profile' => $professionalProfile,
                     ]);
                 } catch (\Throwable $th) {
                     DB::rollback();
@@ -1300,8 +735,8 @@ class YourEduController extends Controller
             }
         } else if ($request->create === 'school') {
             //tested
-            $user = User::find($request->user_id);
-
+            $user = User::find(auth()->id());
+            $schoolProfile = [];
             try {
                 if ($user) {
                     DB::beginTransaction();
@@ -1314,28 +749,43 @@ class YourEduController extends Controller
                         ]);
                     }
 
+                    if ($user->schools()->where('company_name',$request->company_name)->first()) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'You already have a school account with this company name.'
+                        ],422);
+                    }
+
                     if ($request->has('role') && $request->role === 'TRADITIONAL') {
-                        $input['role'] = $request->role;
+                        $inputRole = $request->role;
                     }else{
-                        $input['role'] = 'VIRTUAL';
+                        $inputRole = 'VIRTUAL';
                     }
     
                     $school = $user->schools()->create([
                         'company_name' => $request->company_name,
-                        'role' => $input['role'],
+                        'role' => $inputRole,
                     ]);
     
                     if ($school) {
-                        $user->admins()->create([
+                        $schoolAdmin = $user->admins()->create([
                             'name' => $user->full_name,
                             'role' => 'SCHOOLADMIN',
                             'level' => 10,
                         ]);
-                        
+
+                        $schoolAdmin->schools()->attach($school);
+
+                        $schoolProfile['account_id'] = $school->id;
+                        $schoolProfile['account_type'] = $request->create;
+                        $schoolProfile['profile'] = 'App\YourEdu\School';
+                        $schoolProfile['profile_name'] = $school->company_name;
+                        $schoolProfile['profile_url'] = $school->profile->url;
                         DB::commit();
                         return response()->json([
                             'status' => (bool) $school,
                             'school' => $school,
+                            'owned_profile' => $schoolProfile,
                         ]);
                     }
                 }
@@ -1352,8 +802,9 @@ class YourEduController extends Controller
             
         } else if ($request->create === 'parent') {
             //tested
-            $user = User::find($request->user_id);
+            $user = User::find(auth()->id());
             $parent = null;
+            $parentProfile = [];
 
             try {
                 if ($user) {
@@ -1382,19 +833,25 @@ class YourEduController extends Controller
     
                     $parent = $user->parent()->create([
                         'name' => $inputName, 
-                        'description' => $inputName
                     ]);
                 } else{
                     return response()->json([
                         'status' => (bool) $user,
-                        'message' => 'unsuccessful'
+                        'message' => 'unsuccessful. user not found.'
                     ]);
                 }
     
+                $parentProfile['account_id'] = $parent->id;
+                $parentProfile['account_type'] = $request->create;
+                $parentProfile['profile'] = 'App\YourEdu\ParentModel';
+                $parentProfile['profile_name'] = $parent->name;
+                $parentProfile['profile_url'] = $parent->profile->url;
+
                 DB::commit();
                 return response()->json([
                     'status' => (bool) $parent,
-                    'parent' => $parent
+                    'parent' => $parent,
+                    'owned_profile' => $parentProfile,
                 ]);
             } catch (\Throwable $th) {
                 DB::rollback();

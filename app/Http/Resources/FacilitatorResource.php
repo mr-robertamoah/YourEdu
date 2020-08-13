@@ -27,50 +27,50 @@ class FacilitatorResource extends JsonResource
             'emails' => $this->when(
                 $this->emails()->exists()&& 
                 $this->emails()->count() > 3,
-                $this->emails()->take(3),
-                $this->emails
+                EmailResource::collection($this->emails()->take(3)->get()),
+                EmailResource::collection($this->emails)
             ),
             'verification' => $this->verification,
             'subjects' => $this->when(
                 $this->subjects()->exists() && 
                 $this->subjects()->count() > 3,
-                $this->subjects()->take(3),
+                $this->subjects()->take(3)->get(),
                 $this->subjects
             ),
             'grades' => $this->when(
                 $this->grades()->exists() && 
                 $this->grades()->count() > 3 &&
-                $this->grades()->take(3),
+                $this->grades()->take(3)->get(),
                 $this->grades
             ),
             'schools' => $this->when(
                 $this->schools()->exists() && 
                 $this->schools()->count() > 3,
-                $this->schools()->take(3),
+                $this->schools()->take(3)->get(),
                 $this->groups
             ),
             'groups' => $this->when(
                 $this->groups()->exists() && 
                 $this->groups()->count() > 3 &&
-                $this->groups()->take(3),
+                $this->groups()->take(3)->get(),
                 $this->groups
             ),
             'classes' => $this->when(
                 $this->classes()->exists() && 
                 $this->classes()->count() > 3 &&
-                $this->classes()->take(3),
+                $this->classes()->take(3)->get(),
                 $this->classes
             ),
             'curricula' => $this->when(
                 $this->curricula()->exists() && 
                 $this->curricula()->count() > 3 &&
-                $this->curricula()->take(3),
+                $this->curricula()->take(3)->get(),
                 $this->curricula
             ),
             'extracurriculums' => $this->when(
                 $this->extracurriculums()->exists() && 
                 $this->extracurriculums()->count() > 3 &&
-                $this->extracurriculums()->take(3),
+                $this->extracurriculums()->take(3)->get(),
                 $this->extracurriculums
             ),
         ];

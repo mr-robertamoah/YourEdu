@@ -50,4 +50,9 @@ class Activity extends Model
             ->withPivot(['state'])->withTimestamps();
     }
 
+    public function comments()
+    {
+        return $this->morphMany(Comment::class,'commentable');
+    }
+
 }

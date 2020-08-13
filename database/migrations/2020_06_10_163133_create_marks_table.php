@@ -18,8 +18,10 @@ class CreateMarksTable extends Migration
             $table->unsignedBigInteger('answer_id')->nullable();
             $table->nullableMorphs('markable'); // contribution
             $table->nullableMorphs('markedby'); // professional facilitator parent school
-            $table->integer('score');
-            $table->string('remark');
+            $table->integer('score')->nullable();
+            $table->integer('score_over')->nullable();
+            $table->string('remark')->nullable();
+            $table->enum('state',['WRONG','PARTIAL','CORRECT'])->nullable();
             $table->softDeletes();
             $table->timestamps();
 

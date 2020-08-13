@@ -71,6 +71,10 @@ class Learner extends Model
         return $this->morphMany(PhoneNumber::class,'phoneable');
     }
 
+    public function emails(){
+        return $this->morphMany(Email::class,'emailable');
+    }
+
     public function keywords()
     {
         return $this->morphMany(Keyword::class,'keywordable');
@@ -95,7 +99,7 @@ class Learner extends Model
     
     public function answers()
     {
-        return $this->morphMany(Answer::class,'answerable');
+        return $this->morphMany(Answer::class,'answeredby');
     }
 
     public function reports()

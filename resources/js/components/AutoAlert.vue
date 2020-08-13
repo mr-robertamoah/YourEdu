@@ -47,7 +47,7 @@ import { mapActions } from 'vuex'
                             this.show = false
                             this.$emit('hideAlert', this.message)
                             this['profile/clearMsg']()
-                        }, 2000);
+                        }, 3000);
                     }
                 }
             }

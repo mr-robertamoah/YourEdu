@@ -4,6 +4,7 @@
             <view-modal
                 @goBack="goBack"
                 :showGoBack="true"
+                infinite-wrapper
             >
                 <template slot="main">
                     <div class="main-comment" v-if="mainComment">
@@ -15,11 +16,6 @@
                     <div class="main-comment" v-if="!mainComment">
                         waiting...
                     </div>
-                    <!-- <div class="add-comment">
-                        <add-comment
-                            
-                        ></add-comment>
-                    </div> -->
                     <div class="view-comments">
                         <template v-if="computedComments">
                             <div class="comment">
@@ -32,6 +28,8 @@
                     </div>
                     <infinite-loader
                         @infinite="infiniteHandler"
+                        v-if="computedComments"
+                        force-use-infinite-wrapper
                     ></infinite-loader>
                 </template>
             </view-modal>
@@ -147,9 +145,12 @@ import { mapGetters, mapActions } from 'vuex';
                         nextPage: this['profile/getCommentNextPage']
                     }
                     let response = await this['profile/getComments'](data)
-                } else {
-                    $state.complete()
-                }
+                    if (response ) {
+                        $state.loaded()
+                    } else {
+                        $state.complete()
+                    }
+                } 
                 // if (response !== 'unsuccessful') {
                 //     $state.complete()
                 // } else {

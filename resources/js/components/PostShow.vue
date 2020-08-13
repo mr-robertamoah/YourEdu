@@ -1,5 +1,7 @@
 <template>
-    <div class="section">
+    <div class="post-show-wrapper"
+        @dblclick.self="clickedShowPostComments"
+    >
         <div class="edit"
             @click="showOptions = computedOwner"
             v-if="computedOwner"
@@ -12,16 +14,24 @@
             <span @click="clickedOpion('edit')">edit</span>
             <span @click="clickedOpion('delete')">delete</span>
         </div>
-        <div class="top">
-            <div>
+        <div class="top"
+            @dblclick="clickedShowPostComments"
+        >
+            <div class="name"
+                @click="clickedProfilePicture"
+            >
                 {{computedName}}
             </div>
             <div class="created">
                 {{computedCreated}}
             </div>
         </div>
-        <div class="body">
-            <div class="creator">
+        <div class="body"
+            @dblclick="clickedShowPostComments"
+        >
+            <div class="creator"
+                @click="clickedProfilePicture"
+            >
                 <profile-picture>
                     <template slot="image">
                         <img :src="computedUrl">
@@ -29,14 +39,26 @@
                 </profile-picture>
             </div>
             <div class="other">
-                <div class="media" v-if="computedImageUrl.length">
+                <div class="post-media" 
+                    v-if="computedImageUrl.length"
+                    :class="{postMediaFull:postMediaFull}"
+                    @click="clickedPostMedia(computedImageUrl,'image')"
+                >
                     <img :src="computedImageUrl">
                 </div>
-                <div class="media" v-if="computedAudioUrl.length">
+                <div class="post-media" 
+                    v-if="computedAudioUrl.length"
+                    :class="{postMediaFull:postMediaFull}"
+                    @click="clickedPostMedia(computedAudioUrl,'audio')"
+                >
                     <audio :src="computedAudioUrl" controls controlslist="nodownload">
                     </audio>
                 </div>
-                <div class="media" v-if="computedVideoUrl.length">
+                <div class="post-media" 
+                    v-if="computedVideoUrl.length"
+                    :class="{postMediaFull:postMediaFull}"
+                    @click="clickedPostMedia(computedVideoUrl,'video')"
+                >
                     <video :src="computedVideoUrl" controls controlslist="nodownload">
                     </video>
                 </div>
@@ -57,6 +79,10 @@
             <post-preview
                 :type="computedType"
                 :typeName="computedTypeName"
+                :typeMediaFull="postMediaFull"
+                @clickedMedia="clickedMedia"
+                @clickedShowPostPreview="clickedShowPostPreview"
+                :post="post"
             ></post-preview>
         </template>
         <div class="bottom">
@@ -105,7 +131,7 @@
                                 </div>
                             </div>
                             <div class="comment"
-                                titleText="add a comment"
+                                title="add a comment"
                                 @click="clickedAddComment"
                                 v-if="!showAddComment"
                                 :class="{success:commentSuccess,fail:commentFail}"
@@ -121,17 +147,20 @@
                     <add-comment
                         what="post"
                         :id="computedId"
+                        :onPostModal="postMediaFull"
                         :showAddComment="showAddComment"
                         @hideAddComment="showAddComment = false"
                         @postAddComplete="postAddComplete"
+                        @postModalCommentCreated="postModalCommentCreated"
                     ></add-comment>
                 </div>
                 <div class="comment-section">
-                    <template v-if="computedComments">
+                    <template v-if="!postMediaFull && computedComments">
                         <comment-single
                             :key="key" v-for="(comment, key) in computedComments"
                             :comment="comment"
                             @askLoginRegister="askLoginRegister"
+                            @clickedMedia="clickedMedia"
                         ></comment-single>
                     </template>
                 </div>
@@ -152,7 +181,7 @@
         <fade-up>
             <template slot="transition" v-if="showSmallModal">
                 <small-modal
-                    title="are you sure you want to delete this"
+                    :title="smallModalTitle"
                     :show="showSmallModal"
                     :message="alertMessage"
                     :success="alertSuccess"
@@ -163,12 +192,19 @@
                 >
                     <template slot="actions">
                         <post-button
+                            buttonText="ok"
+                            @click="clickedInfoOk"
+                            v-if="smallModalInfo"
+                        ></post-button>
+                        <post-button
                             buttonText="yes"
                             @click="clickedYes"
+                            v-if="smallModalDelete"
                         ></post-button>
                         <post-button
                             buttonText="no"
                             @click="clickedNo"
+                            v-if="smallModalDelete "
                         ></post-button>
                     </template>
                 </small-modal>
@@ -183,7 +219,6 @@ import PostButton from './PostButton'
 import AddComment from './AddComment'
 import MainTextarea from './MainTextarea'
 import PostPreview from './PostPreview'
-import SmallModal from './SmallModal'
 import NumberOf from './NumberOf'
 import ProfileBar from './profile/ProfileBar'
 import CreatePost from './forms/CreatePost'
@@ -193,6 +228,7 @@ import {dates, strings, files} from '../services/helpers'
 import { mapGetters, mapActions } from 'vuex'
 
     export default {
+        name: 'PostShow',
         components: {
             ProfilePicture,
             JustFade,
@@ -200,7 +236,6 @@ import { mapGetters, mapActions } from 'vuex'
             CreatePost,
             ProfileBar,
             NumberOf,
-            SmallModal,
             PostPreview,
             MainTextarea,
             AddComment,
@@ -212,6 +247,10 @@ import { mapGetters, mapActions } from 'vuex'
                 default(){
                     return {}
                 },
+            },
+            postMediaFull: { //true means its on the post modal
+                type: Boolean,
+                default: false
             },
         },
         data() {
@@ -226,6 +265,9 @@ import { mapGetters, mapActions } from 'vuex'
                 smallModalAlerting: false,
                 alertSuccess: false,
                 alertDanger: false,
+                smallModalDelete: false,
+                smallModalTitle: '',
+                smallModalInfo: false,
                 showAddComment: false,
                 isLiked: false,
                 likes: 0,
@@ -256,21 +298,21 @@ import { mapGetters, mapActions } from 'vuex'
             ...mapGetters(['getUser','getProfiles','profile/getMsg']),
             computedLikes(){
                 //do not show like if any of your profiles has liked the item
-                if (this.post && this.post.hasOwnProperty('likes')){
-                    let likes = this.post.likes
-                    this.likes = this.post.likes.length
-                    let index = null
-                    index = likes.findIndex(like=>{
-                            return like.user_id === this.getUser.id
-                        })
-                    if (index > -1) {
-                        this.myLike = likes[index]
-                        this.isLiked = true
+                if (this.getUser) {
+                    if (this.post && this.post.hasOwnProperty('likes')){
+                        let likes = this.post.likes
+                        this.likes = this.post.likes.length
+                        let index = null
+                        index = likes.findIndex(like=>{
+                                return like.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.myLike = likes[index]
+                            this.isLiked = true
+                        }
                     }
-                    return true
-                } else {
-                    return false
                 }
+                return true
             },
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
@@ -286,7 +328,7 @@ import { mapGetters, mapActions } from 'vuex'
                             this.post.postedby_type === el.profile
                     })
 
-                    if (profile >= 0) {
+                    if (profile > -1) {
                         this.profile = this.getProfiles[profile]
                         return true
                     } else {
@@ -311,10 +353,6 @@ import { mapGetters, mapActions } from 'vuex'
             computedAudioUrl(){
                 return this.post && this.post.audios ? this.post.audios.url : ''
             },
-            // computedPostUrl(){
-            //     return this.post && (this.post.images || this.post.videos ||
-            //         this.post.audios) ? true : false
-            // },
             computedType(){
                 return this.post && this.post.type ?
                     this.post.type[0] : null
@@ -340,7 +378,7 @@ import { mapGetters, mapActions } from 'vuex'
             },
             computedShowMore(){
                 return this.post && this.post.hasOwnProperty('content') &&
-                    this.post.content.length > 200 ? true : false
+                    this.post.content && this.post.content.length > 200 ? true : false
             },
             computedId(){
                 return this.post && this.post.hasOwnProperty('id') ?
@@ -349,16 +387,74 @@ import { mapGetters, mapActions } from 'vuex'
             computedFlag(){
                 return true
             },
+            computedPostOwnerAccount(){
+                let postOwner = this.post ? {
+                    account: strings.getAccount(this.post.postedby_type),
+                    accountId: `${this.post.postedby_id}`
+                } : {}
+
+                return postOwner
+            },
         },
         methods: {
+            clickedShowPostPreview(data){
+                this.$emit('clickedShowPostPreview',data)
+            },
+            clickedMedia(data){
+                this.$emit('clickedMedia',data)
+            },
+            clickedPostMedia(url,mediaType){
+                this.clickedMedia({url,mediaType})
+            },
+            postModalCommentCreated(data){
+                if (this.postMediaFull) {
+                    this.$emit('postModalCommentCreated',data)
+                }
+            },
+            clickedShowPostComments(){
+                this.$emit('clickedShowPostComments',{post: this.post,type:'post'})
+            },
+            clickedProfilePicture(){
+                if (this.$route.name !== 'profile') {
+                    this.$router.push({
+                        name: 'profile',
+                        params: {
+                            account: this.computedPostOwnerAccount.account,
+                            accountId: this.computedPostOwnerAccount.accountId,
+                        }
+                    })
+                } else {
+                    if (this.$route.params.account !== this.computedPostOwnerAccount.account &&
+                        this.$route.params.accountId !== this.computedPostOwnerAccount.accountId) {
+                        this.$router.push({
+                        name: 'profile',
+                        params: {
+                            account: this.computedPostOwnerAccount.account,
+                            accountId: this.computedPostOwnerAccount.accountId,
+                        }
+                    })
+                    }
+                }
+            },
             askLoginRegister(){
                 this.$emit('askLoginRegister','postShow')
             },
             ...mapActions(['profile/deletePost','profile/updatePost',
                 'profile/createLike','profile/deleteLike']),
+            clickedInfoOk(){
+                this.showSmallModal = false
+            },
             clickedAddComment(){
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
+                } else if (!this.getProfiles || !this.getProfiles.length) {
+                    this.smallModalInfo= true
+                    this.smallModalDelete = false
+                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can comment.'
+                    this.showSmallModal = true
+                    setTimeout(() => {
+                        this.showSmallModal = false
+                    }, 4000);
                 } else {
                     this.showAddComment = true
                 }
@@ -366,6 +462,14 @@ import { mapGetters, mapActions } from 'vuex'
             clickedFlag(){
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
+                } else if (!this.getProfiles.length) { // to ensure that people with no profiles dont like/comment/flag
+                    this.smallModalInfo= true
+                    this.smallModalDelete = false
+                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can flag.'
+                    this.showSmallModal = true
+                    setTimeout(() => {
+                        this.showSmallModal = false
+                    }, 4000);
                 } else {
 
                 }
@@ -373,6 +477,14 @@ import { mapGetters, mapActions } from 'vuex'
             async clickedLike(){
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
+                } else if (!this.getProfiles.length) {
+                    this.smallModalInfo= true
+                    this.smallModalDelete = false
+                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can like.'
+                    this.showSmallModal = true
+                    setTimeout(() => {
+                        this.showSmallModal = false
+                    }, 4000);
                 } else {
                     if (this.isLiked) {
                         this.likes -= 1
@@ -406,6 +518,7 @@ import { mapGetters, mapActions } from 'vuex'
             },
             postAddComplete(data){
                 if (data === 'successful') {
+                    this.showAddComment = false
                     this.commentSuccess = true
                     setTimeout(() => {
                         this.commentSuccess = false
@@ -534,6 +647,9 @@ import { mapGetters, mapActions } from 'vuex'
                 if (data === 'edit') {
                     this.showEdit = true
                 } else if (data === 'delete') {
+                    this.smallModalTitle = 'are you sure you want to delete this'
+                    this.smallModalInfo = false
+                    this.smallModalDelete = true
                     this.showSmallModal = true
                 }
                 this.showOptions = false
@@ -543,8 +659,12 @@ import { mapGetters, mapActions } from 'vuex'
 </script>
 
 <style lang="scss" scoped>
-
-    .section{
+@mixin text-overflow(){
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+    .post-show-wrapper{
         min-height: 200px;
         border: 1px solid dimgrey;
         padding: 10px;
@@ -586,13 +706,22 @@ import { mapGetters, mapActions } from 'vuex'
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-weight: 600;
+
+            .name{
+                font-weight: 500;
+                font-size: 18px;
+                cursor: pointer;
+                width: 60%;
+                @include text-overflow();
+            }
 
             .created{
                 font-weight: 400;
                 color: rgba(150, 150, 150, 1);
                 font-size: 11px;
                 text-align: end;
+                width: 40%;
+                @include text-overflow();
             }
         }
 
@@ -617,13 +746,24 @@ import { mapGetters, mapActions } from 'vuex'
             .other{
                 width: 75%;
                 height: auto;
-            }
-            .media{
-                width: 100%;
-                max-width: 150px;
 
-                img{
-                    width: inherit;
+                .post-media{
+                    width: 100%;
+                    max-height: 150px;
+                    overflow: hidden;
+                    padding-left: 10px;
+
+                    img,
+                    video,
+                    audio{
+                        width: inherit;
+                        height: auto;
+                    }
+                }
+
+                .postMediaFull{
+                    max-height: none;
+                    overflow: visible;
                 }
             }
 
@@ -684,13 +824,13 @@ import { mapGetters, mapActions } from 'vuex'
                             .like-post{
                                 margin-right: 10px;
                                 padding: 5px;
-                                margin-right: 5px;
-                                font-size: 14px;
+                                font-size: 16px;
                                 cursor: pointer;
                             }
 
                             .comment{
                                 cursor: pointer;
+                                font-size: 16px;
                             }
 
                             .liked{
@@ -740,7 +880,7 @@ import { mapGetters, mapActions } from 'vuex'
 
 
 @media screen and (min-width:800px) and (max-width:1100px){
-    .section{
+    .post-show-wrapper{
         font-size: 2.2vw;
 
         .body{
@@ -762,8 +902,14 @@ import { mapGetters, mapActions } from 'vuex'
 
 
 @media screen and (max-width:800px){
-    .section{
+    .post-show-wrapper{
         font-size: 2.4vw;
+
+        .top{
+            .name{
+                font-size: 16px;
+            }
+        }
 
         .body{
             font-size: 2.2vw;

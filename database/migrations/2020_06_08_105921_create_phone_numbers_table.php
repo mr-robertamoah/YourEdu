@@ -15,7 +15,7 @@ class CreatePhoneNumbersTable extends Migration
     {
         Schema::create('phone_numbers', function (Blueprint $table) {
             $table->id();
-            $table->string('country_code');
+            $table->string('country_code')->nullable();
             $table->string('phone_number');
             $table->boolean('mobile_money')->default(false);
             $table->boolean('show')->default(true);

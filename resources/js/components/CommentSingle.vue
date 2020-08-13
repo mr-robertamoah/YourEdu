@@ -1,5 +1,8 @@
 <template>
-    <div class="wrapper" v-if="showCommentSingle">
+    <div class="comment-wrapper" 
+        v-if="showCommentSingle"
+        @dblclick="clickedViewComments"
+    >
         <div class="edit"
             @click="clickedShowOptions"
             v-if="computedOwner"
@@ -13,7 +16,9 @@
             <span @click="clickedOpion('delete')">delete</span>
         </div>
         <div class="top">
-            <div class="name">
+            <div class="name"
+                @click="clickedProfilePicture"
+            >
                 {{computedName}}
             </div>
             <div class="created" v-if="computedCreatedAt">
@@ -21,8 +26,12 @@
             </div>
         </div>
         <div class="middle">
-            <div class="profile-picture">
-                <profile-picture>
+            <div class="profile-picture"
+                @click="clickedProfilePicture"
+            >
+                <profile-picture
+                    @click="clickedProfilePicture"
+                >
                     <template slot="image">
                         <img :src="computedProfileUrl">
                     </template>
@@ -32,14 +41,24 @@
                 <div class="text" v-if="computedBody">
                     {{computedBody}}
                 </div>
-                <div class="media" v-if="computedImageUrl.length">
+                <div class="media" 
+                    v-if="computedImageUrl.length"
+                    :class="{commentMediaFull:!showCommentNumber}"
+                    @click="clickedMedia(computedImageUrl,'image')"
+                >
                     <img :src="computedImageUrl">
                 </div>
-                <div class="media" v-if="computedAudioUrl.length">
+                <div class="media" v-if="computedAudioUrl.length"
+                    :class="{commentMediaFull:!showCommentNumber}"
+                    @click="clickedMedia(computedAudioUrl,'audio')"
+                >
                     <audio :src="computedAudioUrl" controls controlslist="nodownload">
                     </audio>
                 </div>
-                <div class="media" v-if="computedVideoUrl.length">
+                <div class="media" v-if="computedVideoUrl.length"
+                    :class="{commentMediaFull:!showCommentNumber}"
+                    @click="clickedMedia(computedVideoUrl,'video')"
+                >
                     <video :src="computedVideoUrl" controls controlslist="nodownload">
                     </video>
                 </div>
@@ -54,7 +73,9 @@
                 @click="clickedViewComments"
                 :title="commentTitle"
             >
-                {{`${comments} comments`}}
+                {{`${comments}`}} <font-awesome-icon
+                    :icon="['fa','comment-alt']"
+                ></font-awesome-icon>
             </div>
             <div class="other">
                 <div class="like"
@@ -108,47 +129,20 @@
                 <add-comment
                     what="comment"
                     :id="comment.id"
+                    :onPostModal="onPostModal"
                     :showAddComment="showAddComment"
                     @hideAddComment="showAddComment = false"
                     @postAddComplete="postAddComplete"
+                    @postModalCommentCreated="postModalCommentCreated"
+                    @postModalCommentEdited="postModalCommentEdited"
                     :editableData="comment"
                     :edit="editComment"
                 ></add-comment>
             </div>
-        <!-- <just-fade>
-            <template slot="transition" v-if="showEdit">
-                <main-modal
-                    @mainModalDisappear="showEdit = false"
-                >
-                    <template slot="main">
-                        <template
-                            v-if="showAlert">
-                            <auto-alert
-                                :message="alertMessage"
-                                :success="alertSuccess"
-                                :danger="alertDanger"
-                                @hideAlert="alertDisappear"
-                            ></auto-alert>
-                        </template>
-                        <welcome-form v-if="!showAlert">
-                            <template slot="input">
-                                <add-comment
-                                    what="comment"
-                                    :id="comment.id"
-                                    :edit="true"
-                                    :editableData="comment"
-                                    :showAddComment="true"
-                                ></add-comment>
-                            </template>
-                        </welcome-form>
-                    </template>
-                </main-modal>
-            </template>
-        </just-fade> -->
         <fade-up>
             <template slot="transition" v-if="showSmallModal">
                 <small-modal
-                    title="are you sure you want to delete this"
+                    :title="smallModalTitle"
                     :show="showSmallModal"
                     :message="alertMessage"
                     :success="alertSuccess"
@@ -159,22 +153,30 @@
                 >
                     <template slot="actions">
                         <post-button
+                            buttonText="ok"
+                            @click="clickedInfoOk"
+                            v-if="smallModalInfo"
+                        ></post-button>
+                        <post-button
                             buttonText="yes"
                             @click="clickedYes"
+                            v-if="smallModalDelete"
                         ></post-button>
                         <post-button
                             buttonText="no"
                             @click="clickedNo"
+                            v-if="smallModalDelete"
                         ></post-button>
                     </template>
                 </small-modal>
             </template>
         </fade-up>
-        <!-- <view-comments
-            @viewModalDisappear="viewModalDisappear"
+        <view-comments
             :show="showViewComments"
             :comment="comment"
-        ></view-comments> -->
+            @viewModalDisappear="showViewComments = false"
+            @postModalCommentEditedMain="viewModalCommentEditedMain"
+        ></view-comments>
     </div>
 </template>
 
@@ -182,9 +184,7 @@
 import PostButton from './PostButton'
 import ProfilePicture from './profile/ProfilePicture'
 import NumberOf from './NumberOf'
-import SmallModal from './SmallModal'
 import WelcomeForm from './welcome/WelcomeForm'
-import MainModal from './MainModal'
 import AddComment from './AddComment'
 import ProfileBar from './profile/ProfileBar'
 import AutoAlert from './AutoAlert'
@@ -201,9 +201,7 @@ import { mapGetters, mapActions } from 'vuex'
             AutoAlert,
             ProfileBar,
             AddComment,
-            MainModal,
             WelcomeForm,
-            SmallModal,
             NumberOf,
             ProfilePicture,
             PostButton,
@@ -235,6 +233,9 @@ import { mapGetters, mapActions } from 'vuex'
                 commentSuccess: false,
                 commentFail: false,
                 showCommentSingle: true,
+                smallModalTitle: '',
+                smallModalDelete: false,
+                smallModalInfo: false,
             }
         },
         props: {
@@ -244,10 +245,14 @@ import { mapGetters, mapActions } from 'vuex'
                     return {}
                 },
             },
-            showCommentNumber: {
+            showCommentNumber: { //when false, comment is in comment modal
                 typpe: Boolean,
                 default: true
-            }
+            },
+            onPostModal: { 
+                typpe: Boolean,
+                default: false
+            },
         },
         watch: {
             showOptions(newValue, oldValue) {
@@ -285,6 +290,14 @@ import { mapGetters, mapActions } from 'vuex'
         },
         computed: {
             ...mapGetters(['getUser','getProfiles','profile/getMsg']),
+            computedCommentOwnerAccount(){
+                let postOwner = this.post ? {
+                    account: strings.getAccount(this.comment.commentedby_type),
+                    accountId: `${this.comment.commentedby_id}`
+                } : {}
+
+                return postOwner
+            },
             computedProfileUrl() {
                 return this.comment && this.comment.hasOwnProperty('profile_url') ?
                     this.comment.profile_url : ''
@@ -321,21 +334,21 @@ import { mapGetters, mapActions } from 'vuex'
             // },
             computedLikes(){
                 //do not show like if any of your profiles has liked the item
-                if (this.comment && this.comment.hasOwnProperty('likes')){
-                    let likes = this.comment.likes
-                    this.likes = this.comment.likes.length
-                    let index = null
-                    index = likes.findIndex(like=>{
-                            return like.user_id === this.getUser.id
-                        })
-                    if (index > -1) {
-                        this.myLike = likes[index]
-                        this.isLiked = true
+                if (this.getUser) {
+                    if (this.comment && this.comment.hasOwnProperty('likes')){
+                        let likes = this.comment.likes
+                        this.likes = this.comment.likes.length
+                        let index = null
+                        index = likes.findIndex(like=>{
+                                return like.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.myLike = likes[index]
+                            this.isLiked = true
+                        }
                     }
-                    return true
-                } else {
-                    return false
                 }
+                return true
             },
             computedOwner(){
                 let profiles = this.getProfiles
@@ -348,7 +361,7 @@ import { mapGetters, mapActions } from 'vuex'
                             this.comment.commentedby_type === el.profile
                     })
 
-                    if (profile >= 0) {
+                    if (profile > -1) {
                         this.profile = this.getProfiles[profile]
                         return true
                     } else {
@@ -364,8 +377,47 @@ import { mapGetters, mapActions } from 'vuex'
         methods: {
             ...mapActions(['profile/deleteComment','profile/createLike'
                 ,'profile/deleteLike']),
+            clickedMedia(url,mediaType){
+                this.$emit('clickedMedia',{url,mediaType})
+            },
+            viewModalCommentEditedMain(comment){
+                //now in comment single
+                this.$emit('viewModalCommentEditedMain',comment) //emit to the viewcomment this came from
+            },
+            clickedProfilePicture(){
+                if (this.$route.name !== 'profile') {
+                    this.$router.push({
+                        name: 'profile',
+                        params: {
+                            account: this.computedCommentOwnerAccount.account,
+                            accountId: this.computedCommentOwnerAccount.accountId,
+                        }
+                    })
+                } else {
+                    if (this.$route.params.account !== this.computedCommentOwnerAccount.account &&
+                        this.$route.params.accountId !== this.computedCommentOwnerAccount.accountId) {
+                        this.$router.push({
+                        name: 'profile',
+                        params: {
+                            account: this.computedCommentOwnerAccount.account,
+                            accountId: this.computedCommentOwnerAccount.accountId,
+                        }
+                    })
+                    }
+                }
+            },
+            clickedInfoOk(){
+                this.showSmallModal = false
+            },
+            postModalCommentCreated(comment){
+                this.$emit('postModalCommentCreated', comment)
+            },
+            postModalCommentEdited(comment){
+                this.$emit('postModalCommentEdited', comment)
+            },
             postAddComplete(data){
                 if (data === 'successful') {
+                    this.showAddComment = false
                     this.comments += 1
                     this.commentSuccess = true
                     setTimeout(() => {
@@ -381,26 +433,26 @@ import { mapGetters, mapActions } from 'vuex'
             clickedFlag(){
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','commentSingle')
+                } else if (this.getProfiles && !this.getProfiles.length) {
+                    this.smallModalInfo= true
+                    this.smallModalDelete = false
+                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can flag.'
+                    this.showSmallModal = true
+                    setTimeout(() => {
+                        this.showSmallModal = false
+                    }, 4000);
                 } else {
 
                 }
             },
             clickedViewComments(){
-                // if (this.comments) {
-                //     this.showViewComments = true
-                // }
-                this.$router.push({
-                    name: 'comments',
-                    params:{
-                        comment: this.comment,
-                        commentId: this.comment.id,
-                    }
-                })
+                if (this.comments) {
+                    this.showViewComments = true
+                }
             },
             async clickedProfile(who){
                 this.isLiked = true
                 this.likes += 1
-                // console.log('who',who)
                 let data = {
                     item: 'comment',
                     itemId: this.comment.id,
@@ -431,6 +483,14 @@ import { mapGetters, mapActions } from 'vuex'
             async clickedLike(){
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','commentSingle')
+                } else if (!this.getProfiles.length) {
+                    this.smallModalInfo= true
+                    this.smallModalDelete = false
+                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can like.'
+                    this.showSmallModal = true
+                    setTimeout(() => {
+                        this.showSmallModal = false
+                    }, 4000);
                 } else {
                     if (this.isLiked) {
                         this.likes -= 1
@@ -465,6 +525,14 @@ import { mapGetters, mapActions } from 'vuex'
             clickedAddComment(){
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','commentSingle')
+                } else if (!this.getProfiles.length) {
+                    this.smallModalInfo= true
+                    this.smallModalDelete = false
+                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can comment.'
+                    this.showSmallModal = true
+                    setTimeout(() => {
+                        this.showSmallModal = false
+                    }, 4000);
                 } else {
                     this.editComment = false
                     this.showAddComment = true
@@ -481,7 +549,8 @@ import { mapGetters, mapActions } from 'vuex'
                 }
                 let response = await this['profile/deleteComment'](data)
                 
-                if (response === 'successful') {
+                if (response !== 'unsuccessful') {
+                    this.$emit('commentDeleteSuccess', response)
                     this.alertSuccess = true
                     this.showCommentSingle = false
                     this.alertDanger = false
@@ -508,7 +577,13 @@ import { mapGetters, mapActions } from 'vuex'
                 if (data === 'edit') {
                     this.showEdit = true
                 } else if (data === 'delete') {
+                    this.smallModalTitle = 'are you sure you want to delete this'
+                    this.smallModalDelete = true
+                    this.smallModalInfo = false
                     this.showSmallModal = true
+                    setTimeout(() => {
+                        this.showSmallModal = false
+                    }, 4000);
                 }
                 this.showOptions = false
             }
@@ -525,7 +600,7 @@ $comment-font-size: 13px;
     overflow: hidden;
     white-space: nowrap;
 }
-    .wrapper{
+    .comment-wrapper{
         display: block;
         position: relative;
         border-right: 1px solid dimgrey;
@@ -611,17 +686,21 @@ $comment-font-size: 13px;
                 }
 
                 .media{
-                    width: 90%;
-                    margin: 5px 0 10px auto;
-
-                    img{
-                        width: 70%;
-                    }
+                    width: 100%;
+                    margin: 0px 0 10px;
+                    max-height: 120px;
+                    overflow: hidden;
 
                     video,
-                    audio{
-                        width: 90%;
+                    audio,
+                    img{
+                        width: 100%;
+                        height: auto;
                     }
+                }
+
+                .commentMediaFull{
+                    max-height: none;
                 }
             }
         }
@@ -694,7 +773,7 @@ $comment-font-size: 13px;
     $profile-picture-width: 35px;
     $comment-font-size: 12px;
 
-    .wrapper{
+    .comment-wrapper{
         
         .top{
 
@@ -718,7 +797,7 @@ $comment-font-size: 13px;
     $profile-picture-width: 40px;
     $comment-font-size: 13px;
 
-    .wrapper{
+    .comment-wrapper{
         
         .top{
 

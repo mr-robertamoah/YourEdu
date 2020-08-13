@@ -34,6 +34,7 @@ class PoemResource extends JsonResource
             'title' => $this->title,
             'author' => $this->author,
             'about' => $this->about,
+            'comments_number' => $this->comments()->count(),
             'sections' => PoemSectionResource::collection($this->poemSections),
             'published' => $this->published,
             'images' => $images,

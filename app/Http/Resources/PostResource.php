@@ -54,6 +54,7 @@ class PostResource extends JsonResource
             'type' => $type,
             'typeName' => $typeName,
             'likes' => LikeResource::collection($this->likes),
+            'comments_number' => $this->comments()->count(),
             'comments' => CommentResource::collection($this->comments()->latest()->take(2)->get()),
             'postedby' => $this->postedby->name,
             'postedby_type' => $this->postedby_type,

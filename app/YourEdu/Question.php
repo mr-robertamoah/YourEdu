@@ -28,7 +28,7 @@ class Question extends Model
     
     public function answers()
     {
-        return $this->morphMany(Answer::class,'answerfor');
+        return $this->morphMany(Answer::class,'answerable');
     }
 
     public function possibleAnswers()
@@ -60,8 +60,8 @@ class Question extends Model
         ->withPivot(['state'])->withTimestamps();
     }
 
-    // public function posts()
-    // {
-    //     return $this->morphMany(Post::class,'postable');
-    // }
+    public function comments()
+    {
+        return $this->morphMany(Comment::class,'commentable');
+    }
 }

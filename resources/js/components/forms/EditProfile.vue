@@ -81,8 +81,6 @@
 </template>
 
 <script>
-import WelcomeForm from '../welcome/WelcomeForm'
-import MainModal from '../MainModal'
 import AutoAlert from '../AutoAlert'
 import PostButton from '../PostButton'
 import MainList from '../MainList'
@@ -136,13 +134,11 @@ import { mapActions, mapGetters } from 'vuex'
             }
         },
         components: {
-            WelcomeForm,
             TextTextarea,
             TextInput,
             MainList,
             PostButton,
             AutoAlert,
-            MainModal,
         },
         computed: {
             ...mapGetters(['profile/getProfile', 'profile/getMsg',]),

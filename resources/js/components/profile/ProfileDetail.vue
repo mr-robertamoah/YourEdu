@@ -2,10 +2,19 @@
     <div class="wrapper">
         <div class="top">
             <slot name="top"></slot>
+            <div class="icon" 
+                @click="clickedIcon"
+                v-if="showIcon"
+            >
+                <font-awesome-icon
+                    :icon="['fa','plus']"
+                ></font-awesome-icon>
+            </div>
         </div>
         <div class="bottom">
             <div class="text">
                 <slot name="text"></slot>
+                <slot name="link"></slot>
             </div>
         </div>
     </div>
@@ -13,7 +22,21 @@
 
 <script>
     export default {
-        
+        props: {
+            showIcon: {
+                type: Boolean,
+                default: false
+            },
+            title: {
+                type: String,
+                default: ''
+            },
+        },
+        methods: {
+            clickedIcon() {
+                this.$emit('clickedIcon', this.title)
+            }
+        },
     }
 </script>
 
@@ -25,12 +48,26 @@
         background-color: rgba(105, 105, 105,.08);
 
         .top{
-            width: auto;
+            width: 100%;
             font-size: 16px;
             border-bottom: 1px solid dimgray;
             font-weight: 600;
             text-transform: capitalize;
             padding: 10px;
+            display: inline-flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .icon{
+                font-size: 16px;
+                padding: 5px;
+
+                &:hover{
+                    color: green;
+                    box-shadow: 0 0 3px gray;
+                    transition: all 1s ease ;
+                }
+            }
         }
 
         .bottom{
@@ -39,6 +76,7 @@
             font-size: 14px;
             padding: 10px;
             min-height: 50px;
+            position: relative;
         }
     }
 

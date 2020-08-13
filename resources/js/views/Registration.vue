@@ -168,7 +168,7 @@ import TextInput from '../components/TextInput'
                     if (this.username === '') {
                         this.errorMessage = 'Please, enter your username in the field.'
                         this.usernameError = true
-                    } else if(this.username.length <= 8){
+                    } else if(this.username.length < 8){
                         this.errorMessage = 'Please, your username should have at least 8 characters.'
                         this.usernameError = true
                     }else if(this.password === ""){
@@ -191,21 +191,28 @@ import TextInput from '../components/TextInput'
                     this.sectionButtonText = 'next'
                 }
             },
-            sendRegistrationDetails(){
+            async sendRegistrationDetails(){
 
                 let registrationCredentials = {
                     username: this.username.trim(),
                     email: this.email.trim(),
                     password: this.password.trim(),
-                    passwordConfirmation: this.passwordConfirmation.trim(),
-                    firstName: this.firstName.trim(),
-                    lastName: this.lastName.trim(),
-                    otherNames: this.otherNames.trim(),
+                    password_confirmation: this.passwordConfirmation.trim(),
+                    first_name: this.firstName.trim(),
+                    last_name: this.lastName.trim(),
+                    other_names: this.otherNames.trim(),
                     dob: this.dob.trim(),
                 }
                 
-                this.register(registrationCredentials)
-                this.clearCredentials()
+                let response = await this.register(registrationCredentials)
+
+                if (response === 'successful') {
+                    this.clearCredentials()
+                } else {
+                    
+                }
+
+                
             },
             ...mapActions(['register']),
             passwordIconChange(){

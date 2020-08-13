@@ -3,10 +3,11 @@
 namespace App\Http;
 
 use App\Http\Middleware\CheckAccountMiddleware;
+use App\Http\Middleware\CheckAnswerableMiddleware;
 use App\Http\Middleware\CheckItemMiddleware;
 use App\Http\Middleware\OwnAccountMiddleware;
+use App\Http\Middleware\OwnAnswerMiddleware;
 use App\Http\Middleware\OwnCommentMiddleware;
-use App\Http\Middleware\OwnLikeMiddleware;
 use App\Http\Middleware\OwnPostMiddleware;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
@@ -73,6 +74,8 @@ class Kernel extends HttpKernel
         'OwnComment' => OwnCommentMiddleware::class,
         'CheckAccount' => CheckAccountMiddleware::class,
         'CheckItem' => CheckItemMiddleware::class,
+        'CheckAnswerable' => CheckAnswerableMiddleware::class,
+        'OwnAnswer' => OwnAnswerMiddleware::class,
     ];
 
     /**

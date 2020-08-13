@@ -102,10 +102,19 @@ class School extends Model
                 ->withPivot('relationship','relationship_description')
                 ->withTimestamps();
     }
+    
+    public function answers()
+    {
+        return $this->morphMany(Answer::class,'answeredby');
+    }
 
     public function phoneNumbers()
     {
         return $this->morphMany(PhoneNumber::class,'phoneable');
+    }
+
+    public function emails(){
+        return $this->morphMany(Email::class,'emailable');
     }
 
     public function classes()

@@ -1,7 +1,13 @@
 <template>
     <div class="text-input-wrapper"
-            :class="{error:error,bottomborder:bottomBorder}">
-        <input :type="textInput" :placeholder="placeholder" @input="change" 
+        :class="{error:error,bottomborder:bottomBorder}"
+        :title="title"
+    >
+        <input :type="inputType" 
+            :placeholder="placeholder" 
+            @input="change" 
+            :max="inputMax"
+            :min="inputMin"
             class="form-control"
             :value="value"
             >
@@ -32,9 +38,17 @@
                 type: Boolean,
                 default: false
             },
-            textInput: {
+            inputType: {
                 type: String,
                 default: 'text'
+            },
+            inputMax: {
+                type: Number,
+                default: 100
+            },
+            inputMin: {
+                type: Number,
+                default: 5
             },
             value: {
                 type: String,
@@ -60,9 +74,26 @@
                 inputFiles: [],
             }
         },
+        watch: {
+            value(newValue) {
+                if (this.inputType === 'number') {
+                    // if (newValue > this.inputMax) {
+                    //     newValue = this.inputMax
+                    // } else if (newValue < this.inputMin){
+                    //     newValue = this.inputMin
+                    // }
+                }
+            }
+        },
         methods: {
             change($event) {
-                this.$emit('input',$event.target.value)
+                let value = $event.target.value
+                // if (value > this.inputMax) {
+                //     value =  this.inputMax
+                // } else if (value < this.inputMin) {
+                //     value = this.inputMin
+                // }
+                this.$emit('input',`${value}`)
             },
             iconChange() {
                 this.$emit('iconChange')

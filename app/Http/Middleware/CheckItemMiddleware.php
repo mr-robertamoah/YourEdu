@@ -22,6 +22,12 @@ class CheckItemMiddleware
         if ($item) {
             if ($item === 'post' ||
                 $item === 'lesson' ||
+                $item === 'book' ||
+                $item === 'activity' ||
+                $item === 'riddle' ||
+                $item === 'question' ||
+                $item === 'answer' ||
+                $item === 'poem' ||
                 $item === 'comment' ||
                 $item === 'summary' ||
                 $item === 'class' ||

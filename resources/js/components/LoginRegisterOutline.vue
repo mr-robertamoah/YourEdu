@@ -8,13 +8,12 @@
             </div>
             <validation-error class="validation" 
                 @clearValidation='issueClearValidation()'
-                :errors='{}'
                 :errorString='validationErrors'
                 v-if="showAuthenticatingErrorMessage">
             </validation-error>
             <validation-error class="validation" 
                 @clearValidation='issueClearValidation()'
-                :errorString='""'
+                :isString="false"
                 :errors='getValidationErrors'
                 v-if="showValidationErrors">
             </validation-error>
@@ -40,11 +39,11 @@
                     </form>
                 </div>
                 <div class="other-link">
-                    <div v-if="correctLocation==='login'">
+                    <div v-if="currentLocation==='login'">
                         if you have not registered, 
                         <router-link to="/register">register</router-link>
                     </div>
-                    <div v-if="correctLocation==='register'">
+                    <div v-if="currentLocation==='register'">
                         if you have already registered, 
                         <router-link to="/login">login</router-link>
                     </div>
@@ -70,7 +69,6 @@ import { mapGetters, mapActions } from "vuex";
         },
         data() {
             return {
-                correctLocation:null,
                 showErrorMessage: null,
                 specialErrorMessage:null,
             }
@@ -85,9 +83,6 @@ import { mapGetters, mapActions } from "vuex";
             'theErrorMessage',
         ],
         methods: {
-            currentLocation() {
-                this.correctLocation=this.$router.history.current.name
-            },
             issueClearValidation(){
                 this.specialErrorMessage = ''
                 this.$emit('clear')
@@ -96,15 +91,15 @@ import { mapGetters, mapActions } from "vuex";
             ...mapActions(['clearValidation'])
         },
         computed: {
+            currentLocation(){
+                return this.$route.name
+            },
             validationErrors(){
                 return this.specialErrorMessage ? this.specialErrorMessage :
                     this.showErrorMessage ? this.showErrorMessage : ''
                     // 'You may have entered a wrong username or password'
             },
-            ...mapGetters(['authenticating']),
-            ...mapGetters(['getValidationErrors']),
-            ...mapGetters(['authenticatingErrorMessage']),
-
+            ...mapGetters(['authenticating','getValidationErrors','authenticatingErrorMessage']),
             showValidationErrors(){
                 if (!this.getValidationErrors) {
                     return false
@@ -113,30 +108,34 @@ import { mapGetters, mapActions } from "vuex";
                 }
             },
             showAuthenticatingErrorMessage(){
-                let errorMessage = this.authenticatingErrorMessage
-                let theErrorMessage = this.theErrorMessage
-                if ( errorMessage && errorMessage.includes('Server Error')) {
-                    this.specialErrorMessage = 'The server may be down. Please try again in a few minutes. Apologizes'
-                    return true
-                } else if (errorMessage === 'Unauthorized') {
-                    this.specialErrorMessage = 'Please enter the correct username or email and password combination'
-                    return true
-                } else if (errorMessage === 'Unauthenticated') {
-                    this.specialErrorMessage = 'Please you are unauthorized. Log in again'
-                    return true
-                } else if (errorMessage) {
-                    this.specialErrorMessage = 'Something broke somewhere. Please try again or alert us via a complaint.'
-                    return true
-                }else if (theErrorMessage) {
-                    this.showErrorMessage = theErrorMessage
-                    return true
-                } else {
-                    return false
+                if (!this.showValidationErrors) {
+                    let errorMessage = this.authenticatingErrorMessage
+                    let theErrorMessage = this.theErrorMessage
+                    if ( errorMessage && errorMessage.includes('Server Error')) {
+                        this.specialErrorMessage = 'The server may be down. Please try again in a few minutes. Apologizes'
+                        return true
+                    } else if (errorMessage === 'Unauthorized') {
+                        if (this.$route.name === 'login') {
+                            this.specialErrorMessage = 'Please enter the correct username or email and password combination'
+                        }
+                        
+                        return true
+                    } else if (errorMessage === 'Unauthenticated') {
+                        this.specialErrorMessage = 'Please you are unauthorized. Log in again'
+                        return true
+                    } else if (errorMessage) {
+                        this.specialErrorMessage = 'Something broke somewhere. Please try again or alert us via a complaint.'
+                        return true
+                    }else if (theErrorMessage) {
+                        this.showErrorMessage = theErrorMessage
+                        return true
+                    } else {
+                        return false
+                    }
                 }
             }
         },
         created () {
-            this.currentLocation()
             this.showErrorMessage = this.theErrorMessage
         },
     }

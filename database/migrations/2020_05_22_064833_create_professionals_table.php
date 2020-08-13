@@ -19,6 +19,7 @@ class CreateProfessionalsTable extends Migration
             $table->string('name')->nullable();
             $table->string('description')->nullable();
             $table->enum('role',['NANNY','TRAINER','COUNSELOR','OTHER'])->default('TRAINER');
+            $table->string('other_name')->nullable();
             $table->softDeletes();
             $table->timestamps();
 

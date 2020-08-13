@@ -75,7 +75,11 @@ const getters = {
         return state.user ? state.user.has_schools : false
     },
     
-    getProfiles(state){
+    getUserFollowRequest(state){
+        return state.userFollowRequest ? state.userFollowRequest : []
+    },
+    
+    getProfiles(state){ // this gives the available profiles of the user
         // return state.user ? state.user.has_schools : false
         let profilesArray = []
         let computedArray = []
@@ -108,6 +112,9 @@ const getters = {
     getActiveProfile(state,getters){
         return state.profile.activeProfile ? state.profile.activeProfile : 
             getters.getProfiles ? getters.getProfiles[0] : null
+    },
+    getLoggedin(state){
+        return state.loggedin
     },
     // getParent(state){
     //     return state.user ? state.user.parent: null

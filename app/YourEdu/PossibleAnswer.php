@@ -14,7 +14,6 @@ class PossibleAnswer extends Model
         'option', 'state'
     ];
 
-
     public function question()
     {
         return $this->morphTo();

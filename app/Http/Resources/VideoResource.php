@@ -15,8 +15,8 @@ class VideoResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'url' => $this->url,
-            'mime' => $this->mime,
+            'id' => $this->id,
+            'url' => asset("assets/{$this->path}"),
         ];
     }
 }

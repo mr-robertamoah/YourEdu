@@ -15,9 +15,13 @@ class CreateFollowsTable extends Migration
     {
         Schema::create('follows', function (Blueprint $table) {
             $table->id();
-            $table->morphs('followedby');
-            $table->morphs('followable'); //entities that are followed
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->nullableMorphs('followedby'); //facilitator learner professional school parent
+            $table->nullableMorphs('followable'); //facilitator learner professional school parent
             $table->timestamps();
+
+
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

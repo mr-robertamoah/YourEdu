@@ -19,7 +19,7 @@ const routerBeforeEach = (to,from,next)=>{
         }
     }else if(requiresLoginNot) {
         if(isLoggedIn){
-            console.log('am logged in')
+            // console.log('am logged in')
             return next(from.fullPath)
         }else {
             return next()

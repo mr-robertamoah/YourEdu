@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CommentResource;
+use App\YourEdu\Activity;
 use App\YourEdu\Admin;
 use App\YourEdu\Admission;
+use App\YourEdu\Answer;
 use App\YourEdu\Ban;
+use App\YourEdu\Book;
 use App\YourEdu\Character;
 use App\YourEdu\ClassModel;
 use App\YourEdu\Comment;
@@ -16,10 +19,13 @@ use App\YourEdu\Flag;
 use App\YourEdu\Learner;
 use App\YourEdu\Lesson;
 use App\YourEdu\ParentModel;
+use App\YourEdu\Poem;
 use App\YourEdu\Post;
 use App\YourEdu\Professional;
+use App\YourEdu\Question;
 use App\YourEdu\Read;
 use App\YourEdu\Request as YourEduRequest;
+use App\YourEdu\Riddle;
 use App\YourEdu\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,8 +36,7 @@ class CommentController extends Controller
     //
 
     public function commentCreate(Request $request, $item, $itemId)
-    {
-        // return $request;
+    {  
         $request->validate([
             'body' => 'nullable|string',
             'account' => 'required|string',
@@ -87,9 +92,9 @@ class CommentController extends Controller
                 $file = null;
                 if ($request->hasFile('file')) {
                     $fileDetails = [];
-                    $fileDetails = $this->getFileDetails($request->file('file'));
+                    $fileDetails = getFileDetails($request->file('file'));
 
-                    $file = $this->accountCreateFile(
+                    $file = accountCreateFile(
                         $fileDetails['mime'],
                         $account, 
                         $fileDetails,
@@ -107,6 +112,111 @@ class CommentController extends Controller
     
                 if ($comment && $post) {
                     $comment->commentable()->associate($post);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'activity') {
+                $activity = Activity::find($itemId);
+
+                if ($comment && $activity) {
+                    $comment->commentable()->associate($activity);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'book') {
+                $book = Book::find($itemId);
+
+                if ($comment && $book) {
+                    $comment->commentable()->associate($book);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'riddle') {
+                $riddle = Riddle::find($itemId);
+
+                if ($comment && $riddle) {
+                    $comment->commentable()->associate($riddle);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'question') {
+                $question = Question::find($itemId);
+
+                if ($comment && $question) {
+                    $comment->commentable()->associate($question);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ]);
+                }
+            } else if ($item === 'poem') {
+                $poem = Poem::find($itemId);
+
+                if ($comment && $poem) {
+                    $comment->commentable()->associate($poem);
                     $comment->save();
     
                     DB::commit();
@@ -356,10 +466,6 @@ class CommentController extends Controller
             $mainAccount = Professional::find($request->accountId);
         } else if ($request->account === 'admin') {
             $mainAccount = Admin::find($request->accountId);
-        } else {
-            return response()->json([
-                'message' => "unsuccessful. {$request->account} does not exist."
-            ],422);
         }
 
         if (!$mainAccount) {
@@ -421,7 +527,6 @@ class CommentController extends Controller
 
     public function commentDelete($comment)
     {
-        // return $comment;
         $mainComment = Comment::find($comment);
         
         try {
@@ -440,7 +545,7 @@ class CommentController extends Controller
     public function commentsGet(Request $request, $item, $itemId)
     {
         $mainItem = null;
-        // $comments = null;
+        //items that are commentable
         if($item === 'post'){
             $mainItem = Post::find($itemId);
         } else if($item === 'comment'){
@@ -455,27 +560,30 @@ class CommentController extends Controller
             $mainItem = Discussion::find($itemId);
         } else if($item === 'read'){
             $mainItem = Read::find($itemId);
+        } else if($item === 'answer'){
+            $mainItem = Answer::find($itemId);
+        } else if($item === 'poem'){
+            $mainItem = Poem::find($itemId);
+        } else if($item === 'activity'){
+            $mainItem = Activity::find($itemId);
+        } else if($item === 'book'){
+            $mainItem = Book::find($itemId);
         } else {
             return response()->json([
-                'message' => "unsuccessful. {$item} is not valid for comments."
-            ]);
+                'message' => "unsuccessful, {$item} is not valid for comments."
+            ],422);
         }
 
         if($mainItem){
             return CommentResource::collection($mainItem->comments()->latest()->paginate(5));
-            
-            // return response()->json([
-            //     'message' => "successful",
-            //     'comments' => $comments,
-            // ]);
         } else {
             return response()->json([
-                'message' => "unsuccessful. {$item} was not found"
-            ]);
+                'message' => "unsuccessful, {$item} was not found."
+            ],422);
         }
     }
 
-    public function commentGet(Request $request,$comment)
+    public function commentGet($comment)
     {
         $item = null;
         $item = Comment::find($comment);

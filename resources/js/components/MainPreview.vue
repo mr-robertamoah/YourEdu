@@ -25,6 +25,14 @@
             </div>
             <div class="body" v-if="body.length > 0">
                 {{body}}
+                <div class="options" v-if="options.length">
+                    <div class="option" v-for="(option,key) in options" :key="key">
+                        {{ option }}
+                    </div>
+                </div>
+                <div class="scored-over" v-if="hasScore">
+                    scored over <div class="score">{{scoredOver}}</div>
+                </div>
             </div>
             <div class="file" v-if="hasFile">
                 <file-preview
@@ -46,6 +54,16 @@ import BlackWhiteBadge from './BlackWhiteBadge'
                 type: String,
                 default: ''
             },
+            options: {
+                type: Array,
+                default() {
+                    return []
+                }
+            },
+            scoredOver: {
+                type: String,
+                default: '5'
+            },
             title: {
                 type: String,
                 default: ''
@@ -53,6 +71,10 @@ import BlackWhiteBadge from './BlackWhiteBadge'
             author: {
                 type: String,
                 default: ''
+            },
+            hasScore: {
+                type: Boolean,
+                default: false
             },
             hasFile: {
                 type: Boolean,
@@ -120,6 +142,37 @@ import BlackWhiteBadge from './BlackWhiteBadge'
                 font-size: 12px;
                 text-align: justify;
                 margin: 10px 0;
+
+                .options{
+                    width: 100%;
+                    margin-top: 5px;
+                    font-size: 12px;
+                    display: block;
+                    
+                    .option{
+                        text-align: center;
+                        width: 90%;
+                        margin: 0 auto;
+                        text-overflow: ellipsis;
+                        overflow: hidden;
+                        white-space: nowrap;
+                    }
+                }
+
+                .scored-over{
+                    width: 100%;
+                    margin-top: 5px;
+                    text-align: center;
+                    font-size: 12px;
+                    display: inline-flex;
+                    justify-content: flex-end;
+                    align-items: baseline;
+
+                    .score{
+                        font-size: 14px;
+                        margin-left: 5px;
+                    }
+                }
             }
 
             .title{

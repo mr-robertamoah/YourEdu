@@ -42,11 +42,6 @@ class Book extends Model
         return $this->morphOne(Price::class,'priceable');
     }
 
-    // public function posts()
-    // {
-    //     return $this->morphMany(Post::class,'postable');
-    // }
-
     public function reads()
     {
         return $this->hasMany(Read::class);
@@ -73,6 +68,11 @@ class Book extends Model
     {
         return $this->morphToMany(Image::class,'imageable')
         ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function comments()
+    {
+        return $this->morphMany(Comment::class,'commentable');
     }
 
 }

@@ -17,6 +17,8 @@ class ProfessionalResource extends JsonResource
         return [
             'user_id' => $this->user_id,
             'name' => $this->name,
+            'role' => $this->role,
+            'other_name' => $this->when($this->role === 'OTHER',$this->other_name),
             'created_at' => $this->created_at,
             'verification' => $this->verification,
             'phoneNumbers' => $this->when(

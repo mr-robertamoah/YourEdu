@@ -14,6 +14,7 @@ class CreateAudioablesTable extends Migration
     public function up()
     {
         Schema::create('audioables', function (Blueprint $table) {
+            $table->id();
             $table->unsignedBigInteger('audio_id');
             $table->morphs('audioable'); //question answer profile comment lesson activity
             $table->enum('state',['PUBLIC','PRIVATE'])->default('PUBLIC');
