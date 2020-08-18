@@ -27,6 +27,10 @@ class Learner extends Model
             $learner->posts()->create([
                 'content' => 'this is my first post.'
             ]);
+
+            $learner->point()->create([
+                'user_id' => $learner->user_id
+            ]);
         });
     }
 
@@ -100,6 +104,16 @@ class Learner extends Model
     public function answers()
     {
         return $this->morphMany(Answer::class,'answeredby');
+    }
+
+    public function savesMade()
+    {
+       return $this->morphMany(Save::class,'savedby');
+    }
+
+    public function point()
+    {
+        return $this->morphOne(Point::class,'pointable');
     }
 
     public function reports()

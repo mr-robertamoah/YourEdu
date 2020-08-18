@@ -1,4 +1,5 @@
 import {ProfileService} from "../../services/profile.service";
+import {strings} from '../../services/helpers';
 
 const profile = {
     namespaced: true,
@@ -324,7 +325,6 @@ const profile = {
         //////////////////////////////////////// likes
         
         LIKE_CREATE_SUCCESS(state, data){
-            // console.log('create success', data)
             if (data.item === 'comment') {
                 if (data.owner.toLocaleLowerCase().includes('comment')) {
                     let commentIndex = state.comments.findIndex(comment=>{
@@ -333,18 +333,10 @@ const profile = {
 
                     if (commentIndex > -1) {
                         state.comments[commentIndex].likes.push(data.like)
-                        // let likeIndex = state.comments[commentIndex].findIndex(like=>{
-                        //     return like.id === data.likeId
-                        // })
-                        // if (likeIndex > -1) {
-                        //     state.comments[commentIndex].likes.splice(likeIndex,1,data.like)
-                        //     return
-                        // }
                     }
                 } else if (data.owner.toLocaleLowerCase().includes('post')) {
                     let postIndex = null
                     let commentIndex = null
-                    let likeIndex = null
                     
                     postIndex = state.posts.findIndex(post=>{
                         return post.id === data.ownerId
@@ -357,15 +349,6 @@ const profile = {
                         if (commentIndex > -1) {
                             state.posts[postIndex]
                                 .comments[commentIndex].likes.push(data.like)
-                            // likeIndex = state.posts[postIndex]
-                            //     .comments[commentIndex].likes.findIndex(like =>{
-                            //     return like.id === data.likeId
-                            // })
-                            // if (likeIndex > -1) {
-                            //     state.posts[postIndex].comments[commentIndex]
-                            //         .likes.splice(likeIndex,1,data.like)
-                            //     return
-                            // }
                         }
                     }
                     
@@ -448,6 +431,78 @@ const profile = {
         },
         LIKING_END(state){
             
+        },
+
+        
+        ////////////////////////////////// flag
+
+        FLAG_CREATE_SUCCESS(state, data){
+            if (data.data.hasOwnProperty('profile') && data.data.profile) {
+                state.profile.flags.unshift(data.flag)
+            } else if (data.data.hasOwnProperty('post') && data.data.post) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.data.itemId //itemId is the post id
+                })
+                if (postIndex > -1) {
+                    state.posts.splice(postIndex,1)
+                }
+            } else if (data.data.hasOwnProperty('comment') && data.data.comment) {
+                if (strings.getAccount(data.data.commentable_type) !== 'post') {
+                    return
+                }
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.data.commentable_id //commentable_id is the post id
+                })
+                if (postIndex > -1) {
+                    let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.data.itemId
+                    })
+                    if (commentIndex > -1) {
+                        state.posts[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+        },
+        FLAG_DELETE_SUCCESS(state, data){
+            if (data.hasOwnProperty('profile') && data.profile) {
+                let flagIndex = state.profile.flags.findIndex(flag=>{
+                    return flag.id === data.flagId
+                })
+                if (flagIndex > -1) {
+                    state.profile.flags.splice(flagIndex,1)
+                }
+            } else if (data.hasOwnProperty('post') && data.post) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.itemId //itemId is the post id
+                })
+                if (postIndex > -1) {
+                    let flagIndex = state.posts[postIndex].flags.findIndex(flag=>{
+                        return flag.id === data.flagId
+                    })
+                    if (flagIndex > -1) {
+                        state.posts[postIndex].flags.splice(flagIndex,1)
+                    }
+                }
+            } else if (data.hasOwnProperty('comment') && data.comment) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.commentable_id //itemId is the post id
+                })
+                if (postIndex > -1) {
+                    let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.itemId
+                    })
+                    if (commentIndex > -1) {
+                        let flagIndex = state.posts[postIndex].comments[commentIndex]
+                            .flags.findIndex(flag=>{
+                                return flag.id === data.flagId
+                            })
+                        if (flagIndex > -1) {
+                            state.posts[postIndex].comments[commentIndex]
+                                .flags.splice(flagIndex,1)
+                        }
+                    }
+                }
+            }
         },
 
         ////////////////////////////////////////
@@ -633,12 +688,12 @@ const profile = {
         async createLike({commit},data){
             commit('LIKING_START')
             let response = await ProfileService.likeCreate(data)
-            console.log('like data', data)
+            // console.log('like data', data)
             commit('LIKING_END')
             if (response.data.message === 'successful') {
                 data['like'] = response.data.like
                 commit('LIKE_CREATE_SUCCESS', data)
-                return 'successful'
+                return response.data.like
             }else {
                 commit('PROFILE_FAILURE','liking unsuccessful')
                 return 'unsuccessful'
@@ -647,14 +702,63 @@ const profile = {
         async deleteLike({commit},data){
             commit('LIKING_START')
             let response = await ProfileService.likeDelete(data)
-            console.log('like data', data)
+            // console.log('like data', data)
             commit('LIKING_END')
             if (response.data.message === 'successful') {
                 commit('LIKE_DELETE_SUCCESS', data)
-                return 'successful'
+                return data
             }else {
                 commit('PROFILE_FAILURE','liking unsuccessful')
                 return 'unsuccessful'
+            }
+        },
+
+        ////////////////////////////////////// flags
+
+        async createFlag({commit},data){
+            commit('LIKING_START')
+            console.log('create flag');
+            let response = await ProfileService.flagCreate(data)
+
+            commit('LIKING_END')
+            if (response.data.message === 'successful') {
+                data['flag'] = response.data.like
+                // commit('FLAG_CREATE_SUCCESS', data)
+                commit('FLAG_CREATE_SUCCESS', {data,flag: response.data.flag})
+                return {status: true,flag: response.data.flag}
+            }else {
+                commit('PROFILE_FAILURE','flagging unsuccessful')
+                return {status: false, message:'unsuccessful'}
+            }
+        },
+        async deleteFlag({commit},data){
+            commit('LIKING_START')
+            let response = await ProfileService.flagDelete(data)
+
+            commit('LIKING_END')
+            if (response.data.message === 'successful') {
+                commit('FLAG_DELETE_SUCCESS', data)
+                return {data,status: true}
+            }else {
+                commit('PROFILE_FAILURE','unflagging unsuccessful')
+                return {status: false, message:'unsuccessful'}
+            }
+        },
+
+        ////////////////////////////////////// marks
+
+        async createMark({commit},data){
+            commit('LIKING_START')
+            let response = await ProfileService.markCreate(data)
+            // console.log('like data', data)
+            commit('LIKING_END')
+            if (response.data.message === 'successful') {
+                // data['mark'] = response.data.like
+                // commit('MARK_CREATE_SUCCESS', data)
+                return {status: true, data: response.data}
+            }else {
+                commit('PROFILE_FAILURE','marking unsuccessful')
+                return {status: false, message: response.data.message}
             }
         },
 
@@ -840,9 +944,23 @@ const profile = {
             }
         },
 
-        async getPosts({commit,state},data){
+        async getPosts({commit},data){
             commit('LOADING_START')
             let response = await ProfileService.postsGet(data)
+            // console.log(response.data)
+            commit('LOADING_END')
+            if (response.data.data) {
+                commit('POSTS_SUCCESS',response.data)
+                return response.data.links.next
+            }else {
+                commit('PROFILE_FAILURE','retrieving posts unsuccessful')
+                return 'unsuccessful'
+            }
+        },
+
+        async getUserPosts({commit},data){
+            commit('LOADING_START')
+            let response = await ProfileService.userPostsGet(data)
             // console.log(response.data)
             commit('LOADING_END')
             if (response.data.data) {

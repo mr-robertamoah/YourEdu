@@ -16,15 +16,14 @@ class MarkResource extends JsonResource
     {
         $data = [
             'id' => $this->id,
-            'answer_id' => $this->answer_id,
-            'score' => $this->score,
-            'score_over' => $this->score_over,
-            'remark' => $this->remark,
-            'markedby_id' => $this->markedby_id,
-            'markedby_type' => $this->markedby_type,
-            'markedby_name' => $this->markedby->name,
-            'markedby_url' => $this->markedby->profile->url,
-            'created_at' => $this->created_at,
+            'user_id' => $this->user_id,
+            // 'score' => $this->score,
+            // 'remark' => $this->remark,
+            //myt consider adding this later
+            // 'markedby_id' => $this->markedby_id, 
+            // 'markedby_type' => $this->markedby_type,
+            // 'markedby_name' => $this->markedby->name,
+            // 'markedby_url' => $this->markedby->profile->url,
         ];
 
         return $data;

@@ -167,6 +167,7 @@ class AnswerController extends Controller
 
     public function answerEdit(Request $request, $answer)
     {
+        // return $answer;
         $request->validate([
             'answer' => 'nullable|string',
             // 'file' => 'nullable|file',
@@ -213,7 +214,12 @@ class AnswerController extends Controller
                 DB::beginTransaction();
                 $mainAnswer = $mainAccount->answers()->where('id', $answer)->first();
                 
-                if (!$mainAnswer) {
+                if (is_null($mainAnswer)) {
+                    return response()->json([
+                        'message' => "unsuccessful. answer not found."
+                    ],422);
+                }
+                if ($mainAnswer->marks()->count() > 0) { //you cannot edit an answer that has been marked
                     return response()->json([
                         'message' => "unsuccessful. answer not found."
                     ],422);

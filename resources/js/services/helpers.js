@@ -70,7 +70,7 @@ const dates = {
             return 'now'
         } else if (divInSeconds > 60 && divInSeconds < 300) {
             return 'few minutes ago'
-        } else if (divInSeconds > 60 && divInSeconds < 300) {
+        } else if (divInSeconds > 300 && divInHours < 1) {
             return `${Math.floor(divInSeconds/60)} minutes ago`
         } else if (divInHours > 1 && divInHours < 2) {
             return 'an hour ago'
@@ -133,6 +133,10 @@ const strings = {
             return 'professional'
         } else if (account.toString().toLocaleLowerCase().includes('school')) {
             return 'school'
+        } else if (account.toString().toLocaleLowerCase().includes('post')) {
+            return 'post'
+        } else if (account.toString().toLocaleLowerCase().includes('comment')) {
+            return 'comment'
         }
     }
 }

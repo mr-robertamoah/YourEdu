@@ -10,6 +10,7 @@ use App\YourEdu\Learner;
 use App\YourEdu\Login;
 use App\YourEdu\ParentModel;
 use App\YourEdu\PhoneNumber;
+use App\YourEdu\Point;
 use App\YourEdu\Professional;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
@@ -232,6 +233,11 @@ class User extends Authenticatable
     public function account()
     {
        return $this->hasOne(Account::class);
+    }
+
+    public function points()
+    {
+       return $this->hasMany(Point::class);
     }
 
     public function profiles()

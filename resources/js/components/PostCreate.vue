@@ -1,13 +1,6 @@
 <template>
     <div class="section">
         <div class="activity-post">
-            <div class="clear"
-                :class="{clearActive:clearActive}"
-                @click="clickedClearActive"
-                v-if="computedPost"
-            >
-                clear
-            </div>
             <div class="messaging">
                 <div class="loading" v-if="loading">
                     <pulse-loader :loading="loading"></pulse-loader>
@@ -20,29 +13,38 @@
                 </div>
             </div>
             <div class="post-top">
-                <div class="icons"
-                    @click.prevent="clickFile('image')"
-                    v-if="mainPreviewData.length === 0 "
+                <div class="clear"
+                    :class="{clearActive:clearActive}"
+                    @click="clickedClearActive"
+                    v-if="computedPost"
                 >
-                    <font-awesome-icon
-                        :icon="['fa','file-image']"
-                    ></font-awesome-icon>
+                    clear
                 </div>
-                <div class="icons"
-                    @click.prevent="clickFile('video')"
-                    v-if="mainPreviewData.length === 0"
-                >
-                    <font-awesome-icon
-                        :icon="['fa','file-video']"
-                    ></font-awesome-icon>
-                </div>
-                <div class="icons"
-                    @click.prevent="clickFile('audio')"
-                    v-if="mainPreviewData.length === 0"
-                >
-                    <font-awesome-icon
-                        :icon="['fa','file-audio']"
-                    ></font-awesome-icon>
+                <div class="post-top-main">
+                    <div class="icons"
+                        @click.prevent="clickFile('image')"
+                        v-if="mainPreviewData.length === 0 "
+                    >
+                        <font-awesome-icon
+                            :icon="['fa','file-image']"
+                        ></font-awesome-icon>
+                    </div>
+                    <div class="icons"
+                        @click.prevent="clickFile('video')"
+                        v-if="mainPreviewData.length === 0"
+                    >
+                        <font-awesome-icon
+                            :icon="['fa','file-video']"
+                        ></font-awesome-icon>
+                    </div>
+                    <div class="icons"
+                        @click.prevent="clickFile('audio')"
+                        v-if="mainPreviewData.length === 0"
+                    >
+                        <font-awesome-icon
+                            :icon="['fa','file-audio']"
+                        ></font-awesome-icon>
+                    </div>
                 </div>
                 <fade-right>
                     <template slot="transition">
@@ -494,20 +496,6 @@ import {mapActions, mapGetters} from 'vuex'
         border-right: 2px solid rgb(105, 105, 105);
         background-color: inherit;
 
-        .clear{
-            padding: 5px;
-            color: gray;
-            cursor: pointer;
-            transition: all 1s ease;
-            margin: 5px;
-            width: fit-content;
-            font-size: 14px;
-
-            &:hover{
-                box-shadow: 0 0 3px gray;
-            }
-        }
-
         .clearActive{
             box-shadow: 0 0 3px gray;
             transition: all 1s ease;
@@ -538,14 +526,35 @@ import {mapActions, mapGetters} from 'vuex'
                 padding: 5px;
                 color: gray;
                 display: flex;
-                justify-content: flex-end;
+                justify-content: space-between;
                 align-items: center;
                 font-size: 20px;
 
-                .icons{
-                    margin-right: 10px;
+                .clear{
+                    padding: 5px;
+                    color: gray;
                     cursor: pointer;
+                    transition: all 1s ease;
+                    max-width: 20%;
+                    font-size: 14px;
+
+                    &:hover{
+                        box-shadow: 0 0 3px gray;
+                    }
                 }
+
+                .post-top-main{
+                    min-width: 70%;
+                    display: flex;
+                    justify-content: flex-end;
+                    align-items: center;
+
+                    .icons{
+                        margin-right: 10px;
+                        cursor: pointer;
+                    }
+                }
+
             }
 
             .post-middle{

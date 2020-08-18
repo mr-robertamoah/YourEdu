@@ -35,6 +35,10 @@ class Facilitator extends Model
             $facilitator->posts()->create([
                 'content' => 'this is my first post.'
             ]);
+
+            $facilitator->point()->create([
+                'user_id' => $facilitator->user_id
+            ]);
         });
     }
 
@@ -126,6 +130,11 @@ class Facilitator extends Model
     public function deliveredLessons()
     {
         return $this->morphMany(Lesson::class,'lessonable');
+    }
+
+    public function savesMade()
+    {
+       return $this->morphMany(Save::class,'savedby');
     }
 
     public function activitiesAdded ()
@@ -263,6 +272,11 @@ class Facilitator extends Model
     public function sharesOwned()
     {
         return $this->morphMany(Share::class,'ownedby');
+    }
+
+    public function point()
+    {
+        return $this->morphOne(Point::class,'pointable');
     }
 
     public function comments()

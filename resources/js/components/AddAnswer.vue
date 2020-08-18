@@ -88,6 +88,7 @@ import JustFade from './transitions/JustFade'
 import FadeLeftFast from './transitions/FadeLeftFast'
 import ProfileBar from './profile/ProfileBar'
 import { mapGetters, mapActions } from 'vuex'
+import { strings } from '../services/helpers'
 
     export default {
         components: {
@@ -102,11 +103,11 @@ import { mapGetters, mapActions } from 'vuex'
             MainTextarea,
         },
         props: {
-            edit: {
+            edit: { //for now, you cant add media when editing
                 type: Boolean,
                 default: false
             },
-            editableData: {
+            answerEditable: {
                 type: Object,
                 default(){
                     return {}
@@ -144,9 +145,9 @@ import { mapGetters, mapActions } from 'vuex'
                     }
                 }
             },
-            editableData: {
+            answerEditable: {
                 immediate: true,
-                handler(newValue, oldValue){
+                handler(newValue){
                     if (newValue) {
                         
                     }
@@ -157,7 +158,7 @@ import { mapGetters, mapActions } from 'vuex'
                 immediate: true,
                 handler(newValue){
                     if (newValue) {
-                        this.answerText = this.editableData.body
+                        this.answerText = this.answerEditable.answer
                         this.buttonText = 'save'
                     } else {
                         this.answerText = ''
@@ -246,18 +247,10 @@ import { mapGetters, mapActions } from 'vuex'
             addAnswer() {
                 let who = {}
                 if (this.edit) {
-                    if (this.editableData.answeredby_type.toLocaleLowerCase().includes('parent')) {
-                        who['account'] = 'parent'
-                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('learner')) {
-                        who['account'] = 'learner'
-                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('professional')) {
-                        who['account'] = 'professional'
-                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('facilitator')) {
-                        who['account'] = 'facilitator'
-                    }
+                    who['account'] = strings.getAccount(this.editableData.answeredby_type)
                     who['accountId'] = this.editableData.answeredby_id
                     who['itemId'] = this.editableData.id
-                } 
+                }
 
                 this.$emit('addAnswer',{
                     file: this.file,
@@ -265,58 +258,6 @@ import { mapGetters, mapActions } from 'vuex'
                     who,
                 })
             },
-            // async clickedProfile(who){
-            //     this.hideProfiles
-            //     let formData = new FormData
-
-            //     if (this.file) {
-            //         formData.append('file', this.file)
-            //     }
-
-            //     if (this.commentText.length) {
-            //         formData.append('body', this.commentText.trim())
-            //     }
-
-            //     formData.append('account', who.account)
-            //     formData.append('accountId', who.accountId)                
-                
-            //     let response = null
-            //     if (this.edit) {
-            //         let data = {
-            //             itemId: this.editableData.id,
-            //         }
-            //         response = await this['profile/updateComment']({data,formData})
-            //     } else {
-            //         let data = {
-            //             onPostModal: this.onPostModal,
-            //             item: this.what,
-            //             itemId: this.id,
-            //         }
-
-            //         response = await this['profile/createComment']({data,formData})
-            //     }
-                
-                
-            //     if (response !== 'unsuccessful') {
-            //         this.file = null
-            //         this.alertSuccess = true
-            //         this.alertDanger = false
-            //         this.commentText = ''
-            //         if (!this.edit) {
-            //             this.$emit('postAddComplete','successful')
-            //         }
-            //         if (this.onPostModal) {
-            //             this.$emit('postModalCommentCreated',response.comment)
-            //         }                    
-                    
-            //     } else {
-            //         this.alertSuccess = false
-            //         this.alertDanger = true
-            //         if (!this.edit) {
-            //             this.$emit('postAddComplete','unsuccessful')
-            //         }
-            //     }
-            // },
             ...mapActions(['profile/createComment','profile/updateComment']),
         },
     }

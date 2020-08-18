@@ -23,6 +23,11 @@ class Lesson extends Model
         return $this->morphMany(Objective::class,'objectiveable');
     }
 
+    public function beenSaved()
+    {
+       return $this->morphOne(Save::class,'saveable');
+    }
+
     public function books()
     {
         return $this->morphMany(Book::class,'bookable');

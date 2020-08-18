@@ -34,6 +34,10 @@ class Professional extends Model
             $professional->posts()->create([
                 'content' => 'this is my first post.'
             ]);
+
+            $professional->point()->create([
+                'user_id' => $professional->user_id
+            ]);
         });
     }
 
@@ -85,6 +89,11 @@ class Professional extends Model
     public function paymentsMadeTo()
     {
         return $this->morphMany(Payment::class,'paidto');
+    }
+
+    public function savesMade()
+    {
+       return $this->morphMany(Save::class,'savedby');
     }
 
     public function paidFor()
@@ -149,6 +158,11 @@ class Professional extends Model
     public function answers()
     {
         return $this->morphMany(Answer::class,'answeredby');
+    }
+
+    public function point()
+    {
+        return $this->morphOne(Point::class,'pointable');
     }
 
     public function marks()

@@ -1,7 +1,7 @@
 <template>
     <button class="btn btn-size" 
         :class="{active:makeActive, danger:makeDanger, 
-            success:makeSuccess, disabled: makeDisabled}" 
+            success:makeSuccess, disabled: makeDisabled,colorRed:colorRed}" 
         :title="titleText"
         @click="clicked"
     >
@@ -26,6 +26,10 @@
                 type: String,
                 default: ''
             },
+            postButtonClass: {
+                type: String,
+                default: ''
+            },
             active: {
                 type: Boolean,
                 default: false
@@ -39,9 +43,17 @@
                 default: false
             },
         },
+        watch: {
+            postButtonClass(newValue) {
+                if (newValue === 'red') {
+                    this.colorRed = true
+                }
+            }
+        },
         data() {
             return {
-                makeActive: false
+                makeActive: false,
+                colorRed : false,
             }
         },
         computed: {
@@ -98,6 +110,10 @@
 
     .btn-size{
         font-size: 14px;
+    }
+
+    .colorRed{
+
     }
 
 @media screen and (max-width: 800px){

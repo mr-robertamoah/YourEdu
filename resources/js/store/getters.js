@@ -23,6 +23,10 @@ const getters = {
         return state.user ? state.user.username : null
     },
 
+    getAccessToken(state){
+        return state.accessToken ? state.accessToken : null
+    },
+
     getUserAge(state){
         return state.user ? state.user.age : null
     },

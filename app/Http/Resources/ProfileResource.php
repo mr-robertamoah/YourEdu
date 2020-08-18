@@ -40,6 +40,7 @@ class ProfileResource extends JsonResource
             'gender' => $this->when(
                 $this->profileable->user->gender,$this->profileable->user->gender
             ),
+            'flags' => FlagResource::collection($this->profileable->flags),
             'name' => $this->name,
             'about' => $this->about,
             'interests' => $this->interests,

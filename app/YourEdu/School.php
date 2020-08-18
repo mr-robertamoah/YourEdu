@@ -16,17 +16,6 @@ class School extends Model
         'owner_id','company_name', 'role'
     ];
 
-    // protected $with = ['facilitators','owner'];
-
-    // protected $appends = ['owned'];
-
-    // public function getOwnedAttribute()
-    // {
-    //     if ($this->owner) {
-    //         return $this->owner;
-    //     }
-    // }
-
     protected static function booted()
     {
         static::created(function ($school){
@@ -36,6 +25,10 @@ class School extends Model
                 'name' => $school->company_name ,
             ]);
             $school->verification()->create();
+
+            $school->point()->create([
+                'user_id' => $school->user_id
+            ]);
         });
     }
 
@@ -106,6 +99,16 @@ class School extends Model
     public function answers()
     {
         return $this->morphMany(Answer::class,'answeredby');
+    }
+
+    public function savesMade()
+    {
+       return $this->morphMany(Save::class,'savedby');
+    }
+
+    public function point()
+    {
+        return $this->morphOne(Point::class,'pointable');
     }
 
     public function phoneNumbers()

@@ -27,9 +27,18 @@ class Answer extends Model
         return $this->belongsTo(Work::class);
     }
 
+    public function likes(){
+        return $this->morphMany(Like::class,'likeable');
+    }
+
+    // public function marks()
+    // {
+    //     return $this->hasMany(Mark::class);
+    // }
+
     public function marks()
     {
-        return $this->hasMany(Mark::class);
+        return $this->morphMany(Mark::class,'markable');
     }
 
     public function files()
@@ -54,6 +63,11 @@ class Answer extends Model
     {
         return $this->morphToMany(Image::class,'imageable')
         ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function flags()
+    {
+        return $this->morphMany(Flag::class,'flaggable');
     }
 
     public function comments()

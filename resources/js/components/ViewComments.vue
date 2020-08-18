@@ -11,6 +11,10 @@
                         <comment-single
                             :comment="comment"
                             :showCommentNumber="false"
+                            @commentDeleteSuccess="commentViewDeleteSuccess"
+                            @postModalCommentEdited="postModalCommentEdited"
+                            @commentUnlikeSuccessful="commentUnlikeSuccessful"
+                            @commentLikeSuccessful="commentLikeSuccessful"
                         ></comment-single>
                     </div>
                     <div class="main-comment" v-if="!comment">
@@ -23,7 +27,13 @@
                                     :key="key" v-for="(comment, key) in comments"
                                     :comment="comment"
                                     @postModalCommentEdited="postModalCommentEdited"
-                                    @viewModalCommentEditedMain="postModalCommentEdited"
+                                    @viewModalCommentEditedMain="viewModalCommentEditedMain"
+                                    @commentDeleteSuccess="commentViewDeleteSuccess"
+                                    @commentUnlikeSuccessful="commentUnlikeSuccessful"
+                                    @commentLikeSuccessful="commentLikeSuccessful"
+                                    @commentUnlikeSuccessfulMain="commentUnlikeSuccessfulMain"
+                                    @commentLikeSuccessfulMain="commentLikeSuccessfulMain"
+                                    @commentViewParentDeleteSuccess="commentViewParentDeleteSuccess"
                                 ></comment-single>
                             </div>
                         </template>
@@ -93,10 +103,7 @@ import { mapGetters, mapActions } from 'vuex';
             show: {
                 immediate: true,
                 handler(newValue){
-                //     this.mainComment = this.comment
-                //     this.itemId = this.comment.id
-                // //    this.getComment()
-                //    this.getComments()
+
                 },
             }
         },
@@ -116,15 +123,87 @@ import { mapGetters, mapActions } from 'vuex';
             viewModalDisappear(){
                 this.$emit('viewModalDisappear')
             },
+            commentLikeSuccessfulMain(data){
+                this.addLike(data.itemId,data.likeId)
+            },
+            commentUnlikeSuccessfulMain(data){
+                this.removeLike(data.itemId,data.likeId)
+            },
+            commentUnlikeSuccessful(data){
+                if (this.comment.id === data.itemId) {
+                    this.$emit('commentUnlikeSuccessfulMain', data)//event to alert parent view modal to remove this like
+                    return
+                }
+
+                this.removeLike(data.itemId,data.likeId)
+            },
+            removeLike(commentId,likeId){
+                let commentIndex = this.comments.findIndex(comment=>{
+                    return comment.id === commentId
+                })
+                if (commentIndex > -1) {
+                    let likeIndex =  this.comments[commentIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        this.comments[commentIndex]
+                            .likes.splice(likeIndex,1)
+                    }
+                }
+            },
+            addLike(commentId,like){
+                 let commentIndex = this.comments.findIndex(comment=>{
+                    return comment.id === commentId
+                })
+                if (commentIndex > -1) {
+                    this.comments[commentIndex].likes.unshift(like)
+                }
+            },
+            commentLikeSuccessful(data){
+                if (this.comment.id === data.itemId) {
+                    this.$emit('commentLikeSuccessfulMain', data)//alert parent view modal to add this like
+                    return
+                }
+
+                this.addLike(data.itemId,data.like)
+            },
+            commentViewParentDeleteSuccess(data){
+                this.removeCommentId(data.commentId)
+            },
+            commentViewDeleteSuccess(data){
+                if (this.comment.id === data.commentId) {
+                    this.$emit('commentViewParentDeleteSuccess') //this event is to delete the main comment from the comments of its parent view modal
+                    this.viewModalDisappear()
+                }
+                this.removeCommentId(data.commentId)
+            },
+            viewModalCommentEditedMain(comment){
+                cconsole.log('in view',comment);
+                this.removeComment(comment)
+            },
             postModalCommentEdited(comment){
+                if (this.comment.id === comment.id) {
+                    this.$emit('postModalCommentEditedMain',comment) //emit to commentsingle
+                    return
+                }
                 //editing comments in the comments view section
+                this.removeComment(comment)
+            },
+            removeCommentId(id){ //for deletion
                 let commentIndex = this.comments.findIndex(c=>{
-                    return c.id === comment.commentable_id
+                    return c.id === id
+                })
+                if (commentIndex > -1) {
+                    this.comments.splice(commentIndex,1)
+                }
+            },
+            removeComment(comment){ //for editing
+                // cconsole.log('in remove',comment);
+                let commentIndex = this.comments.findIndex(c=>{
+                    return c.id === comment.id
                 })
                 if (commentIndex > -1) {
                     this.comments.splice(commentIndex,1,comment)
-                } else if (comment.id === this.comment.id) {
-                    this.$emit('postModalCommentEditedMain',comment) //emit to commentsingle
                 }
             },
             viewModalAppear(){

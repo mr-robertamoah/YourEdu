@@ -151,7 +151,10 @@ import { mapGetters, mapActions } from 'vuex'
     export default {
         name: 'FirstSection',
         props: {
-
+            isFlagged: {
+                type: Boolean,
+                default: false
+            },
         },
         components: {
             FadeUp,

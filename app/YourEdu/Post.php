@@ -71,6 +71,11 @@ class Post extends Model
         return $this->morphMany(Flag::class,'flaggable');
     }
 
+    public function beenSaved()
+    {
+       return $this->morphOne(Save::class,'saveable');
+    }
+
     public function postAttachments()
     {
         return $this->hasMany(PostAttachment::class);

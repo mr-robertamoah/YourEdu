@@ -27,6 +27,10 @@ class ParentModel extends Model
             $parent->posts()->create([
                 'content' => 'this is my first post.'
             ]);
+
+            $parent->point()->create([
+                'user_id' => $parent->user_id
+            ]);
         });
     }
 
@@ -83,6 +87,16 @@ class ParentModel extends Model
     public function phoneNumbers()
     {
         return $this->morphMany(PhoneNumber::class,'phoneable');
+    }
+
+    public function savesMade()
+    {
+       return $this->morphMany(Save::class,'savedby');
+    }
+
+    public function point()
+    {
+        return $this->morphOne(Point::class,'pointable');
     }
 
     public function emails(){

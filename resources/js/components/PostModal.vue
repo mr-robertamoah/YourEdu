@@ -25,6 +25,7 @@
                         @clickedShowPostComments="clickedShowPostComments"
                         @clickedShowPostPreview="clickedShowPostPreview"
                         @clickedMedia="clickedMedia"
+                        @postDeleteSuccess="postMainDeleteSuccess"
                     ></post-show>
                 </div>
                 <div class="answer"
@@ -33,6 +34,11 @@
                     <answer-single
                         :answerFull="true"
                         :answer="data.type"
+                        @answerUnlikeSuccessful="answerUnlikeSuccessful"
+                        @answerLikeSuccessful="answerLikeSuccessful"
+                        @updateAnswerSuccessful="updateAnswerSuccessful"
+                        @deleteAnswerSuccess="deleteAnswerSuccess"
+                        @answerMarkedSuccessful="answerMarkedSuccessful"
                     ></answer-single>
                 </div>
                 <div class="post-preview"
@@ -69,8 +75,8 @@
                                 :itemList="data.type.possible_answers"
                                 @listItemSelected="listItemSelected"
                                 @clickedListButton="clickedListButton"
-                                :editableData="answerListEditable"
                                 :edit="answerListEdit"
+                                :selectable="answerListSelectable"
                                 select="select your answer"
                                 buttonText="submit"
                             ></main-list>
@@ -114,6 +120,9 @@
                                     @postModalCommentCreated="postModalCommentCreated"
                                     @postModalCommentEdited="postModalCommentEdited"
                                     @postAddComplete="comment"
+                                    @viewModalCommentEditedMain="viewModalCommentEditedMain"
+                                    @commentUnlikeSuccessfulMain="commentUnlikeSuccessfulMain"
+                                    @commentLikeSuccessfulMain="commentLikeSuccessfulMain"
                                 ></comment-single>
                             </template>
                             <template v-if="answers.length">
@@ -121,11 +130,19 @@
                                     v-for="answer in answers"
                                     :key="answer.id"
                                     :answer="answer"
+                                    :possibleAnswers="computedPossibleAnswers"
                                     @askLoginRegister="askLoginRegister"
                                     @clickedShowAnswer="clickedShowAnswer"
                                     @askCreateAccount="askCreateAccount"
                                     @answerMarked="answerMarked"
+                                    @answerUnlikeSuccessful="answerUnlikeSuccessful"
+                                    @answerLikeSuccessful="answerLikeSuccessful"
                                     @clickedShowAnswerComments="clickedShowAnswerComments"
+                                    @updateAnswerSuccessful="updateAnswerSuccessful"
+                                    @deleteAnswerSuccess="deleteAnswerSuccess"
+                                    @answerUnflaggedSuccess="answerUnflaggedSuccess"
+                                    @isAnswerOwner="isAnswerOwner"
+                                    @answerMarkedSuccessful="answerMarkedSuccessful"
                                 ></answer-single>
                             </template>
                         </template>
@@ -178,7 +195,12 @@
                 <post-modal
                     @mainModalDisappear="postModalDisappear"
                     :data="postModalData"
+                    @answerUnlikeSuccessful="postModalAnswerUnlikeSuccessful"
+                    @answerLikeSuccessful="postModalAnswerLikeSuccessful"
                     :type="postModalType"
+                    :updateAnswerSuccessfulMain="updateAnswerSuccessfulMain"
+                    :deleteAnswerSuccessMain="deleteAnswerSuccessMain"
+                    :answerMarkedSuccessfulMain="answerMarkedSuccessfulMain"
                 >
                 </post-modal>
             </template>
@@ -258,6 +280,7 @@ import { strings } from '../services/helpers';
                 inputAnswerText: '',
                 answerLoading: false,
                 showAnswerButton: false,
+                answerListSelectable: true,
                 //for editing
                 answerListEditable: {},
                 answerListEdit: false,
@@ -314,11 +337,12 @@ import { strings } from '../services/helpers';
         computed: {
             ...mapGetters(['getProfiles']),
             computedNoCommentAnswer(){
-                if (this.data.typeName === 'question' || this.data.typeName === 'riddle') {
-                    return !this.answers.length && !this.loading && !this.computedComments
+                if (this.type === 'posttype' && 
+                    (this.data.typeName === 'question' || this.data.typeName === 'riddle')) {
+                    return !this.answers.length && !this.loading
                         ? true : false
                 } else {
-                    return !this.comments.length && !this.loading && !this.computedComments
+                    return !this.comments.length && !this.loading
                         ? true : false
                 }
                 
@@ -332,10 +356,38 @@ import { strings } from '../services/helpers';
             computedComments(){
                 return this.post ? this.post.comments_number : 0
             },
+            computedPossibleAnswers(){
+                if (this.data.typeName === 'question' && this.type === 'posttype' &&
+                    this.data.type.hasOwnProperty('possible_answers')) {
+                    return this.data.type.possible_answers
+                }
+                return []
+            },
         },
         methods: {
             ...mapActions(['profile/getComments','profile/getAnswers',
                 'profile/updateAnswer','profile/createAnswer']),
+            answerMarkedSuccessful(data){ //from main answer or ans in answers
+                if (data.main) {
+                    this.$emit("answerMarkedSuccessfulMain",data)
+                    return
+                }
+                this.addMark(data)
+            },
+            answerMarkedSuccessfulMain(data){ //to deal with answers in main area
+                this.addMark(data)
+            },
+            addMark(data){
+                let answerIndex = this.answers.findIndex(answer=>{
+                    return answer.id === data.answerId
+                })
+                if (answerIndex > -1) {
+                    this.answers[answerIndex].marks.push(data.mark)
+                    this.answers[answerIndex].avg_score = data.avg_score
+                    this.answers[answerIndex].max_score = data.max_score
+                    this.answers[answerIndex].min_score = data.min_score
+                }
+            },
             answerMarked(data){
                 let answerIndex = this.answers.findIndex(answer=>{
                     return answer.id === data.id
@@ -343,6 +395,135 @@ import { strings } from '../services/helpers';
                 if (answerIndex > -1) {
                     this.answers.splice(answerIndex,1,data)
                 }
+            },
+            isAnswerOwner(data){ //user cannot answer a question more than once
+                this.answerListSelectable = false
+            },
+            deleteAnswerSuccessMain(data){
+                this.showPostModal = false
+                this.postModalData = null
+                this.removeAnswer(data.answerId) 
+            },
+            updateAnswerSuccessfulMain(data){
+                this.replaceAnswer(data.answer) 
+            },
+            answerUnflaggedSuccess(data){
+                let answerIndex = this.answers.findIndex(answer=>{
+                    return answer.id === data.answerId
+                })
+                if (answerIndex > -1) {
+                    let flagIndex = this.answers[answerIndex].flags.findIndex(flag=>{
+                        return flag.id === data.flag.id
+                    })
+                    if (flagIndex > -1) {
+                        this.answers[answerIndex].flags.splice(flagIndex,1)
+                    }
+                }
+            },
+            updateAnswerSuccessful(data){
+                if (data.main) {
+                    this.$emit('updateAnswerSuccessfulMain',data) //emit to parent post modal
+                    return 
+                }
+                this.replaceAnswer(data.answer)
+            },
+            deleteAnswerSuccess(data){
+                if (data.main) {
+                    this.$emit('deleteAnswerSuccessMain',data) //emit to parent post modal
+                    return 
+                }
+                this.removeAnswer(data.answerId)
+            },
+            replaceAnswer(answer){
+                let answerIndex = this.answers.findIndex(ans=>{
+                    return ans.id === answer.id
+                })
+                if (answerIndex > -1) {
+                    this.answers.splice(answerIndex,1,answer)
+                }
+            },
+            removeAnswer(answerId){
+                let answerIndex = this.answers.findIndex(ans=>{
+                    return ans.id === answerId
+                })
+                if (answerIndex > -1) {
+                    this.answers.splice(answerIndex,1)
+                }
+            },
+            postModalAnswerUnlikeSuccessful(data){
+                this.removeLike(data.itemId,data.likeId,'answer')
+            },
+            postModalAnswerLikeSuccessful(data){
+                this.addLike(data.itemId,data.like,'answer')
+            },
+            answerUnlikeSuccessful(data){
+                if (data.main) {
+                    this.$emit('answerUnlikeSuccessful',data)
+                } else {
+                    this.removeLike(data.itemId,data.likeId,'answer')
+                }
+            },
+            answerLikeSuccessful(data){
+                if (data.main) {
+                    this.$emit('answerLikeSuccessful',data)
+                } else {
+                    this.addLike(data.itemId,data.like,'answer')
+                }
+            },
+            commentUnlikeSuccessfulMain(data){
+                this.removeLike(data.itemId,data.likeId)
+            },
+            commentLikeSuccessfulMain(data){
+                this.addLike(data.itemId,data.like)
+            },
+            removeLike(id,likeId,type = 'comment'){ //for removing the like object
+                if (type === 'comment') {
+                    let commentIndex = this.comments.findIndex(comment=>{
+                        return comment.id === id
+                    })
+                    if (commentIndex > -1) {
+                        let likeIndex =  this.comments[commentIndex].likes.findIndex(like=>{
+                            return like.id === likeId
+                        })
+                        if (likeIndex > -1) {
+                            this.comments[commentIndex]
+                                .likes.splice(likeIndex,1)
+                        }
+                    }
+                } else if (type === 'answer') {
+                    let answerIndex = this.answers.findIndex(answer=>{
+                        return answer.id === id
+                    })
+                    if (answerIndex > -1) {
+                        let likeIndex =  this.answers[answerIndex].likes.findIndex(like=>{
+                            return like.id === likeId
+                        })
+                        if (likeIndex > -1) {
+                            this.answers[answerIndex]
+                                .likes.splice(likeIndex,1)
+                        }
+                    }
+                }
+            },
+            addLike(id,like,type = 'comment'){
+                if (type === 'comment') {
+                    let commentIndex = this.comments.findIndex(comment=>{
+                        return comment.id === id
+                    })
+                    if (commentIndex > -1) {
+                        this.comments[commentIndex].likes.unshift(like)
+                    }
+                } else if (type === 'answer') {
+                    let answerIndex = this.answers.findIndex(answer=>{
+                        return answer.id === id
+                    })
+                    if (answerIndex > -1) {
+                        this.answers[answerIndex].likes.unshift(like)
+                    }
+                }
+            },
+            postMainDeleteSuccess(data){
+                this.$emit('mainModalDisappear')
             },
             askCreateAccount(){
                 this.smallModalTitle = 'visit your welcome page to create accounts with which to interact.'
@@ -359,6 +540,14 @@ import { strings } from '../services/helpers';
                 setTimeout(() => {
                     this.showLoginRegister = false
                 }, 3000);
+            },
+            viewModalCommentEditedMain(comment){
+                let commentIndex = this.comments.findIndex(c=>{
+                    return c.id === comment.id
+                })
+                if (commentIndex > -1) {
+                    this.comments.splice(commentIndex,1,comment)
+                }
             },
             clickedShowAnswer(data){ //event handler for showing answer as main in post modal
 
@@ -533,9 +722,9 @@ import { strings } from '../services/helpers';
             postModalCommentCreated(comment){
                 if (comment.commentable_type.toLocaleLowerCase().includes('comment')) {
                     let commentIndex = this.comments.findIndex(c=>{
-                        return c.id === comment.commentable_id
+                        return c.id === comment.id
                     })
-                    if (comemntIndex > -1) {
+                    if (commentIndex > -1) {
                         this.comments[commentIndex].comments += 1
                     }
                 } else {
@@ -546,9 +735,9 @@ import { strings } from '../services/helpers';
             postModalCommentEdited(comment){
                 //editing comments in the comments view section
                 let commentIndex = this.comments.findIndex(c=>{
-                    return c.id === comment.commentable_id
+                    return c.id === comment.id
                 })
-                if (comemntIndex > -1) {
+                if (commentIndex > -1) {
                     this.comments.splice(commentIndex,1,comment)
                 }
             },
@@ -565,23 +754,25 @@ import { strings } from '../services/helpers';
                     response = null
                 data.nextPage = this.nextPage
                 if (this.type === 'post') {
-                    data = {
-                        item : 'post',
-                        itemId : this.data.id,
-                    }
+                    data.item = 'post'
+                    data.itemId = this.data.id
                     response = await this['profile/getComments'](data)
                 } else if (this.type === 'posttype') {
-                    data = {
-                        item : this.data.typeName,
-                        itemId : this.data.type.id,
-                    }
+                    data.item = this.data.typeName
+                    data.itemId = this.data.type.id
 
-                    if (this.data.typeName === 'riddle' || 
-                        this.data.typeName === 'question') {
+                    if (this.type === 'posttype' && 
+                        (this.data.typeName === 'question' || 
+                        this.data.typeName === 'riddle')) {
                         response = await this['profile/getAnswers'](data)
                     } else {
                         response = await this['profile/getComments'](data)
                     }
+                } else if (this.type === 'answer') {
+                    data.item = this.data.typeName
+                    data.itemId = this.data.type.id
+
+                    response = await this['profile/getComments'](data)
                 }
 
                 if (this.type === 'posttype' && 
@@ -702,11 +893,11 @@ $modal-margin-height: (100vh - $modal-height)/2;
 
             .main-comments{
                 width: 55%;
-                margin: 10px auto 0;
+                margin: 30px auto 20vh;
                 overflow-y: auto;
-                max-width: 85vh;
-                min-height: 70vh;
-                padding-bottom: 10px;
+                min-height: 65vh;
+                max-height: 100vh;
+                padding: 10px 15px 10px 0;
 
                 .loading{
                     width: 100%;

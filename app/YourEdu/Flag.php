@@ -10,6 +10,10 @@ class Flag extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'user_id', 'admin_id', 'status', 'reason'
+    ];
+
     public function flaggedby()
     {
         return $this->morphTo();

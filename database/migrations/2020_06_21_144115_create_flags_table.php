@@ -16,8 +16,10 @@ class CreateFlagsTable extends Migration
         Schema::create('flags', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('admin_id')->nullable();
-            $table->morphs('flaggedby'); // parent learner facilitator professional
-            $table->morphs('flaggable'); // comment post course lesson facilitator professional school learner extracurriculum
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->mediumText('reason')->nullable();
+            $table->nullableMorphs('flaggedby'); // parent learner facilitator professional
+            $table->nullableMorphs('flaggable'); // comment post course answer lesson facilitator professional school learner extracurriculum
             $table->enum('status',['PENDING','APPROVED','CANCELLED'])->default('PENDING');
             $table->softDeletes();
             $table->timestamps();

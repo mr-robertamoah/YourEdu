@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LikeResource;
 use App\YourEdu\Admin;
+use App\YourEdu\Answer;
 use App\YourEdu\ClassModel;
 use App\YourEdu\Comment;
 use App\YourEdu\Discussion;
@@ -13,6 +14,7 @@ use App\YourEdu\Keyword;
 use App\YourEdu\Learner;
 use App\YourEdu\Lesson;
 use App\YourEdu\Like;
+use App\YourEdu\Mark;
 use App\YourEdu\ParentModel;
 use App\YourEdu\Post;
 use App\YourEdu\Professional;
@@ -99,6 +101,10 @@ class LikeController extends Controller
                 $mainItem = Discussion::find($itemId);
             } else if ($item === 'read') {
                 $mainItem = Read::find($itemId);
+            } else if ($item === 'answer') {
+                $mainItem = Answer::find($itemId);
+            } else if ($item === 'mark') {
+                $mainItem = Mark::find($itemId);
             }
             // return $mainAccount;
             try {

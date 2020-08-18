@@ -138,7 +138,7 @@
                         @clickedIcon="clickedIcon"
                     >
                         <div slot="top">
-                            link to media accounts
+                            links to media accounts
                         </div>
                         <template slot="link">
                             <link-item
@@ -423,6 +423,10 @@ import { mapGetters, mapActions } from 'vuex'
             account: {
                 type: String,
                 default: ''
+            },
+            isFlagged: {
+                type: Boolean,
+                default: false
             },
             accountId: {
                 type: String,

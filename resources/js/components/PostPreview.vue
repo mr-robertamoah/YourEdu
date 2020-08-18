@@ -225,6 +225,9 @@ import PostButton from './PostButton'
                 this.$emit('clickedMedia',{url,mediaType})
             },
             clickedShowPostPreview(){
+                if (this.typeMediaFull) {
+                    return 
+                }
                 this.$emit('clickedShowPostPreview',{
                     data: {
                         type: this.type,

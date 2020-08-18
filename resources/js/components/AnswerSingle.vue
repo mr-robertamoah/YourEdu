@@ -1,158 +1,245 @@
 <template>
     <div class="answer-single-wrapper"
-        @dblclick="clickedShowPostPreview"
-        :class="{typeFull:answerFull}"
+        @dblclick.self="clickedShowAnswerSingle"
+        :class="{answerFull:answerFull}"
     >
-        <div class="edit"
-            @click="showOptions = computedOwner"
-            v-if="computedOwner"
-        >
-            <font-awesome-icon
-                :icon="['fa','chevron-down']"
-            ></font-awesome-icon>
-        </div>
-        <div class="options" v-if="showOptions">
-            <span @click="clickedOpion('edit')">edit</span>
-            <span @click="clickedOpion('delete')">delete</span>
-        </div>
-        <div class="main-info">
-            <div class="name">{{computedName}}</div>
-            <div class="type">{{computedType}}</div>
-        </div>
-        <div class="alert-message" 
-            v-if="alertMessage.length"
-            :class="{danger:alertDanger}"
-        >
-            {{alertMessage}}
-        </div>
-        <div class="main-area">
-            <div class="left-wrapper">
-                <div class="top-section">
-                    <div class="profile-picture">
-                        <profile-picture>
-                            <template slot="image">
-                                <img :src="answer.url" alt="profile">
-                            </template>
-                        </profile-picture>
+        <div>
+            <div class="score">
+                <fade-right>
+                    <template slot="transition" v-if="showScore">
+                        <answer-mark
+                            :show="showScore"
+                            @hideAnswerMark="showScore = false"
+                            @answerMarkScore="getScore"
+                            :inputMax="computedScoreOver"
+                            :scoreOver="`${computedScoreOver}`"
+                            :justRemark="justRemark"
+                        ></answer-mark>
+                    </template>
+                </fade-right>
+            </div>
+            <div class="edit"
+                @click="showOptions = !showOptions"
+                v-if="computedOwner"
+            >
+                <font-awesome-icon
+                    :icon="['fa','chevron-down']"
+                ></font-awesome-icon>
+            </div>
+            <div class="options" v-if="showOptions">
+                <span 
+                    @click="clickedOpion('edit')"
+                    v-if="!answer.marks.length"
+                >edit</span>
+                <span @click="clickedOpion('delete')">delete</span>
+            </div>
+            <div class="main-info">
+                <div class="name"
+                    @click="clickedProfilePicture"
+                >{{computedName}}</div>
+                <div class="type">{{computedType}}</div>
+            </div>
+            <div class="loading" v-if="loading">
+                <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
+            </div>
+            <div class="alert-message" 
+                v-if="alertMessage.length"
+                :class="{danger:alertDanger,success: alertSuccess}"
+            >
+                {{alertMessage}}
+            </div>
+            <div class="main-area">
+                <div class="left-wrapper">
+                    <div class="top-section">
+                        <div class="profile-picture">
+                            <profile-picture
+                                @click="clickedProfilePicture"
+                            >
+                                <template slot="image">
+                                    <img :src="answer.url" alt="profile">
+                                </template>
+                            </profile-picture>
+                        </div>
+                        <div class="other-info">
+                            <div class="info">{{computedCreatedAt}}</div>
+                            <div class="info">
+                                {{`${computedAverageScore} - average`}}
+                            </div>
+                            <div class="info" v-if="answerFull">
+                                {{`${computedMaximumScore} - maximum`}}
+                            </div>
+                            <div class="info" v-if="answerFull">
+                                {{`${computedMinimumScore} - minimum`}}
+                            </div>
+                        </div>
                     </div>
-                    <div class="other-info">
-                        <div class="info">{{computedCreatedAt}}</div>
-                        <div class="info">
-                            {{`${computedAverageScore} - average`}}
+                    <div class="bottom-section">
+                        <div class="textarea">
+                            <main-textarea
+                                :value="computedAnswer"
+                                :disabled="true"
+                            ></main-textarea>
                         </div>
-                        <div class="info" v-if="answerFull">
-                            {{`${computedMaximumScore} - maximum`}}
+                        <div class="media">
+                            <template v-if="computedImageUrl.length">
+                                <img src="" alt="media">
+                            </template>
+                            <template v-if="computedVideoUrl.length">
+                                <video src="">
+                                    media cannot play
+                                </video>
+                            </template>
+                            <template v-if="computedAudioUrl.length">
+                                <audio src=""></audio>
+                            </template>
                         </div>
-                        <div class="info" v-if="answerFull">
-                            {{`${computedMinimumScore} - minimum`}}
+                    </div>
+                    <div class="lower-section">
+                        <div class="extra-info">
+                            <div class="info" v-if="computedMarkings">
+                                {{`${computedMarkings} accounts marked this answer`}}
+                            </div>
+                            <div class="reaction-section"
+                                :class="{reactionReason:showFlagReason}"
+                            >
+                                <div
+                                    class="flag"
+                                    :class="{flagged:isFlagged}"
+                                    @click="clickedFlag"
+                                    v-if="computedFlags && !computedOwner"
+                                    :title="flagTitle"
+                                >
+                                    <font-awesome-icon
+                                        :icon="['fa','flag']"
+                                    ></font-awesome-icon>
+                                </div>
+                                <div class="reason">
+                                    <flag-reason
+                                        :show="showFlagReason"
+                                        @continueFlagProcess="continueFlagProcess"
+                                        @reasonGiven="reasonGiven"
+                                        @cancelFlagProcess="cancelFlagProcess"
+                                    ></flag-reason>
+                                </div>
+                                <div class="comment-number" 
+                                    v-if="computedCommentNumber"
+                                    @click="clickedViewComments"
+                                    :title="commentTitle"
+                                >
+                                    {{`${commentsNumber}`}} <font-awesome-icon
+                                        :icon="['fa','comment-alt']"
+                                    ></font-awesome-icon>
+                                </div>
+                                <div class="like-section">
+                                    <div class="like-number">{{likes}}</div>
+                                    <div class="like"
+                                        @click="clickedLike"
+                                        v-if="computedLikes"
+                                        :class="{liked:isLiked}"
+                                        :title="likeTitle"
+                                    >
+                                        <font-awesome-icon
+                                            :icon="['fa','thumbs-up']"
+                                        ></font-awesome-icon>
+                                    </div>
+                                </div>
+                                <div class="comment"
+                                    title="add a comment"
+                                    @click="clickedAddComment"
+                                    v-if="!showAddComment"
+                                >
+                                    <font-awesome-icon
+                                        :icon="['fa','comment']"
+                                    ></font-awesome-icon>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="add-comment">
+                            <fade-right-fast>
+                                <template slot="transition" v-if="showAddComment">
+                                    <add-comment
+                                        what="answer"
+                                        :id="answer.id"
+                                        :showAddComment="showAddComment"
+                                        @hideAddComment="showAddComment = false"
+                                        @postModalCommentCreated="postModalCommentCreated"
+                                        :onPostModal="true"
+                                    ></add-comment>
+                                </template>
+                            </fade-right-fast>
+                        </div>
+                        <div class="edit-anser">
+                            <fade-right-fast>
+                                <template slot="transition" v-if="editAnswer">
+                                    <add-answer
+                                        :answerEditable="answer"
+                                        v-if="!possibleAnswers.length"
+                                        :edit='editAnswer'
+                                        @addAnswer="addAnswer"
+                                ></add-answer>
+                                    <main-list
+                                        v-else
+                                        :edit='editAnswer'
+                                        :itemList='possibleAnswers'
+                                        buttonText='save'
+                                        select='edit your answer'
+                                        :selectedItem='answer.answer.trim()'
+                                        :itemId='answer.id'
+                                        :ownerId='profile.params.accountId'
+                                        :ownerType='profile.params.account'
+                                        @clickedListButton="clickedEditListButton"
+                                        @listItemSelected="editListItemSelected"
+                                    ></main-list>
+                                </template>
+                            </fade-right-fast>
                         </div>
                     </div>
                 </div>
-                <div class="bottom-section">
-                    <div class="textarea">
-                        <main-textarea
-                            :value="computedAnswer"
-                            :disabled="true"
-                        ></main-textarea>
-                    </div>
-                    <div class="media">
-                        <template v-if="computedImageUrl.length">
-                            <img src="" alt="media">
-                        </template>
-                        <template v-if="computedVideoUrl.length">
-                            <video src="">
-                                media cannot play
-                            </video>
-                        </template>
-                        <template v-if="computedAudioUrl.length">
-                            <audio src=""></audio>
-                        </template>
-                    </div>
-                    <div class="profiles"
-                        v-if="showProfiles"
-                    >
-                        <span>
-                            answer as
-                        </span>
-                        <div :key="key" v-for="(profile,key) in computedProfiles">
-                            <profile-bar
-                                :name="profile.name"
-                                :type="profile.params.account"
-                                :smallType="true"
-                                :routeParams="profile.params"
-                                :navigate="false"
-                                @clickedProfile="clickedProfile"
-                            ></profile-bar>
+                <div class="right-wrapper">
+                    <div class="marking" v-if="computedMarks">
+                        <div class="correct"
+                            @click="markAnswer('correct')"
+                            :class="{checkActive:checkActive,grayed:isMarked}"
+                        >
+                            <font-awesome-icon
+                                :icon="['fa','check']"
+                            ></font-awesome-icon>
                         </div>
-                    </div>
-                </div>
-                <div class="lower-section">
-                    <div class="extra-info">
-                        <div class="info">
-                            {{`${computedMarkings} number of people have marked this answer`}}
+                        <div class="partial"
+                            @click="markAnswer('partial')"
+                            :class="{checkDoubleActive:checkDoubleActive,grayed:isMarked}"
+                        >
+                            <font-awesome-icon
+                                :icon="['fa','check-double']"
+                            ></font-awesome-icon>
                         </div>
-                        <div class="comment-section">
-                            <div
-                                @click="clickedFlag"
-                            >
-                                <font-awesome-icon
-                                    :icon="['fa','flag']"
-                                ></font-awesome-icon>
-                            </div>
-                            <div class="comment-number" 
-                                v-if="computedCommentNumber"
-                                @click="clickedViewComments"
-                                :title="commentTitle"
-                            >
-                                {{`${commentsNumber}`}} <font-awesome-icon
-                                    :icon="['fa','comment-alt']"
-                                ></font-awesome-icon>
-                            </div>
-                            <div class="comment"
-                                title="add a comment"
-                                @click="clickedAddComment"
-                                v-if="!showAddComment"
-                            >
-                                <font-awesome-icon
-                                    :icon="['fa','comment']"
-                                ></font-awesome-icon>
-                            </div>
+                        <div class="wrong"
+                            @click="markAnswer('wrong')"
+                            :class="{timesActive:timesActive,grayed:isMarked}"
+                        >
+                            <font-awesome-icon
+                                :icon="['fa','times']"
+                            ></font-awesome-icon>
                         </div>
-                    </div>
-                    <div class="add-comment">
-                        <fade-right-fast>
-                            <template slot="transition" v-if="showAddComment">
-                                <add-comment
-                                    what="answer"
-                                    :id="answer.id"
-                                    :showAddComment="showAddComment"
-                                    @hideAddComment="showAddComment = false"
-                                    @postModalCommentCreated="postModalCommentCreated"
-                                    :onPostModal="true"
-                                ></add-comment>
-                            </template>
-                        </fade-right-fast>
                     </div>
                 </div>
             </div>
-            <div class="right-wrapper">
-                <div class="score" v-if="showScore">
-                    <answer-score
-                        :hideAnswerMark="showScore = false"
-                        :answerMarkScore="getScore"
-                    ></answer-score>
-                </div>
-                <div class="marking" v-if="!computedOwner">
-                    <div class="correct"
-                        @click="markAnswer('correct')"
-                    >correct</div>
-                    <div class="partial"
-                        @click="markAnswer('partial')"
-                    >partial</div>
-                    <div class="wrong"
-                        @click="markAnswer('wrong')"
-                    >wrong</div>
-                </div>
+        </div>
+        <div class="answer-single-profiles"
+            v-if="showProfiles"
+        >
+            <span>
+                {{showProfilesText}}
+            </span>
+            <div :key="key" v-for="(profile,key) in computedProfiles">
+                <profile-bar
+                    :name="profile.name"
+                    :type="profile.params.account"
+                    :smallType="true"
+                    :routeParams="profile.params"
+                    :navigate="false"
+                    @clickedProfile="clickedProfile"
+                ></profile-bar>
             </div>
         </div>
 
@@ -171,12 +258,19 @@
                 >
                     <template slot="actions">
                         <post-button
+                            buttonText="ok"
+                            @click="clickedInfoOk"
+                            v-if="smallModalInfo"
+                        ></post-button>
+                        <post-button
                             buttonText="yes"
                             @click="clickedYes"
+                            v-if="!smallModalInfo"
                         ></post-button>
                         <post-button
                             buttonText="no"
                             @click="clickedNo"
+                            v-if="!smallModalInfo"
                         ></post-button>
                     </template>
                 </small-modal>
@@ -187,12 +281,17 @@
 
 <script>
 import ProfilePicture from './profile/ProfilePicture'
+import ProfileBar from './profile/ProfileBar'
 import MainTextarea from './MainTextarea'
 import AnswerMark from './AnswerMark'
 import PostButton from './PostButton'
+import FlagReason from './FlagReason'
+import MainList from './MainList'
 import FadeRightFast from './transitions/FadeRightFast'
+import FadeRight from './transitions/FadeRight'
 import AddComment from './AddComment'
 import FadeUp from './transitions/FadeUp'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
 import { mapGetters, mapActions } from 'vuex'
 import { dates, strings } from '../services/helpers'
 
@@ -208,20 +307,30 @@ import { dates, strings } from '../services/helpers'
                     return {}
                 }
             },
+            possibleAnswers: {
+                type: Array,
+                default(){
+                    return []
+                }
+            },
         },
         components: {
+            PulseLoader,
             FadeUp,
             AddComment,
+            FadeRight,
             FadeRightFast,
+            MainList,
+            FlagReason,
             PostButton,
             AnswerMark,
             MainTextarea,
+            ProfileBar,
             ProfilePicture,
         },
         data() {
             return {
-                showScore: false,
-                score: 0,
+                profile: null,
                 showAddComment: false,
                 alertMessage: '',
                 alertModalMessage: '',
@@ -235,12 +344,109 @@ import { dates, strings } from '../services/helpers'
                 smallModalTitle: '',
                 smallModalAction: '', //track whether we are flaging or deleting
                 smallModalAlerting: false,
+                smallModalLoading: false,
+                smallModalInfo: '',
+                justRemark: false,
+                smallModalData: null, // this holds the who for the flag process
+                //
+                showProfilesText: '',
+                showProfilesAction: '',
+                // likes
+                myLike: null,
+                likes: 0,
+                isLiked: false,
+                likeTitle: '',
+                showScore: false,
+                score: 0,
+                state: '',
+                remark: '',
+                //mark
+                checkActive:false,
+                checkDoubleActive:false,
+                timesActive:false,
+                myMark: null,
+                isMarked: false,
+                markTitle: '',
+                //edit
+                // showEdit: false,
+                editAnswer: false,
+                file: null,
+                answerText: '',
+                possibleAnswerId: null,
+                loading: false,
+                //flag
+                showFlagReason: false,//it also pushes reaction section down to show flag reason
+                flagReason: '',
+                isFlagged: false,
+                myFlag: null,
+                flagTitle: '',
             }
+        },
+        watch: {
+            showOptions(newValue) {
+                if (newValue) {
+                    setTimeout(() => {
+                        this.showOptions = false
+                    }, 4000);
+                }
+            },
+            isLiked(newValue){
+                if (newValue) {
+                    this.likeTitle = 'unlike this answer'
+                } else {
+                    this.likeTitle = 'like this answer'
+                }
+            },
+            isFlagged(newValue){
+                if (newValue) {
+                    this.flagTitle = 'unflag this answer'
+                } else {
+                    this.flagTitle = 'flag this answer'
+                }
+            },
+            likes(newValue){
+                if (!newValue) {
+                    this.myLike = null
+                    this.isLiked = false
+                }
+            },
         },
         computed: {
             ...mapGetters(['getProfiles','getUser']),
             computedImageUrl() {
                 return this.answer && this.answer.images ? this.answer.images[0].url : ''
+            },
+            computedFlags(){ //check flagging
+                if (this.getUser) {
+                    if (this.answer && this.answer.hasOwnProperty('flags')){
+                        let flags = this.answer.flags
+                        let index = null
+                        index = flags.findIndex(flag=>{
+                                return flag.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.myFlag = flags[index]
+                            this.isFlagged = true
+                        }
+                    }
+                }
+                return true
+            },
+            computedMarks(){ //determine if i have marked
+                if (this.getUser) {
+                    if (this.answer && this.answer.hasOwnProperty('marks')){
+                        let marks = this.answer.marks
+                        let index = null
+                        index = marks.findIndex(mark=>{
+                                return mark.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.myMark = marks[index]
+                            this.isMarked = true
+                        }
+                    }
+                }
+                return true
             },
             computedCommentNumber(){
                 this.commentsNumber = this.answer && this.answer.comments_number ?
@@ -279,19 +485,52 @@ import { dates, strings } from '../services/helpers'
             },
             computedAverageScore(){
                 return this.answer && this.answer.avg_score ? 
-                    this.answer.avg_score : 0
+                    Number(this.answer.avg_score).toFixed(2) : 0
             },
             computedMaximumScore(){
                 return this.answer && this.answer.max_score ? 
-                    this.answer.max_score : 0
+                    this.answer.max_score.toFixed(2) : 0
             },
             computedMinimumScore(){
                 return this.answer && this.answer.min_score ? 
-                    this.answer.min_score : 0
+                    this.answer.min_score.toFixed(2) : 0
             },
-            computedMarkings(){
-                return this.answer && this.answer.marks_number ? 
-                    this.answer.marks_number : 0
+            computedScoreOver(){
+                return this.answer && this.answer.score_over ? 
+                    `${this.answer.score_over}` : 10
+            },
+            computedMarkings(){ //for the total marks issued
+                return this.answer && this.answer.marks ? 
+                    this.answer.marks.length : 0
+            },
+            computedProfiles(){
+                return this.getProfiles ? this.getProfiles : []
+            },
+            computedLikes(){
+                //do not show like if any of your profiles has liked the item
+                if (this.getUser) {
+                    if (this.answer && this.answer.hasOwnProperty('likes')){
+                        let likes = this.answer.likes
+                        this.likes = this.answer.likes.length
+                        let index = null
+                        index = likes.findIndex(like=>{
+                                return like.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.myLike = likes[index]
+                            this.isLiked = true
+                        }
+                    }
+                }
+                return true
+            },
+            computedAnswerOwnerAccount(){
+                let answerOwner = this.answer ? {
+                    account: strings.getAccount(this.comment.commentedby_type),
+                    accountId: `${this.comment.commentedby_id}`
+                } : null
+
+                return answerOwner
             },
             computedOwner(){
                 let profiles = this.getProfiles
@@ -306,23 +545,174 @@ import { dates, strings } from '../services/helpers'
 
                     if (profile > -1) {
                         this.profile = this.getProfiles[profile]
+                        this.$emit('isAnswerOwner',this.profile) //user cannot answer a question more than once
                         return true
-                    } else {
-                        this.profile = null
                     }
                 }
                 return false
             },
         },
         methods: {
-            ...mapActions(['profile/answerMark']),
+            ...mapActions(['profile/createMark','profile/deleteLike','profile/createLike',
+                'profile/updateAnswer','profile/deleteAnswer','profile/createFlag',
+                'profile/deleteFlag']),
             getScore(data){
-                this.score = data
+                if (this.state === 'PARTIAL') {
+                    this.score = data.score
+                } else if (this.state === 'WRONG') {
+                    this.score = 0
+                } else if (this.state === 'CORRECT') {
+                    this.score = this.computedScoreOver
+                }
+                this.remark = data.remark
+                this.showScore = false
+                this.profilesAppear()
+            },
+            clickedProfilePicture(){
+                if (this.$route.name !== 'profile' &&
+                    this.computedAnswerOwnerAccount) {
+                    this.$router.push({
+                        name: 'profile',
+                        params: {
+                            account: this.computedAnswerOwnerAccount.account,
+                            accountId: this.computedAnswerOwnerAccount.accountId,
+                        }
+                    })
+                } else if (this.computedAnswerOwnerAccount) {
+                    if (this.$route.params.account !== this.computedAnswerOwnerAccount.account &&
+                        this.$route.params.accountId !== this.computedAnswerOwnerAccount.accountId) {
+                        this.$router.push({
+                        name: 'profile',
+                        params: {
+                            account: this.computedAnswerOwnerAccount.account,
+                            accountId: this.computedAnswerOwnerAccount.accountId,
+                        }
+                    })
+                    }
+                }
+            },
+            profilesAppear(){
+                this.showProfiles = true
+                setTimeout(() => {
+                    this.showProfiles = false
+                }, 4000);
+            },
+            reasonGiven(data){
+                this.showFlagReason = false
+                this.flagReason = data
+                this.profilesAppear()
+            },
+            continueFlagProcess(){
+                this.flagReason = null
+                this.showFlagReason = false
+                this.profilesAppear()
+            },
+            cancelFlagProcess(){
+                this.flagReason = ''
+                this.showFlagReason = false
+            },
+            async updateAnswer(who){
+                let formData = new FormData
+
+                if (this.file) {
+                    formData.append('file', this.file)
+                }
+
+                if (this.answerText.length) {
+                    formData.append('answer', this.answerText.trim())
+                }
+
+                if (this.possibleAnswerId) {
+                    formData.append('possible_answer_id', this.possibleAnswerId)
+                }
+
+                formData.append('account', who.account)
+                formData.append('accountId', who.accountId)                
+                
+                let response = null
+                    let data = {
+                        itemId: who.itemId,
+                    }
+                    response = await this['profile/updateAnswer']({data,formData})
+                
+                if (response !== 'unsuccessful') {
+                    this.file = null
+                    this.alertSuccess = true
+                    this.alertDanger = false
+                    this.answerText = ''
+                    this.editAnswer = false
+
+                    this.$emit('updateAnswerSuccessful',{
+                        answer: response.answer,
+                        main: this.answerFull
+                    })
+                    
+                } else {
+                    this.alertSuccess = false
+                    this.alertDanger = true
+                }
+            },
+            addAnswer(addAnswerData){
+                this.file = addAnswerData.file
+                this.answerText = addAnswerData.input
+                this.possibleAnswerId = null
+                this.updateAnswer(addAnswerData.who)
+            },
+            clickedEditListButton(who){
+                this.updateAnswer(who)
+            },
+            editListItemSelected(item){
+                this.answerText = item.option
+                this.possibleAnswerId = item.id
+            },
+            async clickedLike(){
+                if (!this.getUser) {
+                    this.$emit('askLoginRegister','postShow')
+                } else if (!this.getProfiles || !this.getProfiles.length) {
+                    this.$emit('askCreateAccount')
+                } else {
+                    if (this.isLiked) {
+                        this.likes -= 1
+                        this.isLiked = false
+                        
+                        if (this.myLike && this.myLike.hasOwnProperty('id')) {
+                            let data = {
+                                likeId: this.myLike.id,
+                                item: 'answer',
+                                itemId: this.answer.id,
+                            }
+
+                            let response = await this['profile/deleteLike'](data)
+                            if (response === 'unsuccessful') {
+                                this.isLiked = true
+                                this.likes += 1
+                            } else {
+                                data.main = this.answerFull
+                                this.$emit('answerUnlikeSuccessful',data)
+                            }
+                        } else {
+                            this.likes += 1
+                            this.isLiked = true
+                        }
+                    } else {
+                        console.log('its is not liked', this.isLiked);
+                        this.showProfilesText = 'like as'
+                        this.showProfilesAction = 'like'
+                        this.showProfiles = true
+                        setTimeout(() => {
+                            this.showProfiles = false
+                        }, 4000);
+                    }
+                }
             },
             clickedNo(){
-                this.showSmallModal = false
+                this.clearSmallModal()
             },
             async clickedYes(){
+                if (this.smallModalAction === 'flag') {
+                    this.flag(this.smallModalData)
+                    return
+                }
                 this.smallModalLoading = true
                 let data = {
                     answerId: this.answer.id,
@@ -334,26 +724,22 @@ import { dates, strings } from '../services/helpers'
                 if (response !== 'unsuccessful') {
                     this.alertSuccess = true
                     this.alertDanger = false
-                    if (this.smallModalAction === 'delete') {
-                        this.$emit('answerDeleteSuccess', {response,main: this.answerFull})
-                        this.alertModalMessage = 'deletion successful'
-                    } else if (this.smallModalAction === 'flag') {
-                        this.$emit('answerFlagSuccess', {response,main: this.answerFull})
-                        this.alertModalMessage = 'deletion successful'
-                    }
+                    this.alertModalMessage = 'deletion successful'
+                    this.$emit('deleteAnswerSuccess', {
+                        answerId: data.answerId,
+                        main: this.answerFull
+                    })
                 } else {
                     this.alertSuccess = false
                     this.alertDanger = true
                     this.alertModalMessage = 'deletion unsuccessful'
                 }
                 setTimeout(() => {
-                    this.smallModalAlerting = false
-                    this.alertModalMessage = ''
-                    this.alertDanger = false
-                    this.alertSuccess = false
+                    this.clearSmallModal()
                 }, 3000);
             },
             clickedOpion(data){
+                this.showOptions = false
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
@@ -367,7 +753,7 @@ import { dates, strings } from '../services/helpers'
                         this.smallModalTitle = ''
                     }, 4000);
                 } else if (data === 'edit') {
-
+                    this.editAnswer = true
                 }
             },
             clickedAddComment(){
@@ -380,43 +766,80 @@ import { dates, strings } from '../services/helpers'
                 }
             },
             clickedFlag(){
+                if (this.isFlagged) {
+                    this.flag(null)
+                    return
+                }
+                this.showProfilesText = 'flag as'
+                this.showProfilesAction = 'flag'
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
                     this.$emit('askCreateAccount')
                 } else {
-                    this.smallModalTitle = 'are you sure you want to flag this?'
-                    this.showAddComment = true
+                    this.showFlagReason = true
                 }
             },
-            clickedShowPostPreview(){
+            clickedShowAnswerSingle(){
                 if (this.answerFull) {
                     return
                 }
-                this.$emit('clickedShowAnswer',{
+                this.$emit('clickedShowAnswerComments',{
                     data: {
                         type: this.answer,
-                        typeName: 'answer',
-                    }, 
+                        typeName: 'answer'
+                    },
+                    type: 'answer'
                 })
             },
             postModalCommentCreated(data){
                 this.commentsNumber += 1
             },
+            clearSmallModal(){
+                this.smallModalInfo = false
+                this.smallModalTitle = ''
+                this.showSmallModal = false
+                this.alertSuccess = false
+                this.alertDanger = false
+                this.smallModalAlerting = false
+                this.smallModalAction = ''
+            },
             markAnswer(data) {
+                if (this.isMarked) {
+                    return
+                }
                 if (this.getUser) {
+                    this.checkActive = false
+                    this.checkDoubleActive = false
+                    this.timesActive = false
                     if (this.getProfiles) {
-                        if (data === 'correct') {
-                            
-                        } else if (data === 'partial') {
-                            this.showScore = true 
-                        } else if (data === 'wrong') {
-                            
+                        if (this.isMarked) {
+                            this.smallModalInfo = true
+                            this.smallModalTitle = 'you have alreadey marked this with an account'
+                            this.showSmallModal = true
+                            setTimeout(() => {
+                                this.clearSmallModal()
+                            }, 3000);
+                            return
                         }
-                        this.showProfiles = true
-                        setTimeout(() => {
-                            this.showProfiles = false
-                        }, 4000);
+                        this.showProfilesText = 'mark as'
+                        this.showProfilesAction = 'mark'
+                        if (data === 'correct') {
+                            this.checkActive = false
+                            this.state = 'CORRECT'
+                            this.score = this.computedScoreOver
+                            this.justRemark = true
+                        } else if (data === 'partial') {
+                            this.checkDoubleActive = false
+                            this.justRemark = false
+                            this.state = 'PARTIAL'
+                        } else if (data === 'wrong') {
+                            this.timesActive = false
+                            this.state = "WRONG"
+                            this.justRemark = true
+                            this.score = 0
+                        }
+                        this.showScore = true
                     } else {
                         this.$emit('askCreateAccount')
                     }
@@ -425,14 +848,100 @@ import { dates, strings } from '../services/helpers'
                 }
             },
             clickedViewComments(){
+                if (!this.commentsNumber) {
+                    return 
+                }
                 this.$emit('clickedShowAnswerComments', {
-                    answer: this.answer,
+                    data: {
+                        type: this.answer,
+                        typeName: 'answer'
+                    },
                     type: 'answer'
                 })
             },
             clickedProfile(who){
                 this.showProfiles = false
-                this.mark(who)
+                if (this.showProfilesAction === 'mark') {
+                    this.mark(who)
+                } else if (this.showProfilesAction === 'flag') {
+                    this.smallModalTitle = 'are you sure you want to flag this?'
+                    this.smallModalAction = 'flag'
+                    this.showSmallModal = true
+                    this.smallModalData = who
+                    setTimeout(() => {
+                        this.clearSmallModal()
+                    }, 4000);
+                } else if (this.showProfilesAction === 'like') {
+                    this.like(who)
+                }
+            },
+            async like(who){
+                this.isLiked = true
+                this.likes += 1
+                let data = {
+                    item: 'answer',
+                    itemId: this.answer.id,
+                    account: who.account,
+                    accountId: who.accountId,
+                }
+
+                let response = await this['profile/createLike'](data)
+
+                if (response === 'unsuccessful') {
+                    this.isLiked = false
+                    this.likes -= 1
+                } else {
+                    this.$emit('answerLikeSuccessful',{
+                        itemId: this.answer.id,
+                        like: response,
+                        main : this.answerFull
+                    })
+                }
+            },
+            async flag(who){
+                this.loading = true
+                let data = {}
+                let response = null
+                if (who) {
+                    data.account = who.account
+                    data.accountId = who.accountId
+                    data.item = 'answer'
+                    data.itemId = this.answer.id
+                    data.reason = this.flagReason
+
+                    response = await this['profile/createFlag'](data)
+                } else {
+                    data.flagId = this.myFlag.id
+
+                    response = await this['profile/deleteFlag'](data)
+                }
+
+                this.loading =false
+                if (response.status) {
+                    this.alertSuccess = true
+                    if (this.isFlagged) {
+                        this.isFlagged = false
+                        this.$emit('answerUnflaggedSuccess', {
+                            flag: response.flag,
+                            answerId: this.answer.id
+                        })
+                    } else {
+                        this.alertModalMessage = 'successfully flagged'
+                        this.$emit('deleteAnswerSuccess', {
+                            answerId: this.answer.id,
+                            main: this.answerFull
+                        })
+                    }
+                    this.smallModalAlerting = true
+                } else {
+                    this.alertDanger = true
+                    this.alertModalMessage = 'flagging successful'
+                }
+                this.flagReason = ''
+                this.smallModalData = null
+                setTimeout(() => {
+                    this.clearSmallModal()
+                }, 3000);
             },
             async mark(who){
                 let data = {}
@@ -440,15 +949,28 @@ import { dates, strings } from '../services/helpers'
 
                 data.account = who.account
                 data.accountId = who.accountId
+                data.item = 'answer'
+                data.itemId = this.answer.id
+                data.remark = this.remark
+                data.state = this.state
+                data.score = this.score
+                data.score_over = this.computedScoreOver
 
-                let response = await this['answerMark']()
+                let response = await this['profile/createMark'](data)
 
                 this.loading = false
-                if (response !== 'unsuccessful') {
-                    this.$emit('answerMarked', response.answer)
+                if (response.status) {
+                    this.$emit('answerMarkedSuccessful', {
+                        mark: response.data.mark,
+                        answerId: data.itemId,
+                        avg_score: response.data.avg_score,
+                        max_score: response.data.max_score,
+                        min_score: response.data.min_score,
+                        main: this.answerFull
+                    })
                 } else {
                     this.alertDanger = true
-                    this.alertMessage = 'marking of answer failed'
+                    this.alertMessage = response.message
                     setTimeout(() => {
                         this.alertMessage = ''
                         this.alertDanger = false
@@ -460,7 +982,7 @@ import { dates, strings } from '../services/helpers'
 </script>
 
 <style lang="scss" scoped>
-$profile-picture-width: 70px;
+$profile-picture-width: 50px;
 @mixin text-overflow(){
     text-overflow: ellipsis;
     overflow: hidden;
@@ -473,12 +995,28 @@ $profile-picture-width: 70px;
         border-radius: 0 10px 10px 0;
         border-left: 2px solid gray;
         position: relative;
+        margin: 0 0 20px;
+        font-size: 14px;
+
+        .loading{
+            width: 100%;
+            text-align: center;
+        }
+
+        .score{
+            position: absolute;
+            top: 5px;
+            right: 0;
+            width: 300px;
+            max-width: 100%;
+        }
 
         .edit{
             font-size: 16px;
             margin-top: -10px;
             cursor: pointer;
             text-align: end;
+            z-index: 3;
         }
 
         .options{
@@ -489,6 +1027,7 @@ $profile-picture-width: 70px;
             position: absolute;
             right: 0;
             top: 15px;
+            z-index: 3;
 
             span{
                 padding: 5px;
@@ -507,9 +1046,10 @@ $profile-picture-width: 70px;
             width: 100%;
             padding: 5px;
             border-bottom: 1px solid gray;
+            display: inline-flex;
 
             .name{
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 500;
                 width: 65%;
                 text-align: start;
@@ -518,7 +1058,7 @@ $profile-picture-width: 70px;
             }
 
             .type{
-                font-size: 14px;
+                font-size: 12px;
                 width: 35%;
                 text-align: end;
                 @include text-overflow();
@@ -530,7 +1070,7 @@ $profile-picture-width: 70px;
             width: 100%;
             text-align: center;
             padding: 5px;
-            font-size: 14px;
+            font-size: 12px;
             margin: 5px 0;
         }
 
@@ -542,13 +1082,13 @@ $profile-picture-width: 70px;
         .main-area{
             width: 100%;
             display: table;
-            padding: 10px;
+            position: relative;
 
             .left-wrapper{
                 width: 85%;
                 display: table-cell;
                 padding-right: 5px;
-                padding: 10px;
+                padding-left: 5px;
 
                 .top-section{
                     display: flex;
@@ -564,9 +1104,9 @@ $profile-picture-width: 70px;
                     .other-info{
                         max-width: 50%;
                         text-align: end;
+                        font-size: 10px;
 
                         .info{
-                            font-size: 14px;
                             border-bottom: 1px solid gray;
                         }
                     }
@@ -585,15 +1125,6 @@ $profile-picture-width: 70px;
                         width: 30%;
                         display: table-cell;
                     }
-
-                    .profiles{
-                        position: absolute;
-                        width: 200px;
-                        left: 0;
-                        top: 95%;
-                        z-index: 1000;
-                        text-align: start;
-                    }
                 }
 
                 .lower-section{
@@ -601,11 +1132,18 @@ $profile-picture-width: 70px;
                     .extra-info{
                         width: 100%;
 
-                        .comment-section{
+                        .info{
+                            font-size: 11px;
+                            color: gray;
+                        }
+
+                        .reaction-section{
                             display: inline-flex;
                             justify-content: space-between;
                             align-items: center;
                             width: 100%;
+                            font-size: 14px;
+                            position: relative;
 
                             .comment-number{
                                 font-size: 12px;
@@ -615,28 +1153,160 @@ $profile-picture-width: 70px;
                                 border-radius: 10%;
                             }
 
-                            .comment{
+                            .comment,
+                            .flag{
                                 cursor: pointer;
-                                font-size: 16px;
+                                padding: 5px;
                             }
+
+                            .flagged{
+                                color: red;
+                            }
+
+                            .reason{
+                                position: absolute;
+                                top: 30px;
+                                width: 100%;
+                            }
+
+                            .like-section{
+                                display: inline-flex;
+
+                                .like-number{
+                                    font-size: 12px;
+                                    padding: 5px;
+                                    background-color: whitesmoke;
+                                    border-radius: 10%;
+                                }
+
+                                .like{
+                                    cursor: pointer;
+                                    padding: 5px;
+                                }
+                            }
+
+                            .liked{
+                                color: green;
+                            }
+                        }
+
+                        .reactionReason{
+                            margin-bottom: 80px;
+                            transition: all .4s ease;
+                            z-index: 5;
                         }
                     }
                 }
             }
 
             .right-wrapper{
-                width: 10%;
-                display: table-cell;
-                padding: 10px;
+                width: 15%;
+                padding: 0 10px;
                 border-left: 1px solid gray;
+                position: absolute;
+                top: 0;
+
+                .marking{
+                    position: relative;
+                }
 
                 .correct,
                 .partial,
                 .wrong{
-                    margin-bottom: 10px;
+                    font-size: 14px;
+                    padding: 5px;
+                    margin: 5px auto;
+                    cursor: pointer;
+                    text-align: center;
+
+                    &:hover{
+                        box-shadow: 0 0 2px;
+                        transition: all .5s ease;
+                    }
+                }
+
+                .checkActive,
+                .checkDoubleActive,
+                .timesActive{
+                    box-shadow: 0 0 2px;
+                    transition: all .5s ease;
+                }
+
+                .timesActive{
+                    color: red;
+                }
+
+                .checkActive{
+                    color: green;
+                }
+
+                .checkDoubleActive{
+                    color: gold;
+                }
+
+                .grayed{
+                    color: rgba(128, 128, 128, 0.849);
                 }
             }
         }
 
+        .profiles{
+            font-size: 14px;
+            position: absolute;
+            width: 200px;
+            left: 0;
+            top: 95%;
+            z-index: 1000;
+            text-align: start;
+        }
+
+    }
+
+    .answerFull{
+        width: 85%;
+        position: relative;
+        margin: 10px auto 20px;
+
+        .main-info{
+
+            .name{
+                font-size: 16px;
+            }
+
+            .type{
+                font-size: 14px;
+            }
+        }
+
+        .main-area{
+            padding: 10px;
+
+            .left-wrapper{
+                padding: 10px;
+
+                .top-section{
+                    margin-bottom: 5px;
+                    
+                    .profile-picture{
+                        $profile-picture-width: 70px;
+                        width: $profile-picture-width;
+                        height: $profile-picture-width;
+                    }
+
+                    .other-info{
+                        font-size: 11px;
+                    }
+                }
+            }
+
+            .right-wrapper{
+
+                .correct,
+                .partial,
+                .wrong{
+                    font-size: 16px;
+                }
+            }
+        }
     }
 </style>

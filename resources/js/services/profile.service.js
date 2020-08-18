@@ -52,6 +52,43 @@ const ProfileService = {
         }
     },
 
+    //////////////////////////////////// flags
+
+    async flagCreate(main){
+        try {
+            let {accountId, account, reason, item, itemId} = main
+            let response = await ApiService.post(`/api/${item}/${itemId}/flag`,{
+                account, accountId, reason
+            })
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async flagDelete(data){
+        try {
+            let response = await ApiService.delete(`/api/flag/${data.flagId}`)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
+    //////////////////////////////////// marks
+
+    async markCreate(main){
+        try {
+            let {item, itemId} = main
+            let response = await ApiService.post(`/api/${item}/${itemId}/mark`,main)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
     //////////////////////////////////////////// answers
     
     async answersGet(data){
@@ -301,7 +338,7 @@ const ProfileService = {
         }
     },
 
-    /////////////////////////////////////
+    ///////////////////////////////////// posts
     async postCreate(data){
         try {
             let response = await ApiService.post(`/api/post`,data, true)
@@ -342,6 +379,21 @@ const ProfileService = {
                 response = await ApiService.get(`/api/posts?page=${nextPage}`)
             } else{
                 response = await ApiService.get(`/api/posts`)
+            }
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async userPostsGet(nextPage){
+        try {
+            console.log(nextPage)
+            let response = null
+            if (nextPage) {
+                response = await ApiService.get(`/api/user/posts?page=${nextPage}`)
+            } else{
+                response = await ApiService.get(`/api/user/posts`)
             }
     
             return response

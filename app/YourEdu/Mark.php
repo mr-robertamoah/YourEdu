@@ -10,7 +10,7 @@ class Mark extends Model
     //
     use SoftDeletes;
 
-    protected $fillable = ['remark','score','score_over'];
+    protected $fillable = ['remark','score','score_over', 'user_id'];
 
     public function markable()
     {

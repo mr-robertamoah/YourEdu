@@ -89,15 +89,26 @@
             <div class="main">
                 <div class="reaction">
                     <post-button 
-                        titleText="flag this"
-                        v-if="computedFlag"
+                        :titleText="flagTitle"
+                        v-if="computedFlags"
                         @click="clickedFlag"
+                        :postButtonClass="flagRed"
                     >
                         <template slot="icon">
                             <font-awesome-icon
                                 :icon="['fa','flag']"
                             ></font-awesome-icon>
-                        </template></post-button>
+                        </template>
+                    </post-button>
+                    <div class="reason">
+                        <flag-reason
+                            :show="showFlagReason"
+                            :hasBackground="true"
+                            @continueFlagProcess="continueFlagProcess"
+                            @reasonGiven="reasonGiven"
+                            @cancelFlagProcess="cancelFlagProcess"
+                        ></flag-reason>
+                    </div>
                     <div class="like">
                         <number-of>
                             {{`${likes} likes`}}
@@ -117,7 +128,7 @@
                                 v-if="showProfiles"
                             >
                                 <span>
-                                    like as
+                                    {{showProfilesText}}
                                 </span>
                                 <div :key="key" v-for="(profile,key) in computedProfiles">
                                     <profile-bar
@@ -154,7 +165,8 @@
                         @postModalCommentCreated="postModalCommentCreated"
                     ></add-comment>
                 </div>
-                <div class="comment-section">
+                <div class="comment-section"
+                    @dblclick.self="clickedShowPostComments">
                     <template v-if="!postMediaFull && computedComments">
                         <comment-single
                             :key="key" v-for="(comment, key) in computedComments"
@@ -222,6 +234,7 @@ import PostPreview from './PostPreview'
 import NumberOf from './NumberOf'
 import ProfileBar from './profile/ProfileBar'
 import CreatePost from './forms/CreatePost'
+import FlagReason from './FlagReason'
 import FadeUp from './transitions/FadeUp'
 import JustFade from './transitions/JustFade'
 import {dates, strings, files} from '../services/helpers'
@@ -240,6 +253,7 @@ import { mapGetters, mapActions } from 'vuex'
             MainTextarea,
             AddComment,
             PostButton,
+            FlagReason,
         },
         props: {
             post: {
@@ -260,14 +274,16 @@ import { mapGetters, mapActions } from 'vuex'
                 profile: null,
                 alertMessage: '',
                 showModal: false,
+                alertSuccess: false,
+                alertDanger: false,
+                //small modal
                 showSmallModal: false,
                 smallModalLoading: false,
                 smallModalAlerting: false,
-                alertSuccess: false,
-                alertDanger: false,
                 smallModalDelete: false,
                 smallModalTitle: '',
                 smallModalInfo: false,
+                //
                 showAddComment: false,
                 isLiked: false,
                 likes: 0,
@@ -276,6 +292,16 @@ import { mapGetters, mapActions } from 'vuex'
                 likeTitle: '',
                 commentSuccess: false,
                 commentFail: false,
+                //flags
+                showFlagReason: false,//it also pushes reaction section down to show flag reason
+                flagReason: '',
+                isFlagged: false,
+                myFlag: null,
+                flagTitle: '',
+                flagRed: '',
+                //profiles
+                showProfilesAction: '',
+                showProfilesText: '',
             }
         },
         watch: {
@@ -292,7 +318,22 @@ import { mapGetters, mapActions } from 'vuex'
                 } else {
                     this.likeTitle = 'like this comment'
                 }
-            }
+            },
+            isFlagged(newValue){
+                if (newValue) {
+                    this.flagTitle = 'unflag this answer'
+                    this.flagRed = 'red'
+                } else {
+                    this.flagTitle = 'flag this answer'
+                    this.flagRed = ''
+                }
+            },
+            likes(newValue){
+                if (!newValue) {
+                    this.myLike = null
+                    this.isLiked = false
+                }
+            },
         },
         computed: {
             ...mapGetters(['getUser','getProfiles','profile/getMsg']),
@@ -331,8 +372,6 @@ import { mapGetters, mapActions } from 'vuex'
                     if (profile > -1) {
                         this.profile = this.getProfiles[profile]
                         return true
-                    } else {
-                        this.profile = null
                     }
                 }
                 return false
@@ -384,7 +423,20 @@ import { mapGetters, mapActions } from 'vuex'
                 return this.post && this.post.hasOwnProperty('id') ?
                     this.post.id : null
             },
-            computedFlag(){
+            computedFlags(){ //check flagging
+                if (this.getUser) {
+                    if (this.post && this.post.hasOwnProperty('flags')){
+                        let flags = this.post.flags
+                        let index = null
+                        index = flags.findIndex(flag=>{
+                                return flag.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.myFlag = flags[index]
+                            this.isFlagged = true
+                        }
+                    }
+                }
                 return true
             },
             computedPostOwnerAccount(){
@@ -415,7 +467,8 @@ import { mapGetters, mapActions } from 'vuex'
                 this.$emit('clickedShowPostComments',{post: this.post,type:'post'})
             },
             clickedProfilePicture(){
-                if (this.$route.name !== 'profile') {
+                if (this.$route.name !== 'profile' &&
+                    this.computedPostOwnerAccount) {
                     this.$router.push({
                         name: 'profile',
                         params: {
@@ -423,7 +476,7 @@ import { mapGetters, mapActions } from 'vuex'
                             accountId: this.computedPostOwnerAccount.accountId,
                         }
                     })
-                } else {
+                } else if (this.computedPostOwnerAccount) {
                     if (this.$route.params.account !== this.computedPostOwnerAccount.account &&
                         this.$route.params.accountId !== this.computedPostOwnerAccount.accountId) {
                         this.$router.push({
@@ -440,7 +493,8 @@ import { mapGetters, mapActions } from 'vuex'
                 this.$emit('askLoginRegister','postShow')
             },
             ...mapActions(['profile/deletePost','profile/updatePost',
-                'profile/createLike','profile/deleteLike']),
+                'profile/createLike','profile/deleteLike','profile/createFlag',
+                'profile/deleteFlag']),
             clickedInfoOk(){
                 this.showSmallModal = false
             },
@@ -453,13 +507,48 @@ import { mapGetters, mapActions } from 'vuex'
                     this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can comment.'
                     this.showSmallModal = true
                     setTimeout(() => {
-                        this.showSmallModal = false
+                        this.clearSmallModal()
                     }, 4000);
                 } else {
                     this.showAddComment = true
                 }
             },
+            profilesAppear(){
+                this.showProfiles = true
+                setTimeout(() => {
+                    this.showProfiles = false
+                }, 4000);
+            },
+            clearSmallModal(){
+                this.showSmallModal = false
+                this.showProfilesAction = ''
+                this.smallModalDelete = false
+                this.smallModalTitle = ''
+                this.alertSuccess = false
+                this.alertDanger = false
+                // this.smallModalAlerting = false
+            },
+            reasonGiven(data){
+                this.showFlagReason = false
+                this.flagReason = data
+                this.profilesAppear()
+            },
+            continueFlagProcess(){
+                this.flagReason = null
+                this.showFlagReason = false
+                this.profilesAppear()
+            },
+            cancelFlagProcess(){
+                this.flagReason = ''
+                this.showFlagReason = false
+            },
             clickedFlag(){
+                if (this.isFlagged) {
+                    this.flag(null)
+                    return
+                }
+                this.showProfilesText = 'flag as'
+                this.showProfilesAction = 'flag'
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles.length) { // to ensure that people with no profiles dont like/comment/flag
@@ -468,11 +557,54 @@ import { mapGetters, mapActions } from 'vuex'
                     this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can flag.'
                     this.showSmallModal = true
                     setTimeout(() => {
-                        this.showSmallModal = false
+                        this.clearSmallModal()
                     }, 4000);
                 } else {
-
+                    this.showFlagReason = true
                 }
+            },
+            async flag(who){
+                this.loading = true
+                let data = {}
+                data.post = true
+                data.itemId = this.post.id
+                let response = null
+                if (who) {
+                    data.account = who.account
+                    data.accountId = who.accountId
+                    data.item = 'post'
+                    data.reason = this.flagReason
+
+                    response = await this['profile/createFlag'](data)
+                } else {
+                    data.flagId = this.myFlag.id
+
+                    response = await this['profile/deleteFlag'](data)
+                }
+
+                this.loading =false
+                if (response.status) {
+                    this.alertSuccess = true
+                    if (this.isFlagged) {
+                        this.isFlagged = false
+                        this.$emit('postUnflaggedSuccess', {
+                            flag: response.flag,
+                            answerId: this.post.id
+                        })
+                    } else {
+                        this.alertModalMessage = 'successfully flagged'
+                        this.$emit('postDeleteSuccess',{postId: data.itemId})
+                    }
+                    this.smallModalAlerting = true
+                } else {
+                    this.alertDanger = true
+                    this.alertModalMessage = 'flagging successful'
+                }
+                this.flagReason = ''
+                this.smallModalData = null
+                setTimeout(() => {
+                    this.clearSmallModal()
+                }, 3000);
             },
             async clickedLike(){
                 if (!this.getUser) {
@@ -483,9 +615,11 @@ import { mapGetters, mapActions } from 'vuex'
                     this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can like.'
                     this.showSmallModal = true
                     setTimeout(() => {
-                        this.showSmallModal = false
+                        this.clearSmallModal()
                     }, 4000);
                 } else {
+                    this.showProfilesText = 'flag as'
+                    this.showProfilesAction = 'flag'
                     if (this.isLiked) {
                         this.likes -= 1
                         this.isLiked = false
@@ -509,10 +643,7 @@ import { mapGetters, mapActions } from 'vuex'
                             this.isLiked = true
                         }
                     } else {
-                        this.showProfiles = true
-                        setTimeout(() => {
-                            this.showProfiles = false
-                        }, 4000);
+                        this.profilesAppear()
                     }
                 }
             },
@@ -531,25 +662,35 @@ import { mapGetters, mapActions } from 'vuex'
                 }
             },
             async clickedProfile(who){
-                this.isLiked = true
-                this.likes += 1
-                // console.log('who',who)
-                let data = {
-                    item: 'post',
-                    itemId: this.post.id,
-                    account: who.account,
-                    accountId: who.accountId,
-                    owner: this.post.postedby_type,
-                    ownerId: this.post.postedby_id,
-                }
+                if (this.showProfilesAction === 'like') {
+                    this.showProfiles = false
+                    this.isLiked = true
+                    this.likes += 1
+                    // console.log('who',who)
+                    let data = {
+                        item: 'post',
+                        itemId: this.post.id,
+                        account: who.account,
+                        accountId: who.accountId,
+                        owner: this.post.postedby_type,
+                        ownerId: this.post.postedby_id,
+                    }
 
-                let response = await this['profile/createLike'](data)
+                    let response = await this['profile/createLike'](data)
 
-                if (response === 'unsuccessful') {
-                    this.isLiked = false
-                    this.likes -= 1
+                    if (response === 'unsuccessful') {
+                        this.isLiked = false
+                        this.likes -= 1
+                    }
+                } else if (this.showProfilesAction === 'flag') {
+                    this.smallModalTitle = 'are you sure you want to flag this?'
+                    this.smallModalDelete = true
+                    this.showSmallModal = true
+                    this.smallModalData = who
+                    // setTimeout(() => {
+                    //     this.clearSmallModal()
+                    // }, 4000);
                 }
-                this.showProfiles = false
             },
             async clickedEdit(data){
                 let otherData = {}
@@ -613,6 +754,10 @@ import { mapGetters, mapActions } from 'vuex'
                 }
             },
             async clickedYes(){
+                if (this.showProfilesAction === 'flag') {
+                    this.flag(this.smallModalData)
+                    return
+                }
                 this.smallModalLoading = true
                 let data = {
                     postId: this.post.id,
@@ -637,11 +782,14 @@ import { mapGetters, mapActions } from 'vuex'
                     setTimeout(() => {
                         this.smallModalAlerting = false
                         this.showSmallModal = false
+                        if (this.postMediaFull) {
+                            this.$emit('postDeleteSuccess',{postId: data.postId})
+                        }
                     }, 2000);
                 }
             },
             clickedNo(){
-                this.showSmallModal = false
+                this.clearSmallModal()
             },
             clickedOpion(data) {
                 if (data === 'edit') {
@@ -807,7 +955,8 @@ import { mapGetters, mapActions } from 'vuex'
                 .reaction{
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;                
+                    align-items: center; 
+                    position: relative;               
 
                     .like{
                         display: inline-flex;
@@ -861,6 +1010,12 @@ import { mapGetters, mapActions } from 'vuex'
                                 box-shadow: 0 0 3px gray;
                             }
                         }
+                    }
+
+                    .reason{
+                        position: absolute;
+                        top: 100%;
+                        z-index: 3;
                     }
                 }
 

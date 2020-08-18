@@ -41,12 +41,17 @@ class CheckItemMiddleware
                 $item === 'read' ||
                 $item === 'discussion' ||
                 $item === 'character' ||
+                $item === 'learner' ||
+                $item === 'parent' ||
+                $item === 'facilitator' ||
+                $item === 'professional' ||
+                $item === 'school' ||
                 $item === 'school') {
             } else {
                 return response()->json([
                     'status' => false,
                     'item' => $item,
-                    'message' => "Unsuccessful. You cannot comment on or like {$item}.",
+                    'message' => "Unsuccessful. You cannot comment on or like or flag {$item}.",
                 ], 422);
             }
 

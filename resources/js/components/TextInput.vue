@@ -6,6 +6,7 @@
         <input :type="inputType" 
             :placeholder="placeholder" 
             @input="change" 
+            @keyup="checkInput" 
             :max="inputMax"
             :min="inputMin"
             class="form-control"
@@ -86,13 +87,14 @@
             }
         },
         methods: {
+            checkInput(event) {
+                if (event.target.value < this.inputMin) {
+                    event.target.value = this.inputMin
+                } else if (event.target.value > this.inputMax) {
+                    event.target.value = this.inputMax
+                }
+            },
             change($event) {
-                let value = $event.target.value
-                // if (value > this.inputMax) {
-                //     value =  this.inputMax
-                // } else if (value < this.inputMin) {
-                //     value = this.inputMin
-                // }
                 this.$emit('input',`${value}`)
             },
             iconChange() {

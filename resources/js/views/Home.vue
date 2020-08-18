@@ -86,7 +86,7 @@ import { mapActions, mapGetters } from 'vuex'
             InfiniteLoading,
         },
         computed: {
-            ...mapGetters(['profile/getPostNextPage','profile/getHomePosts']),
+            ...mapGetters(['profile/getPostNextPage','profile/getHomePosts','getAccessToken']),
             computedPosts() {
                 return this['profile/getHomePosts'] ? this['profile/getHomePosts'] : null
             }
@@ -115,7 +115,7 @@ import { mapActions, mapGetters } from 'vuex'
             });
         },
         methods: {
-            ...mapActions(['profile/getPosts','profile/clearPosts']),
+            ...mapActions(['profile/getPosts','profile/clearPosts','profile/getUserPosts']),
             clickedShowPostPreview(data){
                 this.postModalData = data.data
                 this.postModalType = 'posttype'
@@ -145,7 +145,12 @@ import { mapActions, mapGetters } from 'vuex'
             async getPosts() {
                 this.loading = true
                 this['profile/clearPosts']()
-                let response = await this['profile/getPosts'](this.nextPage)
+                let response = null
+                if (this.getAccessToken) {
+                    response = await this['profile/getUserPosts'](this.nextPage)
+                } else {
+                    response = await this['profile/getPosts'](this.nextPage)
+                }
                 this.loading = false
                 if (response !== 'unsuccessful') {
                     this.nextPage += 1

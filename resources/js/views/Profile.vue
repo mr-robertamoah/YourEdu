@@ -12,16 +12,52 @@
             ></app-nav>
             <div class="profile-wrapper">
                 <div class="switch-buttons">
-                    <div class="sub" v-if="computedSwitch">
+                    <div class="sub" >
                         <post-button
                             buttonText='edit'
                             :active='true'
                             @click="editProfile"
+                            v-if="computedSwitch"
                         ></post-button>
+                        <div class="flag-profile"
+                            @click="clickedFlag"
+                            :class="{flagged:isFlagged,flagActive:flagActive}"
+                            :title="flagTitle"
+                            v-if="computedFlags"
+                        >
+                            <font-awesome-icon :icon="['fa','flag']"></font-awesome-icon>
+                        </div>
+                    </div>
+                    <div class="reason">
+                        <flag-reason
+                            :show="showFlagReason"
+                            :hasBackground="true"
+                            @continueFlagProcess="continueFlagProcess"
+                            @reasonGiven="reasonGiven"
+                            @cancelFlagProcess="cancelFlagProcess"
+                        ></flag-reason>
+                    </div>
+                    <div class="profile-profiles"
+                        v-if="showProfiles"
+                    >
+                        <span>
+                            {{showProfilesText}}
+                        </span>
+                        <div :key="key" v-for="(profile,key) in computedProfiles">
+                            <profile-bar
+                                :name="profile.name"
+                                :type="profile.params.account"
+                                :smallType="true"
+                                :routeParams="profile.params"
+                                :navigate="false"
+                                @clickedProfile="clickedProfile"
+                            ></profile-bar>
+                        </div>
                     </div>
                 </div>
                 <profile-first
                     @clickedMedia="clickedMedia"
+                    :isFlagged="isFlagged"
                 ></profile-first>
                 <profile-second
                     @clickedMedia="clickedMedia"
@@ -31,7 +67,8 @@
                     @askLoginRegister="askLoginRegister"
                     :account="profileAccount"
                     :accountId="profileAccountId"
-                     infinite-wrapper
+                    :isFlagged="isFlagged"
+                    infinite-wrapper
                 ></profile-second>
             </div>
                 <infinite-loading
@@ -51,15 +88,30 @@
         </fade-up>
         <!-- small modal for getting people to register or login -->
         <fade-up>
-            <template slot="transition" v-if="showLoginRegister">
+            <template slot="transition" v-if="showSmallModal">
                 <small-modal
-                    @disappear="showLoginRegister = false"
+                    @disappear="showSmallModal = false"
                     :showForm='showLoginRegister'
-                    title="welcome to this new community."
+                    :title="smallModalTitle"
                 >
-                    <template slot="other">
+                    <template slot="other" v-if="showSmallModalOther && !smallModalDelete">
                         <router-link to="/login">login</router-link> or 
                         <router-link to='/register'>register</router-link> to interact and grow in a positve way.
+                    </template>
+                    <template slot="other" v-if="!showSmallModalOther && !smallModalDelete">
+                        <router-link to="/welcome">welcome</router-link>
+                    </template>
+                    <template slot="actions" v-if="smallModalDelete">
+                        <post-button
+                            buttonText="yes"
+                            @click="clickedYes"
+                            v-if="smallModalDelete"
+                        ></post-button>
+                        <post-button
+                            buttonText="no"
+                            @click="clickedNo"
+                            v-if="smallModalDelete"
+                        ></post-button>
                     </template>
                 </small-modal>
             </template>
@@ -98,6 +150,8 @@ import FadeUp from '../components/transitions/FadeUp'
 import JustFade from '../components/transitions/JustFade'
 import AppNav from '../components/Nav'
 import MainList from '../components/MainList'
+import ProfileBar from '../components/profile/ProfileBar'
+import FlagReason from '../components/FlagReason'
 import ProfileFirst from '../components/profile/ProfileFirst'
 import ProfileSecond from '../components/profile/ProfileSecond'
 import SyncLoader from 'vue-spinner/src/SyncLoader'
@@ -113,27 +167,11 @@ import { mapGetters, mapActions } from "vuex";
             SyncLoader,
             EditProfile,
             PostButton,
+            ProfileBar,
             MainList,
             ProfileFirst,
-            ProfileSecond
-        },
-        computed: {
-            ...mapGetters(['authenticatingUser','getUser','getLoading','profile/getProfile',
-                'profile/getHomePosts','profile/getPostNextPage']),
-            computedPosts(){
-                return this['profile/getHomePosts'] && this['profile/getHomePosts'].length > 0 ? 
-                    this['profile/getHomePosts'] : null
-            },
-            computedItemList(){
-                return ['learner', 'parent', 'facilitator','schools','professionals']
-            },
-            computedSwitch(){
-                // return true
-                return this.getUser && this['profile/getProfile'] && this.getUser.id === this['profile/getProfile'].user_id ? true : false
-            },
-            computedLoading(){
-                return this.authenticatingUser || this.getLoading ? true : false
-            },
+            ProfileSecond,
+            FlagReason,
         },
         data() {
             return {
@@ -158,7 +196,33 @@ import { mapGetters, mapActions } from "vuex";
                 showPostModal: false,
                 postModalData: null,
                 postModalType: '',
+                // flags
+                showFlagReason: false,//it also pushes reaction section down to show flag reason
+                flagReason: '',
+                isFlagged: false,
+                myFlag: null,
+                flagTitle: '',
+                flagActive: false,
+                //small modal
+                smallModalTitle: '',
+                showSmallModalOther: false,
+                // profiles
+                showProfilesText: '',
+                showProfiles: false,
+                showProfilesAction: '',
+                smallModalData: null,
+                showSmallModal: false,
+                smallModalDelete: false,
             }
+        },
+        watch: {
+            isFlagged(newValue){
+                if (newValue) {
+                    this.flagTitle = 'unflag this answer'
+                } else {
+                    this.flagTitle = 'flag this answer'
+                }
+            },
         },
         beforeRouteEnter(to, from, next) {
             next(vm => {
@@ -174,6 +238,50 @@ import { mapGetters, mapActions } from "vuex";
             this.getData()
             this.getPosts()
             next();
+        },
+        computed: {
+            ...mapGetters(['authenticatingUser','getUser','getLoading','profile/getProfile',
+                'profile/getHomePosts','profile/getPostNextPage','getProfiles']),
+            computedPosts(){
+                return this['profile/getHomePosts'] && this['profile/getHomePosts'].length > 0 ? 
+                    this['profile/getHomePosts'] : null
+            },
+            computedProfiles(){
+                return this.getProfiles ? this.getProfiles : []
+            },
+            computedItemList(){
+                return ['learner', 'parent', 'facilitator','schools','professionals']
+            },
+            computedSwitch(){
+                // return true
+                return this.getUser && this['profile/getProfile'] && this.getUser.id === this['profile/getProfile'].user_id ? true : false
+            },
+            computedLoading(){
+                return this.authenticatingUser || this.getLoading ? true : false
+            },
+            computedOwner(){
+                if (this.getUser && this['profile/getProfile']) {
+                    
+                    return this.getUser.id === this['profile/getProfile'].user_id ? true : false
+                }
+                return false
+            },
+            computedFlags(){ //check flagging
+                if (this.getUser) {
+                    if (this['profile/getProfile'] && this['profile/getProfile'].hasOwnProperty('flags')){
+                        let flags = this['profile/getProfile'].flags
+                        let index = null
+                        index = flags.findIndex(flag=>{
+                                return flag.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.myFlag = flags[index]
+                            this.isFlagged = true
+                        }
+                    }
+                }
+                return true
+            },
         },
         methods: {
             clickedShowPostPreview(data){
@@ -191,8 +299,34 @@ import { mapGetters, mapActions } from "vuex";
                 this.modalAlertSuccess = false
                 this.modalAlertMessage = ''
             },
-            askLoginRegister(){
+            askCreateAccount(){
+                this.smallModalTitle = 'visit your welcome page to create accounts with which to interact.'
+                this.showSmallModalOther = false
+                this.showSmallModal = true
                 this.showLoginRegister = true
+                setTimeout(() => {
+                    this.clearSmallModal()
+                }, 3000);
+            },
+            clearSmallModal(){
+                this.showLoginRegister = false
+                this.smallModalDelete = false
+                this.showSmallModal = false
+                this.showProfilesAction = ''
+                this.smallModalTitle = ''
+                this.alertSuccess = false
+                this.alertDanger = false
+                // this.smallModalAlerting = false
+                this.smallModalAction = ''
+            },
+            askLoginRegister(){
+                this.smallModalTitle = 'welcome to this new community.'
+                this.showSmallModalOther = true
+                this.showLoginRegister = true
+                this.showSmallModal = true
+                setTimeout(() => {
+                    this.clearSmallModal()
+                }, 3000);
             },
             mediaModalDisappear(){
                 this.showMediaModal = false
@@ -200,6 +334,98 @@ import { mapGetters, mapActions } from "vuex";
                 this.mediaJustUrl = false
                 this.mediaUrl = ''
                 this.mediaUrlType = ''
+            },
+            clickedYes(){
+                this.flag(this.smallModalData)
+            },
+            clickedNo(){
+                this.clearSmallModal()
+            },
+            profilesAppear(){
+                this.showProfiles = true
+                // setTimeout(() => {
+                //     this.showProfiles = false
+                // }, 4000);
+            },
+            reasonGiven(data){
+                this.showFlagReason = false
+                this.flagReason = data
+                this.showProfilesText = 'flag as'
+                this.profilesAppear()
+            },
+            continueFlagProcess(){
+                this.flagReason = null
+                this.showFlagReason = false
+                this.showProfilesText = 'flag as'
+                this.profilesAppear()
+            },
+            cancelFlagProcess(){
+                this.flagReason = ''
+                this.showFlagReason = false
+            },
+            clickedProfile(who){
+                this.showProfiles = false
+                this.smallModalTitle = 'are you sure you want to flag this?'
+                this.smallModalAction = 'flag'
+                this.smallModalDelete = true
+                this.showSmallModal = true
+                this.smallModalData = who
+                setTimeout(() => {
+                    this.clearSmallModal()
+                }, 4000);
+            },
+            clickedFlag(){
+                this.flagActive = !this.flagActive
+                if (this.isFlagged) {
+                    this.flag(null)
+                    return
+                }
+                if (!this.getUser) {
+                    this.askLoginRegister()
+                } else if (!this.getProfiles.length) { // to ensure that people with no profiles dont like/comment/flag
+                    this.askCreateAccount()
+                } else {
+                    this.showFlagReason = true
+                }
+            },
+            async flag(who){
+                this.loading = true
+                let data = {}
+                data.profile = true
+                let response = null
+                if (who) {
+                    data.account = who.account
+                    data.accountId = who.accountId
+                    data.item = this.$route.params.account
+                    data.itemId = this.$route.params.accountId
+                    data.reason = this.flagReason
+
+                    response = await this['profile/createFlag'](data)
+                } else {
+                    data.flagId = this.myFlag.id
+ 
+                    response = await this['profile/deleteFlag'](data)
+                }
+
+                this.loading =false
+                if (response.status) {
+                    this.alertSuccess = true
+                    if (this.isFlagged) {
+                        this.isFlagged = false
+                    } else {
+                        this.alertModalMessage = 'successfully flagged'
+                    }
+                    // this.smallModalAlerting = true
+                } else {
+                    this.alertDanger = true
+                    this.alertModalMessage = 'flagging successful'
+                    console.log(response)
+                }
+                this.flagReason = ''
+                this.smallModalData = null
+                setTimeout(() => {
+                    this.clearSmallModal()
+                }, 3000);
             },
             clickedMedia(data){
                 if (data.hasOwnProperty('media')) {
@@ -260,7 +486,8 @@ import { mapGetters, mapActions } from "vuex";
                     account, accountId
                 })
             },
-            ...mapActions(['profileGet','profile/getProfilePosts','profile/clearPosts']),
+            ...mapActions(['profileGet','profile/getProfilePosts','profile/clearPosts',
+                'profile/createFlag','profile/deleteFlag']),
         },
     }
 </script>
@@ -287,6 +514,39 @@ import { mapGetters, mapActions } from "vuex";
             z-index: 1000;
             width: 40%;
             text-align: end;
+
+            .sub{
+                display: inline-flex;
+                align-items: center;
+
+                .flag-profile{
+                    font-size: 14px;
+                    margin: 0 10px;
+                    padding: 5px;
+                    cursor: pointer;
+                    color: gray;
+
+                    &:hover{
+                        transition: all .5s ease;
+                        box-shadow: 0 0 3px gray;
+                    }
+                }
+
+                .flagActive{
+                    transition: all .5s ease;
+                    box-shadow: 0 0 3px gray;
+                }
+
+                .flagged{
+                    color: red;
+                }
+            }
+
+            .profile-profiles{
+                font-size: 14px;
+                background-color: aliceblue;
+                text-align: start;
+            }
         }
 
         .activity {

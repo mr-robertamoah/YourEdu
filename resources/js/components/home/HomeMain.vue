@@ -40,7 +40,8 @@ import InfiniteLoading from 'vue-infinite-loading'
             PulseLoader,
             PostShow,
             InfiniteLoading,
-        },props: {
+        },
+        props: {
             loading: {
                 type: Boolean,
                 default: false

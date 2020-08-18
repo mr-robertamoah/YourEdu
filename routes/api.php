@@ -45,6 +45,8 @@ Route::get('/{requestAccount}/{requestAccountId}/{media}', 'Api\ProfileControlle
 // });
 
 Route::group(['middleware' => 'auth:api'], function () {
+    Route::get('/user/posts', 'Api\PostController@getUserPosts');
+    
     Route::get('/user', 'Api\AuthController@getUser');
     Route::get('/user/followrequests', 'Api\FollowController@followRequests');
     Route::post('/user/{user}/edit', 'Api\AuthController@editUser');
@@ -72,6 +74,14 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('/follow/{follow}','Api\FollowController@unfollow');
     
     Route::delete('/like/{like}', 'Api\LikeController@likeDelete');
+    Route::post('/{item}/{itemId}/like', 'Api\LikeController@likeCreate')
+    ->middleware(['CheckItem']);
+    
+    Route::delete('/flag/{flag}', 'Api\FlagController@flagDelete');
+    Route::post('/{item}/{itemId}/flag', 'Api\FlagController@flagCreate')
+    ->middleware(['CheckItem']);
+
+    Route::post('/{answer}/{answerId}/mark', 'Api\MarkController@markCreate');
 
     Route::post('/{media}/{mediaId}/change', 'Api\ProfileController@profileMediaChange');
     Route::post('/{media}/{mediaId}/delete', 'Api\ProfileController@profileMediaDelete');
@@ -90,8 +100,6 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/{item}/{itemId}/answer', 'Api\AnswerController@answerCreate')
     ->middleware(['CheckItem']);
 
-    Route::post('/{item}/{itemId}/like', 'Api\LikeController@likeCreate')
-    ->middleware(['CheckItem']);
     
     Route::get('/requests/follow', 'Api\RequestController@getFollowRequests');
     Route::post('/decline/request/{requestId}', 'Api\RequestController@declineRequest');

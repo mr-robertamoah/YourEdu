@@ -15,6 +15,7 @@ class CreateMarksTable extends Migration
     {
         Schema::create('marks', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('answer_id')->nullable();
             $table->nullableMorphs('markable'); // contribution
             $table->nullableMorphs('markedby'); // professional facilitator parent school
@@ -27,6 +28,7 @@ class CreateMarksTable extends Migration
 
 
             $table->foreign('answer_id')->references('id')->on('answers')->cascadeOnDelete();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

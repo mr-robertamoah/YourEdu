@@ -1,12 +1,12 @@
 <template>
     <div>
-        <answer-single
-        ></answer-single>
+        <post-attachment
+        ></post-attachment>
     </div>
 </template>
 
 <script>
-import AnswerSingle from '../components/AnswerSingle'
+import PostAttachment from '../components/PostAttachment'
 
     export default {
         data() {
@@ -17,7 +17,7 @@ import AnswerSingle from '../components/AnswerSingle'
 
         },
         components: {
-            AnswerSingle
+            PostAttachment
         },
         methods: {
             getContent(data) {

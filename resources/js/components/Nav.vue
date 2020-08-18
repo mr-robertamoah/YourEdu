@@ -13,65 +13,67 @@
                 </div>
             </div>
         </div>
-        <transition name="nav-bar">
-            <div class="nav-main-container" 
-                v-if="show"
-            >
-                <div class="nav-main-main">
-                    <div class="nav-main-logo">
-                        <router-link class="logo" to="/">
-                            <div class="logo-main">
-                                YourEdu
+        <fade-up>
+            <template slot="transition">
+                <div class="nav-main-container" 
+                    v-if="show"
+                >
+                    <div class="nav-main-main">
+                        <div class="nav-main-logo">
+                            <router-link class="logo" to="/">
+                                <div class="logo-main">
+                                    YourEdu
+                                </div>
+                            </router-link>
+                        </div>
+                        <div class="nav-main-login">
+                            <div class="nav-login-section">
+                                <router-link 
+                                    v-if="computedRegistration"
+                                    to="/register">Register</router-link>
+                                <router-link 
+                                    v-if="computedLogin"
+                                    to="/login">Login</router-link>
+                                <a href="#" 
+                                    v-if="getUser" 
+                                    @click.prevent="navLogout()">Logout</a>
+                                <a href="#" 
+                                    v-if="getProfiles" 
+                                    @click="clickedRequest">Requests
+                                    </a>
                             </div>
-                        </router-link>
+                        </div>
                     </div>
-                    <div class="nav-main-login">
-                        <div class="nav-login-section">
+                    <div class="nav-main-other">
+                        <div class="nav-other-section">
                             <router-link 
-                                v-if="computedRegistration"
-                                to="/register">Register</router-link>
+                                v-if="computedWelcome"
+                                to="/welcome">Welcome</router-link>
                             <router-link 
-                                v-if="computedLogin"
-                                to="/login">Login</router-link>
-                            <a href="#" 
-                                v-if="getUser" 
-                                @click.prevent="navLogout()">Logout</a>
-                            <a href="#" 
-                                v-if="getProfiles" 
-                                @click="clickedRequest">Requests
-                                </a>
+                                v-if="computedDashboard" 
+                                to="/dashboard">Dashboard</router-link>
+                            <div class="a-profile"
+                                v-if="computedProfiles"
+                                @click.prevent="showProfiles = !showProfiles"
+                            >Profiles</div>
+                        </div>
+                        <div class="nav-other-sub" v-if="showProfiles">
+                            <div v-for="(profile,key) in computedProfiles"
+                                :key="key">
+                                <profile-bar
+                                    v-if="profileAccount != profile.params.account ||
+                                        profileAccountId != profile.params.accountId"
+                                    :name="profile.name"
+                                    :type="profile.params.account"
+                                    :src="profile.url"
+                                    :routeParams="profile.params"
+                                ></profile-bar>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="nav-main-other">
-                    <div class="nav-other-section">
-                        <router-link 
-                            v-if="computedWelcome"
-                            to="/welcome">Welcome</router-link>
-                        <router-link 
-                            v-if="computedDashboard" 
-                            to="/dashboard">Dashboard</router-link>
-                        <div class="a-profile"
-                            v-if="computedProfiles"
-                            @click.prevent="showProfiles = !showProfiles"
-                        >Profiles</div>
-                    </div>
-                    <div class="nav-other-sub" v-if="showProfiles">
-                        <div v-for="(profile,key) in computedProfiles"
-                            :key="key">
-                            <profile-bar
-                                v-if="profileAccount != profile.params.account ||
-                                    profileAccountId != profile.params.accountId"
-                                :name="profile.name"
-                                :type="profile.params.account"
-                                :src="profile.url"
-                                :routeParams="profile.params"
-                            ></profile-bar>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </transition>
+            </template>
+        </fade-up>
         <just-fade>
             <template slot="transition" v-if="showRequestModal">
                 <main-modal
@@ -143,6 +145,7 @@
 import ProfilePicture from "../components/profile/ProfilePicture";
 import ProfileBar from "../components/profile/ProfileBar";
 import FadeRight from "../components/transitions/FadeRight";
+import FadeUp from "../components/transitions/FadeUp";
 import FadeLeftFast from "../components/transitions/FadeLeftFast";
 import InfiniteLoader from "vue-infinite-loading";
 import { mapActions, mapGetters } from "vuex";
@@ -161,6 +164,7 @@ import { mapActions, mapGetters } from "vuex";
         components: {
             InfiniteLoader,
             FadeLeftFast,
+            FadeUp,
             FadeRight,
             ProfileBar,
             ProfilePicture,
@@ -170,12 +174,6 @@ import { mapActions, mapGetters } from "vuex";
                 navState: ['fa','bars'],
                 show: false,
                 isUser: null,
-                navRoutePath:'',
-                loginRoutePath:null,
-                registerRoutePath:null,
-                welcomeRoutePath:null,
-                dashboardRoutePath:null,
-                profileRoutePath:null,
                 showProfiles: false,
                 ///follow requests
                 showRequestModal: false,
@@ -217,11 +215,11 @@ import { mapActions, mapGetters } from "vuex";
             },
             computedRegistration(){
                 return this.getLoggedin ? false : 
-                    this.registerRoutePath ? true : false
+                    this.$route.name !== 'register' ? true : false
             },
             computedLogin(){
                 return this.getLoggedin ? false : 
-                    this.loginRoutePath ? true : false
+                    this.$route.name !== 'login' ? true : false
             },
             computedWelcome(){
                 return this.getLoggedin ? 

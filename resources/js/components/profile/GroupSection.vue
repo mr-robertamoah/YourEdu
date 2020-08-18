@@ -104,6 +104,7 @@ import PostButton from '../PostButton';
             justify-content: flex-start;
             align-items: flex-start;
             flex-wrap: wrap;
+            font-size: 12px;
 
             .content{
                 margin-right: 5px;

@@ -4,14 +4,15 @@
             <pulse-loader :loading="loading"></pulse-loader>
         </div>
         <div v-else>
-            <div class="select">
+            <div class="select" v-if="selectable">
                 {{select ? select : 'select from list'}}
             </div>
             <div ref='list' v-if="selectable">
                 <div class="list-item" v-for="(item,key) in itemList" 
                     @click="clicked($event, item, key)"
                     :key="key"
-                    :title="item.title ? item.title : ''"
+                    :title="item.title ? item.title : item.option ? 
+                        `select ${item.option}` :''"
                     :class="{active:makeActive(item)}"
                 >
                     {{item.name ? item.name : item.option ? item.option : item}}
@@ -20,10 +21,8 @@
             <template v-else>
                 <div class="list-item" v-for="(item,key) in itemList" 
                     :key="key"
-                    :title="item.title ? item.title : ''"
-                    :class="{active:makeActive(item)}"
                 >
-                    {{item.name ? item.name : item}}
+                    {{item.name ? item.name : item.option ? item.option : item}}
                 </div>
             </template>
             <div class="list-button" 
@@ -38,6 +37,7 @@
 
 <script>
 import PulseLoader from 'vue-spinner/src/PulseLoader';
+
     export default {
         props: {
             itemList: {
@@ -49,11 +49,17 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
                     ]
                 }
             },
-            editableData: {
-                type: Object,
-                default(){
-                    return {}
-                }
+            ownerType: {
+                type: String,
+                default: ''
+            },
+            ownerId: {
+                type: Number,
+                default: null
+            },
+            itemId: {
+                type: Number,
+                default: null
             },
             select: {
                 type: String,
@@ -103,23 +109,16 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
                 }
                 let who = {}
                 if (this.edit) {
-                    if (this.editableData.answeredby_type.toLocaleLowerCase().includes('parent')) {
-                        who['account'] = 'parent'
-                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('learner')) {
-                        who['account'] = 'learner'
-                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('professional')) {
-                        who['account'] = 'professional'
-                    } else if (this.editableData.answeredby_type.toLocaleLowerCase().includes('facilitator')) {
-                        who['account'] = 'facilitator'
-                    }
-                    who['accountId'] = this.editableData.answeredby_id
-                    who['itemId'] = this.editableData.id
+                    who['account'] = this.ownerType
+                    who['accountId'] = this.ownerId
+                    who['itemId'] = this.itemId
                 } 
                 this.$emit('clickedListButton',who)
             },
             makeActive(item) { //used to make an item look selected
                 return item === this.selectedItem ||
-                    item.name === this.selectedItem ?
+                    item.name === this.selectedItem ||
+                    item.option === this.selectedItem ?
                     true : false 
             },
             clicked($event, item) {

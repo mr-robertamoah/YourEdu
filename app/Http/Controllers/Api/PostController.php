@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PostResource;
+use App\User;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Learner;
 use App\YourEdu\ParentModel;
@@ -11,6 +12,7 @@ use App\YourEdu\Post;
 use App\YourEdu\Professional;
 use App\YourEdu\School;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -272,20 +274,52 @@ class PostController extends Controller
 
     }
 
-    public function posts()
+    public function getUserPosts()
     {
         $posts = null;
+        $parentsLearnerUserIds = [];
+        $learner = User::find(auth()->id())->learner;
         try {
-            $posts = Post::latest()->paginate(5);
+            if ($learner) {
+                $parentsLearnerUserIds = $learner->parents->pluck('user_id');
+                $parentsLearnerUserIds [] = auth()->id();
+
+                $posts = Post::whereDoesntHave('flags',function(Builder $query) use ($parentsLearnerUserIds){
+                    $query->whereIn('user_id',$parentsLearnerUserIds);
+                })->latest()->paginate(5);
+            } else {
+                $posts = Post::whereDoesntHave('flags',function(Builder $query){
+                    $query->where('user_id',auth()->id());
+                })->latest()->paginate(5);
+            }
             // $profiles = Profile::all();
             // dd($posts->merge($profiles));
             // $all = paginate($posts->merge($profiles),5);
             return PostResource::collection($posts);            
         } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
-            ]);
-            // throw $th;
+            // return response()->json([
+            //     'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
+            // ]);
+            throw $th;
+        }
+    }
+
+    public function posts()
+    {
+        $posts = null;
+        try {
+            $posts = Post::whereDoesntHave('flags',function(Builder $query){
+                $query->where('status',"APPROVED");
+            })->latest()->paginate(5);
+            // $profiles = Profile::all();
+            // dd($posts->merge($profiles));
+            // $all = paginate($posts->merge($profiles),5);
+            return PostResource::collection($posts);            
+        } catch (\Throwable $th) {
+            // return response()->json([
+            //     'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
+            // ]);
+            throw $th;
         }
     }
 
