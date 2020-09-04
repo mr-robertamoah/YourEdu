@@ -12,17 +12,15 @@ class CreatePostAttachmentsTable extends Migration
      * @return void
      */
     public function up()
-    {
+    { //may be used for attachments other than posts
         Schema::create('post_attachments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('post_id');
             $table->morphs('attachedby'); // facilitator professional school
-            $table->morphs('attachable'); // subject curriculumdetail 
+            $table->nullableMorphs('attachable'); // post
+            $table->nullableMorphs('attachedwith'); // subject curriculumdetail  grade
+            $table->string('note')->nullable();
             $table->softDeletes();
             $table->timestamps();
-
-
-            $table->foreign('post_id')->references('id')->on('posts')->cascadeOnDelete();
         });
     }
 

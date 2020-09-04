@@ -8,7 +8,7 @@ class Follow extends Model
 {
     //
 
-    protected $fillable = ['user_id'];
+    protected $fillable = ['user_id', 'followed_user_id'];
 
     public function followable (){
         return $this->morphTo();

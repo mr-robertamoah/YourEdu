@@ -36,6 +36,7 @@ class CommentResource extends JsonResource
             'comments' => $this->comments()->count(),
             // 'comments' => new CommentResource($this->comments()->latest()->first()),
             'flags' => FlagResource::collection($this->flags),
+            'saves' => SaveResource::collection($this->beenSaved),
             'commentedby' => $this->commentedby->name,
             'profile_url' => $this->commentedby->profile->url,
             'commentedby_type' => $this->commentedby_type,

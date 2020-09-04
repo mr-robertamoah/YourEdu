@@ -46,8 +46,11 @@ $input-color: rgba(22, 233, 205, 1);
 
         .title{
             font-size: 20px;
+            width: 100%;
             font-weight: 600;
             margin: 0 auto 20px;
+            text-transform: capitalize;
+            text-align: center;
         }
 
         .form-section{
@@ -114,37 +117,6 @@ $input-color: rgba(22, 233, 205, 1);
                     transition: all 1s ease;
                 }
             }
-
-            // .section{
-            //     width: 100%;
-            //     position: relative;
-            //     display: block;
-
-            //     .add{
-            //         position: absolute;
-            //         top: 0;
-            //         right: 0;
-            //         font-size: 16px;
-            //         color: $input-color;
-            //         cursor: pointer;
-            //     }
-
-            //     .minus{
-            //         position: absolute;
-            //         top: 0;
-            //         right: 0;
-            //         margin-top: 25px;
-            //         font-size: 16px;
-            //         color: red;
-            //         cursor: pointer;
-            //     }
-
-            //     .lower{
-            //         display: flex;
-            //         justify-content: space-between;
-            //         align-items: center;
-            //     }
-            // }
         }
     }
 

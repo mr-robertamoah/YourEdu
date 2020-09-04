@@ -20,18 +20,22 @@
             </div>
             <div class="edit"
                 @click="showOptions = !showOptions"
-                v-if="computedOwner"
+                v-if="computedProfiles.length"
             >
                 <font-awesome-icon
                     :icon="['fa','chevron-down']"
                 ></font-awesome-icon>
             </div>
-            <div class="options" v-if="showOptions">
-                <span 
-                    @click="clickedOpion('edit')"
-                    v-if="!answer.marks.length"
-                >edit</span>
-                <span @click="clickedOpion('delete')">delete</span>
+            <div class="options" v-if="showOptions && computedSaves">
+                <optional-actions
+                    :show="showOptions"
+                    :showEdit="!answer.marks.length"
+                    :hasSave="!computedOwner"
+                    :isSaved="isSaved"
+                    :hasEdit="computedOwner"
+                    :hasDelete="computedOwner"
+                    @clickedOption="clickedOption"
+                ></optional-actions>
             </div>
             <div class="main-info">
                 <div class="name"
@@ -78,6 +82,7 @@
                             <main-textarea
                                 :value="computedAnswer"
                                 :disabled="true"
+                                :sm="!answerFull"
                             ></main-textarea>
                         </div>
                         <div class="media">
@@ -147,6 +152,7 @@
                                     title="add a comment"
                                     @click="clickedAddComment"
                                     v-if="!showAddComment"
+                                    :class="{success:commentSuccess,fail:commentFail}"
                                 >
                                     <font-awesome-icon
                                         :icon="['fa','comment']"
@@ -162,6 +168,7 @@
                                         :id="answer.id"
                                         :showAddComment="showAddComment"
                                         @hideAddComment="showAddComment = false"
+                                        @postAddComplete="postAddComplete"
                                         @postModalCommentCreated="postModalCommentCreated"
                                         :onPostModal="true"
                                     ></add-comment>
@@ -290,6 +297,7 @@ import MainList from './MainList'
 import FadeRightFast from './transitions/FadeRightFast'
 import FadeRight from './transitions/FadeRight'
 import AddComment from './AddComment'
+import OptionalActions from './OptionalActions'
 import FadeUp from './transitions/FadeUp'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 import { mapGetters, mapActions } from 'vuex'
@@ -319,6 +327,7 @@ import { dates, strings } from '../services/helpers'
             FadeUp,
             AddComment,
             FadeRight,
+            OptionalActions,
             FadeRightFast,
             MainList,
             FlagReason,
@@ -339,6 +348,8 @@ import { dates, strings } from '../services/helpers'
                 commentsNumber: 0,
                 showOptions: false,
                 showProfiles: false,
+                commentSuccess: false,
+                commentFail: false,
                 //
                 showSmallModal: false,
                 smallModalTitle: '',
@@ -380,6 +391,10 @@ import { dates, strings } from '../services/helpers'
                 isFlagged: false,
                 myFlag: null,
                 flagTitle: '',
+                //save
+                isSaved: false,
+                mySave: null,
+                saves: 0,
             }
         },
         watch: {
@@ -408,6 +423,12 @@ import { dates, strings } from '../services/helpers'
                 if (!newValue) {
                     this.myLike = null
                     this.isLiked = false
+                }
+            },
+            saves(newValue){
+                if (!newValue) {
+                    this.mySave = null
+                    this.isSaved = false
                 }
             },
         },
@@ -443,6 +464,23 @@ import { dates, strings } from '../services/helpers'
                         if (index > -1) {
                             this.myMark = marks[index]
                             this.isMarked = true
+                        }
+                    }
+                }
+                return true
+            },
+            computedSaves(){
+                if (this.getUser) {
+                    if (this.answer && this.answer.hasOwnProperty('saves')){
+                        let saves = this.answer.saves
+                        this.saves = this.answer.saves.length
+                        let index = null
+                        index = saves.findIndex(save=>{
+                                return save.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.mySave = saves[index]
+                            this.isSaved = true
                         }
                     }
                 }
@@ -526,8 +564,8 @@ import { dates, strings } from '../services/helpers'
             },
             computedAnswerOwnerAccount(){
                 let answerOwner = this.answer ? {
-                    account: strings.getAccount(this.comment.commentedby_type),
-                    accountId: `${this.comment.commentedby_id}`
+                    account: strings.getAccount(this.answer.answeredby_type),
+                    accountId: `${this.answer.answeredby_id}`
                 } : null
 
                 return answerOwner
@@ -555,7 +593,7 @@ import { dates, strings } from '../services/helpers'
         methods: {
             ...mapActions(['profile/createMark','profile/deleteLike','profile/createLike',
                 'profile/updateAnswer','profile/deleteAnswer','profile/createFlag',
-                'profile/deleteFlag']),
+                'profile/deleteFlag','profile/deleteSave','profile/createSave']),
             getScore(data){
                 if (this.state === 'PARTIAL') {
                     this.score = data.score
@@ -738,12 +776,20 @@ import { dates, strings } from '../services/helpers'
                     this.clearSmallModal()
                 }, 3000);
             },
-            clickedOpion(data){
+            clickedOption(data){
                 this.showOptions = false
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
                     this.$emit('askCreateAccount')
+                } else if (data === 'save') {
+                    if (this.isSaved) {
+                        this.save(null)
+                        return
+                    }
+                    this.showProfilesText = 'save as'
+                    this.showProfilesAction = 'save'
+                    this.profilesAppear()
                 } else if (data === 'delete') {
                     this.smallModalTitle = 'are you sure you want to delete this?'
                     this.showSmallModal = true
@@ -792,8 +838,22 @@ import { dates, strings } from '../services/helpers'
                     type: 'answer'
                 })
             },
+            postAddComplete(data){
+                if (data === 'successful') {
+                    this.showAddComment = false
+                    this.commentSuccess = true
+                    setTimeout(() => {
+                        this.commentSuccess = false
+                    }, 2000);
+                } else {
+                    this.commentFail = true
+                    setTimeout(() => {
+                        this.commentFail = false
+                    }, 2000);
+                }
+            },
             postModalCommentCreated(data){
-                this.commentsNumber += 1
+                this.$emit('answerCommentSuccessful',data)
             },
             clearSmallModal(){
                 this.smallModalInfo = false
@@ -863,6 +923,8 @@ import { dates, strings } from '../services/helpers'
                 this.showProfiles = false
                 if (this.showProfilesAction === 'mark') {
                     this.mark(who)
+                } else if (this.showProfilesAction === 'save') {
+                    this.save(who)
                 } else if (this.showProfilesAction === 'flag') {
                     this.smallModalTitle = 'are you sure you want to flag this?'
                     this.smallModalAction = 'flag'
@@ -874,6 +936,59 @@ import { dates, strings } from '../services/helpers'
                 } else if (this.showProfilesAction === 'like') {
                     this.like(who)
                 }
+            },
+            async save(who){
+                this.showProfiles = false
+                this.loading = true
+                let data = {
+                    item: 'answer',
+                    itemId: this.answer.id,
+                    owner: this.answer.answeredby_type,
+                    ownerId: this.answer.answeredby_id,
+                },
+                    response = null,
+                    state = ''
+
+                if (who) {
+                    data.account = who.account
+                    data.accountId = who.accountId
+                    state = 'saving'
+                    response = await this['profile/createSave'](data)
+                } else {
+                    data.saveId = this.mySave.id
+                    state = 'unsaving'
+                    response = await this['profile/deleteSave'](data)
+                }
+
+                this.loading = false
+                if (response.status) {
+                    if (who) {
+                        this.saves += 1
+                        this.$emit('answerSaveSuccessful',{ //emit to post modal
+                            itemId: this.answer.id,
+                            save: response.save,
+                            main : this.answerFull
+                        })
+                    } else {
+                        this.saves -= 1
+                        this.$emit('answerUnsaveSuccessful',{ //emit to post modal
+                            itemId: this.answer.id,
+                            saveId: data.saveId,
+                            main : this.answerFull
+                        })
+                    }
+                    this.isSaved = !this.isSaved
+                    this.alertSuccess = true
+                    this.alertMessage = `${state} successful`
+                } else {
+                    this.alertDanger = true
+                    this.alertMessage = `${state} unsuccessful`
+                }
+                setTimeout(() => {
+                    this.alertSuccess = false
+                    this.alertDanger = false
+                    this.alertMessage = ''
+                }, 3000);
             },
             async like(who){
                 this.isLiked = true
@@ -1049,7 +1164,7 @@ $profile-picture-width: 50px;
             display: inline-flex;
 
             .name{
-                font-size: 14px;
+                font-size: 12px;
                 font-weight: 500;
                 width: 65%;
                 text-align: start;
@@ -1058,7 +1173,7 @@ $profile-picture-width: 50px;
             }
 
             .type{
-                font-size: 12px;
+                font-size: 10px;
                 width: 35%;
                 text-align: end;
                 @include text-overflow();
@@ -1104,7 +1219,7 @@ $profile-picture-width: 50px;
                     .other-info{
                         max-width: 50%;
                         text-align: end;
-                        font-size: 10px;
+                        font-size: 8px;
 
                         .info{
                             border-bottom: 1px solid gray;
@@ -1188,6 +1303,16 @@ $profile-picture-width: 50px;
                             .liked{
                                 color: green;
                             }
+
+                            .success{
+                                color: green;
+                                box-shadow: 0 0 3px gray;
+                            }
+
+                            .fail{
+                                color: red;
+                                box-shadow: 0 0 3px gray;
+                            }
                         }
 
                         .reactionReason{
@@ -1195,6 +1320,11 @@ $profile-picture-width: 50px;
                             transition: all .4s ease;
                             z-index: 5;
                         }
+                    }
+
+                    .add-comment{
+                        margin-bottom: 20px;
+                        transition: all .5s ease;
                     }
                 }
             }

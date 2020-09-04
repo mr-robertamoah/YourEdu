@@ -16,8 +16,8 @@ class CreateSavesTable extends Migration
         Schema::create('saves', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->morphs('savedby'); //learner parent facilitator professional school
-            $table->morphs('saveable'); //post lesson 
+            $table->nullableMorphs('savedby'); //learner parent facilitator professional school
+            $table->nullableMorphs('saveable'); //post lesson comment answer
             $table->softDeletes();
             $table->timestamps();
 

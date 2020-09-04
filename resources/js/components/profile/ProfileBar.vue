@@ -106,6 +106,12 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                     return {}
                 }
             },
+            extraData: {
+                type: Object,
+                default(){
+                    return null
+                }
+            },
             navigate: {
                 type: Boolean,
                 default: true
@@ -152,7 +158,8 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                 } else {
                     this.$emit('clickedProfile',{
                         account: this.routeParams.account, 
-                        accountId: this.routeParams.accountId
+                        accountId: this.routeParams.accountId,
+                        extraData: this.extraData
                     })
                 }
                 this.$emit('clickedProfileBar')

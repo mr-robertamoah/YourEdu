@@ -15,9 +15,10 @@ class CreateFollowsTable extends Migration
     {
         Schema::create('follows', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->nullable();
             $table->nullableMorphs('followedby'); //facilitator learner professional school parent
+            $table->unsignedBigInteger('user_id')->nullable();//user id of the one following 
             $table->nullableMorphs('followable'); //facilitator learner professional school parent
+            $table->unsignedBigInteger('followed_user_id')->nullable();//user id  of ther one being followed
             $table->timestamps();
 
 

@@ -25,7 +25,7 @@ class Lesson extends Model
 
     public function beenSaved()
     {
-       return $this->morphOne(Save::class,'saveable');
+       return $this->morphMany(Save::class,'saveable');
     }
 
     public function books()

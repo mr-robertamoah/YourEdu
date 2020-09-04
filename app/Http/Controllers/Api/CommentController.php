@@ -64,6 +64,8 @@ class CommentController extends Controller
             $account = Professional::find($accountId);
         } else if ($request->account === 'admin') {
             $account = Admin::find($accountId);
+        } else if ($request->account === 'school') {
+            $account = School::find($accountId);
         } else {
             return response()->json([
                 'message' => "unsuccessful. {$request->account} does not exist."
@@ -103,8 +105,8 @@ class CommentController extends Controller
                 }
             } else {
                 return response()->json([
-                    'message' => "unsuccessful. {$request->account} does not exist 0r does not belong to you."
-                ]);
+                    'message' => "unsuccessful. {$request->account} does not exist or does not belong to you."
+                ],422);
             }
     
             if ($item === 'post') {
@@ -126,7 +128,7 @@ class CommentController extends Controller
                     DB::rollback();
                     return response()->json([
                         'message' => "unsuccessful. {$item} does not exist or comment was not created"
-                    ]);
+                    ],422);
                 }
             } else if ($item === 'activity') {
                 $activity = Activity::find($itemId);
@@ -379,6 +381,27 @@ class CommentController extends Controller
                     return response()->json([
                         'message' => "unsuccessful. {$item} does not exist or comment was not created"
                     ]);
+                }
+            } else if ($item === 'answer') {
+                $answer = Answer::find($itemId);
+    
+                if ($comment && $answer) {
+                    $comment->commentable()->associate($answer);
+                    $comment->save();
+    
+                    DB::commit();
+                    return response()->json([
+                        'message' => "successful",
+                        'comment' => new CommentResource($comment),
+                    ]);
+                } else {
+                    if($file){
+                        Storage::delete($file->path);
+                    }
+                    DB::rollback();
+                    return response()->json([
+                        'message' => "unsuccessful. {$item} does not exist or comment was not created"
+                    ],422);
                 }
             } else if ($item === 'keyword') {
     

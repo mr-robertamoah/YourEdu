@@ -62,6 +62,8 @@ class PostResource extends JsonResource
             'postedby_id' => $this->postedby_id,
             'profile_url' => $this->postedby->profile->url,
             'flags' => FlagResource::collection($this->flags),
+            'saves' => SaveResource::collection($this->beenSaved),
+            'attachments' => PostAttachmentResource::collection($this->attachments),
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,

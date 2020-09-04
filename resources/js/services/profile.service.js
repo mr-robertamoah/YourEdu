@@ -2,6 +2,100 @@ import ApiService from "./api.service";
 
 const ProfileService = {
 
+    /////////////////////////////////////////////////////grades
+
+    async gradeCreate(data){
+        try {
+
+            let response = await ApiService.post(`/api/grade/create`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async gradeAliasCreate(main){
+        try {
+            let {gradeId, data} = main
+            let response = await ApiService.post(`/api/grade/${gradeId}/alias`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async gradesGet(){
+        try {
+
+            let response = await ApiService.get(`/api/grades`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async gradesSearch(data){
+        try {
+
+            let response = await ApiService.get(`/api/grades/${data}`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+
+    /////////////////////////////////////////////////////subjects
+
+    async subjectCreate(data){
+        try {
+
+            let response = await ApiService.post(`/api/subject/create`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async subjectAliasCreate(main){
+        try {
+            let {subjectId, data} = main
+            let response = await ApiService.post(`/api/subject/${subjectId}/alias`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async subjectsGet(data){
+        try {
+
+            let response = await ApiService.get(`/api/subjects`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async subjectsSearch(data){
+        try {
+
+            let response = await ApiService.get(`/api/subjects/${data}`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+
     /////////////////////////////////////////////////////follows
 
     async followCreate(main){
@@ -11,10 +105,9 @@ const ProfileService = {
                 account, accountId
             })
     
-            console.log('response in profile sevice',response.data)
             return response
         } catch (error) {
-            console.log('error in profile sevice',error)
+
             return error.response
         }
     },
@@ -22,6 +115,27 @@ const ProfileService = {
         try {
             let response = await ApiService.delete(`/api/follow/${data.followId}`)
             
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
+    //////////////////////////////////// attachments
+
+    async attachmentCreate(data){
+        try {
+            let response = await ApiService.post(`/api/attachment/create`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async attachmentDelete(data){
+        try {
+            let response = await ApiService.delete(`/api/attachment/${data.attachmentId}`)
+    
             return response
         } catch (error) {
             return error.response
@@ -45,6 +159,30 @@ const ProfileService = {
     async likeDelete(data){
         try {
             let response = await ApiService.delete(`/api/like/${data.likeId}`)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
+    //////////////////////////////////// saves
+
+    async saveCreate(main){
+        try {
+            let {accountId, account, item, itemId} = main
+            let response = await ApiService.post(`/api/${item}/${itemId}/save`,{
+                account, accountId
+            })
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async saveDelete(data){
+        try {
+            let response = await ApiService.delete(`/api/save/${data.saveId}`)
     
             return response
         } catch (error) {
@@ -371,30 +509,9 @@ const ProfileService = {
             return error.response
         }
     },
-    async postsGet(nextPage){
+    async postGet(postId){
         try {
-            console.log(nextPage)
-            let response = null
-            if (nextPage) {
-                response = await ApiService.get(`/api/posts?page=${nextPage}`)
-            } else{
-                response = await ApiService.get(`/api/posts`)
-            }
-    
-            return response
-        } catch (error) {
-            return error.response
-        }
-    },
-    async userPostsGet(nextPage){
-        try {
-            console.log(nextPage)
-            let response = null
-            if (nextPage) {
-                response = await ApiService.get(`/api/user/posts?page=${nextPage}`)
-            } else{
-                response = await ApiService.get(`/api/user/posts`)
-            }
+            let response = await ApiService.get(`/api/post/${postId}`)
     
             return response
         } catch (error) {
@@ -407,10 +524,10 @@ const ProfileService = {
             // console.log('profile post data',data )
             let response = null
             if (nextPage) {
-                console.log('nextPageurl',`/api/posts/${account}/${accountId}?page=${nextPage}`)
+                // console.log('nextPageurl',`/api/posts/${account}/${accountId}?page=${nextPage}`)
                 response = await ApiService.get(`/api/posts/${account}/${accountId}?page=${nextPage}`)
             } else{
-                console.log('nextPageurl',`/api/posts/${account}/${accountId}`)
+                // console.log('nextPageurl',`/api/posts/${account}/${accountId}`)
                 response = await ApiService.get(`/api/posts/${account}/${accountId}`)
             }
     

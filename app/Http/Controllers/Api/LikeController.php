@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\LikeResource;
 use App\YourEdu\Admin;
 use App\YourEdu\Answer;
+use App\YourEdu\Character;
 use App\YourEdu\ClassModel;
 use App\YourEdu\Comment;
 use App\YourEdu\Discussion;
@@ -32,7 +33,6 @@ class LikeController extends Controller
     {
         
         $mainLike = Like::find($like);
-        // dd($request->route('like'));
         if ($mainLike) {
             if ($mainLike->user_id !== auth()->id()) {
                 return response()->json([
@@ -76,6 +76,8 @@ class LikeController extends Controller
             $mainAccount = Professional::find($accountId);
         } else if ($account === 'admin') {
             $mainAccount = Admin::find($accountId);
+        } else if ($account === 'school') {
+            $mainAccount = School::find($accountId);
         }
 
         if ($mainAccount) {
@@ -94,9 +96,9 @@ class LikeController extends Controller
             } else if ($item === 'lesson') {
                 $mainItem = Lesson::find($itemId);
             } else if ($item === 'character') {
-                $mainItem = Comment::find($itemId);
+                $mainItem = Character::find($itemId);
             } else if ($item === 'expression') {
-                $mainItem = Comment::find($itemId);
+                $mainItem = Comment::find($itemId); //
             } else if ($item === 'discussion') {
                 $mainItem = Discussion::find($itemId);
             } else if ($item === 'read') {

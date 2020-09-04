@@ -1,25 +1,35 @@
 <template>
     <div class="text-input-wrapper"
-        :class="{error:error,bottomborder:bottomBorder}"
         :title="title"
     >
-        <input :type="inputType" 
-            :placeholder="placeholder" 
-            @input="change" 
-            @keyup="checkInput" 
-            :max="inputMax"
-            :min="inputMin"
-            class="form-control"
-            :value="value"
+        <div class="main-section"
+            :class="{error:error,bottomborder:bottomBorder,
+            noborder:noBorder,sm:sm}"
+        >
+            <input :type="inputType" 
+                :placeholder="placeholder" 
+                @input="change" 
+                @keyup="checkInput" 
+                :max="inputMax"
+                :min="inputMin"
+                class="form-control"
+                :value="value"
+                v-model="inputValue"
+                :pattern="pattern"
+                :inputmode="inputmode"
             >
-        <div class="form-control-append eye-control" :title="title"
-            v-if="prepend"
-            @click="iconChange">
-            <font-awesome-icon
-                :icon="icon"
-                @uploadedFiles="inputFiles"
-            >
-            </font-awesome-icon>
+            <div class="form-control-append eye-control" :title="title"
+                v-if="prepend"
+                @click="iconChange">
+                <font-awesome-icon
+                    :icon="icon"
+                    @uploadedFiles="inputFiles"
+                >
+                </font-awesome-icon>
+            </div>
+        </div>
+        <div class="max-section" v-if="hasMax">
+            {{`${inputValue.length}/${inputMax}`}}
         </div>
     </div>
 </template>
@@ -36,6 +46,22 @@
                 default: false
             },
             bottomBorder: {
+                type: Boolean,
+                default: false
+            },
+            noBorder: {
+                type: Boolean,
+                default: false
+            },
+            sm: {
+                type: Boolean,
+                default: false
+            },
+            noBorder: {
+                type: Boolean,
+                default: false
+            },
+            hasMax: {
                 type: Boolean,
                 default: false
             },
@@ -73,28 +99,32 @@
         data() {
             return {
                 inputFiles: [],
+                inputValue: '',
+                inputmode: '',
+                pattern: '',
             }
         },
         watch: {
-            value(newValue) {
-                if (this.inputType === 'number') {
-                    // if (newValue > this.inputMax) {
-                    //     newValue = this.inputMax
-                    // } else if (newValue < this.inputMin){
-                    //     newValue = this.inputMin
-                    // }
+            inputValue(newValue,oldValue) {
+                if (this.inputType === 'text' && this.hasMax) {
+                    if (newValue.length > this.inputMax) {
+                        this.inputValue = oldValue
+                    }
                 }
-            }
+            },
         },
         methods: {
             checkInput(event) {
-                if (event.target.value < this.inputMin) {
-                    event.target.value = this.inputMin
-                } else if (event.target.value > this.inputMax) {
-                    event.target.value = this.inputMax
+                if (this.inputType === 'number') {
+                    if (event.target.value < this.inputMin) {
+                        event.target.value = this.inputMin
+                    } else if (event.target.value > this.inputMax) {
+                        event.target.value = this.inputMax
+                    }
                 }
             },
             change($event) {
+                let value = $event.target.value 
                 this.$emit('input',`${value}`)
             },
             iconChange() {
@@ -112,56 +142,75 @@ $buttonColor : rgba(2, 104, 90, .6);
 
     .text-input-wrapper{
         width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: $border-radius;
-        border: 2px solid $border-color-main;
         background-color: white;
 
-        input{
-            border: none;
-            border-radius: $border-radius;
-            font-size: 16px;
-
-            &:focus,
-            &:active{
-                box-shadow: none;
-            }
-        }
-
-        .form-control{
-            // min-width: 90%;
-            margin: 0 !important;
-        }
-        
-        .form-control-append{
-            width: 10%;
-            margin-right: 5px;
+        .main-section{
             display: flex;
             justify-content: center;
             align-items: center;
-            color: $buttonColor;
             border-radius: $border-radius;
-            cursor: pointer;
+            border: 2px solid $border-color-main;
+
+            input{
+                border: none;
+                border-radius: $border-radius;
+                font-size: 16px;
+
+                &:focus,
+                &:active{
+                    box-shadow: none;
+                }
+            }
+
+            .form-control{
+                // min-width: 90%;
+                margin: 0 !important;
+            }
+            
+            .form-control-append{
+                width: 10%;
+                margin-right: 5px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                color: $buttonColor;
+                border-radius: $border-radius;
+                cursor: pointer;
+            }
         }
-    }
 
-    .bottomborder{
-        $border-radius: 0;
+        .max-section{
+            text-align: end;
+            font-size: 12px;
+            color: gray;
+            font-weight: 500;
+        }
 
-        border: none;
-        border-radius: $border-radius;
-        border-bottom: 2px solid $border-color-main;
-        
-        input{
+        .bottomborder,
+        .noborder{
+            $border-radius: 0;
+
+            border: none;
             border-radius: $border-radius;
-            border-radius: 0;
+            border-bottom: 2px solid $border-color-main;
+            
+            input{
+                border-radius: $border-radius;
+                border-radius: 0;
+            }
         }
-    }
 
-    .error{
-        border-color: $border-color-error;
+        .noborder{
+            border: none;
+        }
+
+        .sm{
+            font-size: 12px;
+        }
+
+        .error{
+            border-color: $border-color-error;
+        }
     }
 
 @media screen and (max-width:800px) {

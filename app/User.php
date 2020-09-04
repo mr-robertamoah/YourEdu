@@ -280,7 +280,12 @@ class User extends Authenticatable
         return $this->morphMany(PhoneNumber::class,'phoneable');
     }
 
-    public function follows()
+    public function followers() //ones i am being followed
+    {
+        return $this->hasMany(Follow::class,'followed_user_id');
+    }
+
+    public function followings() //ones i am the follower
     {
         return $this->hasMany(Follow::class);
     }

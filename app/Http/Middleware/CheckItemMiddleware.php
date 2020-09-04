@@ -45,7 +45,6 @@ class CheckItemMiddleware
                 $item === 'parent' ||
                 $item === 'facilitator' ||
                 $item === 'professional' ||
-                $item === 'school' ||
                 $item === 'school') {
             } else {
                 return response()->json([

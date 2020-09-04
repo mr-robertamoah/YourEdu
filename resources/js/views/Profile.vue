@@ -68,6 +68,7 @@
                     :account="profileAccount"
                     :accountId="profileAccountId"
                     :isFlagged="isFlagged"
+                    @clickedUnflag="flag(null)"
                     infinite-wrapper
                 ></profile-second>
             </div>

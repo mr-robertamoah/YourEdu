@@ -52,7 +52,8 @@ class ProfileResource extends JsonResource
             // 'address' => $this->address,
         ];
         if ($this->profileable->follows) {
-            $array['follows'] = FollowResource::collection($this->profileable->follows);
+            $array['follows'] = FollowResource::collection(
+                $this->profileable->follows()->whereNotNull('user_id')->get());
         } else {
             $array['follows'] = [];
         }

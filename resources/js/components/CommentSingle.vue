@@ -3,17 +3,32 @@
         v-if="showCommentSingle"
         @dblclick.self="clickedViewComments"
     >
+        <div class="loading" v-if="loading">
+            <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
+        </div>
+        <div class="alert"
+            v-if="alertMessage.length"
+            :class="{success:alertSuccess, danger:alertDanger}"
+        >
+            {{alertMessage}}
+        </div>
         <div class="edit"
             @click="clickedShowOptions"
-            v-if="computedOwner"
+            v-if="computedProfiles.length"
         >
             <font-awesome-icon
                 :icon="['fa','chevron-down']"
             ></font-awesome-icon>
         </div>
-        <div class="options" v-if="showOptions">
-            <span @click="clickedOpion('edit')">edit</span>
-            <span @click="clickedOpion('delete')">delete</span>
+        <div class="options" v-if="showOptions && computedSaves">
+            <optional-actions
+                :show="showOptions"
+                :hasSave="!computedOwner"
+                :isSaved="isSaved"
+                :hasEdit="computedOwner"
+                :hasDelete="computedOwner"
+                @clickedOption="clickedOption"
+            ></optional-actions>
         </div>
         <div class="top">
             <div class="name"
@@ -142,7 +157,7 @@
                 <add-comment
                     what="comment"
                     :id="comment.id"
-                    :onPostModal="onPostModal"
+                    :onPostModal="!showCommentNumber"
                     :showAddComment="showAddComment"
                     @hideAddComment="showAddComment = false"
                     @postAddComplete="postAddComplete"
@@ -192,6 +207,8 @@
             @commentViewParentDeleteSuccess='commentViewParentDeleteSuccess'
             @commentUnlikeSuccessfulMain="commentUnlikeSuccessfulMain"
             @commentLikeSuccessfulMain="commentLikeSuccessfulMain"
+            @commentUnsaveSuccessfulMain="commentUnsaveSuccessfulMain"
+            @commentSaveSuccessfulMain="commentSaveSuccessfulMain"
         ></view-comments>
     </div>
 </template>
@@ -204,7 +221,9 @@ import WelcomeForm from './welcome/WelcomeForm'
 import AddComment from './AddComment'
 import ProfileBar from './profile/ProfileBar'
 import AutoAlert from './AutoAlert'
+import OptionalActions from './OptionalActions'
 import JustFade from './transitions/JustFade'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
 import FlagReason from './FlagReason'
 import FadeUp from './transitions/FadeUp'
 import {dates, strings} from '../services/helpers'
@@ -215,10 +234,12 @@ import { mapGetters, mapActions } from 'vuex'
         components: {
             FadeUp,
             JustFade,
+            OptionalActions,
             AutoAlert,
             ProfileBar,
             AddComment,
             WelcomeForm,
+            PulseLoader,
             NumberOf,
             ProfilePicture,
             PostButton,
@@ -254,6 +275,7 @@ import { mapGetters, mapActions } from 'vuex'
                 smallModalTitle: '',
                 smallModalDelete: false,
                 smallModalInfo: false,
+                loading: false,
                 //flags
                 showFlagReason: false,//it also pushes reaction section down to show flag reason
                 flagReason: '',
@@ -263,6 +285,10 @@ import { mapGetters, mapActions } from 'vuex'
                 //profiles
                 showProfilesAction: '',
                 showProfilesText: '',
+                //save
+                isSaved: false,
+                mySave: null,
+                saves: 0,
             }
         },
         props: {
@@ -327,6 +353,12 @@ import { mapGetters, mapActions } from 'vuex'
                     this.flagTitle = 'flag this answer'
                 }
             },
+            saves(newValue){
+                if (!newValue) {
+                    this.mySave = null
+                    this.isSaved = false
+                }
+            },
         },
         computed: {
             ...mapGetters(['getUser','getProfiles','profile/getMsg']),
@@ -337,6 +369,23 @@ import { mapGetters, mapActions } from 'vuex'
                 } : null
 
                 return postOwner
+            },
+            computedSaves(){
+                if (this.getUser) {
+                    if (this.comment && this.comment.hasOwnProperty('saves')){
+                        let saves = this.comment.saves
+                        this.saves = this.comment.saves.length
+                        let index = null
+                        index = saves.findIndex(save=>{
+                                return save.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.mySave = saves[index]
+                            this.isSaved = true
+                        }
+                    }
+                }
+                return true
             },
             computedProfileUrl() {
                 return this.comment && this.comment.hasOwnProperty('profile_url') ?
@@ -420,22 +469,29 @@ import { mapGetters, mapActions } from 'vuex'
                 }
                 return false
             },
-            computedFlag(){
-                return true
-            },
         },
         methods: {
             ...mapActions(['profile/deleteComment','profile/createLike','profile/createFlag'
-                ,'profile/deleteLike','profile/deleteFlag']),
+                ,'profile/deleteLike','profile/deleteFlag','profile/deleteSave',
+                'profile/createSave']),
             clickedMedia(url,mediaType){
                 this.$emit('clickedMedia',{url,mediaType})
             },
+            //for adding and removing likes
             commentUnlikeSuccessfulMain(data){
                 this.$emit('commentUnlikeSuccessfulMain',data)
             },
             commentLikeSuccessfulMain(data){
                 this.$emit('commentLikeSuccessfulMain',data)
             },
+            //for adding and removing saves
+            commentUnsaveSuccessfulMain(data){
+                this.$emit('commentUnsaveSuccessfulMain',data)
+            },
+            commentSaveSuccessfulMain(data){
+                this.$emit('commentSaveSuccessfulMain',data)
+            },
+            //
             commentViewParentDeleteSuccess(data){ //delete comment in comments cos its deleted from main of child view modal
                 this.$emit('commentViewParentDeleteSuccess',data)
             },
@@ -569,10 +625,10 @@ import { mapGetters, mapActions } from 'vuex'
                     this.alertSuccess = true
                     if (this.isFlagged) {
                         this.isFlagged = false
-                        this.$emit('answerUnflaggedSuccess', {
-                            flag: response.flag,
-                            commentId: this.comment.id
-                        })
+                        // this.$emit('commentUnflaggedSuccess', {
+                        //     flag: response.flag,
+                        //     commentId: this.comment.id
+                        // })
                     } else {
                         this.alertModalMessage = 'successfully flagged'
                         this.$emit('commentDeleteSuccess', {
@@ -620,6 +676,8 @@ import { mapGetters, mapActions } from 'vuex'
                             like: response
                         })
                     }
+                } else if (this.showProfilesAction === 'save') {
+                    this.save(who)
                 } else if (this.showProfilesAction === 'flag') {
                     this.smallModalTitle = 'are you sure you want to flag this?'
                     this.smallModalDelete = true
@@ -635,10 +693,61 @@ import { mapGetters, mapActions } from 'vuex'
             },
             clickedShowOptions(){
                 this.showAddComment = false
-                this.showOptions = this.computedOwner
+                this.showOptions = !this.showOptions
             },
             alertDisappear() {
                 
+            },
+            async save(who){
+                this.showProfiles = false
+                this.loading = true
+                let data = {
+                    item: 'comment',
+                    itemId: this.comment.id,
+                    owner: this.comment.commentedby_type,
+                    ownerId: this.comment.commentedby_id,
+                },
+                    response = null,
+                    state = ''
+
+                if (who) {
+                    data.account = who.account
+                    data.accountId = who.accountId
+                    state = 'saving'
+                    response = await this['profile/createSave'](data)
+                } else {
+                    data.saveId = this.mySave.id
+                    state = 'unsaving'
+                    response = await this['profile/deleteSave'](data)
+                }
+
+                this.loading = false
+                if (response.status) {
+                    if (who) {
+                        this.saves += 1
+                        this.$emit('commentSaveSuccessful',{ //emit to post modal or comment view
+                            itemId: this.comment.id,
+                            save: response.save,
+                        })
+                    } else {
+                        this.saves -= 1
+                        this.$emit('commentUnsaveSuccessful',{ //emit to post modal or comment view
+                            itemId: this.comment.id,
+                            saveId: data.saveId,
+                        })
+                    }
+                    this.isSaved = !this.isSaved
+                    this.alertSuccess = true
+                    this.alertMessage = `${state} successful`
+                } else {
+                    this.alertDanger = true
+                    this.alertMessage = `${state} unsuccessful`
+                }
+                setTimeout(() => {
+                    this.alertSuccess = false
+                    this.alertDanger = false
+                    this.alertMessage = ''
+                }, 3000);
             },
             async clickedLike(){
                 if (!this.getUser) {
@@ -740,10 +849,18 @@ import { mapGetters, mapActions } from 'vuex'
             clickedNo(){
                 this.clearSmallModal()
             },
-            clickedOpion(data) {
+            clickedOption(data) {
                 this.showOptions = false
                 if (data === 'edit') {
                     this.showEdit = true
+                } else if (data === 'save') {
+                    if (this.isSaved) {
+                        this.save(null)
+                        return
+                    }
+                    this.showProfilesText = 'save as'
+                    this.showProfilesAction = 'save'
+                    this.profilesAppear()
                 } else if (data === 'delete') {
                     this.smallModalTitle = 'are you sure you want to delete this'
                     this.smallModalDelete = true
@@ -767,6 +884,21 @@ $comment-font-size: 13px;
     overflow: hidden;
     white-space: nowrap;
 }
+
+    .loading,
+    .alert{
+        width: 100%;
+        text-align: center;
+        padding: 5px;
+    }
+
+    .success{
+        color: green;
+    }
+
+    .danger{
+        color: red;
+    }
     .comment-wrapper{
         display: block;
         position: relative;
@@ -781,28 +913,6 @@ $comment-font-size: 13px;
             margin-top: -10px;
             cursor: pointer;
             text-align: end;
-        }
-
-        .options{
-            font-size: 14px;
-            margin: 5px;
-            background-color: whitesmoke;
-            width: 75px;
-            position: absolute;
-            right: 0;
-            top: 15px;
-
-            span{
-                padding: 5px;
-                cursor: pointer;
-                display: block;
-                width: 100%;
-                text-align: center;
-
-                &:hover{
-                    box-shadow: 0 0 3px dimgray;
-                }
-            }
         }
 
         .top{

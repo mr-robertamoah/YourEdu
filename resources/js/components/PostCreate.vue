@@ -1,5 +1,5 @@
 <template>
-    <div class="section">
+    <div class="post-create-section">
         <div class="activity-post">
             <div class="messaging">
                 <div class="loading" v-if="loading">
@@ -426,13 +426,13 @@ import {mapActions, mapGetters} from 'vuex'
 
                 this.loading = false
                 if (response !== 'unsuccessful') {
-                    this.alertMessage = 'post created successfully'
                     this.alertSuccess = true
-                    this.clickedClearActive()
+                    this.alertMessage = 'post created successfully'
                 } else {
-                    this.alertMessage = 'post creation failed'
                     this.alertError = true
+                    this.alertMessage = 'post creation failed'
                 }
+                this.clickedClearActive()
             },
             clearValidation(){
                 this.error = ''
@@ -488,7 +488,7 @@ import {mapActions, mapGetters} from 'vuex'
 
 <style lang="scss" scoped>
     
-    .section{
+    .post-create-section{
         min-height: 200px;
         border: 1px solid dimgrey;
         padding: 10px;
@@ -602,6 +602,7 @@ import {mapActions, mapGetters} from 'vuex'
                 text-align: justify;
                 font-size: 14px;
                 color: black;
+                z-index: 5;
             }
         }
     }
@@ -609,7 +610,7 @@ import {mapActions, mapGetters} from 'vuex'
 
 @media screen and (min-width:800px) and (max-width:1100px){
 
-    .section{
+    .post-create-section{
         .activity-post{
 
             .post-middle{
@@ -625,7 +626,7 @@ import {mapActions, mapGetters} from 'vuex'
 
 
 @media screen and (max-width:800px){
-    .section{
+    .post-create-section{
         .activity-post{
 
             .post-middle{
@@ -640,7 +641,7 @@ import {mapActions, mapGetters} from 'vuex'
 
 
 @media screen and (max-width:400px){
-    .section{
+    .post-create-section{
         .activity-post{
             
             .post-middle{

@@ -11,11 +11,11 @@
 |
 */
 
-use App\Events\Test;
+// use App\Events\TestEvent;
 
 // Route::get('/broadcast', function ()
 // {
-//     broadcast(new Test) ;
+//     broadcast(new TestEvent('hello')) ;
 // });
 Route::get('/{any}', 'Api\YourEduController@index')->where('any', '.*');
 

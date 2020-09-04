@@ -25,7 +25,7 @@ class ActivityResource extends JsonResource
             $videos = VideoResource::collection($this->videos);
         } else if ($this->audios()->exists()) {
             $audios = AudioResource::collection($this->audios);
-        } else if ($this->videos()->exists()) {
+        } else if ($this->files()->exists()) {
             $files = FileResource::collection($this->files);
         }
 

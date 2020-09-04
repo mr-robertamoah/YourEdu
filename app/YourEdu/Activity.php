@@ -32,6 +32,11 @@ class Activity extends Model
         return $this->morphTo();
     }
 
+    public function files()
+    {
+        return $this->morphToMany(File::class,'fileable');
+    }
+
     public function videos()
     {
         return $this->morphToMany(Video::class,'videoable')

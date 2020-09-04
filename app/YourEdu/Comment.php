@@ -61,4 +61,9 @@ class Comment extends Model
     {
         return $this->morphMany(Flag::class,'flaggable');
     }
+
+    public function beenSaved()
+    {
+       return $this->morphMany(Save::class,'saveable');
+    }
 }

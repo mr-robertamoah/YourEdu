@@ -1,11 +1,18 @@
 <template>
-    <textarea :name="textName" :id="textId" class="form-control" :disabled="disabled"
-        :placeholder="textPlaceholder" 
-        @input="inputValue"
-        :value="value"
-        :style="inputStyle"
-        ref="inputtextarea"
-    ></textarea>
+    <div class="main-textarea-wrapper">
+
+        <textarea :name="textName" :id="textId" class="form-control" :disabled="disabled"
+            :placeholder="textPlaceholder" 
+            @input="inputValue"
+            :value="value"
+            :style="inputStyle"
+            ref="inputtextarea"
+            :class="{sm:sm}"
+        ></textarea>
+        <div class="max-section" v-if="hasMax">
+            {{`${value.length}/${inputMax}`}}
+        </div>
+    </div>
 </template>
 
 <script>
@@ -26,9 +33,21 @@ import autosize from 'autosize';
                 type: Boolean,
                 default: false
             },
+            sm: {
+                type: Boolean,
+                default: false
+            },
             value: {
                 type: String,
                 default: ''
+            },
+            hasMax: {
+                type: Boolean,
+                default: false
+            },
+            inputMax: {
+                type: Number,
+                default: 100
             },
             textPlaceholder: {
                 type: String,
@@ -43,7 +62,16 @@ import autosize from 'autosize';
         },
         data() {
             return {
-                inputHeight: '0'
+                inputHeight: '0',
+            }
+        },
+        watch: {
+            value(newValue, oldValue) { //uses @input and value to implement
+                if (this.hasMax) {
+                    if (newValue.length > this.inputMax) {
+                        this.$emit('input',oldValue)
+                    }
+                }
             }
         },
         computed: {
@@ -63,8 +91,11 @@ import autosize from 'autosize';
             },
             autoResize(){
                 // console.log(this.$refs.inputtextarea)
-                this.$refs.inputtextarea.style.height = "1px";
-                this.$refs.inputtextarea.style.height = `${this.$refs.inputtextarea.scrollHeight}px`;
+                if (this.$refs.inputtextarea) {
+                    
+                    this.$refs.inputtextarea.style.height = "1px";
+                    this.$refs.inputtextarea.style.height = `${this.$refs.inputtextarea.scrollHeight}px`;
+                }
             },
         },
     }
@@ -93,6 +124,17 @@ $input-main-border-color: rgba(105, 105, 105,1);
         &:disabled{
             // resize: none;
             // min-height: 60px;
+        }
+
+        .sm{
+            font-size: 11px;
+        }
+
+        .max-section{
+            text-align: end;
+            font-size: 12px;
+            color: gray;
+            font-weight: 500;
         }
     }
 

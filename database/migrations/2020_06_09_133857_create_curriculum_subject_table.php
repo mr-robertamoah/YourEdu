@@ -14,9 +14,16 @@ class CreateCurriculumSubjectTable extends Migration
     public function up()
     {
         Schema::create('curriculum_subject', function (Blueprint $table) {
+            $table->bigIncrements('id');
             $table->unsignedBigInteger('curriculum_id');
             $table->unsignedBigInteger('subject_id');
+            $table->nullableMorphs('attachedby');
+            $table->string('note')->nullable();
             $table->timestamps();
+
+
+            $table->foreign('curriculum_id')->references('id')->on('curricula')->cascadeOnDelete();
+            $table->foreign('subject_id')->references('id')->on('subjects')->cascadeOnDelete();
         });
     }
 

@@ -26,6 +26,9 @@
                 :bottomBorder="true"
                 v-model="input"></text-textarea>
         </div>
+        <p
+            v-if="example.length"
+        >{{`eg. ${example}`}}</p>
         <div class="show-list-button"
             @click="clickedShowList"
             :class="{showActive:showList}"
@@ -40,7 +43,7 @@
             >
                 {{item}}
             </div>
-            <div class="array-list">
+            <div class="array-list" v-if="computedShowLastItem">
                 {{computedLastItem}}
             </div>
         </div>
@@ -79,9 +82,15 @@ import PostButton from './PostButton'
                 type: Boolean,
                 default: false
             },
+            example: {
+                type: String,
+                default: ''
+            },
             propsArray: {
                 type: Array,
-                default: []
+                default(){
+                    return []
+                }
             },
             error: {
                 type: Boolean,
@@ -180,6 +189,10 @@ import PostButton from './PostButton'
                     return ''
                 }
             },
+            computedShowLastItem(){
+                return this.theArray && this.theArray[this.theArray.length - 1] !== this.computedLastItem
+                    ? true : false
+            },
         },
         methods: {
             clickedShowList(){
@@ -251,6 +264,11 @@ $input-color: rgba(22, 233, 205, 1);
         width: 100%;
         position: relative;
         display: block;
+
+        p{
+            font-size: 12px;
+            color: gray;
+        }
 
         .add{
             position: absolute;

@@ -43,6 +43,7 @@ class AnswerResource extends JsonResource
             'max_score' => $this->marks()->max('score'),
             'min_score' => $this->marks()->min('score'),
             'marks' => MarkResource::collection($this->marks),
+            'saves' => SaveResource::collection($this->beenSaved),
             'comments_number' => $this->comments()->count(),
             'answeredby_id' => $this->answeredby_id,
             'answeredby_type' => $this->answeredby_type,

@@ -3,6 +3,7 @@
 namespace App\YourEdu;
 
 use App\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
@@ -10,7 +11,8 @@ class Profile extends Model
 {
     //
     protected $fillable = [
-        'user_id', 'name', 'about', 'interests', 'occupation', 'website', 'company', 'location', 'address',
+        'user_id', 'name', 'about', 'interests', 'occupation', 'website', 
+        'company', 'location', 'address',
     ];
 
     protected $appends = [
@@ -61,5 +63,15 @@ class Profile extends Model
     {
         return $this->morphToMany(Image::class,'imageable')
         ->withPivot(['state','thumbnail'])->withTimestamps();
+    }
+
+    public function scopeHasNoFlags($query, $parentsLearnerUserIds)
+    {
+        return $query->whereDoesntHaveMorph('profileable','*',function(Builder $query) use ($parentsLearnerUserIds){
+            $query->whereHas('flags',function(Builder $query) use ($parentsLearnerUserIds){
+                $query->whereIn('user_id', $parentsLearnerUserIds)
+                    ->orWhere('status',"APPROVED");
+            });
+        });
     }
 }

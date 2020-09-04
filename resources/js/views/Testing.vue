@@ -1,25 +1,30 @@
 <template>
-    <div>
-        <post-attachment
-        ></post-attachment>
+    <div class="testing" @click.self="show = !show">
+        <select-input
+        ></select-input>
+        
     </div>
 </template>
 
 <script>
-import PostAttachment from '../components/PostAttachment'
+import SelectInput from '../components/SelectInput'
+import CreateSubject from '../components/forms/CreateSubject'
 
     export default {
         data() {
             return {
+                show: false,
+                value: ''
             }
         },
-        created () {
-
-        },
         components: {
-            PostAttachment
+            CreateSubject,
+            SelectInput,
         },
         methods: {
+            input(data){
+                this.value = data
+            },
             getContent(data) {
                 this.textareaContent = data
             },
@@ -76,11 +81,22 @@ import PostAttachment from '../components/PostAttachment'
                         console.log(error)
                     }
                 )
-            }
+            },
+            listen(){
+                // Echo.channel('test-channel').listen('TestEvent', (e)=>{
+                //     console.log(e)
+                // })
+            },
+        },
+        mounted () {
+            this.listen()
         },
     }
 </script>
 
 <style lang="scss" scoped>
-
+    .testing{
+        width: 100%;
+        height: 100vh;
+    }
 </style>

@@ -20,7 +20,7 @@ class CreateQuestionsTable extends Migration
             $table->nullableMorphs('questionable'); // assessmentsection post discussion message
             $table->text('question');
             $table->enum('state',['PENDING','ANSWERED','COMPLETE'])->nullable();
-            // $table->timestamp('published')->nullable();
+            $table->timestamp('published')->nullable();
             $table->mediumInteger('score_over')->nullable();
             $table->softDeletes();
             $table->timestamps();

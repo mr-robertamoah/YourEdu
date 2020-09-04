@@ -31,10 +31,10 @@ class Answer extends Model
         return $this->morphMany(Like::class,'likeable');
     }
 
-    // public function marks()
-    // {
-    //     return $this->hasMany(Mark::class);
-    // }
+    public function beenSaved()
+    {
+       return $this->morphMany(Save::class,'saveable');
+    }
 
     public function marks()
     {

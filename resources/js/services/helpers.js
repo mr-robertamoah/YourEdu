@@ -137,6 +137,10 @@ const strings = {
             return 'post'
         } else if (account.toString().toLocaleLowerCase().includes('comment')) {
             return 'comment'
+        } else if (account.toString().toLocaleLowerCase().includes('subject')) {
+            return 'subject'
+        } else if (account.toString().toLocaleLowerCase().includes('grade')) {
+            return 'grade'
         }
     }
 }

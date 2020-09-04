@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NewPost;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PostResource;
 use App\User;
 use App\YourEdu\Facilitator;
+use App\YourEdu\Follow;
 use App\YourEdu\Learner;
 use App\YourEdu\ParentModel;
 use App\YourEdu\Post;
@@ -13,8 +15,11 @@ use App\YourEdu\Professional;
 use App\YourEdu\School;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,7 +34,6 @@ class PostController extends Controller
         $account = null;
         $post = null;
         $type = null;
-        // dd($request->content);
         if ($request->has('account')) {
             $id = $request->account_id;
             if ($request->account === 'learner') {
@@ -240,11 +244,11 @@ class PostController extends Controller
                             $type
                         );
                     }
-                    DB::commit();
-                    return response()->json([
-                        'message' => 'successful',
-                        'post' => new PostResource($post),
-                    ]);
+                    // DB::commit();
+                    // return response()->json([
+                    //     'message' => 'successful',
+                    //     'post' => new PostResource($post),
+                    // ]);
                 } else {
                     DB::rollback();
                     return response()->json([
@@ -254,6 +258,14 @@ class PostController extends Controller
                 }
             }
 
+            $post = Post::with(['questions.images','questions.videos',
+                'questions.audios','questions.files','activities.images','activities.videos',
+                'activities.files','activities.audios','riddles.images','riddles.videos',
+                'riddles.files','riddles.audios','poems.images','poems.videos',
+                'poems.files','poems.audios','books.images','books.videos','books.files',
+                'books.audios','postedby.profile'])->find($post->id);
+
+            broadcast(new NewPost($post));
             DB::commit();
             return response()->json([
                 'message' => 'successful',
@@ -274,27 +286,30 @@ class PostController extends Controller
 
     }
 
-    public function getUserPosts()
+    public function getUserPosts(Request $request)
     {
         $posts = null;
         $parentsLearnerUserIds = [];
         $learner = User::find(auth()->id())->learner;
         try {
-            if ($learner) {
+            if ($learner && $learner->parents) {
                 $parentsLearnerUserIds = $learner->parents->pluck('user_id');
-                $parentsLearnerUserIds [] = auth()->id();
-
-                $posts = Post::whereDoesntHave('flags',function(Builder $query) use ($parentsLearnerUserIds){
-                    $query->whereIn('user_id',$parentsLearnerUserIds);
-                })->latest()->paginate(5);
-            } else {
-                $posts = Post::whereDoesntHave('flags',function(Builder $query){
-                    $query->where('user_id',auth()->id());
-                })->latest()->paginate(5);
             }
-            // $profiles = Profile::all();
-            // dd($posts->merge($profiles));
-            // $all = paginate($posts->merge($profiles),5);
+            $parentsLearnerUserIds [] = auth()->id();
+
+            $posts = Post::with(['books'=>function(MorphMany $query){
+                    $query->with(['images','videos','audios','files','comments']);
+                },'poems'=>function(MorphMany $query){
+                    $query->with(['images','videos','audios','files','comments']);
+                },'activities'=>function(MorphMany $query){
+                    $query->with(['images','videos','audios','files','comments']);
+                },'riddles'=>function(MorphMany $query){
+                    $query->with(['images','videos','audios','files','answers']);
+                },'questions'=>function(MorphMany $query){
+                    $query->with(['images','videos','audios','files','answers']);
+                },'comments'])->hasPostTypes()->withFilter()->hasPublished()
+                ->hasNoFlags($parentsLearnerUserIds)->latest()->paginate(5);
+
             return PostResource::collection($posts);            
         } catch (\Throwable $th) {
             // return response()->json([
@@ -304,16 +319,13 @@ class PostController extends Controller
         }
     }
 
-    public function posts()
+    public function posts(Request $request)
     {
         $posts = null;
         try {
-            $posts = Post::whereDoesntHave('flags',function(Builder $query){
-                $query->where('status',"APPROVED");
-            })->latest()->paginate(5);
-            // $profiles = Profile::all();
-            // dd($posts->merge($profiles));
-            // $all = paginate($posts->merge($profiles),5);
+            $posts = Post::hasNoApprovedFlags()->hasPostTypes()
+                ->withFilter()->hasPublished()->latest()->paginate(5);
+
             return PostResource::collection($posts);            
         } catch (\Throwable $th) {
             // return response()->json([
@@ -509,7 +521,6 @@ class PostController extends Controller
 
             if ($type) {
 
-                // $file = null;
                 if ($request->hasFile('previewFile')) {
                     $fileDetails = getFileDetails($request->file('previewFile'));
 
@@ -520,6 +531,8 @@ class PostController extends Controller
                         $type
                     );
                 }
+                $mainPost = Post::find($mainPost->id)->with(['questions','activities','riddles',
+                'poems','books','postedby.profile']);
                 DB::commit();
                 return response()->json([
                     'message' => 'successful',
@@ -562,7 +575,12 @@ class PostController extends Controller
     public function postGet(Request $request,$post)
     {
         $item = null;
-        $item = Post::find($post);
+        $item = Post::with(['questions.images','questions.videos',
+            'questions.audios','questions.files','activities.images','activities.videos',
+            'activities.files','activities.audios','riddles.images','riddles.videos',
+            'riddles.files','riddles.audios','poems.images','poems.videos',
+            'poems.files','poems.audios','books.images','books.videos','books.files',
+            'books.audios','postedby.profile'])->find($post);
 
         if (!$item) {
             return response()->json([
@@ -596,6 +614,9 @@ class PostController extends Controller
             ]);
         }
 
-        return PostResource::collection($mainAccount->posts()->latest()->paginate(5));
+        return PostResource::collection($mainAccount->posts()
+            ->with(['questions','activities','riddles',
+            'poems','books','postedby.profile'])
+            ->latest()->paginate(5));
     }
 }

@@ -5,7 +5,8 @@
             @input="change"
             :value="value"
             class="form-control"
-            ></textarea>
+            :class="{transparent: ttaClass === 'transparent'}"
+        ></textarea>
     </div>
 </template>
 
@@ -20,6 +21,10 @@
                 type: String,
                 default: ''
             },
+            ttaClass: {
+                type: String,
+                default: ''
+            },
             error: {
                 type: Boolean,
                 default: false
@@ -28,6 +33,23 @@
                 type: Boolean,
                 default: false
             },
+            inputMax: {
+                type: Number,
+                default: 100
+            },
+            hasMax: {
+                type: Boolean,
+                default: false
+            },
+        },
+        watch: {
+            value(newValue, oldValue) {
+                if (this.hasMax) {
+                    if (newValue.length > this.inputMax) {
+                        this.$emit('input',oldValue)
+                    }
+                }
+            }
         },
         data() {
             return {
@@ -46,7 +68,6 @@
 $border-radius: 10px;
 $border-color-main: rgba(22, 233, 205, 1);
 $border-color-error:rgba(201, 6, 6, 0.9);
-$buttonColor : rgba(2, 104, 90, .6);
 
     .text-textarea-wrapper{
         width: auto;
@@ -62,6 +83,10 @@ $buttonColor : rgba(2, 104, 90, .6);
             &:active{
                 box-shadow: none;
             }
+        }
+
+        .transparent{
+            background-color: transparent;
         }
     }
 

@@ -54,6 +54,11 @@ class Poem extends Model
         ->withPivot(['state'])->withTimestamps();
     }
 
+    public function files()
+    {
+        return $this->morphToMany(File::class,'fileable');
+    }
+
     public function audios()
     {
         return $this->morphToMany(Audio::class,'audioable')

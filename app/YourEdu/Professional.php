@@ -67,6 +67,21 @@ class Professional extends Model
     public function verification(){
         return $this->morphOne(Verification::class,'verifiable');
     }
+    
+    public function uniqueGradesAdded()
+    {
+        return $this->morphMany(Grade::class,'addedby');
+    }
+
+    public function aliasesAdded()
+    {
+        return $this->morphMany(Alias::class,'addedby');
+    }
+
+    public function uniqueSubjectsAdded()
+    {
+        return $this->morphMany(Subject::class,'addedby');
+    }
 
     public function activitiesAdded()
     {
@@ -327,7 +342,7 @@ class Professional extends Model
         return $this->morphMany(Post::class,'postedby');
     }
 
-    public function postAttachments()
+    public function attachments()
     {
         return $this->morphMany(PostAttachment::class,'attachedby');
     }

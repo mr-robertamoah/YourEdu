@@ -224,7 +224,7 @@
                 <post-create
                     v-if="computedPostCreate"
                 ></post-create>
-                <template v-if="computedPosts">
+                <template v-if="!isFlagged && computedPosts">
                     <post-show
                         @askLoginRegister="askLoginRegister"
                         @clickedShowPostComments="clickedShowPostComments"
@@ -235,7 +235,10 @@
                         @clickedMedia="clickedMedia"
                     ></post-show>
                 </template>
-                <post-none v-else></post-none>
+                <post-none v-if="isFlagged"
+                    :loading="unflagLoading"
+                    @clickedUnflag="clickedUnflag"
+                ></post-none>
                 <div class="none" v-if="complete">
                     no more posts
                 </div>
@@ -428,6 +431,10 @@ import { mapGetters, mapActions } from 'vuex'
                 type: Boolean,
                 default: false
             },
+            unflagLoading: {
+                type: Boolean,
+                default: false
+            },
             accountId: {
                 type: String,
                 default: ''
@@ -577,6 +584,9 @@ import { mapGetters, mapActions } from 'vuex'
             },
         },
         methods: {
+            clickedUnflag(){
+                this.$emit('clickedUnflag')
+            },
             clickedShowPostComments(data){
                 this.$emit('clickedShowPostComments',data)
             },

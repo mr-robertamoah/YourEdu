@@ -25,7 +25,7 @@
                 <div class="form-group form-section">
                     <label for="login-password">password *</label>
                     <text-input placeholder="your password"
-                        :textInput="passwordType" 
+                        :inputType="passwordType" 
                         v-model="password"
                         :error='passwordError'
                         @iconChange='passwordIconChange' 

@@ -10,6 +10,10 @@ class Subject extends Model
     //
     // use SoftDeletes;
 
+    protected $fillable = [
+        'name','description','rationale'
+    ];
+
     public function facilitators()
     {
         return $this->belongsToMany(Facilitator::class)->withTimestamps();
@@ -19,11 +23,18 @@ class Subject extends Model
     {
         return $this->morphMany(Objective::class,'objectiveable');
     }
+    
+    public function aliases()
+    {
+        return $this->morphMany(Alias::class,'aliasable');
+    }
 
     public function curricula()
     {
         return $this->belongsToMany(Curriculum::class,'curriculum_subject','subject_id','curriculum_id')
-                ->withTimestamps();
+            ->using(CurriculumSubject::class)
+            ->withPivot(['note','attachedby_type','attachedby_id'])
+            ->withTimestamps();
     }
 
     public function addedby()
@@ -72,9 +83,9 @@ class Subject extends Model
         return $this->morphMany(Request::class,'requestable');
     }
 
-    public function postAttachments()
+    public function attachments()
     {
-        return $this->morphMany(PostAttachment::class,'attachable');
+        return $this->morphMany(PostAttachment::class,'attachedwith');
     }
     
     public function discussions()

@@ -15,6 +15,8 @@
                             @postModalCommentEdited="postModalCommentEdited"
                             @commentUnlikeSuccessful="commentUnlikeSuccessful"
                             @commentLikeSuccessful="commentLikeSuccessful"
+                            @commentUnsaveSuccessful="commentUnsaveSuccessful"
+                            @commentSaveSuccessful="commentSaveSuccessful"
                         ></comment-single>
                     </div>
                     <div class="main-comment" v-if="!comment">
@@ -33,6 +35,10 @@
                                     @commentLikeSuccessful="commentLikeSuccessful"
                                     @commentUnlikeSuccessfulMain="commentUnlikeSuccessfulMain"
                                     @commentLikeSuccessfulMain="commentLikeSuccessfulMain"
+                                    @commentUnsaveSuccessful="commentUnsaveSuccessful"
+                                    @commentSaveSuccessful="commentSaveSuccessful"
+                                    @commentUnsaveSuccessfulMain="commentUnsaveSuccessfulMain"
+                                    @commentSaveSuccessfulMain="commentSaveSuccessfulMain"
                                     @commentViewParentDeleteSuccess="commentViewParentDeleteSuccess"
                                 ></comment-single>
                             </div>
@@ -123,6 +129,52 @@ import { mapGetters, mapActions } from 'vuex';
             viewModalDisappear(){
                 this.$emit('viewModalDisappear')
             },
+            //for adding and removing saves to and from comments
+            commentSaveSuccessfulMain(data){
+                this.addSave(data.itemId,data.save)
+            },
+            commentUnsaveSuccessfulMain(data){
+                this.removeSave(data.itemId,data.saveId)
+            },
+            commentUnsaveSuccessful(data){
+                if (this.comment.id === data.itemId) {
+                    this.$emit('commentUnsaveSuccessfulMain', data)//event to alert parent view modal to remove this like
+                    return
+                }
+
+                this.removeLike(data.itemId,data.likeId)
+            },
+            commentSaveSuccessful(data){
+                if (this.comment.id === data.itemId) {
+                    this.$emit('commentSaveSuccessfulMain', data)//alert parent view modal to add this like
+                    return
+                }
+
+                this.addSave(data.itemId,data.save)
+            },
+            removeSave(commentId,saveId){
+                let commentIndex = this.comments.findIndex(comment=>{
+                    return comment.id === commentId
+                })
+                if (commentIndex > -1) {
+                    let saveIndex =  this.comments[commentIndex].saves.findIndex(save=>{
+                        return save.id === saveId
+                    })
+                    if (saveIndex > -1) {
+                        this.comments[commentIndex]
+                            .saves.splice(saveIndex,1)
+                    }
+                }
+            },
+            addSave(commentId,save){
+                 let commentIndex = this.comments.findIndex(comment=>{
+                    return comment.id === commentId
+                })
+                if (commentIndex > -1) {
+                    this.comments[commentIndex].saves.unshift(save)
+                }
+            },
+            //for adding and removing likes to and from comments
             commentLikeSuccessfulMain(data){
                 this.addLike(data.itemId,data.likeId)
             },
@@ -136,6 +188,14 @@ import { mapGetters, mapActions } from 'vuex';
                 }
 
                 this.removeLike(data.itemId,data.likeId)
+            },
+            commentLikeSuccessful(data){
+                if (this.comment.id === data.itemId) {
+                    this.$emit('commentLikeSuccessfulMain', data)//alert parent view modal to add this like
+                    return
+                }
+
+                this.addLike(data.itemId,data.like)
             },
             removeLike(commentId,likeId){
                 let commentIndex = this.comments.findIndex(comment=>{
@@ -158,14 +218,6 @@ import { mapGetters, mapActions } from 'vuex';
                 if (commentIndex > -1) {
                     this.comments[commentIndex].likes.unshift(like)
                 }
-            },
-            commentLikeSuccessful(data){
-                if (this.comment.id === data.itemId) {
-                    this.$emit('commentLikeSuccessfulMain', data)//alert parent view modal to add this like
-                    return
-                }
-
-                this.addLike(data.itemId,data.like)
             },
             commentViewParentDeleteSuccess(data){
                 this.removeCommentId(data.commentId)
@@ -229,26 +281,33 @@ import { mapGetters, mapActions } from 'vuex';
 
                 // console.log('get comments',response)
                 this.comments.push(...response.data.data)
-                if (response.status) {
+                if (response.status !== null) {
                     this.nextPage += 1
+                } else {
+                    this.nextPage = 0
                 }
             },
             async infiniteHandler($state) {
-                if (!this['profile/getCommentsDone']) {
+                if (this.nextPage) {
                     let data = {
                         item : 'comment',
                         itemId : this.comment.id,
                         nextPage: this.nextPage
                     }
                     let response = await this['profile/getComments'](data)
+                    if (response.currentPage !== 1) {
                         this.comments.push(...response.data.data)
+                    }
                     if (response.status) {
                         this.nextPage += 1
                         $state.loaded()
                     } else {
+                        this.nextPage = 0
                         $state.complete()
                     }
-                } 
+                }  else {
+                    $state.complete()
+                }
             },
         },
     }

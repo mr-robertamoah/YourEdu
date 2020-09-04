@@ -63,6 +63,16 @@ class ParentModel extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function uniqueSubjectsAdded()
+    {
+        return $this->morphMany(Subject::class,'addedby');
+    }
+
+    public function aliasesAdded()
+    {
+        return $this->morphMany(Alias::class,'addedby');
+    }
+
     public function learners(){
         return $this->
             belongsToMany(Learner::class,'learner_parent','parent_id','learner_id')
@@ -97,6 +107,11 @@ class ParentModel extends Model
     public function point()
     {
         return $this->morphOne(Point::class,'pointable');
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(PostAttachment::class,'attachedby');
     }
 
     public function emails(){
@@ -168,6 +183,11 @@ class ParentModel extends Model
     public function flagsRaised()
     {
         return $this->morphMany(Flag::class,'flaggedby');
+    }
+
+    public function flags()
+    {
+        return $this->morphMany(Flag::class,'flaggable');
     }
 
     public function booksAuthored()

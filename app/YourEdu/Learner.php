@@ -35,7 +35,7 @@ class Learner extends Model
     }
 
     public function follows(){
-        return $this->morphOne(Follow::class,'followable');
+        return $this->morphMany(Follow::class,'followable');
     }
 
     public function activitiesAdded()
@@ -44,7 +44,7 @@ class Learner extends Model
     }
 
     public function followings(){
-        return $this->morphOne(Follow::class,'followedby');
+        return $this->morphMany(Follow::class,'followedby');
     }
 
     public function profile(){
@@ -129,6 +129,16 @@ class Learner extends Model
     public function totalDetails()
     {
         return $this->hasMany(TotalDetail::class);
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(PostAttachment::class,'attachedby');
+    }
+
+    public function aliasesAdded()
+    {
+        return $this->morphMany(Alias::class,'addedby');
     }
 
     public function admissions()

@@ -42,11 +42,11 @@ class Facilitator extends Model
         });
     }
 
-    public function follows(){
+    public function follows(){ //where i am being followed followed_user_id
         return $this->morphMany(Follow::class,'followable');
     }
 
-    public function followings(){
+    public function followings(){ //where i am the follower user_id
         return $this->morphMany(Follow::class,'followedby');
     }
 
@@ -163,6 +163,11 @@ class Facilitator extends Model
         return $this->morphMany(Subject::class,'addedby');
     }
 
+    public function aliasesAdded()
+    {
+        return $this->morphMany(Alias::class,'addedby');
+    }
+
     public function addedExtracurriculums()
     {
         return $this->morphMany(Extracurriculum::class,'addedby');
@@ -175,6 +180,11 @@ class Facilitator extends Model
 
     public function grades(){
         return $this->belongsToMany(Grade::class)->withTimestamps();
+    }
+    
+    public function uniqueGradesAdded()
+    {
+        return $this->morphMany(Grade::class,'addedby');
     }
     
     public function works()
@@ -354,7 +364,7 @@ class Facilitator extends Model
         return $this->morphMany(Post::class,'postedby');
     }
 
-    public function postAttachments()
+    public function attachments()
     {
         return $this->morphMany(PostAttachment::class,'attachedby');
     }

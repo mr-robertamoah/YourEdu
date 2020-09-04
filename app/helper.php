@@ -7,6 +7,23 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
+function getAccount($account)
+{
+    if (Str::contains(strtolower($account), 'learner')) {
+        return 'learner';
+    } else if (Str::contains(strtolower($account), 'parent')) {
+        return 'parent';
+    } else if (Str::contains(strtolower($account), 'facilitator')) {
+        return 'facilitator';
+    } else if (Str::contains(strtolower($account), 'professional')) {
+        return 'professional';
+    } else if (Str::contains(strtolower($account), 'school')) {
+        return 'school';
+    } else if (Str::contains(strtolower($account), 'admin')) {
+        return 'admin';
+    }
+}
+
 function uploadYourEduFiles($files)
 {
    

@@ -10,6 +10,10 @@ class Grade extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'name','description','age_group'
+    ];
+
     public function classes(){
         return $this->hasMany(ClassModel::class);
     }
@@ -29,6 +33,16 @@ class Grade extends Model
     public function admissions()
     {
         return $this->hasMany(Admission::class);
+    }
+    
+    public function aliases()
+    {
+        return $this->morphMany(Alias::class,'aliasable');
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(PostAttachment::class,'attachedwith');
     }
     
     public function requests()

@@ -42,6 +42,11 @@ class Riddle extends Model
         return $this->morphMany(Answer::class,'answerable');
     }
 
+    public function files()
+    {
+        return $this->morphToMany(File::class,'fileable');
+    }
+
     public function images()
     {
         return $this->morphToMany(Image::class,'imageable')

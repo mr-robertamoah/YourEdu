@@ -10,6 +10,8 @@ class PostAttachment extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = ['note'];
+
     public function post()
     {
         return $this->belongsTo(Post::class);
@@ -21,6 +23,11 @@ class PostAttachment extends Model
     }
 
     public function attachable()
+    {
+        return $this->morphTo();
+    }
+
+    public function attachedwith()
     {
         return $this->morphTo();
     }

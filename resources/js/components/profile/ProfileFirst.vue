@@ -370,7 +370,7 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showPictureModal = true
             },
             clickedFollow() {
-                if (this.getProfiles.length && !this.computedOwner) {
+                if (this.getProfiles && !this.computedOwner) {
                     if (this.followButtonText === 'follow') {
                         this.showProfiles = true
                         setTimeout(() => {
@@ -379,7 +379,6 @@ import { mapGetters, mapActions } from 'vuex'
                     } else {
                         this.clickedUnfollow()
                     }
-                    
                 } else {
                     this.showSmallModal = true
                     setTimeout(() => {
@@ -400,7 +399,7 @@ import { mapGetters, mapActions } from 'vuex'
 
                     let response =  await this['profile/follow'](data)
 
-                    if (response === 'successful') {
+                    if (response.status) {
                         // this.follows += 1
                         this.followButtonText = 'unfollow'
                         this.followSuccessMessage = 'you are now following'

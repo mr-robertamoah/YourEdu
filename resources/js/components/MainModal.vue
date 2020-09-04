@@ -88,7 +88,7 @@ import FadeRight from "./transitions/FadeRight";
                     if(this.alertMessage.length > 0){
                         setTimeout(() => {
                             this.$emit('clearAlert') 
-                        }, 3000);
+                        }, 4000);
                     }
                 }
             }

@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AttachmentController;
+use App\Http\Controllers\Api\GradeController;
+use App\Http\Controllers\Api\Search;
+use App\Http\Controllers\Api\SubjectController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +41,17 @@ Route::get('/{item}/{itemId}/answers/', 'Api\AnswerController@answersGet')
 ->middleware(['CheckAnswerable']);
 
 Route::get('/{requestAccount}/{requestAccountId}/{media}', 'Api\ProfileController@profileMediasGet');
+
+Route::get('/subjects', [SubjectController::class,'subjectsGet']);
+Route::get('/subjects/{search}', [SubjectController::class,'subjectsSearch']);
+Route::get('/subjects', [SubjectController::class,'subjectsGet']);
+
+Route::get('/grades', [GradeController::class,'gradesGet']);
+Route::get('/grades/{search}', [GradeController::class,'gradesSearch']);
+Route::get('/grades', [GradeController::class,'gradesGet']);
+
+Route::get('/search', [Search::class,'search']);
+
 
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return response()->json([
@@ -77,6 +92,10 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/{item}/{itemId}/like', 'Api\LikeController@likeCreate')
     ->middleware(['CheckItem']);
     
+    Route::delete('/save/{save}', 'Api\SaveController@saveDelete');
+    Route::post('/{item}/{itemId}/save', 'Api\SaveController@saveCreate')
+    ->middleware(['CheckItem']);
+    
     Route::delete('/flag/{flag}', 'Api\FlagController@flagDelete');
     Route::post('/{item}/{itemId}/flag', 'Api\FlagController@flagCreate')
     ->middleware(['CheckItem']);
@@ -106,4 +125,15 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/accept/request/{requestId}', 'Api\FollowController@followBack');
     
     Route::get('/{requestAccount}/{requestAccountId}/{media}/private', 'Api\ProfileController@profilePrivateMediasGet');
+    
+    Route::post('/subject/create', [SubjectController::class,'subjectCreate']);
+    Route::post('/subject/{subject}/alias', [SubjectController::class,'subjectAliasCreate']);
+    Route::delete('/subject/{subject}', [SubjectController::class,'subjectDelete']);
+
+    Route::post('/grade/create', [GradeController::class,'gradeCreate']);
+    Route::post('/grade/{grade}/alias', [GradeController::class,'gradeAliasCreate']);
+    Route::delete('/grade/{grade}', [GradeController::class,'gradeDelete']);
+
+    Route::post('/attachment/create', [AttachmentController::class,'attachmentCreate']);
+    Route::delete('/attachment/{attachment}', [AttachmentController::class,'attachmentDelete']);
 }); 

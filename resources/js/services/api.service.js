@@ -16,8 +16,12 @@ const ApiService = {
         axios.defaults.headers.common['Authorization'] = ''
     },
 
-    get(resource){
-        return axios.get(resource)
+    get(resource,params = null){
+        if (params) {
+            return axios.get(resource,{params})
+        } else {
+            return axios.get(resource)
+        }
     },
 
     post(resource,data, hasMultipart = false){

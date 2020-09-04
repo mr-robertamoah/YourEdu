@@ -37,7 +37,7 @@
                 <div :key="key" class="preview-file"
                     v-for="(file,key) in previewFiles">
                     <div class="delete-icon" @click="removeFile(file,key)">
-                        delete
+                        <font-awesome-icon :icon="['fa','trash']"></font-awesome-icon>
                     </div>
                     <img  
                         v-if="file.type.includes('image')"

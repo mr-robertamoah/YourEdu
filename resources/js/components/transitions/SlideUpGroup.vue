@@ -1,5 +1,5 @@
 <template>
-    <transition-group tag="div" name='slide-up' appear>
+    <transition-group tag="div" class="slide-up-wrapper" name='slide-up' appear>
         <slot name="transition"></slot>
     </transition-group>
 </template>

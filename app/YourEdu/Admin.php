@@ -25,6 +25,11 @@ class Admin extends Model
         return $this->hasMany(SecretQuestion::class);
     }
 
+    public function savesMade()
+    {
+       return $this->morphMany(Save::class,'savedby');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -40,6 +45,21 @@ class Admin extends Model
     public function curricula()
     {
         return $this->morphMany(Curriculum::class,'curriculable');
+    }
+    
+    public function uniqueGradesAdded()
+    {
+        return $this->morphMany(Grade::class,'addedby');
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(PostAttachment::class,'attachedby');
+    }
+
+    public function aliasesAdded()
+    {
+        return $this->morphMany(Alias::class,'addedby');
     }
 
     public function uniqueSubjectsAdded()

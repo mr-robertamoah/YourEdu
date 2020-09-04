@@ -172,14 +172,24 @@ class School extends Model
         return $this->morphMany(Group::class,'ownedby');
     }
 
-    public function uniqueSubjects()
-    {
-        return $this->morphMany(Subject::class,'subjectable');
-    }
+    // public function uniqueSubjects()
+    // {
+    //     return $this->morphMany(Subject::class,'subjectable');
+    // }
 
     public function uniqueSubjectsAdded()
     {
         return $this->morphMany(Subject::class,'addedby');
+    }
+    
+    public function uniqueGradesAdded()
+    {
+        return $this->morphMany(Grade::class,'addedby');
+    }
+
+    public function aliasesAdded()
+    {
+        return $this->morphMany(Alias::class,'addedby');
     }
 
     public function addedExtracurriculums()
@@ -306,6 +316,11 @@ class School extends Model
         return $this->morphMany(Comment::class,'commentedby');
     }
 
+    public function flagsRaised()
+    {
+        return $this->morphMany(Flag::class,'flaggedby');
+    }
+
     public function flags()
     {
         return $this->morphMany(Flag::class,'flaggable');
@@ -351,7 +366,7 @@ class School extends Model
         return $this->morphMany(Post::class,'postedby');
     }
 
-    public function postAttachments()
+    public function attachments()
     {
         return $this->morphMany(PostAttachment::class,'attachedby');
     }

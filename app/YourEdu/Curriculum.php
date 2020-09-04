@@ -31,7 +31,9 @@ class Curriculum extends Model
     public function subjects()
     {
         return $this->belongsToMany(Subject::class,'curriculum_subject','curriculum_id','subject_id')
-                ->withTimestamps();
+            ->using(CurriculumSubject::class)
+            ->withPivot(['note','attachedby_type','attachedby_id'])
+            ->withTimestamps();
     }
 
     public function schools()

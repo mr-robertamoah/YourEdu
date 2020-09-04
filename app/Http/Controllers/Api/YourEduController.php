@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\TestEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\FacilitatorResource;
 use App\Http\Resources\LearnerResource;
@@ -32,6 +33,7 @@ class YourEduController extends Controller
 
     public function index ()
     {
+        // broadcast(new TestEvent('hello world'));
         return view('youredu');
     }
 

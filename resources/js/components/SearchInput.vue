@@ -1,57 +1,85 @@
 <template>
-    <div class="search-wrapper">
-        <div class="input-wrapper">
-            <input type="text" name="search" class="form-control input-text" 
-                v-model="searchText"
-                @change="search"
-                :placeholder="searchPlaceholder">
-            <div class="input-prepend" title="search"
-                @click.prevent="search">
-                <font-awesome-icon :icon="['fas','search']"></font-awesome-icon>
-            </div>
+    <div class="search-wrapper"
+        :class="{background:background, home: homeSearch}"
+    >
+        <div class="input-search" title="search"
+            @click.prevent="search"
+            :class="{gray:paClass === 'gray'}"
+        >
+            <font-awesome-icon :icon="['fas','search']"></font-awesome-icon>
         </div>
-
-        <div class="output-section" v-if="outputSeection">
-            <search-output>
-                <template slot="main">
-                    Robert Amoah
-                </template>
-            </search-output>
+        <input type="text" name="search" class="form-control input-text" 
+            v-model="searchText"
+            :placeholder="searchPlaceholder"
+        >
+        <div class="input-close"
+            @click="clickedClose"
+            :class="{gray: paClass === 'gray', closeActive:closeActive}"
+            v-if="showClose"
+        >
+            <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
         </div>
     </div>
 </template>
 
 <script>
-import SearchOutput from './SearchOutput'
 
     export default {
         components: {
-            SearchOutput,
         },
         props: {
             searchPlaceholder: {
                 type: String,
                 default: 'search here'
             },
-            outputSection: {
+            homeSearch: {
                 type: Boolean,
                 default: false
+            },
+            background: {
+                type: Boolean,
+                default: true
+            },
+            value: {
+                type: String,
+                default: ''
+            },
+            paClass: {
+                type: String,
+                default: ''
             },
         },
         data() {
             return {
-                searchText: ''
+                searchText: '',
+                closeActive: false,
+                showClose: false
             }
         },
         watch: {
             searchText(newValue) {
-                console.log(newValue)
-            }
+                if (newValue.length) {
+                    this.showClose = true
+                } else {
+                    this.showClose = false
+                }
+                this.$emit('search',newValue)
+            },
+            value(newValue){
+                this.searchText = newValue
+            },
         },
         methods: {
             search() {
-                console.log('searching', this.searchText)
-            }
+                this.$emit('search',this.searchText)
+            },
+            clickedClose(){
+                this.closeActive = true
+                setTimeout(() => {
+                    this.closeActive = false
+                }, 2000);
+                this.searchText = ''
+            },
         },
     }
 </script>
@@ -62,31 +90,48 @@ $search-color:rgba(22, 233, 205, 1);
     .search-wrapper{
         width: 80%;
         margin: 0 auto;
+        display: flex;
+        justify-content:space-between;
+        align-items: center;
 
-        .input-wrapper{
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            border: 1px solid rgba(22, 233, 205, 1);
-            border-radius: 50px;
-
-            .input-text{
-                min-width: 80%;
-                border: none;
-                font-size: 16px;
-                box-shadow: none;
-                border-radius: inherit;
-            }
-            
-            .input-prepend{
-                color: $search-color;
-                padding: 5px 10px 5px 5px;
-                cursor: pointer;
-                border: 1px solid $search-color;
-                border-radius: inherit;
-                border-right: none;
-            }
+        .input-text{
+            min-width: 80%;
+            border: none;
+            font-size: 16px;
+            box-shadow: none;
+            border-radius: inherit;
+            background: transparent;
         }
+        
+        .input-search,
+        .input-close{
+            color: $search-color;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 10%;
+            text-align: center;
+        }
+        .gray{
+            color: gray;
+        }
+
+        .closeActive{
+            color: red;
+        }
+    }
+
+    .home{
+
+        input::placeholder,
+        input{
+            font-weight: 400;
+            color: gray;
+        }
+    }
+        
+    .background{
+        border: 1px solid rgba(22, 233, 205, 1);
     }
 
 

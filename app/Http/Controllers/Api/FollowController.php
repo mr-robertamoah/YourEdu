@@ -93,7 +93,8 @@ class FollowController extends Controller
         try {
             DB::beginTransaction();
             $follow = $mainAccount->follows()->create([
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
+                'followed_user_id' => $mainAccount->user_id
             ]);
 
             if ($follow) {
@@ -109,7 +110,9 @@ class FollowController extends Controller
                 })->count();
 
                 if (!$requestCounter) {
-                    $newFollow = $followerAccount->follows()->create();
+                    $newFollow = $followerAccount->follows()->create([
+                        'followed_user_id' => auth()->id()
+                    ]); //create an follow where this is being followed
                     $followRequest = YourEduRequest::create([
                         'state' => 'PENDING'
                     ]);

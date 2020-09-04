@@ -2,17 +2,46 @@
     <div class="post-show-wrapper"
         @dblclick.self="clickedShowPostComments"
     >
+        <div class="loading" v-if="loading">
+            <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
+        </div>
+        <div class="alert"
+            v-if="alertMessage.length"
+            :class="{success:alertSuccess, danger:alertDanger}"
+        >
+            {{alertMessage}}
+        </div>
         <div class="edit"
-            @click="showOptions = computedOwner"
-            v-if="computedOwner"
+            @click="clickedEditIcon"
+            v-if="computedProfiles.length"
         >
             <font-awesome-icon
                 :icon="['fa','chevron-down']"
             ></font-awesome-icon>
         </div>
-        <div class="options" v-if="showOptions">
-            <span @click="clickedOpion('edit')">edit</span>
-            <span @click="clickedOpion('delete')">delete</span>
+        <div class="options" v-if="showOptions && computedSaves">
+            <optional-actions
+                :show="showOptions"
+                :hasSave="!computedOwner"
+                :isSaved="isSaved"
+                :hasEdit="computedOwner"
+                :hasAttachment="computedProfiles.length ? true : false"
+                :hasDelete="computedOwner"
+                @clickedOption="clickedOption"
+            ></optional-actions>
+        </div>
+        <div class="post-attachment" 
+            v-if="showAttach && computedAttachments"
+            @click.self="showAttach = false"
+        >
+            <post-attachment
+                :show="showAttach"
+                :isAttached="isAttached"
+                :attachmentsNumber="attachments"
+                :attachments="myAttachments"
+                @itemClicked="attachmentClicked"
+                @clickedUnattach="clickedUnattach"
+            ></post-attachment>
         </div>
         <div class="top"
             @dblclick="clickedShowPostComments"
@@ -62,7 +91,8 @@
                     <video :src="computedVideoUrl" controls controlslist="nodownload">
                     </video>
                 </div>
-                <div class="text-short">
+                <div class="text-short"
+                    @click="clickedShowPostComments">
                     <slot name="text"></slot>
                     <main-textarea
                         :disabled="true"
@@ -87,7 +117,10 @@
         </template>
         <div class="bottom">
             <div class="main">
-                <div class="reaction">
+                <div class="reaction" 
+                    :class="{unsetPosition: showProfilesAction === 'save' || 
+                        showProfilesAction === 'attach'}"
+                >
                     <post-button 
                         :titleText="flagTitle"
                         v-if="computedFlags"
@@ -113,7 +146,10 @@
                         <number-of>
                             {{`${likes} likes`}}
                         </number-of>
-                        <div class="others">
+                        <div class="others" 
+                            :class="{unsetPosition: showProfilesAction === 'save' || 
+                            showProfilesAction === 'attach'}"
+                        >
                             <div class="like-post"
                                 @click="clickedLike"
                                 v-if="computedLikes"
@@ -169,7 +205,7 @@
                     @dblclick.self="clickedShowPostComments">
                     <template v-if="!postMediaFull && computedComments">
                         <comment-single
-                            :key="key" v-for="(comment, key) in computedComments"
+                            :key="comment.id" v-for="comment in computedComments"
                             :comment="comment"
                             @askLoginRegister="askLoginRegister"
                             @clickedMedia="clickedMedia"
@@ -234,7 +270,10 @@ import PostPreview from './PostPreview'
 import NumberOf from './NumberOf'
 import ProfileBar from './profile/ProfileBar'
 import CreatePost from './forms/CreatePost'
+import OptionalActions from './OptionalActions'
+import PostAttachment from './PostAttachment'
 import FlagReason from './FlagReason'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
 import FadeUp from './transitions/FadeUp'
 import JustFade from './transitions/JustFade'
 import {dates, strings, files} from '../services/helpers'
@@ -246,6 +285,8 @@ import { mapGetters, mapActions } from 'vuex'
             ProfilePicture,
             JustFade,
             FadeUp,
+            PostAttachment,
+            OptionalActions,
             CreatePost,
             ProfileBar,
             NumberOf,
@@ -253,6 +294,7 @@ import { mapGetters, mapActions } from 'vuex'
             MainTextarea,
             AddComment,
             PostButton,
+            PulseLoader,
             FlagReason,
         },
         props: {
@@ -276,6 +318,7 @@ import { mapGetters, mapActions } from 'vuex'
                 showModal: false,
                 alertSuccess: false,
                 alertDanger: false,
+                loading: false,
                 //small modal
                 showSmallModal: false,
                 smallModalLoading: false,
@@ -302,6 +345,17 @@ import { mapGetters, mapActions } from 'vuex'
                 //profiles
                 showProfilesAction: '',
                 showProfilesText: '',
+                //save
+                isSaved: false,
+                mySave: null,
+                saves: 0,
+                //attach
+                isAttached: false, //means i have attached and it goes for likes, etc
+                myAttachments: null,
+                attachments: 0,
+                attachable: null,
+                showAttach: false,
+                selectedAttachment: null
             }
         },
         watch: {
@@ -334,6 +388,18 @@ import { mapGetters, mapActions } from 'vuex'
                     this.isLiked = false
                 }
             },
+            saves(newValue){
+                if (!newValue) {
+                    this.mySave = null
+                    this.isSaved = false
+                }
+            },
+            attachments(newValue){
+                if (!newValue) {
+                    this.myAttachments = null
+                    this.isAttached = false
+                }
+            },
         },
         computed: {
             ...mapGetters(['getUser','getProfiles','profile/getMsg']),
@@ -350,6 +416,23 @@ import { mapGetters, mapActions } from 'vuex'
                         if (index > -1) {
                             this.myLike = likes[index]
                             this.isLiked = true
+                        }
+                    }
+                }
+                return true
+            },
+            computedSaves(){
+                if (this.getUser) {
+                    if (this.post && this.post.hasOwnProperty('saves')){
+                        let saves = this.post.saves
+                        this.saves = this.post.saves.length
+                        let index = null
+                        index = saves.findIndex(save=>{
+                                return save.user_id === this.getUser.id
+                            })
+                        if (index > -1) {
+                            this.mySave = saves[index]
+                            this.isSaved = true
                         }
                     }
                 }
@@ -423,6 +506,30 @@ import { mapGetters, mapActions } from 'vuex'
                 return this.post && this.post.hasOwnProperty('id') ?
                     this.post.id : null
             },
+            computedAttachments(){ //check attachment .....
+                if (this.getUser) {
+                    if (this.post && this.post.hasOwnProperty('attachments')){
+                        let attachments = []
+                        this.attachments = this.post.attachments.length
+                        attachments = this.post.attachments.filter(attachment=>{
+                            return attachment.user_id === this.getUser.id
+                        }).map(attachment=>{
+                            return {
+                                id: attachment.id,
+                                with_type: strings.getAccount(attachment.attachedwith_type),
+                                with_id: attachment.attachedwith_id,
+                                with: attachment.name,
+                            }
+                        })
+
+                        if (attachments.length) {
+                            this.isAttached = true
+                            this.myAttachments = attachments
+                        }
+                    }
+                }
+                return true
+            },
             computedFlags(){ //check flagging
                 if (this.getUser) {
                     if (this.post && this.post.hasOwnProperty('flags')){
@@ -451,6 +558,10 @@ import { mapGetters, mapActions } from 'vuex'
         methods: {
             clickedShowPostPreview(data){
                 this.$emit('clickedShowPostPreview',data)
+            },
+            clickedEditIcon(){
+                this.showOptions = !this.showOptions
+                this.showAttach = false
             },
             clickedMedia(data){
                 this.$emit('clickedMedia',data)
@@ -494,7 +605,8 @@ import { mapGetters, mapActions } from 'vuex'
             },
             ...mapActions(['profile/deletePost','profile/updatePost',
                 'profile/createLike','profile/deleteLike','profile/createFlag',
-                'profile/deleteFlag']),
+                'profile/deleteFlag','profile/deleteSave','profile/createSave',
+                'profile/createAttachment','profile/deleteAttachment']),
             clickedInfoOk(){
                 this.showSmallModal = false
             },
@@ -618,8 +730,8 @@ import { mapGetters, mapActions } from 'vuex'
                         this.clearSmallModal()
                     }, 4000);
                 } else {
-                    this.showProfilesText = 'flag as'
-                    this.showProfilesAction = 'flag'
+                    this.showProfilesText = 'like as'
+                    this.showProfilesAction = 'like'
                     if (this.isLiked) {
                         this.likes -= 1
                         this.isLiked = false
@@ -647,6 +759,62 @@ import { mapGetters, mapActions } from 'vuex'
                     }
                 }
             },
+            ///attachments
+            clickedUnattach(attachment){
+                this.showAttach = false
+                this.selectedAttachment = attachment
+                this.attach(null)
+            },
+            attachmentClicked(data){
+                this.showAttach = false
+                this.attachable = data
+                this.showProfilesAction = 'attach'
+                this.showProfilesText = 'attach as'
+                // this.showProfiles = true
+                this.profilesAppear()
+            },
+            async attach(who){
+
+                this.loading = true
+                let data = {},
+                    response = null,
+                    state = ''
+
+                data.item = 'post'
+                data.itemId = this.post.id
+                if (who) {
+                    state = 'attachment'
+                    data.attachable = this.attachable.item
+                    data.attachableId = this.attachable.itemId
+                    data.account = who.account
+                    data.accountId = who.accountId
+                    data.note = this.attachable.note
+                    response = await this['profile/createAttachment'](data)
+                } else {
+                    state = 'unattachment'
+                    data.attachmentId = this.selectedAttachment.id
+                    response = await this['profile/deleteAttachment'](data)
+                }
+                
+                this.loading = false
+                if (response.status) {
+                    if (who) {
+                        this.attachments += 1
+                    } else {
+                        this.attachments -= 1
+                    }
+                    this.alertSuccess = true
+                    this.alertMessage = `${state} successful`
+                } else {
+                    this.alertDanger = true
+                    this.alertMessage = `${state} unsuccessful`
+                }
+                setTimeout(() => {
+                    this.alertSuccess = false
+                    this.alertDanger = false
+                    this.alertMessage = ''
+                }, 3000);
+            },
             postAddComplete(data){
                 if (data === 'successful') {
                     this.showAddComment = false
@@ -661,27 +829,75 @@ import { mapGetters, mapActions } from 'vuex'
                     }, 2000);
                 }
             },
-            async clickedProfile(who){
+            async like(who){
+                this.showProfiles = false
+                this.isLiked = true
+                this.likes += 1
+                let data = {
+                    item: 'post',
+                    itemId: this.post.id,
+                    account: who.account,
+                    accountId: who.accountId,
+                    owner: this.post.postedby_type,
+                    ownerId: this.post.postedby_id,
+                }
+
+                let response = await this['profile/createLike'](data)
+
+                if (response === 'unsuccessful') {
+                    this.isLiked = false
+                    this.likes -= 1
+                }
+            },
+            async save(who){
+                this.showProfiles = false
+                this.loading = true
+                let data = {
+                    item: 'post',
+                    itemId: this.post.id,
+                    owner: 'post',
+                    ownerId: this.post.id,
+                },
+                    response = null,
+                    state = ''
+
+                if (who) {
+                    data.account = who.account
+                    data.accountId = who.accountId
+                    state = 'saving'
+                    response = await this['profile/createSave'](data)
+                } else {
+                    data.saveId = this.mySave.id
+                    state = 'unsaving'
+                    response = await this['profile/deleteSave'](data)
+                }
+
+                this.loading = false
+                if (response.status) {
+                    if (who) {
+                        this.saves += 1
+                    } else {
+                        this.saves -= 1
+                    }
+                    this.isSaved = !this.isSaved
+                    this.alertSuccess = true
+                    this.alertMessage = `${state} successful`
+                } else {
+                    this.alertDanger = true
+                    this.alertMessage = `${state} unsuccessful`
+                }
+                setTimeout(() => {
+                    this.alertSuccess = false
+                    this.alertDanger = false
+                    this.alertMessage = ''
+                }, 3000);
+            },
+            clickedProfile(who){
+                this.showProfiles = false
                 if (this.showProfilesAction === 'like') {
-                    this.showProfiles = false
-                    this.isLiked = true
-                    this.likes += 1
-                    // console.log('who',who)
-                    let data = {
-                        item: 'post',
-                        itemId: this.post.id,
-                        account: who.account,
-                        accountId: who.accountId,
-                        owner: this.post.postedby_type,
-                        ownerId: this.post.postedby_id,
-                    }
-
-                    let response = await this['profile/createLike'](data)
-
-                    if (response === 'unsuccessful') {
-                        this.isLiked = false
-                        this.likes -= 1
-                    }
+                    this.like(who)
+                } else if (this.showProfilesAction === 'save') {
+                    this.save(who)
                 } else if (this.showProfilesAction === 'flag') {
                     this.smallModalTitle = 'are you sure you want to flag this?'
                     this.smallModalDelete = true
@@ -690,6 +906,8 @@ import { mapGetters, mapActions } from 'vuex'
                     // setTimeout(() => {
                     //     this.clearSmallModal()
                     // }, 4000);
+                } else if (this.showProfilesAction === 'attach'){
+                    this.attach(who)
                 }
             },
             async clickedEdit(data){
@@ -701,7 +919,7 @@ import { mapGetters, mapActions } from 'vuex'
                     formData.append('file', data.contentFile)  
                 } else {
                     console.log('enters',data)
-                    if (data.type !== '') {
+                    if (data.type !== '' || data.type !== null) {
                         formData.append('type', this.post.typeName)
                         formData.append('typeId', this.post.type[0].id)
                     }
@@ -791,9 +1009,19 @@ import { mapGetters, mapActions } from 'vuex'
             clickedNo(){
                 this.clearSmallModal()
             },
-            clickedOpion(data) {
+            clickedOption(data) {
                 if (data === 'edit') {
                     this.showEdit = true
+                } else if (data === 'attach') {
+                    this.showAttach = true
+                } else if (data === 'save') {
+                    if (this.isSaved) {
+                        this.save(null)
+                        return
+                    }
+                    this.showProfilesText = 'save as'
+                    this.showProfilesAction = 'save'
+                    this.profilesAppear()
                 } else if (data === 'delete') {
                     this.smallModalTitle = 'are you sure you want to delete this'
                     this.smallModalInfo = false
@@ -812,6 +1040,34 @@ import { mapGetters, mapActions } from 'vuex'
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+    .loading,
+    .alert{
+        width: 100%;
+        text-align: center;
+        padding: 5px;
+    }
+
+    .alert{
+        font-size: 12px;
+    }
+
+    .success{
+        color: green;
+    }
+
+    .danger{
+        color: red;
+    }
+
+    .post-attachment{
+        top: 0;
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        z-index: 1;
+    }
+
     .post-show-wrapper{
         min-height: 200px;
         border: 1px solid dimgrey;
@@ -826,28 +1082,6 @@ import { mapGetters, mapActions } from 'vuex'
             margin-top: -10px;
             cursor: pointer;
             text-align: end;
-        }
-
-        .options{
-            font-size: 14px;
-            margin: 5px;
-            background-color: whitesmoke;
-            width: 75px;
-            position: absolute;
-            right: 0;
-            top: 15px;
-
-            span{
-                padding: 5px;
-                cursor: pointer;
-                display: block;
-                width: 100%;
-                text-align: center;
-
-                &:hover{
-                    box-shadow: 0 0 3px dimgray;
-                }
-            }
         }
 
         .top{
@@ -1010,6 +1244,10 @@ import { mapGetters, mapActions } from 'vuex'
                                 box-shadow: 0 0 3px gray;
                             }
                         }
+
+                        .unsetPosition{
+                            position: unset;
+                        }
                     }
 
                     .reason{
@@ -1017,6 +1255,10 @@ import { mapGetters, mapActions } from 'vuex'
                         top: 100%;
                         z-index: 3;
                     }
+                }
+
+                .unsetPosition{
+                    position: unset;
                 }
 
                 .comment-section{

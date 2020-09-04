@@ -15,8 +15,11 @@
                         </div>
                     </template>
                 </fade-right-fast>
+                <div class="post-loading" v-if="postLoading">
+                    <pulse-loader :loading="postLoading"></pulse-loader>
+                </div>
                 <div class="post"
-                    v-if="type === 'post'"
+                    v-if="type === 'post' && !postLoading"
                 >
                     <post-show
                         :post="data"
@@ -29,20 +32,23 @@
                     ></post-show>
                 </div>
                 <div class="answer"
-                    v-if="data.typeName === 'answer'"
+                    v-if="computedShowAnswer"
                 >
                     <answer-single
                         :answerFull="true"
                         :answer="data.type"
                         @answerUnlikeSuccessful="answerUnlikeSuccessful"
                         @answerLikeSuccessful="answerLikeSuccessful"
+                        @answerUnsaveSuccessful="answerUnsaveSuccessful"
+                        @answerSaveSuccessful="answerSaveSuccessful"
                         @updateAnswerSuccessful="updateAnswerSuccessful"
                         @deleteAnswerSuccess="deleteAnswerSuccess"
                         @answerMarkedSuccessful="answerMarkedSuccessful"
+                        @answerCommentSuccessful="answerCommentSuccessful"
                     ></answer-single>
                 </div>
                 <div class="post-preview"
-                    v-if="type === 'posttype'"
+                    v-if="type === 'posttype' && !postLoading"
                 >
                     <post-preview
                         :type="data.type"
@@ -123,6 +129,12 @@
                                     @viewModalCommentEditedMain="viewModalCommentEditedMain"
                                     @commentUnlikeSuccessfulMain="commentUnlikeSuccessfulMain"
                                     @commentLikeSuccessfulMain="commentLikeSuccessfulMain"
+                                    @commentUnlikeSuccessful="commentUnlikeSuccessful"
+                                    @commentLikeSuccessful="commentLikeSuccessful"
+                                    @commentUnsaveSuccessful="commentUnsaveSuccessful"
+                                    @commentSaveSuccessful="commentSaveSuccessful"
+                                    @commentUnsaveSuccessfulMain="commentUnsaveSuccessfulMain"
+                                    @commentSaveSuccessfulMain="commentSaveSuccessfulMain"
                                 ></comment-single>
                             </template>
                             <template v-if="answers.length">
@@ -137,12 +149,15 @@
                                     @answerMarked="answerMarked"
                                     @answerUnlikeSuccessful="answerUnlikeSuccessful"
                                     @answerLikeSuccessful="answerLikeSuccessful"
+                                    @answerUnsaveSuccessful="answerUnsaveSuccessful"
+                                    @answerSaveSuccessful="answerSaveSuccessful"
                                     @clickedShowAnswerComments="clickedShowAnswerComments"
                                     @updateAnswerSuccessful="updateAnswerSuccessful"
                                     @deleteAnswerSuccess="deleteAnswerSuccess"
                                     @answerUnflaggedSuccess="answerUnflaggedSuccess"
                                     @isAnswerOwner="isAnswerOwner"
                                     @answerMarkedSuccessful="answerMarkedSuccessful"
+                                    @answerCommentSuccessful="answerCommentSuccessful"
                                 ></answer-single>
                             </template>
                         </template>
@@ -154,7 +169,7 @@
                         @click="clickedShowMore"
                         v-if="showMoreComments"
                     >
-                        show more
+                        <font-awesome-icon :icon="['fa','ellipsis-h']"></font-awesome-icon>
                     </div>
                 </template>
             </div>
@@ -197,10 +212,13 @@
                     :data="postModalData"
                     @answerUnlikeSuccessful="postModalAnswerUnlikeSuccessful"
                     @answerLikeSuccessful="postModalAnswerLikeSuccessful"
+                    @answerSaveSuccessfulMain="answerSaveSuccessfulMain"
+                    @answerUnsaveSuccessfulMain="answerUnsaveSuccessfulMain"
                     :type="postModalType"
-                    :updateAnswerSuccessfulMain="updateAnswerSuccessfulMain"
-                    :deleteAnswerSuccessMain="deleteAnswerSuccessMain"
-                    :answerMarkedSuccessfulMain="answerMarkedSuccessfulMain"
+                    @updateAnswerSuccessfulMain="updateAnswerSuccessfulMain"
+                    @deleteAnswerSuccessMain="deleteAnswerSuccessMain"
+                    @answerMarkedSuccessfulMain="answerMarkedSuccessfulMain"
+                    @answerCommentSuccessfulMain="answerCommentSuccessfulMain"
                 >
                 </post-modal>
             </template>
@@ -228,6 +246,10 @@ import { strings } from '../services/helpers';
             show: {
                 type: Boolean,
                 default: true,
+            },
+            postLoading: {
+                type: Boolean,
+                default: false,
             },
             type: {
                 type: String,
@@ -302,7 +324,7 @@ import { strings } from '../services/helpers';
             show: {
                 immediate: true,
                 handler(newValue){
-                    if (newValue) {
+                    if (newValue && this.data) {
                         if (this.data.hasOwnProperty('typeName') && 
                             (this.data.typeName === 'question' || this.data.typeName === 'riddle')) {
                             this.noCommentAnswer = 'there are no answers'
@@ -313,6 +335,14 @@ import { strings } from '../services/helpers';
                             this.data.type.hasOwnProperty('possible_answers')) {
                             this.showAnswerList = true
                         }
+                    }
+                    this.getCommentsAnswers()
+                }
+            },
+            data: {
+                immediate: true,
+                handler(newValue){
+                    if (newValue !==  null) {
                         this.getCommentsAnswers()
                     }
                 }
@@ -338,14 +368,16 @@ import { strings } from '../services/helpers';
             ...mapGetters(['getProfiles']),
             computedNoCommentAnswer(){
                 if (this.type === 'posttype' && 
-                    (this.data.typeName === 'question' || this.data.typeName === 'riddle')) {
-                    return !this.answers.length && !this.loading
+                    (this.data && this.data.typeName === 'question' || this.data.typeName === 'riddle')) {
+                    return !this.answers.length && !this.loading && !this.postLoading
                         ? true : false
                 } else {
-                    return !this.comments.length && !this.loading
+                    return !this.comments.length && !this.loading && !this.postLoading
                         ? true : false
                 }
-                
+            },
+            computedShowAnswer(){
+                return this.data && this.data.typeName === 'answer' && !this.postLoading
             },
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
@@ -357,7 +389,7 @@ import { strings } from '../services/helpers';
                 return this.post ? this.post.comments_number : 0
             },
             computedPossibleAnswers(){
-                if (this.data.typeName === 'question' && this.type === 'posttype' &&
+                if (this.data && this.data.typeName === 'question' && this.type === 'posttype' &&
                     this.data.type.hasOwnProperty('possible_answers')) {
                     return this.data.type.possible_answers
                 }
@@ -470,11 +502,118 @@ import { strings } from '../services/helpers';
                     this.addLike(data.itemId,data.like,'answer')
                 }
             },
+            //comment added to answer
+            answerCommentSuccessfulMain(data){
+                this.addAnswerCommentNumber(data)
+            },
+            answerCommentSuccessful(data){ 
+                if (this.data.typeName === 'answer' && 
+                    this.data.type.hasOwnProperty('answerable_type')) {
+                    this.$emit('answerCommentSuccessfulMain',data)
+                    this.comments.unshift(data)
+                }
+                this.addAnswerCommentNumber(data)
+            },
+            addAnswerCommentNumber(data){
+                let answerIndex = this.answers.findIndex(answer=>{
+                    return answer.id === data.commentable_id
+                })
+                if (answerIndex > -1) {
+                    this.answers[answerIndex].comments_number += 1
+                }
+            },
+            //adding and removing saves to and from comments
+            commentSaveSuccessfulMain(data){
+                this.addSave(data.itemId,data.save,'comment')
+            },
+            commentUnsaveSuccessfulMain(data){
+                this.removeSave(data.itemId,data.saveId,'comment')
+            },
+            commentSaveSuccessful(data){
+                this.addSave(data.itemId,data.save,'comment') 
+            },
+            commentUnsaveSuccessful(data){
+                this.removeSave(data.itemId,data.saveId,'comment') 
+            },
+            //adding and removing likes to and from comments
             commentUnlikeSuccessfulMain(data){
                 this.removeLike(data.itemId,data.likeId)
             },
             commentLikeSuccessfulMain(data){
                 this.addLike(data.itemId,data.like)
+            },
+            commentLikeSuccessful(data){
+                this.addLike(data.itemId,data.like,'comment') 
+            },
+            commentUnlikeSuccessful(data){
+                this.removeLike(data.itemId,data.likeId,'comment') 
+            },
+            ///adding and removing saves to and from answers
+            answerSaveSuccessfulMain(data){
+                this.addSave(data.itemId,data.save,'answer')
+            },
+            answerUnsaveSuccessfulMain(data){
+                this.removeSave(data.itemId,data.saveId,'answer')
+            },
+            answerSaveSuccessful(data){
+                if (data.main) {
+                    this.$emit('answerSaveSuccessfulMain',data)
+                } else {
+                    this.addSave(data.itemId,data.save,'answer') 
+                }
+            },
+            answerUnsaveSuccessful(data){
+                if (data.main) {
+                    this.$emit('answerUnsaveSuccessfulMain',data)
+                } else {
+                    this.removeSave(data.itemId,data.saveId,'answer') 
+                }
+            },
+            removeSave(id,saveId,type = 'comment'){ //for removing the save object
+                if (type === 'comment') {
+                    let commentIndex = this.comments.findIndex(comment=>{
+                        return comment.id === id
+                    })
+                    if (commentIndex > -1) {
+                        let saveIndex =  this.comments[commentIndex].saves.findIndex(save=>{
+                            return save.id === saveId
+                        })
+                        if (saveIndex > -1) {
+                            this.comments[commentIndex]
+                                .saves.splice(saveIndex,1)
+                        }
+                    }
+                } else if (type === 'answer') {
+                    let answerIndex = this.answers.findIndex(answer=>{
+                        return answer.id === id
+                    })
+                    if (answerIndex > -1) {
+                        let saveIndex =  this.answers[answerIndex].saves.findIndex(save=>{
+                            return save.id === saveId
+                        })
+                        if (saveIndex > -1) {
+                            this.answers[answerIndex]
+                                .saves.splice(saveIndex,1)
+                        }
+                    }
+                }
+            },
+            addSave(id,save,type = 'comment'){
+                if (type === 'comment') {
+                    let commentIndex = this.comments.findIndex(comment=>{
+                        return comment.id === id
+                    })
+                    if (commentIndex > -1) {
+                        this.comments[commentIndex].saves.unshift(save)
+                    }
+                } else if (type === 'answer') {
+                    let answerIndex = this.answers.findIndex(answer=>{
+                        return answer.id === id
+                    })
+                    if (answerIndex > -1) {
+                        this.answers[answerIndex].saves.unshift(save)
+                    }
+                }
             },
             removeLike(id,likeId,type = 'comment'){ //for removing the like object
                 if (type === 'comment') {
@@ -599,7 +738,8 @@ import { strings } from '../services/helpers';
                 this.showProfiles = false
                 this.answerLoading = true
                 let formData = new FormData,
-                    type = ''
+                    type = '',
+                    data = {}
 
                 if (this.file) {
                     formData.append('file', this.file)
@@ -636,15 +776,16 @@ import { strings } from '../services/helpers';
                 let response = null
                 if (who.hasOwnProperty('itemId')) {
                     
-                    let data = {
+                    data = {
                         itemId: who.itemId,
                     }
                     type = 'update'
                     response = await this['profile/updateAnswer']({data,formData})
                 } else {
-                    let data = {
+                    data = {
                         item: this.data.typeName,
                         itemId: this.data.type.id,
+                        postId: this.data.postId
                     }
                     type = 'create'
                     response = await this['profile/createAnswer']({data,formData})
@@ -749,6 +890,9 @@ import { strings } from '../services/helpers';
                 this.getCommentsAnswers()
             },
             async getCommentsAnswers(){
+                if (this.data === null) {
+                    return
+                }
                 this.loading = true
                 let data = {},
                     response = null
@@ -848,6 +992,14 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 padding: 20px 10px 0;
                 border-bottom: 1px solid gray;
 
+                .post-loading{
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+
                 .alert-message{
                     font-size: 14px;
                     width: 80%;
@@ -920,6 +1072,10 @@ $modal-margin-height: (100vh - $modal-height)/2;
                     border-radius: 10px;
                     font-size: 14px;
                     cursor: pointer;
+                }
+                
+                .slide-up-wrapper{
+                    padding: 10px 0 30px;
                 }
             }
         }

@@ -256,6 +256,8 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         } else if (newValue.typeName === 'question') {
                             this.inputQuestion = newValue.type[0].question
                             // this.inputEditPublished = new Date(newValue.type[0].published).toDateString().slice(4)
+                        } else {
+
                         }
                     }
                 },
@@ -301,6 +303,9 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                     this.edit && this.editableData.typeName === 'activity' ? true : false
             },
             computedPublished() {
+                if (this.edit && this.editableData.type === null) {
+                    return false
+                }
                 return true
             },
             computedSection() {

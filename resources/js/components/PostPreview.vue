@@ -232,6 +232,7 @@ import PostButton from './PostButton'
                     data: {
                         type: this.type,
                         typeName: this.typeName,
+                        postId: this.post.id,
                         owner: {
                             account: strings.getAccount(this.post.postedby_type),
                             accountId: this.post.postedby_id

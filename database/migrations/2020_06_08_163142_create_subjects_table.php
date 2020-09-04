@@ -15,11 +15,11 @@ class CreateSubjectsTable extends Migration
     {
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('addedby'); // facilitator school admin
-            $table->nullableMorphs('subjectable'); // school class 
+            $table->nullableMorphs('addedby'); // facilitator school admin professional
+            // $table->nullableMorphs('subjectable'); // school class 
             $table->string('name');
-            $table->string('description')->nullable();
-            $table->string('rationale')->nullable();
+            $table->text('description')->nullable();
+            $table->text('rationale')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });
