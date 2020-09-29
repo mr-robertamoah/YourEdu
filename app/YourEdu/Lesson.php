@@ -9,6 +9,24 @@ class Lesson extends Model
 {
     //
     use SoftDeletes;
+    protected $fillable = [
+        'title', 'description', 'ageGroup',
+    ];
+
+    public function addedby()
+    {
+        return $this->morphTo();
+    }
+
+    public function ownedby()
+    {
+        return $this->morphTo();
+    }
+
+    public function lessonable()
+    {
+        return $this->morphTo();
+    }
 
     public function acitvities(){
         return $this->morphMany(Activity::class,'activityfor');
@@ -51,16 +69,6 @@ class Lesson extends Model
     public function lessonRequirements()
     {
         return $this->hasMany(LessonRequirement::class);
-    }
-
-    public function ownedby()
-    {
-        return $this->morphTo();
-    }
-
-    public function lessonable()
-    {
-        return $this->morphTo();
     }
 
     public function curriculumable()

@@ -351,24 +351,38 @@ import PostButton from './PostButton'
                 width: 100%;
                 padding-left: 10px;
                 padding-right: 10px;
-                max-height: 120px;
-                overflow: hidden;
+                height: 120px;
 
-                audio,
-                video{
+                audio{
                     width: inherit;
                     height: auto;
                 }
 
-                img{
+                img,
+                video{
                     width: inherit;
-                    height: auto;
+                    height: inherit;
+                    object-fit: contain;
+                    object-position: top;
                 }
             }  
 
             .typeMediaFull{
-                max-height: none;
+                height: 200px;
                 overflow: visible;
+
+                audio{
+                    width: inherit;
+                    height: auto;
+                }
+
+                img,
+                video{
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    object-position: top;
+                }
             }              
         }
 

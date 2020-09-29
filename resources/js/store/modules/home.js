@@ -1,4 +1,5 @@
 import {HomeService} from "../../services/home.service";
+import { strings } from "../../services/helpers";
 
 const home = {
     namespaced: true,
@@ -327,17 +328,37 @@ const home = {
             }
         },
         POSTS_SUCCESS(state,main){
-            let {params, data} = main
+            let {nextPage, params, data} = main
             if (data.data.length) {
                 if (params.hasOwnProperty('mine')) {
+                    if (nextPage === 1) {
+                        state.postsMine = data.data
+                        return 
+                    }
                     state.postsMine.push(...data.data)
                 } else if (params.hasOwnProperty('followers')) {
+                    if (nextPage === 1) {
+                        state.postsFollowers = data.data
+                        return
+                    }
                     state.postsFollowers.push(...data.data)
                 } else if (params.hasOwnProperty('followings')) {
+                    if (nextPage === 1) {
+                        state.postsFollowings = data.data
+                        return
+                    }
                     state.postsFollowings.push(...data.data)
                 } else if (params.hasOwnProperty('attachments')) {
+                    if (nextPage === 1) {
+                        state.postsAttachments = data.data
+                        return
+                    }
                     state.postsAttachments.push(...data.data)
                 } else {
+                    if (nextPage === 1) {
+                        state.posts = data.data
+                        return
+                    }
                     state.posts.push(...data.data)
                 }
             } else{
@@ -350,66 +371,166 @@ const home = {
                 if (params.hasOwnProperty('postType') &&
                     params.postType === 'questions') {
                     if (params.hasOwnProperty('mine')) {
+                        if (nextPage === 1) {
+                            state.questionsMine = data.data
+                            return 
+                        }
                         state.questionsMine.push(...data.data)
                     } else if (params.hasOwnProperty('followers')) {
+                        if (nextPage === 1) {
+                            state.questionsFollowers = data.data
+                            return 
+                        }
                         state.questionsFollowers.push(...data.data)
                     } else if (params.hasOwnProperty('followings')) {
+                        if (nextPage === 1) {
+                            state.questionsFollowings = data.data
+                            return 
+                        }
                         state.questionsFollowings.push(...data.data)
                     } else if (params.hasOwnProperty('attachments')) {
+                        if (nextPage === 1) {
+                            state.questionsAttachments = data.data
+                            return 
+                        }
                         state.questionsAttachments.push(...data.data)
                     } else {
+                        if (nextPage === 1) {
+                            state.questions = data.data
+                            return 
+                        }
                         state.questions.push(...data.data)
                     }
                 } else if (params.hasOwnProperty('postType') &&
                     params.postType === 'riddles') {
                     if (params.hasOwnProperty('mine')) {
+                        if (nextPage === 1) {
+                            state.riddlesMine = data.data
+                            return 
+                        }
                         state.riddlesMine.push(...data.data)
                     } else if (params.hasOwnProperty('followers')) {
+                        if (nextPage === 1) {
+                            state.riddlesFollowers = data.data
+                            return 
+                        }
                         state.riddlesFollowers.push(...data.data)
                     } else if (params.hasOwnProperty('followings')) {
+                        if (nextPage === 1) {
+                            state.riddlesFollowings = data.data
+                            return 
+                        }
                         state.riddlesFollowings.push(...data.data)
                     } else if (params.hasOwnProperty('attachments')) {
+                        if (nextPage === 1) {
+                            state.riddlesAttachments = data.data
+                            return 
+                        }
                         state.riddlesAttachments.push(...data.data)
                     } else {
+                        if (nextPage === 1) {
+                            state.riddles = data.data
+                            return 
+                        }
                         state.riddles.push(...data.data)
                     }
                 } else if (params.hasOwnProperty('postType') &&
                     params.postType === 'poems') {
                     if (params.hasOwnProperty('mine')) {
+                        if (nextPage === 1) {
+                            state.poemsMine = data.data
+                            return 
+                        }
                         state.poemsMine.push(...data.data)
                     } else if (params.hasOwnProperty('followers')) {
+                        if (nextPage === 1) {
+                            state.poemsFollowers = data.data
+                            return 
+                        }
                         state.poemsFollowers.push(...data.data)
                     } else if (params.hasOwnProperty('followings')) {
+                        if (nextPage === 1) {
+                            state.poemsFollowings = data.data
+                            return 
+                        }
                         state.poemsFollowings.push(...data.data)
                     } else if (params.hasOwnProperty('attachments')) {
+                        if (nextPage === 1) {
+                            state.poemsAttachments = data.data
+                            return 
+                        }
                         state.poemsAttachments.push(...data.data)
                     } else {
+                        if (nextPage === 1) {
+                            state.poems = data.data
+                            return 
+                        }
                         state.poems.push(...data.data)
                     }
                 } else if (params.hasOwnProperty('postType') &&
                     params.postType === 'activities') {
                     if (params.hasOwnProperty('mine')) {
+                        if (nextPage === 1) {
+                            state.activitiesMine = data.data
+                            return 
+                        }
                         state.activitiesMine.push(...data.data)
                     } else if (params.hasOwnProperty('followers')) {
+                        if (nextPage === 1) {
+                            state.activitiesFollowers = data.data
+                            return 
+                        }
                         state.activitiesFollowers.push(...data.data)
                     } else if (params.hasOwnProperty('followings')) {
+                        if (nextPage === 1) {
+                            state.activitiesFollowings = data.data
+                            return 
+                        }
                         state.activitiesFollowings.push(...data.data)
                     } else if (params.hasOwnProperty('attachments')) {
+                        if (nextPage === 1) {
+                            state.activitiesAttachments = data.data
+                            return 
+                        }
                         state.activitiesAttachments.push(...data.data)
                     } else {
+                        if (nextPage === 1) {
+                            state.activites = data.data
+                            return 
+                        }
                         state.activities.push(...data.data)
                     }
                 } else if (params.hasOwnProperty('postType') &&
                     params.postType === 'books') {
                     if (params.hasOwnProperty('mine')) {
+                        if (nextPage === 1) {
+                            state.booksMine = data.data
+                            return 
+                        }
                         state.booksMine.push(...data.data)
                     } else if (params.hasOwnProperty('followers')) {
+                        if (nextPage === 1) {
+                            state.booksFollowers = data.data
+                            return 
+                        }
                         state.booksFollowers.push(...data.data)
                     } else if (params.hasOwnProperty('followings')) {
+                        if (nextPage === 1) {
+                            state.booksFollowings = data.data
+                            return 
+                        }
                         state.booksFollowings.push(...data.data)
                     } else if (params.hasOwnProperty('attachments')) {
+                        if (nextPage === 1) {
+                            state.booksAttachments = data.data
+                            return 
+                        }
                         state.booksAttachments.push(...data.data)
                     } else {
+                        if (nextPage === 1) {
+                            state.books = data.data
+                            return 
+                        }
                         state.books.push(...data.data)
                     }
                 }
@@ -435,6 +556,466 @@ const home = {
         },
         CLEAR_BOOKS_ATTACHMENTS(state){
             state.booksAttachments = []
+        },
+        NEW_POST(state,data){
+            let followerIndex = null,
+                followingIndex = null,
+                isFollower = false,
+                isFollowing = false,
+                isQuestion = data.post.typeName === 'question' ? true : false,
+                isPoem = data.post.typeName === 'poem' ? true : false,
+                isRiddle = data.post.typeName === 'riddle' ? true : false,
+                isBook = data.post.typeName === 'book' ? true : false,
+                isActivity = data.post.typeName === 'activity' ? true : false
+
+            followerIndex = data.userFollowers.findIndex(follower=>{
+                return follower.followedby_type === data.post.postedby_type &&
+                    follower.followedby_id === data.post.postedby_id
+            })
+            if (followerIndex > -1) {
+                isFollower = true
+            }
+            followingIndex = data.userFollowings.findIndex(following=>{
+                return following.followable_type === data.post.postedby_type &&
+                    following.followable_id === data.post.postedby_id
+            })
+            if (followingIndex > -1) {
+                isFollowing = true
+            }
+    
+            state.posts.unshift(data.post)
+            if (isFollower && state.postsFollowers.length) {
+                state.postsFollowers.unshift(data.post)
+            }
+            if (isFollowing && state.postsFollowings.length) {
+                state.postsFollowings.unshift(data.post)
+            } //add that for attachments
+            //poems
+            if (isPoem) {
+                state.poems.unshift(data.post)
+                if (isFollower && state.poemsFollowers.length) {
+                    state.poemsFollowers.unshift(data.post)
+                }
+                if (isFollowing && state.poemsFollowings.length) {
+                    state.poemsFollowings.unshift(data.post)
+                } //add that for attachments
+            }
+            //riddles
+            if (isRiddle) {
+                state.riddles.unshift(data.post)
+                if (isFollower && state.riddlesFollowers.length) {
+                    state.riddlesFollowers.unshift(data.post)
+                }
+                if (isFollowing && state.riddlesFollowings.length) {
+                    state.riddlesFollowings.unshift(data.post)
+                } 
+            }
+            //questions
+            if (isQuestion) {
+                state.questions.unshift(data.post)
+                if (isFollower && state.questionsFollowers.length) {
+                    state.questionsFollowers.unshift(data.post)
+                }
+                if (isFollowing && state.questionsFollowings.length) {
+                    state.questionsFollowings.unshift(data.post)
+                } 
+            }
+            //books
+            if (isBook) {
+                state.books.unshift(data.post)
+                if (isFollower && state.booksFollowers.length) {
+                    state.booksFollowers.unshift(data.post)
+                }
+                if (isFollowing && state.booksFollowings.length) {
+                    state.booksFollowings.unshift(data.post)
+                } 
+            }
+            //activities
+            if (isActivity) {
+                state.activities.unshift(data.post)
+                if (isFollower && state.activitiesFollowers.length) {
+                    state.activitiesFollowers.unshift(data.post)
+                }
+                if (isFollowing && state.activitiesFollowings.length) {
+                    state.activitiesFollowings.unshift(data.post)
+                } 
+            }
+        },
+        REPLACE_POST(state,data){
+            console.log(data);
+            let followerIndex = null,
+                postIndex = null,
+                isFollower = false,
+                isFollowing = false,
+                followingIndex = null,
+                isQuestion = data.post.typeName === 'question' ? true : false,
+                isPoem = data.post.typeName === 'poem' ? true : false,
+                isRiddle = data.post.typeName === 'riddle' ? true : false,
+                isBook = data.post.typeName === 'book' ? true : false,
+                isActivity = data.post.typeName === 'activity' ? true : false
+
+            followerIndex = data.userFollowers.findIndex(follower=>{
+                return follower.followedby_type === data.post.postedby_type &&
+                    follower.followedby_id === data.post.postedby_id
+            })
+            if (followerIndex > -1) {
+                isFollower = true
+            }
+            followingIndex = data.userFollowings.findIndex(following=>{
+                return following.followable_type === data.post.postedby_type &&
+                    following.followable_id === data.post.postedby_id
+            })
+            if (followingIndex > -1) {
+                isFollowing = true
+            }
+
+            postIndex = state.posts.findIndex(oldPost=>{
+                return oldPost.id === data.post.id
+            })
+            if (postIndex > -1) {
+                state.posts.splice(postIndex,1,data.post)
+            }
+            if (isFollower && state.postsFollowers.length) {
+                postIndex = state.postsFollowers.findIndex(oldPost=>{
+                    return oldPost.id === data.post.id
+                })
+                if (postIndex > -1) {
+                    state.postsFollowers.splice(postIndex,1,data.post)
+                }
+            }
+            if (isFollowing && state.postsFollowings.length) {
+                postIndex = state.postsFollowings.findIndex(oldPost=>{
+                    return oldPost.id === data.post.id
+                })
+                if (postIndex > -1) {
+                    state.postsFollowings.splice(postIndex,1,data.post)
+                }
+            } //add that for attachments
+            //poems
+            if (isPoem) {
+                postIndex = state.poems.findIndex(oldPost=>{
+                    return oldPost.id === data.post.id
+                })
+                if (postIndex > -1) {
+                    state.poems.splice(postIndex,1,data.post)
+                }
+                if (isFollower && state.poemsFollowers.length) {
+                    postIndex = state.poemsFollowers.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.poemsFollowers.splice(postIndex,1,data.post)
+                    }
+                }
+                if (isFollowing && state.poemsFollowings.length) {
+                    postIndex = state.poemsFollowings.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.poemsFollowings.splice(postIndex,1,data.post)
+                    }
+                } //add that for attachments
+            }
+            //riddles
+            if (isRiddle) {
+                postIndex = state.riddles.findIndex(oldPost=>{
+                    return oldPost.id === data.post.id
+                })
+                if (postIndex > -1) {
+                    state.riddles.splice(postIndex,1,data.post)
+                }
+                if (isFollower && state.riddlesFollowers.length) {
+                    postIndex = state.riddlesFollowers.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.riddlesFollowers.splice(postIndex,1,data.post)
+                    }
+                }
+                if (isFollowing && state.riddlesFollowings.length) {
+                    postIndex = state.riddlesFollowings.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.riddlesFollowings.splice(postIndex,1,data.post)
+                    }
+                } 
+            }
+            //questions
+            if (isQuestion) {
+                postIndex = state.questions.findIndex(oldPost=>{
+                    return oldPost.id === data.post.id
+                })
+                if (postIndex > -1) {
+                    state.questions.splice(postIndex,1,data.post)
+                }
+                if (isFollower && state.questionsFollowers.length) {
+                    postIndex = state.questionsFollowers.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.questionsFollowers.splice(postIndex,1,data.post)
+                    }
+                }
+                if (isFollowing && state.questionsFollowings.length) {
+                    postIndex = state.questionsFollowings.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.questionsFollowings.splice(postIndex,1,data.post)
+                    }
+                } 
+            }
+            //books
+            if (isBook) {
+                postIndex = state.books.findIndex(oldPost=>{
+                    return oldPost.id === data.post.id
+                })
+                if (postIndex > -1) {
+                    state.books.splice(postIndex,1,data.post)
+                }
+                if (isFollower && state.booksFollowers.length) {
+                    postIndex = state.booksFollowers.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.booksFollowers.splice(postIndex,1,data.post)
+                    }
+                }
+                if (isFollowing && state.booksFollowings.length) {
+                    postIndex = state.booksFollowings.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.booksFollowings.splice(postIndex,1,data.post)
+                    }
+                } 
+            }
+            //activities
+            if (isActivity) {
+                postIndex = state.activities.findIndex(oldPost=>{
+                    return oldPost.id === data.post.id
+                })
+                if (postIndex > -1) {
+                    state.activities.splice(postIndex,1,data.post)
+                }
+                if (isFollower && state.activitiesFollowers.length) {
+                    postIndex = state.activitiesFollowers.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.activitiesFollowers.splice(postIndex,1,data.post)
+                    }
+                }
+                if (isFollowing && state.activitiesFollowings.length) {
+                    postIndex = state.activitiesFollowings.findIndex(oldPost=>{
+                        return oldPost.id === data.post.id
+                    })
+                    if (postIndex > -1) {
+                        state.activitiesFollowings.splice(postIndex,1,data.post)
+                    }
+                } 
+            }
+        },
+        REMOVE_POST(state,postInfo){
+            let postIndex = null,
+                postId = Number(postInfo.postId)
+            //posts
+            postIndex = state.posts.findIndex(oldPost=>{
+                return oldPost.id === postId
+            })
+            if (postIndex > -1) {
+                state.posts.splice(postIndex,1)
+            }
+            if (state.postsFollowers.length) {
+                postIndex = state.postsFollowers.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.postsFollowers.splice(postIndex,1)
+                }
+            }
+            if (state.postsFollowings.length) {
+                postIndex = state.postsFollowings.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.postsFollowings.splice(postIndex,1)
+                }
+            }
+            if (state.postsAttachments.length) {
+                postIndex = state.postsAttachments.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.postsAttachments.splice(postIndex,1)
+                }
+            }
+            //poems
+            if (state.poems.length) {
+                postIndex = state.poems.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.poems.splice(postIndex,1)
+                }
+            }
+            if (state.poemsFollowers.length) {
+                postIndex = state.poemsFollowers.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.poemsFollowers.splice(postIndex,1)
+                }
+            }
+            if (state.poemsFollowings.length) {
+                postIndex = state.poemsFollowings.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.poemsFollowings.splice(postIndex,1)
+                }
+            }
+            if (state.poemsAttachments.length) {
+                postIndex = state.poemsAttachments.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.poemsAttachments.splice(postIndex,1)
+                }
+            }
+            //questions
+            if (state.questions.length) {
+                postIndex = state.questions.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.questions.splice(postIndex,1)
+                }
+            }
+            if (state.questionsFollowers.length) {
+                postIndex = state.questionsFollowers.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.questionsFollowers.splice(postIndex,1)
+                }
+            }
+            if (state.questionsFollowings.length) {
+                postIndex = state.questionsFollowings.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.questionsFollowings.splice(postIndex,1)
+                }
+            }
+            if (state.questionsAttachments.length) {
+                postIndex = state.questionsAttachments.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.questionsAttachments.splice(postIndex,1)
+                }
+            }
+            //riddles
+            if (state.riddles.length) {
+                postIndex = state.riddles.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.riddles.splice(postIndex,1)
+                }
+            }
+            if (state.riddlesFollowers.length) {
+                postIndex = state.riddlesFollowers.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.riddlesFollowers.splice(postIndex,1)
+                }
+            }
+            if (state.riddlesFollowings.length) {
+                postIndex = state.riddlesFollowings.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.riddlesFollowings.splice(postIndex,1)
+                }
+            }
+            if (state.riddlesAttachments.length) {
+                postIndex = state.riddlesAttachments.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.riddlesAttachments.splice(postIndex,1)
+                }
+            }
+            //books
+            if (state.books.length) {
+                postIndex = state.books.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.books.splice(postIndex,1)
+                }
+            }
+            if (state.booksFollowers.length) {
+                postIndex = state.booksFollowers.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.booksFollowers.splice(postIndex,1)
+                }
+            }
+            if (state.booksFollowings.length) {
+                postIndex = state.booksFollowings.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.booksFollowings.splice(postIndex,1)
+                }
+            }
+            if (state.booksAttachments.length) {
+                postIndex = state.booksAttachments.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.booksAttachments.splice(postIndex,1)
+                }
+            }
+            //activities
+            if (state.activities.length) {
+                postIndex = state.activities.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.activities.splice(postIndex,1)
+                }
+            }
+            if (state.activitiesFollowers.length) {
+                postIndex = state.activitiesFollowers.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.activitiesFollowers.splice(postIndex,1)
+                }
+            }
+            if (state.activitiesFollowings.length) {
+                postIndex = state.activitiesFollowings.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.activitiesFollowings.splice(postIndex,1)
+                }
+            }
+            if (state.activitiesAttachments.length) {
+                postIndex = state.activitiesAttachments.findIndex(oldPost=>{
+                    return oldPost.id === postId
+                })
+                if (postIndex > -1) {
+                    state.activitiesAttachments.splice(postIndex,1)
+                }
+            }
         },
         ////////////////////////////////////comments
 
@@ -820,6 +1401,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.posts[postIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 postIndex = state.postsMine.findIndex(post=>{
@@ -831,6 +1413,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.postsMine[postIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 postIndex = state.postsFollowers.findIndex(post=>{
@@ -842,6 +1425,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.postsFollowers[postIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 postIndex = state.postsFollowings.findIndex(post=>{
@@ -853,6 +1437,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.postsFollowings[postIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 postIndex = state.postsAttachments.findIndex(post=>{
@@ -864,6 +1449,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.postsAttachments[postIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 ///poems
@@ -876,6 +1462,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.poems[poemIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 poemIndex = state.poemsMine.findIndex(poem=>{
@@ -887,6 +1474,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.poemsMine[poemIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 poemIndex = state.poemsFollowers.findIndex(poem=>{
@@ -898,6 +1486,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.poemsFollowers[poemIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 poemIndex = state.poemsFollowings.findIndex(poem=>{
@@ -909,6 +1498,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.poemsFollowings[poemIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 poemIndex = state.poemsAttachments.findIndex(poem=>{
@@ -920,6 +1510,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.poemsAttachments[poemIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 //questions
@@ -932,6 +1523,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.questions[questionIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 questionIndex = state.questionsMine.findIndex(question=>{
@@ -943,6 +1535,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.questionsMine[questionIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 questionIndex = state.questionsFollowers.findIndex(question=>{
@@ -954,6 +1547,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.questionsFollowers[questionIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 questionIndex = state.questionsFollowings.findIndex(question=>{
@@ -965,6 +1559,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.questionsFollowings[questionIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 questionIndex = state.questionsAttachments.findIndex(question=>{
@@ -976,6 +1571,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.questionsAttachments[questionIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 //riddles
@@ -988,6 +1584,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.riddles[riddleIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 riddleIndex = state.riddlesMine.findIndex(riddle=>{
@@ -999,6 +1596,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.riddlesMine[riddleIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 riddleIndex = state.riddlesFollowers.findIndex(riddle=>{
@@ -1010,6 +1608,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.riddlesFollowers[riddleIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 riddleIndex = state.riddlesFollowings.findIndex(riddle=>{
@@ -1021,6 +1620,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.riddlesFollowings[riddleIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 riddleIndex = state.riddlesAttachments.findIndex(riddle=>{
@@ -1032,6 +1632,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.riddlesAttachments[riddleIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 //books
@@ -1044,6 +1645,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.books[bookIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 bookIndex = state.booksMine.findIndex(book=>{
@@ -1055,6 +1657,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.booksMine[bookIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 bookIndex = state.booksFollowers.findIndex(book=>{
@@ -1066,6 +1669,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.booksFollowers[bookIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 bookIndex = state.booksFollowings.findIndex(book=>{
@@ -1077,6 +1681,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.booksFollowings[bookIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 bookIndex = state.booksAttachments.findIndex(book=>{
@@ -1088,6 +1693,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.booksAttachments[bookIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 //activities
@@ -1100,6 +1706,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.activities[activityIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 activityIndex = state.activitiesMine.findIndex(activity=>{
@@ -1111,6 +1718,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.activitiesMine[activityIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 activityIndex = state.activitiesFollowers.findIndex(activity=>{
@@ -1122,6 +1730,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.activitiesFollowers[activityIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 activityIndex = state.activitiesFollowings.findIndex(activity=>{
@@ -1133,6 +1742,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.activitiesFollowings[activityIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
                 activityIndex = state.activitiesAttachments.findIndex(activity=>{
@@ -1144,6 +1754,7 @@ const home = {
                     })
                     if (commentIndex > -1) {
                         state.activitiesAttachments[activityIndex].comments.splice(commentIndex,1)
+                        return
                     }
                 }
             } else if (data.owner.toLocaleLowerCase().includes('comment')) {
@@ -1151,6 +1762,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1158,6 +1770,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1165,6 +1778,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1172,6 +1786,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1179,6 +1794,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1186,6 +1802,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1193,6 +1810,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1200,6 +1818,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1207,6 +1826,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1214,6 +1834,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1221,6 +1842,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1228,6 +1850,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1235,6 +1858,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1242,6 +1866,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1249,6 +1874,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1256,6 +1882,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1263,6 +1890,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1270,6 +1898,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1277,6 +1906,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1284,6 +1914,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1291,6 +1922,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1298,6 +1930,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1305,6 +1938,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1312,6 +1946,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1319,6 +1954,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1326,6 +1962,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1333,6 +1970,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1340,6 +1978,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1347,6 +1986,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
@@ -1354,12 +1994,14 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.commentId) {
                             comment.comments -= 1
+                            return
                         }
                     })
                 })
             }
         },
         COMMENT_SUCCESS(state, data){
+            //appears that what is done to an item at home posts is done to all the other parts
             if (data.comment.commentable_type.toLocaleLowerCase().includes('post')) {
                 //posts
                 let postIndex = state.posts.findIndex(post=>{
@@ -1367,30 +2009,35 @@ const home = {
                 })
                 if (postIndex > -1) {
                     state.posts[postIndex].comments.unshift(data.comment)
+                    return
                 }
                 postIndex = state.postsMine.findIndex(post=>{
                     return post.id === data.comment.commentable_id
                 })
                 if (postIndex > -1) {
                     state.postsMine[postIndex].comments.unshift(data.comment)
+                    return
                 }
                 postIndex = state.postsFollowers.findIndex(post=>{
                     return post.id === data.comment.commentable_id
                 })
                 if (postIndex > -1) {
                     state.postsFollowers[postIndex].comments.unshift(data.comment)
+                    return
                 }
                 postIndex = state.postsFollowings.findIndex(post=>{
                     return post.id === data.comment.commentable_id
                 })
                 if (postIndex > -1) {
                     state.postsFollowings[postIndex].comments.unshift(data.comment)
+                    return
                 }
                 postIndex = state.postsAttachments.findIndex(post=>{
                     return post.id === data.comment.commentable_id
                 })
                 if (postIndex > -1) {
                     state.postsAttachments[postIndex].comments.unshift(data.comment)
+                    return
                 }
                 //poems
                 let poemIndex = state.poems.findIndex(poem=>{
@@ -1398,30 +2045,35 @@ const home = {
                 })
                 if (poemIndex > -1) {
                     state.poems[poemIndex].comments.unshift(data.comment)
+                    return
                 }
                 poemIndex = state.poemsMine.findIndex(poem=>{
                     return poem.id === data.comment.commentable_id
                 })
                 if (poemIndex > -1) {
                     state.poemsMine[poemIndex].comments.unshift(data.comment)
+                    return
                 }
                 poemIndex = state.poemsFollowers.findIndex(poem=>{
                     return poem.id === data.comment.commentable_id
                 })
                 if (poemIndex > -1) {
                     state.poemsFollowers[poemIndex].comments.unshift(data.comment)
+                    return
                 }
                 poemIndex = state.poemsFollowings.findIndex(poem=>{
                     return poem.id === data.comment.commentable_id
                 })
                 if (poemIndex > -1) {
                     state.poemsFollowings[poemIndex].comments.unshift(data.comment)
+                    return
                 }
                 poemIndex = state.poemsAttachments.findIndex(poem=>{
                     return poem.id === data.comment.commentable_id
                 })
                 if (poemIndex > -1) {
                     state.poemsAttachments[poemIndex].comments.unshift(data.comment)
+                    return
                 }
                 //questions
                 let questionIndex = state.questions.findIndex(question=>{
@@ -1429,30 +2081,35 @@ const home = {
                 })
                 if (questionIndex > -1) {
                     state.questions[questionIndex].comments.unshift(data.comment)
+                    return
                 }
                 questionIndex = state.questionsMine.findIndex(question=>{
                     return question.id === data.comment.commentable_id
                 })
                 if (questionIndex > -1) {
                     state.questionsMine[questionIndex].comments.unshift(data.comment)
+                    return
                 }
                 questionIndex = state.questionsFollowers.findIndex(question=>{
                     return question.id === data.comment.commentable_id
                 })
                 if (questionIndex > -1) {
                     state.questionsFollowers[questionIndex].comments.unshift(data.comment)
+                    return
                 }
                 questionIndex = state.questionsFollowings.findIndex(question=>{
                     return question.id === data.comment.commentable_id
                 })
                 if (questionIndex > -1) {
                     state.questionsFollowings[questionIndex].comments.unshift(data.comment)
+                    return
                 }
                 questionIndex = state.questionsAttachments.findIndex(question=>{
                     return question.id === data.comment.commentable_id
                 })
                 if (questionIndex > -1) {
                     state.questionsAttachments[questionIndex].comments.unshift(data.comment)
+                    return
                 }
                 //riddles
                 let riddleIndex = state.riddles.findIndex(riddle=>{
@@ -1460,30 +2117,35 @@ const home = {
                 })
                 if (riddleIndex > -1) {
                     state.riddles[riddleIndex].comments.unshift(data.comment)
+                    return
                 }
                 riddleIndex = state.riddlesMine.findIndex(riddle=>{
                     return riddle.id === data.comment.commentable_id
                 })
                 if (riddleIndex > -1) {
                     state.riddlesMine[riddleIndex].comments.unshift(data.comment)
+                    return
                 }
                 riddleIndex = state.riddlesFollowers.findIndex(riddle=>{
                     return riddle.id === data.comment.commentable_id
                 })
                 if (riddleIndex > -1) {
                     state.riddlesFollowers[riddleIndex].comments.unshift(data.comment)
+                    return
                 }
                 riddleIndex = state.riddlesFollowings.findIndex(riddle=>{
                     return riddle.id === data.comment.commentable_id
                 })
                 if (riddleIndex > -1) {
                     state.riddlesFollowings[riddleIndex].comments.unshift(data.comment)
+                    return
                 }
                 riddleIndex = state.riddlesAttachments.findIndex(riddle=>{
                     return riddle.id === data.comment.commentable_id
                 })
                 if (riddleIndex > -1) {
                     state.riddlesAttachments[riddleIndex].comments.unshift(data.comment)
+                    return
                 }
                 //activities
                 let activityIndex = state.activities.findIndex(activity=>{
@@ -1491,30 +2153,35 @@ const home = {
                 })
                 if (activityIndex > -1) {
                     state.activities[activityIndex].comments.unshift(data.comment)
+                    return
                 }
                 activityIndex = state.activitiesMine.findIndex(activity=>{
                     return activity.id === data.comment.commentable_id
                 })
                 if (activityIndex > -1) {
                     state.activitiesMine[activityIndex].comments.unshift(data.comment)
+                    return
                 }
                 activityIndex = state.activitiesFollowers.findIndex(activity=>{
                     return activity.id === data.comment.commentable_id
                 })
                 if (activityIndex > -1) {
                     state.activitiesFollowers[activityIndex].comments.unshift(data.comment)
+                    return
                 }
                 activityIndex = state.activitiesFollowings.findIndex(activity=>{
                     return activity.id === data.comment.commentable_id
                 })
                 if (activityIndex > -1) {
                     state.activitiesFollowings[activityIndex].comments.unshift(data.comment)
+                    return
                 }
                 activityIndex = state.activitiesAttachments.findIndex(activity=>{
                     return activity.id === data.comment.commentable_id
                 })
                 if (activityIndex > -1) {
                     state.activitiesAttachments[activityIndex].comments.unshift(data.comment)
+                    return
                 }
             } else if (data.comment.commentable_type.toLocaleLowerCase().includes('comment')) {
                 //add 1 to the number of comments of the comment belonging to the post
@@ -1522,6 +2189,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1529,6 +2197,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1536,6 +2205,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1543,6 +2213,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1550,6 +2221,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1557,6 +2229,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1564,6 +2237,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1571,6 +2245,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1578,6 +2253,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1585,6 +2261,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1592,6 +2269,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1599,6 +2277,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1606,6 +2285,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1613,6 +2293,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1620,6 +2301,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1627,6 +2309,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1634,6 +2317,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1641,6 +2325,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1648,6 +2333,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1655,6 +2341,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1662,6 +2349,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1669,6 +2357,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1676,6 +2365,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1683,6 +2373,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1690,6 +2381,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1697,6 +2389,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1704,6 +2397,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1711,6 +2405,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1718,6 +2413,7 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
@@ -1725,15 +2421,977 @@ const home = {
                     post.comments.forEach(comment=>{
                         if (comment.id === data.comment.commentable_id) {
                             comment.comments += 1
+                            return
                         }
                     })
                 })
             }
         },
+        NEW_COMMENT(state,data){
+            if (data.commentData.item === 'answer' ||
+                data.commentData.item === 'comment') {
+                return
+            }
+            let postIndex = null,
+                followIndex = null,
+                isFollower = false,
+                isFollowing = false,
+                commentIndex = null,
+                itemId = Number(data.commentData.itemId)
 
-        ///////////////////////////////////saves
+            followIndex = data.userFollowers.findIndex(follower=>{
+                return strings.getAccount(follower.followedby_type) === data.commentData.account &&
+                    follower.followedby_id === data.commentData.accountId
+            })
+            if (followIndex > -1) {
+                isFollower = true
+            }
+            followIndex = data.userFollowings.findIndex(following=>{
+                return  strings.getAccount(following.followable_type) === data.commentData.account &&
+                    following.followable_id === data.commentData.accountId
+            })
+            if (followIndex > -1) {
+                isFollowing = true
+            }
+
+            //posts
+            postIndex = state.posts.findIndex(post=>{
+                return post.id === itemId
+            })
+            if (postIndex > -1) {
+                commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                    return comment.id === data.commentData.comment.id
+                })
+                if (commentIndex === -1) {
+                    state.posts[postIndex].comments.unshift(data.commentData.comment)
+                }
+            }
+            if (isFollower && state.postsFollowers.length) {
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.postsFollowers[postIndex].comments
+                            .unshift(data.commentData.comment)
+                    }
+                }
+            }
+            if (isFollowing && state.postsFollowings.length) {
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.postsFollowings[postIndex].comments
+                            .unshift(data.commentData.comment)
+                    }
+                }
+            }
+            postIndex = state.postsAttachments.findIndex(post=>{
+                return post.id === itemId
+            })
+            if (postIndex > -1) {
+                commentIndex = state.postsAttachments[postIndex].comments.findIndex(comment=>{
+                    return comment.id === data.commentData.comment.id
+                })
+                if (commentIndex === -1) {
+                    state.postsAttachments[postIndex].comments.unshift(data.commentData.comment)
+                }
+            }
+            //books
+            if (data.commentData.item === 'book') {
+                postIndex = state.books.findIndex(book=>{
+                    return book.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.books[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.books[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+                if (isFollower && state.booksFollowers.length) {
+                    postIndex = state.booksFollowers.findIndex(book=>{
+                        return book.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.booksFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.booksFollowers[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                if (isFollowing && state.booksFollowings.length) {
+                    postIndex = state.booksFollowings.findIndex(book=>{
+                        return book.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.booksFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.booksFollowings[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.booksAttachments[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+            }
+            //poems
+            if (data.commentData.item === 'poem') {
+                postIndex = state.poems.findIndex(poem=>{
+                    return poem.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poems[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.poems[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+                if (isFollower && state.poemsFollowers.length) {
+                    postIndex = state.poemsFollowers.findIndex(poem=>{
+                        return poem.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.poemsFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.poemsFollowers[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                if (isFollowing && state.poemsFollowings.length) {
+                    postIndex = state.poemsFollowings.findIndex(poem=>{
+                        return poem.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.poemsFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.poemsFollowings[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.poemsAttachments[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+            }
+            //riddles
+            if (data.commentData.item === 'riddle') {
+                postIndex = state.riddles.findIndex(riddle=>{
+                    return riddle.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddles[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.riddles[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+                if (isFollower && state.riddlesFollowers.length) {
+                    postIndex = state.riddlesFollowers.findIndex(riddle=>{
+                        return riddle.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.riddlesFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.riddlesFollowers[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                if (isFollowing && state.riddlesFollowings.length) {
+                    postIndex = state.riddlesFollowings.findIndex(riddle=>{
+                        return riddle.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.riddlesFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.riddlesFollowings[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.riddlesAttachments[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+            }
+            //questions
+            if (data.commentData.item === 'question') {
+                postIndex = state.questions.findIndex(question=>{
+                    return question.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questions[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.questions[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+                if (isFollower && state.questionsFollowers.length) {
+                    postIndex = state.questionsFollowers.findIndex(question=>{
+                        return question.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.questionsFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.questionsFollowers[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                if (isFollowing && state.questionsFollowings.length) {
+                    postIndex = state.questionsFollowings.findIndex(question=>{
+                        return question.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.questionsFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.questionsFollowings[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.questionsAttachments[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+            }
+            //activities
+            if (data.commentData.item === 'activity') {
+                postIndex = state.activities.findIndex(activity=>{
+                    return activity.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activities[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.activities[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+                if (isFollower && state.activitiesFollowers.length) {
+                    postIndex = state.activitiesFollowers.findIndex(activity=>{
+                        return activity.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.activitiesFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.activitiesFollowers[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                if (isFollowing && state.activitiesFollowings.length) {
+                    postIndex = state.activitiesFollowings.findIndex(activity=>{
+                        return activity.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.activitiesFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex === -1) {
+                            state.activitiesFollowings[postIndex].comments
+                                .unshift(data.commentData.comment)
+                        }
+                    }
+                }
+                postIndex = state.activitiesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activitiesAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex === -1) {
+                        state.activitiesAttachments[postIndex].comments.unshift(data.commentData.comment)
+                    }
+                }
+            }
+        },
+        REPLACE_COMMENT(state,data){
+            if (data.commentData.item === 'answer' ||
+                data.commentData.item === 'comment') {
+                return
+            }
+            let postIndex = null,
+                commentIndex = null,
+                followIndex = null,
+                isFollower = false,
+                isFollowing = false,
+                itemId = Number(data.commentData.itemId)
+
+            followIndex = data.userFollowers.findIndex(follower=>{
+                return strings.getAccount(follower.followedby_type) === data.commentData.account &&
+                    follower.followedby_id === data.commentData.accountId
+            })
+            if (followIndex > -1) {
+                isFollower = true
+            }
+            followIndex = data.userFollowings.findIndex(following=>{
+                return  strings.getAccount(following.followable_type) === data.commentData.account &&
+                    following.followable_id === data.commentData.accountId
+            })
+            if (followIndex > -1) {
+                isFollowing = true
+            }
+
+            //posts
+            postIndex = state.posts.findIndex(post=>{
+                return post.id === itemId
+            })
+            if (postIndex > -1) {
+                commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                    return comment.id === data.commentData.comment.id
+                })
+                if (commentIndex > -1) {
+                    state.posts[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                    // return
+                }
+            }
+            if (isFollower && state.postsFollowers.length) {
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.postsFollowers[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                        // return
+                    }
+                }
+            }
+            if (isFollowing && state.postsFollowings.length) {
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.postsFollowings[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                        // return
+                    }
+                }
+            }
+            //books
+            if (data.commentData.item === 'book') {
+                postIndex = state.books.findIndex(book=>{
+                    return book.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.books[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.books[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                        // return
+                    }
+                }
+                if (isFollower && state.booksFollowers.length) {
+                    postIndex = state.booksFollowers.findIndex(book=>{
+                        return book.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.booksFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.booksFollowers[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+                if (isFollowing && state.booksFollowings.length) {
+                    postIndex = state.booksFollowings.findIndex(book=>{
+                        return book.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.booksFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.booksFollowings[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+            }
+            //poems
+            if (data.commentData.item === 'poem') {
+                postIndex = state.poems.findIndex(poem=>{
+                    return poem.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poems[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.poems[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                        // return
+                    }
+                }
+                if (isFollower && state.poemsFollowers.length) {
+                    postIndex = state.poemsFollowers.findIndex(poem=>{
+                        return poem.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.poemsFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.posts[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+                if (isFollowing && state.poemsFollowings.length) {
+                    postIndex = state.poemsFollowings.findIndex(poem=>{
+                        return poem.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.poemsFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.poemsFollowings[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+            }
+            //riddles
+            if (data.commentData.item === 'riddle') {
+                postIndex = state.riddles.findIndex(riddle=>{
+                    return riddle.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddles[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.riddles[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                        // return
+                    }
+                }
+                if (isFollower && state.riddlesFollowers.length) {
+                    postIndex = state.riddlesFollowers.findIndex(riddle=>{
+                        return riddle.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.riddlesFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.riddlesFollowers[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+                if (isFollowing && state.riddlesFollowings.length) {
+                    postIndex = state.riddlesFollowings.findIndex(riddle=>{
+                        return riddle.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.riddlesFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.riddlesFollowings[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+            }
+            //questions
+            if (data.commentData.item === 'question') {
+                postIndex = state.questions.findIndex(question=>{
+                    return question.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questions[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.questions[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                        // return
+                    }
+                }
+                if (isFollower && state.questionsFollowers.length) {
+                    postIndex = state.questionsFollowers.findIndex(question=>{
+                        return question.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.questionsFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.questionsFollowers[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+                if (isFollowing && state.questionsFollowings.length) {
+                    postIndex = state.questionsFollowings.findIndex(question=>{
+                        return question.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.questionsFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.questionsFollowings[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+            }
+            //activities
+            if (data.commentData.item === 'activity') {
+                postIndex = state.activities.findIndex(activity=>{
+                    return activity.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activities[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.commentData.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.activities[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                        // return
+                    }
+                }
+                if (isFollower && state.activitiesFollowers.length) {
+                    postIndex = state.activitiesFollowers.findIndex(activity=>{
+                        return activity.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.activitiesFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.activitiesFollowers[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+                if (isFollowing && state.activitiesFollowings.length) {
+                    postIndex = state.activitiesFollowings.findIndex(activity=>{
+                        return activity.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.activitiesFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.commentData.comment.id
+                        })
+                        if (commentIndex > -1) {
+                            state.activitiesFollowings[postIndex].comments.splice(commentIndex,1,data.commentData.comment)
+                            // return
+                        }
+                    }
+                }
+            }
+        },
+        REMOVE_COMMENT(state,data){
+            if (data.commentData.item === 'answer' ||
+                data.commentData.item === 'comment') {
+                return
+            }
+            let postIndex = null,
+                commentIndex = null,
+                followIndex = null,
+                isFollower = false,
+                isFollowing = false,
+                itemId = Number(data.commentData.itemId),
+                commentId = Number(data.commentData.commentId)
+
+            followIndex = data.userFollowers.findIndex(follower=>{
+                return strings.getAccount(follower.followedby_type) === data.commentData.account &&
+                    follower.followedby_id === data.commentData.accountId
+            })
+            if (followIndex > -1) {
+                isFollower = true
+            }
+            followIndex = data.userFollowings.findIndex(following=>{
+                return  strings.getAccount(following.followable_type) === data.commentData.account &&
+                    following.followable_id === data.commentData.accountId
+            })
+            if (followIndex > -1) {
+                isFollowing = true
+            }
+            //posts
+            postIndex = state.posts.findIndex(post=>{
+                return post.id === itemId
+            })
+            if (postIndex > -1) {
+                commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                    return comment.id === commentId
+                })
+                if (commentIndex > -1) {
+                    state.posts[postIndex].comments.splice(commentIndex,1)
+                }
+            }
+            if (isFollower && state.postsFollowers.length) {
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.postsFollowers[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+            if (isFollowing && state.postsFollowings.length) {
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.postsFollowings[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+            postIndex = state.postsAttachments.findIndex(post=>{
+                return post.id === itemId
+            })
+            if (postIndex > -1) {
+                commentIndex = state.postsAttachments[postIndex].comments.findIndex(comment=>{
+                    return comment.id === commentId
+                })
+                if (commentIndex > -1) {
+                    state.postsAttachments[postIndex].comments.splice(commentIndex,1)
+                }
+            }
+            //books
+            if (data.commentData.item === 'book') {
+                postIndex = state.books.findIndex(book=>{
+                    return book.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.books[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.books[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+                if (isFollower && state.booksFollowers.length) {
+                    postIndex = state.booksFollowers.findIndex(book=>{
+                        return book.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.booksFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.booksFollowers[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                if (isFollowing && state.booksFollowings.length) {
+                    postIndex = state.booksFollowings.findIndex(book=>{
+                        return book.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.booksFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.booksFollowings[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.booksAttachments[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+            //poems
+            if (data.commentData.item === 'poem') {
+                postIndex = state.poems.findIndex(poem=>{
+                    return poem.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poems[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.poems[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+                if (isFollower && state.poemsFollowers.length) {
+                    postIndex = state.poemsFollowers.findIndex(poem=>{
+                        return poem.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.poemsFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.posts[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                if (isFollowing && state.poemsFollowings.length) {
+                    postIndex = state.poemsFollowings.findIndex(poem=>{
+                        return poem.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.poemsFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.poemsFollowings[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.poemsAttachments[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+            //riddles
+            if (data.commentData.item === 'riddle') {
+                postIndex = state.riddles.findIndex(riddle=>{
+                    return riddle.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddles[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.riddles[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+                if (isFollower && state.riddlesFollowers.length) {
+                    postIndex = state.riddlesFollowers.findIndex(riddle=>{
+                        return riddle.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.riddlesFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.riddlesFollowers[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                if (isFollowing && state.riddlesFollowings.length) {
+                    postIndex = state.riddlesFollowings.findIndex(riddle=>{
+                        return riddle.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.riddlesFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.riddlesFollowings[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.riddlesAttachments[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+            //questions
+            if (data.commentData.item === 'question') {
+                postIndex = state.questions.findIndex(question=>{
+                    return question.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questions[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.questions[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+                if (isFollower && state.questionsFollowers.length) {
+                    postIndex = state.questionsFollowers.findIndex(question=>{
+                        return question.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.questionsFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.questionsFollowers[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                if (isFollowing && state.questionsFollowings.length) {
+                    postIndex = state.questionsFollowings.findIndex(question=>{
+                        return question.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.questionsFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.questionsFollowings[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.questionsAttachments[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+            //activities
+            if (data.commentData.item === 'activity') {
+                postIndex = state.activities.findIndex(activity=>{
+                    return activity.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activities[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.activities[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+                if (isFollower && state.activitiesFollowers.length) {
+                    postIndex = state.activitiesFollowers.findIndex(activity=>{
+                        return activity.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.activitiesFollowers[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.activitiesFollowers[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                if (isFollowing && state.activitiesFollowings.length) {
+                    postIndex = state.activitiesFollowings.findIndex(activity=>{
+                        return activity.id === itemId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.activitiesFollowings[postIndex].comments.findIndex(comment=>{
+                            return comment.id === commentId
+                        })
+                        if (commentIndex > -1) {
+                            state.activitiesFollowings[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                }
+                postIndex = state.activitiesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activitiesAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === commentId
+                    })
+                    if (commentIndex > -1) {
+                        state.activitiesAttachments[postIndex].comments.splice(commentIndex,1)
+                    }
+                }
+            }
+        },        
+        
+        /////////////////////////////////////////saves
 
         SAVE_CREATE_SUCCESS(state, data){
+            let saveIndex = null
             if (data.item === 'comment') {
                 if (data.owner.toLocaleLowerCase().includes('post')) {
                     let postIndex = null,
@@ -1754,7 +3412,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.posts[postIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.posts[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.posts[postIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     postIndex = state.postsFollowers.findIndex(post=>{
@@ -1767,7 +3431,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.postsFollowers[postIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.postsFollowers[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.postsFollowers[postIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     postIndex = state.postsFollowings.findIndex(post=>{
@@ -1780,7 +3450,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.postsFollowings[postIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.postsFollowings[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.postsFollowings[postIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     postIndex = state.postsAttachments.findIndex(post=>{
@@ -1793,7 +3469,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.postsAttachments[postIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.postsAttachments[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.postsAttachments[postIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     //poems
@@ -1807,7 +3489,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poems[poemIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.poems[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.poems[poemIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     poemIndex = state.poemsFollowers.findIndex(poem=>{
@@ -1820,7 +3508,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poemsFollowers[poemIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.poemsFollowers[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.poemsFollowers[poemIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     poemIndex = state.poemsFollowings.findIndex(poem=>{
@@ -1833,7 +3527,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poemsFollowings[poemIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.poemsFollowings[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.poemsFollowings[poemIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     poemIndex = state.poemsAttachments.findIndex(poem=>{
@@ -1846,7 +3546,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poemsAttachments[poemIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.poemsAttachments[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.poemsAttachments[poemIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     //questions
@@ -1860,7 +3566,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questions[questionIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.questions[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.questions[questionIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     questionIndex = state.questionsFollowers.findIndex(question=>{
@@ -1873,7 +3585,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questionsFollowers[questionIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.questionsFollowers[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.questionsFollowers[questionIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     questionIndex = state.questionsFollowings.findIndex(question=>{
@@ -1886,7 +3604,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questionsFollowings[questionIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.questionsFollowings[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.questionsFollowings[questionIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     questionIndex = state.questionsAttachments.findIndex(question=>{
@@ -1899,7 +3623,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questionsAttachments[questionIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.questionsAttachments[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.questionsAttachments[questionIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     //riddles
@@ -1913,7 +3643,14 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddles[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.riddles[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+
+                                state.riddles[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     riddleIndex = state.riddlesFollowers.findIndex(riddle=>{
@@ -1926,7 +3663,14 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddlesFollowers[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.riddlesFollowers[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+
+                                state.riddlesFollowers[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     riddleIndex = state.riddlesFollowings.findIndex(riddle=>{
@@ -1939,7 +3683,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddlesFollowings[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.riddlesFollowings[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.riddlesFollowings[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     riddleIndex = state.riddlesAttachments.findIndex(riddle=>{
@@ -1952,7 +3702,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddlesAttachments[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.riddlesAttachments[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.riddlesAttachments[riddleIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     //books
@@ -1966,7 +3722,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.books[bookIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.books[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.books[bookIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     bookIndex = state.booksFollowers.findIndex(book=>{
@@ -1979,7 +3741,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.booksFollowers[bookIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.booksFollowers[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.booksFollowers[bookIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     bookIndex = state.booksFollowings.findIndex(book=>{
@@ -1992,7 +3760,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.booksFollowings[bookIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.booksFollowings[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.booksFollowings[bookIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     bookIndex = state.booksAttachments.findIndex(book=>{
@@ -2005,7 +3779,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.booksAttachments[bookIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.booksAttachments[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.booksAttachments[bookIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     //activities
@@ -2019,7 +3799,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activities[activityIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.activities[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.activities[activityIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     activityIndex = state.activitiesFollowers.findIndex(activity=>{
@@ -2032,7 +3818,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activitiesFollowers[activityIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.activitiesFollowers[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.activitiesFollowers[activityIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     activityIndex = state.activitiesFollowings.findIndex(activity=>{
@@ -2045,7 +3837,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activitiesFollowings[activityIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.activitiesFollowings[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.activitiesFollowings[activityIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                     activityIndex = state.activitiesAttachments.findIndex(activity=>{
@@ -2058,7 +3856,13 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activitiesAttachments[activityIndex].comments[commentIndex].saves.push(data.save)
+                            saveIndex = state.activitiesAttachments[postIndex].comments[commentIndex].saves
+                                .findIndex(save=>{
+                                    return save.id === data.save.id
+                                })
+                            if(saveIndex === -1){
+                                state.activitiesAttachments[activityIndex].comments[commentIndex].saves.push(data.save)
+                            }
                         }
                     }
                 }
@@ -2074,153 +3878,296 @@ const home = {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.posts[postIndex].saves.unshift(data.save)
+                    saveIndex = state.posts[postIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.posts[postIndex].saves.unshift(data.save)
+                    }
                 }
                 postIndex = state.postsFollowers.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsFollowers[postIndex].saves.unshift(data.save)
+                    saveIndex = state.postsFollowers[postIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.postsFollowers[postIndex].saves.unshift(data.save)
+                    }
                 }
                 postIndex = state.postsFollowings.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsFollowings[postIndex].saves.unshift(data.save)
+                    saveIndex = state.postsFollowings[postIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.postsFollowings[postIndex].saves.unshift(data.save)
+                    }
                 }
                 postIndex = state.postsAttachments.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsAttachments[postIndex].saves.unshift(data.save)
+                    saveIndex = state.postsAttachments[postIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.postsAttachments[postIndex].saves.unshift(data.save)
+                    }
                 }
                 //poems
                 poemIndex = state.poems.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poems[poemIndex].saves.unshift(data.save)
+                    saveIndex = state.poems[poemIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.poems[poemIndex].saves.unshift(data.save)
+                    }
                 }
                 poemIndex = state.poemsFollowers.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poemsFollowers[poemIndex].saves.unshift(data.save)
+                    saveIndex = state.poemsFollowers[poemIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.poemsFollowers[poemIndex].saves.unshift(data.save)
+                    }
                 }
                 poemIndex = state.poemsFollowings.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poemsFollowings[poemIndex].saves.unshift(data.save)
+                    saveIndex = state.postsFollowings[poemIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.poemsFollowings[poemIndex].saves.unshift(data.save)
+                    }
                 }
                 poemIndex = state.poemsAttachments.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poemsAttachments[poemIndex].saves.unshift(data.save)
+                    saveIndex = state.postsAttachments[poemIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.poemsAttachments[poemIndex].saves.unshift(data.save)
+                    }
                 }
                 //riddles
                 riddleIndex = state.riddles.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddles[riddleIndex].saves.unshift(data.save)
+                    saveIndex = state.riddles[riddleIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.riddles[riddleIndex].saves.unshift(data.save)
+                    }
                 }
                 riddleIndex = state.riddlesFollowers.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddlesFollowers[riddleIndex].saves.unshift(data.save)
+                    saveIndex = state.riddlesFollowers[riddleIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.riddlesFollowers[riddleIndex].saves.unshift(data.save)
+                    }
                 }
                 riddleIndex = state.riddlesFollowings.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddlesFollowings[riddleIndex].saves.unshift(data.save)
+                    saveIndex = state.riddlesFollowings[riddleIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.riddlesFollowings[riddleIndex].saves.unshift(data.save)
+                    }
                 }
                 riddleIndex = state.riddlesAttachments.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddlesAttachments[riddleIndex].saves.unshift(data.save)
+                    saveIndex = state.riddlesAttachments[riddleIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.riddlesAttachments[riddleIndex].saves.unshift(data.save)
+                    }
                 }
                 //questions
                 questionIndex = state.questions.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questions[questionIndex].saves.unshift(data.save)
+                    saveIndex = state.questions[questionIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.questions[questionIndex].saves.unshift(data.save)
+                    }
                 }
                 questionIndex = state.questionsFollowers.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questionsFollowers[questionIndex].saves.unshift(data.save)
+                    saveIndex = state.questionsFollowers[questionIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.questionsFollowers[questionIndex].saves.unshift(data.save)
+                    }
                 }
                 questionIndex = state.questionsFollowings.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questionsFollowings[questionIndex].saves.unshift(data.save)
+                    saveIndex = state.questionsFollowings[questionIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.questionsFollowings[questionIndex].saves.unshift(data.save)
+                    }
                 }
                 questionIndex = state.questionsAttachments.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questionsAttachments[questionIndex].saves.unshift(data.save)
+                    saveIndex = state.questionsAttachments[questionIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.questionsAttachments[questionIndex].saves.unshift(data.save)
+                    }
                 }
                 //books
                 bookIndex = state.books.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.books[bookIndex].saves.unshift(data.save)
+                    saveIndex = state.books[bookIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.books[bookIndex].saves.unshift(data.save)
+                    }
                 }
                 bookIndex = state.booksFollowers.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.booksFollowers[bookIndex].saves.unshift(data.save)
+                    saveIndex = state.booksFollowers[bookIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.booksFollowers[bookIndex].saves.unshift(data.save)
+                    }
                 }
                 bookIndex = state.booksFollowings.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.booksFollowings[bookIndex].saves.unshift(data.save)
+                    saveIndex = state.booksFollowings[bookIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.booksFollowings[bookIndex].saves.unshift(data.save)
+                    }
                 }
                 bookIndex = state.booksAttachments.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.booksAttachments[bookIndex].saves.unshift(data.save)
+                    saveIndex = state.booksAttachments[bookIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.booksAttachments[bookIndex].saves.unshift(data.save)
+                    }
                 }
                 //activities
                 activityIndex = state.activities.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activities[activityIndex].saves.unshift(data.save)
+                    saveIndex = state.activities[activityIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.activities[activityIndex].saves.unshift(data.save)
+                    }
                 }
                 activityIndex = state.activitiesFollowers.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activitiesFollowers[activityIndex].saves.unshift(data.save)
+                    saveIndex = state.activitiesFollowers[activityIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.activitiesFollowers[activityIndex].saves.unshift(data.save)
+                    }
                 }
                 activityIndex = state.activitiesFollowings.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activitiesFollowings[activityIndex].saves.unshift(data.save)
+                    saveIndex = state.activitiesFollowings[activityIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.activitiesFollowings[activityIndex].saves.unshift(data.save)
+                    }
                 }
                 activityIndex = state.activitiesAttachments.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activitiesAttachments[activityIndex].saves.unshift(data.save)
+                    saveIndex = state.activitiesAttachments[activityIndex].saves
+                        .findIndex(save=>{
+                            return save.id === data.save.id
+                        })
+                    if(saveIndex === -1){
+                        state.activitiesAttachments[activityIndex].saves.unshift(data.save)
+                    }
                 }
             }
-        
         },
         SAVE_DELETE_SUCCESS(state, data){
             if (data.item === 'comment') {
@@ -4221,10 +6168,14 @@ const home = {
                 }
             }
         },
+        NEW_FLAG(state,data){
+
+        },
 
         ///////////////////////////////////likes
 
         LIKE_CREATE_SUCCESS(state, data){
+            let likeIndex = null
             if (data.item === 'comment') {
                 if (data.owner.toLocaleLowerCase().includes('post')) {
                     let postIndex = null,
@@ -4245,7 +6196,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.posts[postIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.posts[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.posts[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     postIndex = state.postsMine.findIndex(post=>{
@@ -4258,7 +6214,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.postsMine[postIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.postsMine[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.postsMine[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     postIndex = state.postsFollowers.findIndex(post=>{
@@ -4271,7 +6232,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.postsFollowers[postIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.postsFollowers[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.postsFollowers[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     postIndex = state.postsFollowings.findIndex(post=>{
@@ -4284,7 +6250,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.postsFollowings[postIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.posts[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.posts[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     postIndex = state.postsAttachments.findIndex(post=>{
@@ -4297,7 +6268,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.postsAttachments[postIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.postsAttachments[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.postsAttachments[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     //poems
@@ -4311,7 +6287,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poems[poemIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.poems[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.poems[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     poemIndex = state.poemsMine.findIndex(poem=>{
@@ -4324,7 +6305,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poemsMine[poemIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.poemsMine[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.poemsMine[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     poemIndex = state.poemsFollowers.findIndex(poem=>{
@@ -4337,7 +6323,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poemsFollowers[poemIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.poemsFollowers[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.poemsFollowers[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     poemIndex = state.poemsFollowings.findIndex(poem=>{
@@ -4350,7 +6341,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poemsFollowings[poemIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.poemsFollowings[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.poemsFollowings[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     poemIndex = state.poemsAttachments.findIndex(poem=>{
@@ -4363,7 +6359,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.poemsAttachments[poemIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.poemsAttachments[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.poemsAttachments[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     //questions
@@ -4377,7 +6378,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questions[questionIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.questions[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.questions[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     questionIndex = state.questionsMine.findIndex(question=>{
@@ -4390,7 +6396,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questionsMine[questionIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.questionsMine[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.questionsMine[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     questionIndex = state.questionsFollowers.findIndex(question=>{
@@ -4403,7 +6414,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questionsFollowers[questionIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.questionsFollowers[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.questionsFollowers[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     questionIndex = state.questionsFollowings.findIndex(question=>{
@@ -4416,7 +6432,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questionsFollowings[questionIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.questionsFollowings[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.questionsFollowings[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     questionIndex = state.questionsAttachments.findIndex(question=>{
@@ -4429,7 +6450,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.questionsAttachments[questionIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.questionsAttachments[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.questionsAttachments[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     //riddles
@@ -4443,7 +6469,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddles[riddleIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.riddles[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.riddles[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     riddleIndex = state.riddlesMine.findIndex(riddle=>{
@@ -4456,7 +6487,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddlesMine[riddleIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.riddlesMine[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.riddlesMine[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     riddleIndex = state.riddlesFollowers.findIndex(riddle=>{
@@ -4469,7 +6505,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddlesFollowers[riddleIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.riddlesFollowers[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.riddlesFollowers[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     riddleIndex = state.riddlesFollowings.findIndex(riddle=>{
@@ -4482,7 +6523,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddlesFollowings[riddleIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.riddlesFollowings[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.riddlesFollowings[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     riddleIndex = state.riddlesAttachments.findIndex(riddle=>{
@@ -4495,7 +6541,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.riddlesAttachments[riddleIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.riddlesAttachments[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.riddlesAttachments[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     //books
@@ -4509,7 +6560,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.books[bookIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.books[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.books[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     bookIndex = state.booksMine.findIndex(book=>{
@@ -4522,7 +6578,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.booksMine[bookIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.booksMine[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.booksMine[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     bookIndex = state.booksFollowers.findIndex(book=>{
@@ -4535,7 +6596,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.booksFollowers[bookIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.booksFollowers[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.booksFollowers[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     bookIndex = state.booksFollowings.findIndex(book=>{
@@ -4548,7 +6614,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.booksFollowings[bookIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.booksFollowings[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.booksFollowings[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     bookIndex = state.booksAttachments.findIndex(book=>{
@@ -4561,7 +6632,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.booksAttachments[bookIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.booksAttachments[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.booksAttachments[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     //activities
@@ -4575,7 +6651,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activities[activityIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.activities[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.activities[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     activityIndex = state.activitiesMine.findIndex(activity=>{
@@ -4588,7 +6669,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activitiesMine[activityIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.activitiesMine[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.activitiesMine[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     activityIndex = state.activitiesFollowers.findIndex(activity=>{
@@ -4601,7 +6687,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activitiesFollowers[activityIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.activitiesFollowers[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.activitiesFollowers[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     activityIndex = state.activitiesFollowings.findIndex(activity=>{
@@ -4614,7 +6705,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activitiesFollowings[activityIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.activitiesFollowings[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.activitiesFollowings[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                     activityIndex = state.activitiesAttachments.findIndex(activity=>{
@@ -4627,7 +6723,12 @@ const home = {
                         })
 
                         if (commentIndex > -1) {
-                            state.activitiesAttachments[activityIndex].comments[commentIndex].likes.push(data.like)
+                            likeIndex = state.activitiesAttachments[postIndex].comments[commentIndex].likes.findIndex(like=>{
+                                return like.id === data.like.id
+                            })
+                            if (likeIndex === -1) {
+                                state.activitiesAttachments[postIndex].comments[commentIndex].likes.push(data.like)
+                            }
                         }
                     }
                 }
@@ -4643,186 +6744,336 @@ const home = {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.posts[postIndex].likes.unshift(data.like)
+                    likeIndex = state.posts[postIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.posts[postIndex].likes.push(data.like)
+                    }
                 }
                 postIndex = state.postsMine.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsMine[postIndex].likes.unshift(data.like)
+                    likeIndex = state.postsMine[postIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.postsMine[postIndex].likes.push(data.like)
+                    }
                 }
                 postIndex = state.postsFollowers.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsFollowers[postIndex].likes.unshift(data.like)
+                    likeIndex = state.postsFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.postsFollowers[postIndex].likes.push(data.like)
+                    }
                 }
                 postIndex = state.postsFollowings.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsFollowings[postIndex].likes.unshift(data.like)
+                    likeIndex = state.postsFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.postsFollowings[postIndex].likes.push(data.like)
+                    }
                 }
                 postIndex = state.postsAttachments.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsAttachments[postIndex].likes.unshift(data.like)
+                    likeIndex = state.postsAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.postsAttachments[postIndex].likes.push(data.like)
+                    }
                 }
                 //poems
                 poemIndex = state.poems.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poems[poemIndex].likes.unshift(data.like)
+                    likeIndex = state.poems[poemIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.poems[poemIndex].likes.push(data.like)
+                    }
                 }
                 poemIndex = state.poemsMine.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poemsMine[poemIndex].likes.unshift(data.like)
+                    likeIndex = state.poemsMine[poemIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.poemsMine[poemIndex].likes.push(data.like)
+                    }
                 }
                 poemIndex = state.poemsFollowers.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poemsFollowers[poemIndex].likes.unshift(data.like)
+                    likeIndex = state.poemsFollowers[poemIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.poemsFollowers[poemIndex].likes.push(data.like)
+                    }
                 }
                 poemIndex = state.poemsFollowings.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poemsFollowings[poemIndex].likes.unshift(data.like)
+                    likeIndex = state.poemsFollowings[poemIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.poemsFollowings[poemIndex].likes.push(data.like)
+                    }
                 }
                 poemIndex = state.poemsAttachments.findIndex(poem => {
                     return poem.id === data.itemId
                 })
                 if (poemIndex > -1) {
-                    state.poemsAttachments[poemIndex].likes.unshift(data.like)
+                    likeIndex = state.poemsAttachments[poemIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.poemsAttachments[poemIndex].likes.push(data.like)
+                    }
                 }
                 //riddles
                 riddleIndex = state.riddles.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddles[riddleIndex].likes.unshift(data.like)
+                    likeIndex = state.riddles[riddleIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.riddles[riddleIndex].likes.push(data.like)
+                    }
                 }
                 riddleIndex = state.riddlesMine.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddlesMine[riddleIndex].likes.unshift(data.like)
+                    likeIndex = state.riddlesMine[riddleIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.riddlesMine[riddleIndex].likes.push(data.like)
+                    }
                 }
                 riddleIndex = state.riddlesFollowers.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddlesFollowers[riddleIndex].likes.unshift(data.like)
+                    likeIndex = state.riddlesFollowers[riddleIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.riddlesFollowers[riddleIndex].likes.push(data.like)
+                    }
                 }
                 riddleIndex = state.riddlesFollowings.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddlesFollowings[riddleIndex].likes.unshift(data.like)
+                    likeIndex = state.riddlesFollowings[riddleIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.riddlesFollowings[riddleIndex].likes.push(data.like)
+                    }
                 }
                 riddleIndex = state.riddlesAttachments.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
                 if (riddleIndex > -1) {
-                    state.riddlesAttachments[riddleIndex].likes.unshift(data.like)
+                    likeIndex = state.riddlesAttachments[riddleIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.riddlesAttachments[riddleIndex].likes.push(data.like)
+                    }
                 }
                 //questions
                 questionIndex = state.questions.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questions[questionIndex].likes.unshift(data.like)
+                    likeIndex = state.questions[questionIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.questions[questionIndex].likes.push(data.like)
+                    }
                 }
                 questionIndex = state.questionsMine.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questionsMine[questionIndex].likes.unshift(data.like)
+                    likeIndex = state.questionsMine[questionIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.questionsMine[questionIndex].likes.push(data.like)
+                    }
                 }
                 questionIndex = state.questionsFollowers.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questionsFollowers[questionIndex].likes.unshift(data.like)
+                    likeIndex = state.questionsFollowers[questionIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.questionsFollowers[questionIndex].likes.push(data.like)
+                    }
                 }
                 questionIndex = state.questionsFollowings.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questionsFollowings[questionIndex].likes.unshift(data.like)
+                    likeIndex = state.questionsFollowings[questionIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.questionsFollowings[questionIndex].likes.push(data.like)
+                    }
                 }
                 questionIndex = state.questionsAttachments.findIndex(question => {
                     return question.id === data.itemId
                 })
                 if (questionIndex > -1) {
-                    state.questionsAttachments[questionIndex].likes.unshift(data.like)
+                    likeIndex = state.questionsAttachments[questionIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.questionsAttachments[questionIndex].likes.push(data.like)
+                    }
                 }
                 //books
                 bookIndex = state.books.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.books[bookIndex].likes.unshift(data.like)
+                    likeIndex = state.books[bookIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.books[bookIndex].likes.push(data.like)
+                    }
                 }
                 bookIndex = state.booksMine.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.booksMine[bookIndex].likes.unshift(data.like)
+                    likeIndex = state.booksMine[bookIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.booksMine[bookIndex].likes.push(data.like)
+                    }
                 }
                 bookIndex = state.booksFollowers.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.booksFollowers[bookIndex].likes.unshift(data.like)
+                    likeIndex = state.booksFollowers[bookIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.booksFollowers[bookIndex].likes.push(data.like)
+                    }
                 }
                 bookIndex = state.booksFollowings.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.booksFollowings[bookIndex].likes.unshift(data.like)
+                    likeIndex = state.booksFollowings[bookIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.booksFollowings[bookIndex].likes.push(data.like)
+                    }
                 }
                 bookIndex = state.booksAttachments.findIndex(book => {
                     return book.id === data.itemId
                 })
                 if (bookIndex > -1) {
-                    state.booksAttachments[bookIndex].likes.unshift(data.like)
+                    likeIndex = state.booksAttachments[bookIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.booksAttachments[bookIndex].likes.push(data.like)
+                    }
                 }
                 //activities
                 activityIndex = state.activities.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activities[activityIndex].likes.unshift(data.like)
+                    likeIndex = state.activities[activityIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.activities[activityIndex].likes.push(data.like)
+                    }
                 }
                 activityIndex = state.activitiesMine.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activitiesMine[activityIndex].likes.unshift(data.like)
+                    likeIndex = state.activitiesMine[activityIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.activitiesMine[activityIndex].likes.push(data.like)
+                    }
                 }
                 activityIndex = state.activitiesFollowers.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activitiesFollowers[activityIndex].likes.unshift(data.like)
+                    likeIndex = state.activitiesFollowers[activityIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.activitiesFollowers[activityIndex].likes.push(data.like)
+                    }
                 }
                 activityIndex = state.activitiesFollowings.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activitiesFollowings[activityIndex].likes.unshift(data.like)
+                    likeIndex = state.activitiesFollowings[activityIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.activitiesFollowings[activityIndex].likes.push(data.like)
+                    }
                 }
                 activityIndex = state.activitiesAttachments.findIndex(activity => {
                     return activity.id === data.itemId
                 })
                 if (activityIndex > -1) {
-                    state.activitiesAttachments[activityIndex].likes.unshift(data.like)
+                    likeIndex = state.activitiesAttachments[activityIndex].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex === -1) {
+                        state.activitiesAttachments[activityIndex].likes.push(data.like)
+                    }
                 }
             }
         
@@ -5761,202 +8012,2225 @@ const home = {
                 }
             }
         },
+        NEW_LIKE(state,data){
+            let itemId = Number(data.likeData.itemId),
+                postIndex = null,
+                likeIndex = null
+            if (data.likeData.item === 'post') {
+                //posts
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.posts[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.posts[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.postsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsMine[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.postsMine[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.postsFollowers[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.postsFollowings[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.postsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.postsAttachments[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                //books
+                postIndex = state.books.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.books[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.books[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.booksMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksMine[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.booksMine[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.booksFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.booksFollowers[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.booksFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.booksFollowings[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.booksAttachments[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                //poems
+                postIndex = state.poems.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poems[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.poems[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.poemsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsMine[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.poemsMine[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.poemsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.poemsFollowers[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.poemsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.poemsFollowings[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.poemsAttachments[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                //riddles
+                postIndex = state.riddles.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddles[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.riddles[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.riddlesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesMine[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.riddlesMine[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.riddlesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.riddlesFollowers[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.riddlesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.riddlesFollowings[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.riddlesAttachments[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                //questions
+                postIndex = state.questions.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questions[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.questions[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.questionsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsMine[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.questionsMine[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.questionsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.questionsFollowers[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.questionsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.questionsFollowings[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.questionsAttachments[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                //activities
+                postIndex = state.activities.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.activities[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.activities[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.activitiesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.posts[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.activitiesMine[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.activitiesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.posts[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.activitiesFollowers[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.activitiesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.posts[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.activitiesFollowings[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+                postIndex = state.activitiesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.posts[postIndex].likes.findIndex(like=>{
+                        return like.id === data.likeData.like.id
+                    })
+                    if(likeIndex === -1){
+                        state.activitiesAttachments[postIndex].likes.push(data.likeData.like)
+                    }
+                }
+            } else if (data.likeData.item === 'comment' &&
+                data.likeData.itemBelongsTo === 'post') {
+                let itemBelongsToId = Number(data.likeData.itemBelongsToId),
+                    commentIndex = null
+                //posts
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.posts[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.posts[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.posts[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)
+                        }
+                    }
+                }
+                postIndex = state.postsMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsMine[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.postsMine[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowers[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.postsFollowers[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowings[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.postsFollowings[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.postsAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsAttachments[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.postsAttachments[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                //books
+                postIndex = state.books.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.books[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.books[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.books[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.booksMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksMine[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.booksMine[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.booksFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksFollowers[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.booksFollowers[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.booksFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksFollowings[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.booksFollowings[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksAttachments[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.booksAttachments[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                //poems
+                postIndex = state.poems.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poems[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poems[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.poems[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.poemsMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsMine[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.poemsMine[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.poemsFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsFollowers[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.poemsFollowers[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.poemsFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsFollowings[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.poemsFollowings[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsAttachments[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.poemsAttachments[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                //riddles
+                postIndex = state.riddles.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddles[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddles[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.riddles[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.riddlesMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesMine[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.riddlesMine[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.riddlesFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesFollowers[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.riddlesFollowers[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.riddlesFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesFollowings[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.riddlesFollowings[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesAttachments[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.riddlesAttachments[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                //questions
+                postIndex = state.questions.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questions[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questions[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.questions[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.questionsMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsMine[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.questionsMine[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.questionsFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsFollowers[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.questionsFollowers[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.questionsFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsFollowings[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.questionsFollowings[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsAttachments[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.questionsAttachments[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                //activities
+                postIndex = state.activities.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activities[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.activities[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.activities[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.activitiesMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activitiesMine[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.activitiesMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.activitiesMine[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.activitiesFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activitiesFollowers[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.activitiesFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.activitiesFollowers[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.activitiesFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activitiesFollowings[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.activitiesFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.activitiesFollowings[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+                postIndex = state.activitiesAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.activitiesAttachments[postIndex].comments
+                        .findIndex(comment=>{
+                            return comment.id === itemId
+                        })
+                    if (commentIndex > -1) {
+                        likeIndex = state.activitiesAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                            return like.id === data.likeData.like.id
+                        })
+                        if(likeIndex === -1){
+                            state.activitiesAttachments[postIndex].comments[commentIndex].likes
+                                .push(data.likeData.like)                        
+                        }
+                    }
+                }
+            }
+        },
+        REMOVE_LIKE(state,data){
+            let itemId = Number(data.itemId),
+                likeId = Number(data.likeId),
+                postIndex = null,
+                likeIndex = null
+            if (data.item === 'post') {
+                //posts
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.posts[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.posts[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.postsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsMine[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.postsMine[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.postsFollowers[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.postsFollowings[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.postsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.postsAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.postsAttachments[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                //books
+                postIndex = state.books.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.books[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.books[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.booksMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksMine[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.booksMine[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.booksFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.booksFollowers[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.booksFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.booksFollowings[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.booksAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.booksAttachments[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                //riddles
+                postIndex = state.riddles.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddles[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.riddles[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.riddlesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesMine[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.riddlesMine[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.riddlesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.riddlesFollowers[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.riddlesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.riddlesFollowings[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.riddlesAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.riddlesAttachments[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                //poems
+                postIndex = state.poems.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poems[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.poems[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.poemsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsMine[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.poemsMine[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.poemsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.poemsFollowers[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.poemsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.poemsFollowings[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.poemsAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.poemsAttachments[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                //questions
+                postIndex = state.questions.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questions[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.questions[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.questionsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsMine[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.questionsMine[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.questionsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.questionsFollowers[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.questionsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.questionsFollowings[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.questionsAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.questionsAttachments[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                //attachments
+                postIndex = state.activities.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.activities[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.activities[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.activitiesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.activitiesMine[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.activitiesMine[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.activitiesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.activitiesFollowers[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.activitiesFollowers[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.activitiesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.activitiesFollowings[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.activitiesFollowings[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+                postIndex = state.activitiesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    likeIndex = state.activitiesAttachments[postIndex].likes.findIndex(like=>{
+                        return like.id === likeId
+                    })
+                    if (likeIndex > -1) {
+                        state.activitiesAttachments[postIndex].likes.splice(likeIndex,1)
+                        // return 
+                    }
+                }
+            } else if (data.item === 'comment' &&
+                data.itemBelongsTo === 'post') {
+                let commentIndex = null,
+                    itemBelongsToId = Number(data.itemBelongsToId)
+                //posts
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.posts[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.posts[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsMine[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsMine[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsFollowers[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsFollowings[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsAttachments[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                //books
+                postIndex = state.books.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.books[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.books[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.books[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.booksMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksMine[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.booksMine[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.booksFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.booksFollowers[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.booksFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.booksFollowings[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.booksAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.booksAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.booksAttachments[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                //poems
+                postIndex = state.poems.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poems[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poems[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.poems[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.poemsMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsMine[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.poemsMine[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.poemsFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.poemsFollowers[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.poemsFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.poemsFollowings[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.poemsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.poemsAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.poemsAttachments[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                //riddles
+                postIndex = state.riddles.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddles[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddles[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.riddles[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.riddlesMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesMine[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.riddlesMine[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.riddlesFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.riddlesFollowers[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.riddlesFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.riddlesFollowings[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.riddlesAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.riddlesAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.riddlesAttachments[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                //questions
+                postIndex = state.questions.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questions[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questions[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.questions[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.questionsMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsMine[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.questionsMine[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.questionsFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.questionsFollowers[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.questionsFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.questionsFollowings[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.questionsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.questionsAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.questionsAttachments[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                //activities
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.posts[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.posts[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsMine.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsMine[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsMine[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsMine[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowers[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsFollowers[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsFollowers[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsFollowings[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsFollowings[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsFollowings[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+                postIndex = state.postsAttachments.findIndex(post=>{
+                    return post.id === itemBelongsToId
+                })
+                if (postIndex > -1) {
+                    commentIndex = state.postsAttachments[postIndex].comments.findIndex(comment=>{
+                        return comment.id === itemId
+                    })
+                    if (commentIndex > -1) {
+                        likeIndex = state.postsAttachments[postIndex].comments[commentIndex]
+                            .likes.findIndex(like=>{
+                                return like.id === data.likeId
+                            })
+                        if (likeIndex > -1) {
+                            state.postsAttachments[postIndex].comments[commentIndex].likes
+                                .splice(likeIndex,1)
+                            // return 
+                        }
+                    }
+                }
+            }
+        },
 
         ///////////////////////////////////attachment
 
         ATTACHMENT_CREATE_SUCCESS(state, data){
+            let attachmentIndex = null
             if (data.item === 'post') {
-                let postIndex = null,
-                    poemIndex = null,
-                    riddleIndex = null,
-                    questionIndex = null,
-                    bookIndex = null,
-                    activityIndex = null
+                let postIndex = null
                 //posts
                 postIndex = state.posts.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.posts[postIndex].attachments.unshift(data.attachment)
+                    attachmentIndex = state.posts[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.posts[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 postIndex = state.postsMine.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsMine[postIndex].attachments.unshift(data.attachment)
+                    attachmentIndex = state.postsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.postsMine[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 postIndex = state.postsFollowers.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsFollowers[postIndex].attachments.unshift(data.attachment)
+                    attachmentIndex = state.postsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.postsFollowers[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 postIndex = state.postsFollowings.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsFollowings[postIndex].attachments.unshift(data.attachment)
+                    attachmentIndex = state.postsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.postsFollowings[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 postIndex = state.postsAttachments.findIndex(post => {
                     return post.id === data.itemId
                 })
                 if (postIndex > -1) {
-                    state.postsAttachments[postIndex].attachments.unshift(data.attachment)
+                    attachmentIndex = state.postsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.postsAttachments[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 //poems
-                poemIndex = state.poems.findIndex(poem => {
+                postIndex = state.poems.findIndex(poem => {
                     return poem.id === data.itemId
                 })
-                if (poemIndex > -1) {
-                    state.poems[poemIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.poems[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.poems[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                poemIndex = state.poemsMine.findIndex(poem => {
+                postIndex = state.poemsMine.findIndex(poem => {
                     return poem.id === data.itemId
                 })
-                if (poemIndex > -1) {
-                    state.poemsMine[poemIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.poemsMine[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                poemIndex = state.poemsFollowers.findIndex(poem => {
+                postIndex = state.poemsFollowers.findIndex(poem => {
                     return poem.id === data.itemId
                 })
-                if (poemIndex > -1) {
-                    state.poemsFollowers[poemIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.poemsFollowers[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                poemIndex = state.poemsFollowings.findIndex(poem => {
+                postIndex = state.poemsFollowings.findIndex(poem => {
                     return poem.id === data.itemId
                 })
-                if (poemIndex > -1) {
-                    state.poemsFollowings[poemIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.poemsFollowings[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                poemIndex = state.poemsAttachments.findIndex(poem => {
+                postIndex = state.poemsAttachments.findIndex(poem => {
                     return poem.id === data.itemId
                 })
-                if (poemIndex > -1) {
-                    state.poemsAttachments[poemIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.poemsAttachments[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 //riddles
-                riddleIndex = state.riddles.findIndex(riddle => {
+                postIndex = state.riddles.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
-                if (riddleIndex > -1) {
-                    state.riddles[riddleIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddles[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.riddles[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                riddleIndex = state.riddlesMine.findIndex(riddle => {
+                postIndex = state.riddlesMine.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
-                if (riddleIndex > -1) {
-                    state.riddlesMine[riddleIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.riddlesMine[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                riddleIndex = state.riddlesFollowers.findIndex(riddle => {
+                postIndex = state.riddlesFollowers.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
-                if (riddleIndex > -1) {
-                    state.riddlesFollowers[riddleIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.riddlesFollowers[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                riddleIndex = state.riddlesFollowings.findIndex(riddle => {
+                postIndex = state.riddlesFollowings.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
-                if (riddleIndex > -1) {
-                    state.riddlesFollowings[riddleIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.riddlesFollowings[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                riddleIndex = state.riddlesAttachments.findIndex(riddle => {
+                postIndex = state.riddlesAttachments.findIndex(riddle => {
                     return riddle.id === data.itemId
                 })
-                if (riddleIndex > -1) {
-                    state.riddlesAttachments[riddleIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.riddlesAttachments[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 //questions
-                questionIndex = state.questions.findIndex(question => {
+                postIndex = state.questions.findIndex(question => {
                     return question.id === data.itemId
                 })
-                if (questionIndex > -1) {
-                    state.questions[questionIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.questions[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.questions[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                questionIndex = state.questionsMine.findIndex(question => {
+                postIndex = state.questionsMine.findIndex(question => {
                     return question.id === data.itemId
                 })
-                if (questionIndex > -1) {
-                    state.questionsMine[questionIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.questionsMine[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                questionIndex = state.questionsFollowers.findIndex(question => {
+                postIndex = state.questionsFollowers.findIndex(question => {
                     return question.id === data.itemId
                 })
-                if (questionIndex > -1) {
-                    state.questionsFollowers[questionIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.questionsFollowers[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                questionIndex = state.questionsFollowings.findIndex(question => {
+                postIndex = state.questionsFollowings.findIndex(question => {
                     return question.id === data.itemId
                 })
-                if (questionIndex > -1) {
-                    state.questionsFollowings[questionIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.questionsFollowings[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                questionIndex = state.questionsAttachments.findIndex(question => {
+                postIndex = state.questionsAttachments.findIndex(question => {
                     return question.id === data.itemId
                 })
-                if (questionIndex > -1) {
-                    state.questionsAttachments[questionIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.questionsAttachments[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 //books
-                bookIndex = state.books.findIndex(book => {
+                postIndex = state.books.findIndex(book => {
                     return book.id === data.itemId
                 })
-                if (bookIndex > -1) {
-                    state.books[bookIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.books[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.books[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                bookIndex = state.booksMine.findIndex(book => {
+                postIndex = state.booksMine.findIndex(book => {
                     return book.id === data.itemId
                 })
-                if (bookIndex > -1) {
-                    state.booksMine[bookIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.booksMine[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                bookIndex = state.booksFollowers.findIndex(book => {
+                postIndex = state.booksFollowers.findIndex(book => {
                     return book.id === data.itemId
                 })
-                if (bookIndex > -1) {
-                    state.booksFollowers[bookIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.booksFollowers[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                bookIndex = state.booksFollowings.findIndex(book => {
+                postIndex = state.booksFollowings.findIndex(book => {
                     return book.id === data.itemId
                 })
-                if (bookIndex > -1) {
-                    state.booksFollowings[bookIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.booksFollowings[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                bookIndex = state.booksAttachments.findIndex(book => {
+                postIndex = state.booksAttachments.findIndex(book => {
                     return book.id === data.itemId
                 })
-                if (bookIndex > -1) {
-                    state.booksAttachments[bookIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.booksAttachments[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
                 //activities
-                activityIndex = state.activities.findIndex(activity => {
+                postIndex = state.activities.findIndex(activity => {
                     return activity.id === data.itemId
                 })
-                if (activityIndex > -1) {
-                    state.activities[activityIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.activities[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.activities[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                activityIndex = state.activitiesMine.findIndex(activity => {
+                postIndex = state.activitiesMine.findIndex(activity => {
                     return activity.id === data.itemId
                 })
-                if (activityIndex > -1) {
-                    state.activitiesMine[activityIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.activitiesMine[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                activityIndex = state.activitiesFollowers.findIndex(activity => {
+                postIndex = state.activitiesFollowers.findIndex(activity => {
                     return activity.id === data.itemId
                 })
-                if (activityIndex > -1) {
-                    state.activitiesFollowers[activityIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.activitiesFollowers[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                activityIndex = state.activitiesFollowings.findIndex(activity => {
+                postIndex = state.activitiesFollowings.findIndex(activity => {
                     return activity.id === data.itemId
                 })
-                if (activityIndex > -1) {
-                    state.activitiesFollowings[activityIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.activitiesFollowings[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
-                activityIndex = state.activitiesAttachments.findIndex(activity => {
+                postIndex = state.activitiesAttachments.findIndex(activity => {
                     return activity.id === data.itemId
                 })
-                if (activityIndex > -1) {
-                    state.activitiesAttachments[activityIndex].attachments.unshift(data.attachment)
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                    if (attachmentIndex === -1) {
+                        state.activitiesAttachments[postIndex].attachments.unshift(data.attachment)
+                    }
                 }
             }
         },
@@ -6307,6 +10581,702 @@ const home = {
                 }
             }
         },
+        NEW_ATTACHMENT(state,data){
+            let attachmentIndex = null,
+                itemId = Number(data.attachmentData.itemId),
+                attachmentId = Number(data.attachmentData.attachment.id)
+            if(data.attachmentData.item === 'post'){
+                let postIndex = null
+                //posts
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.posts[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.posts[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.postsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.postsMine[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.postsFollowers[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.postsFollowings[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.postsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.postsAttachments[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                //books
+                postIndex = state.books.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.books[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.books[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.booksMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.booksMine[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.booksFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.booksFollowers[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.booksFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.booksFollowings[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.booksAttachments[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                //poems
+                postIndex = state.poems.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poems[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.poems[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.poemsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.poemsMine[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.poemsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.poemsFollowers[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.poemsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.poemsFollowings[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.poemsAttachments[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                //riddles
+                postIndex = state.riddles.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddles[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.riddles[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.riddlesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.riddlesMine[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.riddlesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.riddlesFollowers[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.riddlesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.riddlesFollowings[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.riddlesAttachments[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                //questions
+                postIndex = state.questions.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questions[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.questions[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.questionsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.questionsMine[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.questionsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.questionsFollowers[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.questionsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.questionsFollowings[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.questionsAttachments[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                //activities
+                postIndex = state.activities.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activities[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.activities[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.activitiesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.activitiesMine[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.activitiesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.activitiesFollowers[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.activitiesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.activitiesFollowings[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+                postIndex = state.activitiesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex === -1) {
+                        state.activitiesAttachments[postIndex].attachments.push(data.attachmentData.attachment)
+                    }
+                }
+            } else if(data.attachmentData.item === 'discussion'){
+                
+            } else if(data.attachmentData.item === 'read'){
+                
+            }
+        },
+        REMOVE_ATTACHMENT(state,data){
+            let attachmentIndex = null,
+                itemId = Number(data.itemId),
+                attachmentId = Number(data.attachmentId)
+            if(data.item === 'post'){
+                let postIndex = null
+                //posts
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.posts[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.posts[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.postsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.postsMine[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.postsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.postsFollowers[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.postsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.postsFollowings[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.postsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.postsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.postsAttachments[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                //books
+                postIndex = state.books.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.books[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.books[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.booksMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.booksMine[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.booksFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.booksFollowers[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.booksFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.booksFollowings[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.booksAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.booksAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.booksAttachments[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                //poems
+                postIndex = state.poems.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poems[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.poems[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.poemsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.poemsMine[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.poemsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.poemsFollowers[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.poemsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.poemsFollowings[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.poemsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.poemsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.poemsAttachments[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                //riddles
+                postIndex = state.riddles.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddles[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.riddles[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.riddlesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.riddlesMine[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.riddlesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.riddlesFollowers[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.riddlesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.riddlesFollowings[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.riddlesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.riddlesAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.riddlesAttachments[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                //questions
+                postIndex = state.questions.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questions[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.questions[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.questionsMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.questionsMine[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.questionsFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.questionsFollowers[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.questionsFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.questionsFollowings[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.questionsAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.questionsAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.questionsAttachments[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                //activities
+                postIndex = state.activities.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activities[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.activities[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.activitiesMine.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesMine[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.activitiesMine[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.activitiesFollowers.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesFollowers[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.activitiesFollowers[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.activitiesFollowings.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesFollowings[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.activitiesFollowings[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+                postIndex = state.activitiesAttachments.findIndex(post=>{
+                    return post.id === itemId
+                })
+                if (postIndex > -1) {
+                    attachmentIndex = state.activitiesAttachments[postIndex].attachments.findIndex(attachment=>{
+                        return attachment.id === attachmentId
+                    })
+                    if(attachmentIndex > -1) {
+                        state.activitiesAttachments[postIndex].attachments.splice(attachmentIndex,1)
+                    }
+                }
+            } else if(data.item === 'discussion'){
+                
+            } else if(data.item === 'read'){
+                
+            }
+        },
 
     },
 
@@ -6338,7 +11308,11 @@ const home = {
             let response = await HomeService.postsGet(data)
             commit('LOADING_END')
             if (response.data.data) {
-                commit('POSTS_SUCCESS',{params: data.params, data: response.data})
+                commit('POSTS_SUCCESS',{
+                    params: data.params, 
+                    data: response.data,
+                    nextPage: data.nextPage
+                })
                 return response.data.hasOwnProperty('links') ? 
                     response.data.links.next : null
             }else {
@@ -6350,7 +11324,11 @@ const home = {
             let response = await HomeService.userPostsGet(data)
             commit('LOADING_END')
             if (response.data.data) {
-                commit('POSTS_SUCCESS',{params: data.params, data: response.data})
+                commit('POSTS_SUCCESS',{
+                    params: data.params, 
+                    data: response.data,
+                    nextPage: data.nextPage
+                })
                 return response.data.hasOwnProperty('links') ? 
                     response.data.links.next : null
             }else {
@@ -6380,6 +11358,87 @@ const home = {
             }else {
                 return 'unsuccessful'
             }
+        },
+        newPost({commit,rootGetters}, post){
+            console.log(rootGetters);
+            commit('NEW_POST', {
+                post,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+        replacePost({commit,rootGetters}, post){
+            commit('REPLACE_POST', {
+                post,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+        removePost({commit}, postInfo){
+            commit('REMOVE_POST', postInfo)
+        },
+
+        /////////////////////////////////////comments
+
+        newComment({commit,rootGetters}, commentData){
+            commit('NEW_COMMENT', {
+                commentData,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+        replaceComment({commit,rootGetters}, commentData){
+            commit('REPLACE_COMMENT', {
+                commentData,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+        removeComment({commit, rootGetters}, commentData){
+            commit('REMOVE_COMMENT', {
+                commentData,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+
+        //////////////////////////////////////attachment
+        
+        newAttachment({commit,rootGetters}, attachmentData){
+            commit('NEW_ATTACHMENT', {
+                attachmentData,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+        removeAttachment({commit}, attachmentInfo){
+            commit('REMOVE_ATTACHMENT', attachmentInfo)
+        },
+
+        //////////////////////////////////////flags
+        
+        newFlag({commit,rootGetters}, flag){
+            commit('NEW_FLAG', {
+                flag,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+        removeFlag({commit}, flagInfo){
+            commit('REMOVE_FLAG', flagInfo)
+        },
+
+        //////////////////////////////////////likes
+        
+        newLike({commit,rootGetters}, likeData){
+            commit('NEW_LIKE', {
+                likeData,
+                userFollowers: rootGetters.getUserFollowers,
+                userFollowings: rootGetters.getUserFollowings,
+            })
+        },
+        removeLike({commit}, likeInfo){
+            commit('REMOVE_LIKE', likeInfo)
         },
 
         //////////////////////////////////// search

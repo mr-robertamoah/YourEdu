@@ -1,7 +1,8 @@
 <template>
     <div class="text-textarea-wrapper"
             :class="{error:error,bottomborder:bottomBorder}">
-        <textarea type="text" :placeholder="placeholder" 
+        <textarea 
+            :placeholder="placeholder" 
             @input="change"
             :value="value"
             class="form-control"
@@ -110,7 +111,8 @@ $border-color-error:rgba(201, 6, 6, 0.9);
 @media screen and (max-width:800px) {
     
     .text-textarea-wrapper{
-        textarea{
+        textarea,
+        textarea::placeholder{
             font-size: 14px;
         }
     }
@@ -120,7 +122,8 @@ $border-color-error:rgba(201, 6, 6, 0.9);
     
     .text-textarea-wrapper{
 
-        textarea{
+        textarea,
+        textarea::placeholder{
             font-size: 12px;
         }
     }

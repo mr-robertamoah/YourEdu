@@ -87,6 +87,24 @@ const UserService = {
             return error.response
         }
     },
+    async followingsGet(){
+        try {
+            let response = await ApiService.get(`/api/user/followings`)
+            
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async followersGet(){
+        try {
+            let response = await ApiService.get(`/api/user/followers`)
+            
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
     async getFollowRequests(data){
         let {nextPage} = data
 
@@ -102,8 +120,50 @@ const UserService = {
             return error.response
         }
     },
+    async userFollowNotifications(){
+
+        try {
+            let response = await ApiService.get(`/api/user/follownotifications`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async markFollowNotifications(){
+
+        try {
+            let response = await ApiService.post(`/api/user/follownotifications/mark`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
     
-////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////// users
+
+    async userFlaggedGet(main){
+        let {type,nextPage} = main
+        try {
+            let response = await ApiService.get(`/api/user/flagged?page=${nextPage}&type=${type}`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
+    async userSavedGet(main){
+        let {type,nextPage} = main
+        try {
+            let response = await ApiService.get(`/api/user/saved?page=${nextPage}&type=${type}`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
 
     async editUser(mainData){
         let {user_id, data} = mainData

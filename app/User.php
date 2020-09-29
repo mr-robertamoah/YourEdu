@@ -8,6 +8,7 @@ use App\YourEdu\Facilitator;
 use App\YourEdu\Follow;
 use App\YourEdu\Learner;
 use App\YourEdu\Login;
+use App\YourEdu\Message;
 use App\YourEdu\ParentModel;
 use App\YourEdu\PhoneNumber;
 use App\YourEdu\Point;
@@ -63,18 +64,18 @@ class User extends Authenticatable
     protected $appends = ['full_name','age','is_superadmin',
         'is_supervisoradmin','is_groupadmin','is_classadmin',
         'is_schooladmin','is_learner','is_parent','is_facilitator',
-        'has_professionals','has_schools', 'owned_profiles','follow_requests'
+        'has_professionals','has_schools', 'owned_profiles'
     ];
 
-    public function getFollowRequestsAttribute()
-    {
-        $requests = Request::where('requestable_type','App\YourEdu\Follow')
-            ->where('state','PENDING')
-            ->whereHasMorph('requestto','*',function(Builder $builder){
-                $builder->where('user_id',$this->id);
-            })->count();
+    // public function getUnreadFollowNotifications()
+    // {
+    //     return $this->unreadNotifications()
+    //         ->where('type','App\Notifications\FollowRequest')->get();
+    // }
 
-        return $requests;
+    public function receivesBroadcastNotificationsOn()
+    {
+        return 'youredu.users.'.$this->id;
     }
     
     public function getFullNameAttribute()
@@ -288,6 +289,16 @@ class User extends Authenticatable
     public function followings() //ones i am the follower
     {
         return $this->hasMany(Follow::class);
+    }
+
+    public function messagesSent()
+    {
+        return $this->hasMany(Message::class,'from_user_id');
+    }
+
+    public function messagesReceived()
+    {
+        return $this->hasMany(Message::class,'to_user_id');
     }
     
 }

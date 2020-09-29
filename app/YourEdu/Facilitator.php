@@ -186,6 +186,16 @@ class Facilitator extends Model
     {
         return $this->morphMany(Grade::class,'addedby');
     }
+
+    public function uniqueProgramsAdded()
+    {
+        return $this->morphMany(Program::class,'addedby');
+    }
+
+    public function uniqueCoursesAdded()
+    {
+        return $this->morphMany(Course::class,'addedby');
+    }
     
     public function works()
     {
@@ -359,6 +369,16 @@ class Facilitator extends Model
         return $this->morphMany(Riddle::class,'authoredby');
     }
 
+    public function lessonsAdded()
+    {
+        return $this->morphMany(Lesson::class,'addedby');
+    }
+
+    public function lessonsOwned()
+    {
+        return $this->morphMany(Lesson::class,'ownedby');
+    }
+
     public function posts()
     {
         return $this->morphMany(Post::class,'postedby');
@@ -382,6 +402,26 @@ class Facilitator extends Model
     public function members()
     {
         return $this->morphMany(Member::class,'memberable');
+    }
+
+    public function conversations()
+    {
+        return $this->morphToMany(Conversation::class,'accountable','conversationables');
+    }
+
+    public function conversationAccounts()
+    {
+        return $this->morphMany(ConversationAccount::class,'accountable');
+    }
+
+    public function messagesSent()
+    {
+        return $this->morphMany(Message::class,'fromable');
+    }
+
+    public function messagesReceived()
+    {
+        return $this->morphMany(Message::class,'toable');
     }
 
     

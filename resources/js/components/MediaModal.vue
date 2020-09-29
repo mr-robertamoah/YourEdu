@@ -6,14 +6,14 @@
             </div>
             <template v-if="!showAlert">
                 <div class="main" v-if="main">
-                    <div class="media image" v-if="computedImage">
+                    <div class="media" v-if="computedImage">
                         <img :src="computedImage.url">
                     </div> 
-                    <div class="media video" v-if="computedVideo">
+                    <div class="media" v-if="computedVideo">
                         <video controls controlslist="nodownload" 
                             :src="computedVideo.url"></video>
                     </div> 
-                    <div class="media audio" v-if="computedAudio">
+                    <div class="media" v-if="computedAudio">
                         <audio controls controlslist="nodownload" 
                             :src="computedAudio.url"></audio>
                     </div> 
@@ -289,6 +289,7 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 margin: 10px 10px 0 0;
                 color: rgba(105, 105, 105,.8);
                 cursor: pointer;
+                font-size: 20px;
 
                 &:hover{
                     color: rgba(255, 0, 0, 0.603);
@@ -305,25 +306,27 @@ $modal-margin-height: (100vh - $modal-height)/2;
             }
 
             .main{
-                display: flex;
-                justify-content: center;
-                align-items: center; 
-                padding: 20px;
+                padding: 10px;
+                height: 100%;
+                width: 100%;
 
                 .media{
                     width: 90%;
                     margin: auto;
+                    height: 100%;
 
                     img,
-                    video,
+                    video{
+                        width: 100%;
+                        height: 100%;
+                        object-fit: contain;
+                        object-position: center;
+                    }
+                    
                     audio{
                         width: 100%;
                     }
                 }
-
-                // .image{
-                    
-                // }
             }
 
             .media-all{
@@ -445,6 +448,11 @@ $modal-margin-height: 0;
             height: $modal-height;
             top: $modal-margin-height;
             left: $modal-margin-width;
+
+            .close{
+                top: 0;
+                right: 1%;
+            }
         }
     }
 }

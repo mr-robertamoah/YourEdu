@@ -69,6 +69,7 @@ import InfiniteLoading from 'vue-infinite-loading'
         data() {
             return {
                 showLoginRegister: false,
+                posts: [],
             }
         },
         computed: {

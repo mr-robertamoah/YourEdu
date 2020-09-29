@@ -25,37 +25,12 @@
             <div class="loading" v-if="loading">
                 <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
             </div>
-            <action-button
-                @click="clickedAccept"
-                :green="true"
-                :title="greenActionTitle"
-                v-if="!loading"
-            >
-                <template slot="icon">
-                    <font-awesome-icon
-                        :icon="['fa','check']"
-                    ></font-awesome-icon>
-                </template>
-            </action-button>
-            <action-button
-                @click="clickedDecline"
-                :red="true"
-                :title="redActionTitle"
-                v-if="!loading"
-            >
-                <template slot="icon">
-                    <font-awesome-icon
-                        :icon="['fa','times']"
-                    ></font-awesome-icon>
-                </template>
-            </action-button>
         </div>
     </div>
 </template>
 
 <script>
 import ProfilePicture from './ProfilePicture'
-import ActionButton from '../ActionButton'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 
     export default {
@@ -122,29 +97,10 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             },
         },
         components: {
-            ActionButton,
             ProfilePicture,
             PulseLoader,
         },
         methods: {
-            clickedDecline(){
-                this.$emit('clickedAction',{
-                    account: this.routeParams.account, 
-                    accountId: this.routeParams.accountId,
-                    requestId: this.id,
-                    action: 'decline'
-                })
-                // this.$emit('clickedProfileBar')
-            },
-            clickedAccept(){
-                this.$emit('clickedAction',{
-                    account: this.routeParams.account, 
-                    accountId: this.routeParams.accountId,
-                    requestId: this.id,
-                    action: 'accept'
-                })
-                // this.$emit('clickedProfileBar')
-            },
             goToRoute() {
                 if (this.navigate) {
                     let routeObject = {

@@ -53,6 +53,11 @@ class Post extends Model
         return $this->morphMany(Comment::class,'commentable');
     }
 
+    public function lessons()
+    {
+        return $this->morphMany(Lesson::class,'lessonable');
+    }
+
     public function books()
     {
         return $this->morphMany(Book::class,'bookable');
@@ -124,6 +129,16 @@ class Post extends Model
         return $query->whereDoesntHave('flags',function(Builder $query){
             $query->where('status',"APPROVED");
             });
+    }
+
+    public function scopeWithTypes($query)
+    {
+        return $query::with(['questions.images','questions.videos',
+        'questions.audios','questions.files','activities.images','activities.videos',
+        'activities.files','activities.audios','riddles.images','riddles.videos',
+        'riddles.files','riddles.audios','poems.images','poems.videos',
+        'poems.files','poems.audios','books.images','books.videos','books.files',
+        'books.audios','postedby.profile']);
     }
 
     public function scopeHasPostTypes($query)

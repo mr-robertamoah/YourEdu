@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\DeletePost;
 use App\Events\NewPost;
+use App\Events\UpdatePost;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PostResource;
+use App\Services\Attachment;
 use App\User;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Follow;
@@ -14,6 +17,7 @@ use App\YourEdu\Post;
 use App\YourEdu\Professional;
 use App\YourEdu\School;
 use Carbon\Carbon;
+use \Debugbar;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -30,38 +34,10 @@ class PostController extends Controller
     public function postCreate(Request $request)
     {
         $user = auth()->user();
-        $id = null;
-        $account = null;
         $post = null;
         $type = null;
-        if ($request->has('account')) {
-            $id = $request->account_id;
-            if ($request->account === 'learner') {
-                $account = $user->learner;
-            } else if ($request->account === 'parent') {
-                $account = $user->parent;
-            } else if ($request->account === 'facilitator') {
-                $account = $user->facilitator;
-            } else if ($request->account === 'professional') {
-                $account = Professional::find($id);
-                if (!$account || $account->user_id != $user->id) {
-                    return response()->json([
-                        'message' => "You are not the owner of this {$request->account}"
-                    ], 422);
-                }
-            } else if ($request->account === 'school') {
-                $account = School::find($id);
-                if (!$account || $account->user_id != $user->id) {
-                    return response()->json([
-                        'message' => "You are not the owner of this {$request->account}"
-                    ], 422);
-                }
-            }
-        } else {
-            return response()->json([
-                'message' => 'inadequate data. Account required.'
-            ], 422);
-        }
+        $file = null;
+        $account = getAccountObject($request->account, $request->account_id);
 
         DB::beginTransaction();
         try {
@@ -96,12 +72,10 @@ class PostController extends Controller
                     'fileType' => 'nullable|string',
                 ]);
 
-                $file = null;
                 if ($request->hasFile('file')) {
                     $fileDetails = getFileDetails($request->file('file'));
                     
                     $file = accountCreateFile(
-                        $fileDetails['mime'],
                         $account, 
                         $fileDetails,
                         $post
@@ -229,26 +203,38 @@ class PostController extends Controller
                             ]);
                         }
                     }
-                } 
+                }  else if ($request->type === 'lesson') {
+                    $request->validate([
+                        'title' => 'required|string',
+                        'description' => 'nullable|string',
+                        'ageGroup' => 'nullable|string',
+                        'previewFile.*' => 'nullable|file',
+                    ]);
+
+                    $input['description'] = $request->description;
+                    $input['title'] = $request->title;
+                    $input['ageGroup'] = $request->ageGroup;  
+                    $type = $account->lessonsAdded()->create($input);
+                    $type->ownedby()->associate($account);
+                    $type->lessonable()->associate($post);
+                    $type->save();
+                }
 
                 if ($type) {
 
-                    $file = null;
                     if ($request->hasFile('previewFile')) {
-                        $fileDetails = getFileDetails($request->file('previewFile'));
 
-                        $file = accountCreateFile(
-                            $fileDetails['mime'],
-                            $account, 
-                            $fileDetails,
-                            $type
-                        );
+                        foreach ($request->file('previewFile') as $previewFile) {
+                            
+                            $fileDetails = getFileDetails($previewFile);
+    
+                            $file = accountCreateFile(
+                                $account, 
+                                $fileDetails,
+                                $type
+                            );
+                        }
                     }
-                    // DB::commit();
-                    // return response()->json([
-                    //     'message' => 'successful',
-                    //     'post' => new PostResource($post),
-                    // ]);
                 } else {
                     DB::rollback();
                     return response()->json([
@@ -257,19 +243,26 @@ class PostController extends Controller
                     ]);
                 }
             }
+            
+            if ($request->has('attachments')) {
+                foreach (json_decode($request->attachments) as $attachment) {
+                    Attachment::attach($account,$post,$attachment->attachable,$attachment->attachableId);
+                }
+            }
 
-            $post = Post::with(['questions.images','questions.videos',
-                'questions.audios','questions.files','activities.images','activities.videos',
-                'activities.files','activities.audios','riddles.images','riddles.videos',
-                'riddles.files','riddles.audios','poems.images','poems.videos',
-                'poems.files','poems.audios','books.images','books.videos','books.files',
-                'books.audios','postedby.profile'])->find($post->id);
-
-            broadcast(new NewPost($post));
             DB::commit();
+            $post = Post::with(['questions.images','questions.videos',
+            'questions.audios','questions.files','activities.images','activities.videos',
+            'activities.files','activities.audios','riddles.images','riddles.videos',
+            'riddles.files','riddles.audios','poems.images','poems.videos',
+            'poems.files','poems.audios','books.images','books.videos','books.files',
+            'books.audios','postedby.profile'])->find($post->id);
+            Debugbar::info($post);
+            $postResource = new PostResource($post);
+            broadcast(new NewPost($postResource))->toOthers();
             return response()->json([
                 'message' => 'successful',
-                'post' => new PostResource($post),
+                'post' => $postResource,
             ]);
         } catch (\Throwable $th) {
             if($file){
@@ -308,7 +301,8 @@ class PostController extends Controller
                 },'questions'=>function(MorphMany $query){
                     $query->with(['images','videos','audios','files','answers']);
                 },'comments'])->hasPostTypes()->withFilter()->hasPublished()
-                ->hasNoFlags($parentsLearnerUserIds)->latest()->paginate(5);
+                ->hasNoFlags($parentsLearnerUserIds)->orderBy('updated_at', 'desc')
+                ->paginate(5);
 
             return PostResource::collection($posts);            
         } catch (\Throwable $th) {
@@ -324,7 +318,7 @@ class PostController extends Controller
         $posts = null;
         try {
             $posts = Post::hasNoApprovedFlags()->hasPostTypes()
-                ->withFilter()->hasPublished()->latest()->paginate(5);
+                ->withFilter()->hasPublished()->orderBy('updated_at', 'desc')->paginate(5);
 
             return PostResource::collection($posts);            
         } catch (\Throwable $th) {
@@ -339,17 +333,7 @@ class PostController extends Controller
     {
         $mainPost = Post::find($post);
         
-        if ($account === 'learner') {
-            $mainAccount = Learner::find($accountId);
-        } else if ($account === 'parent') {
-            $mainAccount = ParentModel::find($accountId);
-        } else if ($account === 'facilitator') {
-            $mainAccount = Facilitator::find($accountId);
-        } else if ($account === 'professional') {
-            $mainAccount = Professional::find($accountId);
-        } else if ($account === 'school') {
-            $mainAccount = School::find($accountId);
-        }
+        $mainAccount = getAccountObject($account,$accountId);
 
         if($mainAccount->user_id !== auth()->id()){
             return response()->json([
@@ -525,19 +509,11 @@ class PostController extends Controller
                     $fileDetails = getFileDetails($request->file('previewFile'));
 
                     accountCreateFile(
-                        $fileDetails['mime'],
                         $mainAccount, 
                         $fileDetails,
                         $type
                     );
                 }
-                $mainPost = Post::find($mainPost->id)->with(['questions','activities','riddles',
-                'poems','books','postedby.profile']);
-                DB::commit();
-                return response()->json([
-                    'message' => 'successful',
-                    'post' => new PostResource($mainPost),
-                ]);
             } else {
                 DB::rollback();
                 return response()->json([
@@ -548,19 +524,35 @@ class PostController extends Controller
         }
 
         DB::commit();
+        $mainPost = Post::with(['questions.images','questions.videos',
+        'questions.audios','questions.files','activities.images','activities.videos',
+        'activities.files','activities.audios','riddles.images','riddles.videos',
+        'riddles.files','riddles.audios','poems.images','poems.videos',
+        'poems.files','poems.audios','books.images','books.videos','books.files',
+        'books.audios','postedby.profile'])->find($mainPost->id);
+        Debugbar::info($mainPost);
+        $postResource = new PostResource($mainPost);
+        broadcast(new UpdatePost($postResource))->toOthers();
         return response()->json([
             'message' => 'successful',
-            'post' => new PostResource($mainPost),
+            'post' => $postResource,
         ]);
     }
 
     public function postDelete($post, $account, $accountId)
     {
         $mainPost = Post::find($post);
+        Debugbar::info($mainPost);
         
         try {
                 
             $mainPost->delete();
+
+            broadcast(new DeletePost([
+                'postId' => $post,
+                'account' => $account,
+                'accountId' => $accountId,
+            ]))->toOthers();
             return response()->json([
                 'message' => "successful"
             ]);
@@ -572,7 +564,7 @@ class PostController extends Controller
         }
     }
 
-    public function postGet(Request $request,$post)
+    public function postGet($post)
     {
         $item = null;
         $item = Post::with(['questions.images','questions.videos',
@@ -593,20 +585,9 @@ class PostController extends Controller
         ]);
     }
 
-    public function postsGet(Request $request, $account, $accountId)
+    public function postsGet($account, $accountId)
     {
-        $mainAccount = null;
-        if ($account === 'learner') {
-            $mainAccount = Learner::find($accountId);
-        } else if ($account === 'parent') {
-            $mainAccount = ParentModel::find($accountId);
-        } else if ($account === 'facilitator') {
-            $mainAccount = Facilitator::find($accountId);
-        } else if ($account === 'school') {
-            $mainAccount = School::find($accountId);            
-        } else if ($account === 'professional') {
-            $mainAccount = Professional::find($accountId);
-        }
+        $mainAccount = getAccountObject($account, $accountId);
 
         if (!$mainAccount) {
             return response()->json([

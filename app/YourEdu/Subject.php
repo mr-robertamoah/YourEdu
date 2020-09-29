@@ -42,11 +42,6 @@ class Subject extends Model
         return $this->morphTo();
     }
 
-    public function subjectable()
-    {
-        return $this->morphTo();
-    }
-
     public function classes()
     {
         return $this->belongsToMany(Subject::class,'class_subject','subject_id','class_id')

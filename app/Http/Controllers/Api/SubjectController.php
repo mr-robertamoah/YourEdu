@@ -2,89 +2,41 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\SubjectResource;
-use App\YourEdu\Admin;
-use App\YourEdu\Facilitator;
-use App\YourEdu\Learner;
-use App\YourEdu\ParentModel;
-use App\YourEdu\Professional;
-use App\YourEdu\School;
+use App\Services\Attachment;
 use App\YourEdu\Subject;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
-class SubjectController extends Controller
+class SubjectController extends Attachment
 {
     //
 
     public function subjectCreate(Request $request)
     {
-        // dd($request->all());
         $request->validate([
             'name' => 'required|string',
             'description' => 'nullable|string',
             'rationale' => 'nullable|string',
             'aliases' => 'nullable|array',
         ]);
-        
-        $account = null;
-
-        if ($request->account === 'facilitator') {
-            $account = Facilitator::find($request->accountId);
-        } else if ($request->account === 'professional') {
-            $account = Professional::find($request->accountId);
-        } else if ($request->account === 'admin') {
-            $account = Admin::find($request->accountId);
-        } else if ($request->account === 'school') {
-            $account = School::find($request->accountId);
-        } else {
+        if ($request->account === 'learner' || $request->account === 'parent') {
             return response()->json([
-                'message' => "unsuccessful, {$request->account} is not a valid account to create a subject"
-            ],422);
-        } 
-
-        if (is_null($account)) {
-            return response()->json([
-                'message' => "unsuccessful, {$request->account} does not exist"
+                'message' => 'unsuccessful, learner or parent can only create an alias of a subject'
             ],422);
         }
 
         try { 
 
             DB::beginTransaction();
-            $subject = $account->uniqueSubjectsAdded()->create([
-                'name' => $request->name,
-                'description' => $request->description,
-                'rationale' => $request->rationale,
-            ]);
+            $subject = $this->createAttachment($request, 'subject');
 
             if (!$subject) {
                 return response()->json([
                     'message' => 'unsuccessful, subject was not created'
                 ],422);
             }
-
-            if ($request->has('aliases')) {
-                
-                foreach ($request->aliases as $key => $aliasName) {
-                    if (Str::length($aliasName)) {
-
-                        $alias = $account->aliasesAdded()->create([
-                            'name' => $aliasName,
-                        ]);
-
-                        $alias->aliasable()->associate($subject);
-                        $alias->save();
-                    }
-                }
-
-            }
-
-            $account->point->value += 1;
-            $account->point->save();
 
             DB::commit();
             return response()->json([
@@ -115,59 +67,17 @@ class SubjectController extends Controller
             'name' => 'required|string',
             'description' => 'nullable|string',
         ]);
-        
-        $account = null;
-
-        if ($request->account === 'learner') { //learner and parents can only create aliases
-            $account = Learner::find($request->accountId);
-        } else if ($request->account === 'parent') {
-            $account = ParentModel::find($request->accountId);
-        } else if ($request->account === 'facilitator') {
-            $account = Facilitator::find($request->accountId);
-        } else if ($request->account === 'professional') {
-            $account = Professional::find($request->accountId);
-        } else if ($request->account === 'admin') {
-            $account = Admin::find($request->accountId);
-        } else if ($request->account === 'school') {
-            $account = School::find($request->accountId);
-        } else {
-            return response()->json([
-                'message' => "unsuccessful, {$request->account} is not a valid account to create an alias for a subject"
-            ],422);
-        } 
-
-        if (is_null($account)) {
-            return response()->json([
-                'message' => "unsuccessful, {$request->account} does not exist"
-            ],422);
-        }
 
         try {
 
-            $aliasCheck = $mainSubject->aliases()->where('name',$request->name)->count();
-            if ($aliasCheck) {
-                return response()->json([
-                    'message' => 'unsuccessful, subject already has this alias'
-                ],422);
-            }
-
             DB::beginTransaction();
-            $alias = $account->aliasesAdded()->create([
-                'name' => $request->name,
-                'description' => $request->description,
-            ]);
-
-            $alias->aliasable()->associate($mainSubject);
-            $alias->save();
+            $alias = $this->createAttachmentAlias($request,$mainSubject);
 
             if (!$alias) {
                 return response()->json([
                     'message' => 'unsuccessful, alias was not created'
                 ],422);
             }
-
-            $account->point->value += 1;
-            $account->point->save();
 
             DB::commit();
             return response()->json([

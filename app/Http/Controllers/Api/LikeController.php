@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\DeleteLike;
+use App\Events\NewLike;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LikeResource;
 use App\YourEdu\Admin;
@@ -46,7 +48,25 @@ class LikeController extends Controller
         }
 
         try {
+            $item = getAccountString($mainLike->likeable_type);
+            $itemId = $mainLike->likeable_id;
+            $itemBelongsTo = null;
+            $itemBelongsToId = null;
+            if ($item === 'comment') {
+                $itemBelongsToId = $mainLike->likeable->commentable_id;
+                $itemBelongsTo = getAccountString($mainLike->likeable->commentable_type);
+            } else if ($item === 'answer') {
+                $itemBelongsToId = $mainLike->likeable->answerable_id;
+                $itemBelongsTo = getAccountString($mainLike->likeable->answerable_type);
+            }
             $mainLike->delete();
+            broadcast(new DeleteLike([
+                'likeId' => $like,
+                'item' => $item,
+                'itemId' => $itemId,
+                'itemBelongsTo' => $itemBelongsTo,
+                'itemBelongsToId' => $itemBelongsToId,
+            ]))->toOthers();
             return response()->json([
                 'message' => "successful"
             ]);
@@ -120,9 +140,26 @@ class LikeController extends Controller
                     $like->save();
 
                     DB::commit();
+                    $likeResource = new LikeResource($like);
+                    $itemBelongsTo = null;
+                    $itemBelongsToId = null;
+                    if ($item === 'comment') {
+                        $itemBelongsToId = $mainItem->commentable_id;
+                        $itemBelongsTo = getAccountString($mainItem->commentable_type);
+                    } else if ($item === 'answer') {
+                        $itemBelongsToId = $mainItem->answerable_id;
+                        $itemBelongsTo = getAccountString($mainItem->answerable_type);
+                    }
+                    broadcast(new NewLike([
+                        'like' => $likeResource,
+                        'item' => $item,
+                        'itemId' => $itemId,
+                        'itemBelongsTo' => $itemBelongsTo,
+                        'itemBelongsToId' => $itemBelongsToId,
+                    ]))->toOthers();
                     return response()->json([
                         'message' => "successful",
-                        'like' => new LikeResource($like),
+                        'like' => $likeResource,
                     ]);
                 } else {
                     return response()->json([

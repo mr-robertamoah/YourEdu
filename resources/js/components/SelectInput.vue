@@ -13,7 +13,7 @@
                         <font-awesome-icon :icon="['fa','chevron-down']"></font-awesome-icon>
                     </div>
                 </div>
-                <fade-down>
+                <just-fade>
                     <template slot="transition">
                         <div class="selection" ref="selection" 
                             v-if="showSelection"
@@ -40,6 +40,7 @@
                                     :value="item"
                                     @click="clickedSelection(item)"
                                     :class="{specialActive: selection === item.name}"
+                                    :title="item.description ? item.description : ''"
                                 >
                                     <div class="top">{{item.name}}</div>
                                     <div class="bottom"
@@ -50,14 +51,13 @@
                             </template>
                         </div>
                     </template>
-                </fade-down>
+                </just-fade>
             </div>
         </template>
     </fade-left>
 </template>
 
 <script>
-import FadeDown from './transitions/FadeDown';
 import FadeLeft from './transitions/FadeLeft';
 
     export default {
@@ -99,7 +99,6 @@ import FadeLeft from './transitions/FadeLeft';
         },
         components: {
             FadeLeft,
-            FadeDown,
         },
         data() {
             return {

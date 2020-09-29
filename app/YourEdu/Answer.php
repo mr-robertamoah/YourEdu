@@ -11,6 +11,8 @@ class Answer extends Model
     use SoftDeletes;
 
     protected $fillable = ['answer','work_id','possible_answer_id'];
+
+    protected $touches = ['answerable'];
     
     public function answerable()
     {

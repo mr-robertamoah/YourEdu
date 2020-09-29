@@ -15,8 +15,9 @@ class CreateDiscussionsTable extends Migration
     {
         Schema::create('discussions', function (Blueprint $table) {
             $table->id();
-            $table->morphs('discussionable'); // class post group
-            $table->morphs('discussionon'); //lesson subject curriculumdetail extracurriculum topic
+            $table->morphs('raisedby'); 
+            $table->morphs('discussionfor'); // class group
+            $table->morphs('discussionable'); //lesson subject curriculumdetail extracurriculum topic
             $table->softDeletes();
             $table->timestamps();
         });

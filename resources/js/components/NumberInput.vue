@@ -84,7 +84,7 @@
         methods: {
             checkInput(event) {
                 if (event.target.value < this.inputMin) {
-                    event.target.value = this.inputMin
+                    // event.target.value = this.inputMin
                     this.$emit('numberinput',`${event.target.value}`)
                 } else if (event.target.value > this.inputMax) {
                     event.target.value = this.inputMax

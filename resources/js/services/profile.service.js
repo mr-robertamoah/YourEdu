@@ -49,6 +49,100 @@ const ProfileService = {
         }
     },
 
+    /////////////////////////////////////////////////////programs
+
+    async programCreate(data){
+        try {
+
+            let response = await ApiService.post(`/api/program/create`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async programAliasCreate(main){
+        try {
+            let {programId, data} = main
+            let response = await ApiService.post(`/api/program/${programId}/alias`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async programsGet(){
+        try {
+
+            let response = await ApiService.get(`/api/programs`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async programsSearch(data){
+        try {
+
+            let response = await ApiService.get(`/api/programs/${data}`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+
+    /////////////////////////////////////////////////////courses
+
+    async courseCreate(data){
+        try {
+
+            let response = await ApiService.post(`/api/course/create`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async courseAliasCreate(main){
+        try {
+            let {courseId, data} = main
+            let response = await ApiService.post(`/api/course/${courseId}/alias`,data)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async coursesGet(){
+        try {
+
+            let response = await ApiService.get(`/api/courses`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+    async coursesSearch(data){
+        try {
+
+            let response = await ApiService.get(`/api/courses/${data}`)
+    
+            return response
+        } catch (error) {
+            
+            return error.response
+        }
+    },
+
     /////////////////////////////////////////////////////subjects
 
     async subjectCreate(data){
@@ -160,6 +254,116 @@ const ProfileService = {
         try {
             let response = await ApiService.delete(`/api/like/${data.likeId}`)
     
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
+    ////////////////////////////////////chat
+
+    async sendChatMessage(data){
+
+        let response = null,
+            {conversationId, formData} = data
+        try {
+            response = await ApiService.post(`api/conversation/${conversationId}/message`,
+            formData, true)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getChatMessages(data){
+
+        let response = null,
+            {nextPage, conversationId} = data
+        try {
+            response = await ApiService.get(`api/conversation/${conversationId}/messages?page=${nextPage}`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async createConversation(data){
+
+        try {
+            let response = await ApiService.post(`api/conversation`,data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getChatConversations(data){
+
+        let response = null,
+            {nextPage} = data
+        try {
+            response = await ApiService.get(`api/conversations?page=${nextPage}`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getBlockedConversations(data){
+
+        let response = null,
+            {nextPage} = data
+        try {
+            response = await ApiService.get(`api/conversations/blocked?page=${nextPage}`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getPendingConversations(data){
+
+        let response = null,
+            {nextPage} = data
+        try {
+            response = await ApiService.get(`api/conversations/pending?page=${nextPage}`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async sendMessageResponse(main){
+
+        let response = null,
+            {data, conversationId} = main
+        try {
+            response = await ApiService.post(`api/conversation/${conversationId}/response`, data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async blockConversation(main){
+
+        let response = null,
+            {conversationId, data} = main
+        try {
+            response = await ApiService.post(`api/conversation/${conversationId}/block`,data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async unblockConversation(main){
+
+        let response = null,
+            {conversationId, data} = main
+        try {
+            response = await ApiService.post(`api/conversation/${conversationId}/unblock`,data)
+
             return response
         } catch (error) {
             return error.response

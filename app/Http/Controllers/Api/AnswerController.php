@@ -43,24 +43,8 @@ class AnswerController extends Controller
         }
 
         $answer = null;
-        $account = null;
         $file = null;
-        $accountId = $request->accountId;
-        if ($request->account === 'learner') {
-            $account = Learner::find($accountId);
-        } else if ($request->account === 'parent') {
-            $account = ParentModel::find($accountId);
-        } else if ($request->account === 'facilitator') {
-            $account = Facilitator::find($accountId);
-        } else if ($request->account === 'professional') {
-            $account = Professional::find($accountId);
-        } else if ($request->account === 'school') {
-            $account = School::find($accountId);
-        } else {
-            return response()->json([
-                'message' => "unsuccessful. {$request->account} does not exist."
-            ],422);
-        }
+        $account = getAccountObject($request->account,$request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -97,7 +81,6 @@ class AnswerController extends Controller
                     $fileDetails = getFileDetails($request->file('file'));
 
                     $file = accountCreateFile(
-                        $fileDetails['mime'],
                         $account, 
                         $fileDetails,
                         $answer
@@ -109,49 +92,32 @@ class AnswerController extends Controller
                 ]);
             }
     
+            $dontRollBack = true;
             if ($item === 'riddle') {
                 $riddle = Riddle::find($itemId);
 
-                if ($answer && $riddle) {
-                    $answer->answerable()->associate($riddle);
-                    $answer->save();
-    
-                    DB::commit();
-                    return response()->json([
-                        'message' => "successful",
-                        'answer' => new AnswerResource($answer),
-                    ]);
-                } else {
-                    if($file){
-                        Storage::delete($file->path);
-                    }
-                    DB::rollback();
-                    return response()->json([
-                        'message' => "unsuccessful. {$item} does not exist or answer was not created"
-                    ]);
-                }
+                $dontRollBack = $this->answerAssociate($answer, $riddle);
             } else if ($item === 'question') {
                 $question = Question::find($itemId);
 
-                if ($answer && $question) {
-                    $answer->answerable()->associate($question);
-                    $answer->save();
-    
-                    DB::commit();
-                    return response()->json([
-                        'message' => "successful",
-                        'answer' => new AnswerResource($answer),
-                    ]);
-                } else {
-                    if($file){
-                        Storage::delete($file->path);
-                    }
-                    DB::rollback();
-                    return response()->json([
-                        'message' => "unsuccessful. {$item} does not exist or answer was not created"
-                    ]);
-                }
+                $dontRollBack = $this->answerAssociate($answer, $question);
             }
+
+            if (!$dontRollBack) {
+                if($file){
+                    Storage::delete($file->path);
+                }
+                DB::rollback();
+                return response()->json([
+                    'message' => "unsuccessful. {$item} does not exist or answer was not created"
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => "successful",
+                'answer' => new AnswerResource($answer),
+            ]);
         } catch (\Throwable $th) {
             if($file){
                 Storage::delete($file->path);
@@ -163,6 +129,17 @@ class AnswerController extends Controller
             throw $th;
         }
         
+    }
+    
+    private function answerAssociate($answer, $item)
+    {
+        if ($answer && $item) {
+            $answer->answerable()->associate($item);
+            $answer->save();
+        } else {
+            return false;
+        }
+        return true;
     }
 
     public function answerEdit(Request $request, $answer)
@@ -183,20 +160,7 @@ class AnswerController extends Controller
         // for now, answer must be required, on a later date, it wont be. but we will 
         //check to ensure that the update doesnt lead to an empty answer (without answer and file)
 
-        $mainAnswer = null;
-        $mainAccount = null;
-        // $file = null;
-        if ($request->account === 'learner') {
-            $mainAccount = Learner::find($request->accountId);
-        } else if ($request->account === 'parent') {
-            $mainAccount = ParentModel::find($request->accountId);
-        } else if ($request->account === 'facilitator') {
-            $mainAccount = Facilitator::find($request->accountId);
-        } else if ($request->account === 'professional') {
-            $mainAccount = Professional::find($request->accountId);
-        } else if ($request->account === 'school') {
-            $mainAccount = School::find($request->accountId);
-        }
+        $mainAccount = getAccountObject($request->account,$request->accountId);
 
         if (!$mainAccount) {
             return response()->json([

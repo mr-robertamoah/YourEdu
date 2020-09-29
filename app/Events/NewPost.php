@@ -34,12 +34,23 @@ class NewPost implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        // $account = getAccount($this->post->postedby_type);
-        return new Channel('youredu.home');
+        $account = getAccountString($this->post->postedby_type);
+        $accountId = $this->post->postedby_id;
+        return [
+            new Channel('youredu.home'),
+            new Channel("youredu.{$account}.{$accountId}")
+        ];
     }
     
-    // public function broadcastAs()
-    // {
-    //     return "newPost";
-    // }
+    public function broadcastAs()
+    {
+        return 'newPost';
+    }
+    
+    public function broadcastWith()
+    {
+        return [
+            'post' => $this->post
+        ];
+    }
 }

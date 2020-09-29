@@ -13,6 +13,10 @@ class Like extends Model
         'user_id', 'level'
     ];
 
+    protected $touches = [
+        'likeable'
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

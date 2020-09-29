@@ -2,6 +2,7 @@
     <div class="comment-wrapper" 
         v-if="showCommentSingle"
         @dblclick.self="clickedViewComments"
+        :class="{simple}"
     >
         <div class="loading" v-if="loading">
             <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
@@ -14,7 +15,7 @@
         </div>
         <div class="edit"
             @click="clickedShowOptions"
-            v-if="computedProfiles.length"
+            v-if="computedProfiles.length && !simple"
         >
             <font-awesome-icon
                 :icon="['fa','chevron-down']"
@@ -30,7 +31,7 @@
                 @clickedOption="clickedOption"
             ></optional-actions>
         </div>
-        <div class="top">
+        <div class="top" v-if="!simple">
             <div class="name"
                 @click="clickedProfilePicture"
             >
@@ -82,7 +83,9 @@
             </div>
         </div>
         <div class="bottom"
-            @dblclick.self="clickedViewComments">
+            @dblclick.self="clickedViewComments"
+            v-if="!simple"
+        >
             <number-of>
                 {{`${likes} likes`}}
             </number-of>
@@ -153,7 +156,8 @@
             </div>
         </div>
             <div class="comment-section" 
-                >
+                v-if="!simple"
+            >
                 <add-comment
                     what="comment"
                     :id="comment.id"
@@ -303,6 +307,10 @@ import { mapGetters, mapActions } from 'vuex'
                 default: true
             },
             onPostModal: { 
+                typpe: Boolean,
+                default: false
+            },
+            simple: { 
                 typpe: Boolean,
                 default: false
             },
@@ -649,6 +657,8 @@ import { mapGetters, mapActions } from 'vuex'
             clickedViewComments(){
                 if (this.comments) {
                     this.showViewComments = true
+                } else if (this.simple) {
+                    this.$emit('clickedShowPostComments')
                 }
             },
             async clickedProfile(who){
@@ -828,23 +838,19 @@ import { mapGetters, mapActions } from 'vuex'
                     this.$emit('commentDeleteSuccess', {
                         commentId: data.commentId
                     })
-                    this.alertSuccess = true
                     this.showCommentSingle = false
-                    this.alertDanger = false
                 } else {
-                    this.alertSuccess = false
                     this.alertDanger = true
+                    this.alertMessage = 'comment deletion unsuccessful'
+                    this.clearAlert()
                 }
-                
-                if (this['profile/getMsg']) {
-                    this.smallModalAlerting = true
-                    this.alertMessage = this['profile/getMsg']
-
-                    setTimeout(() => {
-                        this.smallModalAlerting = false
-                        this.showSmallModal = false
-                    }, 2000);
-                }
+            },
+            clearAlert(){
+                setTimeout(() => {
+                    this.alertMessage = ''
+                    this.alertDanger = false
+                    this.alertSuccess = false
+                }, 2000);
             },
             clickedNo(){
                 this.clearSmallModal()
@@ -885,11 +891,18 @@ $comment-font-size: 13px;
     white-space: nowrap;
 }
 
-    .loading,
-    .alert{
+    .loading{
         width: 100%;
         text-align: center;
         padding: 5px;
+    }
+
+    .alert{
+        width: 100%;
+        text-align: center;
+        padding: 0;
+        font-size: 12px;
+        margin: 0;
     }
 
     .success{
@@ -899,14 +912,15 @@ $comment-font-size: 13px;
     .danger{
         color: red;
     }
+
     .comment-wrapper{
         display: block;
         position: relative;
         border-right: 1px solid dimgrey;
-        // border-left: 1px solid dimgrey;
         background-color: rgba(105, 105, 105,.08);
         margin-top: 10px;
         padding: 5px;
+        cursor: pointer;
 
         .edit{
             font-size: 16px;
@@ -942,7 +956,7 @@ $comment-font-size: 13px;
             display: flex;
             justify-content: flex-start;
             align-items: flex-start;
-            padding: 10px;
+            padding: 5px;
             border-top: 1px solid dimgrey;
             border-bottom: 1px solid dimgrey;
 
@@ -1054,6 +1068,23 @@ $comment-font-size: 13px;
 
         .comment-section{
             margin: 5px 5px 5px 0;
+        }
+    }
+
+    .simple{
+        background: transparent;
+        border: none; 
+        box-shadow: 0 0 2px grey;
+        border-radius: 10px;
+
+        .middle{
+            border: none;
+            padding: 0;
+
+            .profile-picture{
+                width: 30px;
+                height: 30px;
+            }
         }
     }
 

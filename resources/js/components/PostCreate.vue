@@ -22,8 +22,20 @@
                 </div>
                 <div class="post-top-main">
                     <div class="icons"
+                        @click.prevent="clickFile('attachment')"
+                        v-if="mainPreviewData.length === 0"
+                        title="attach a subject, grade, program, etc"
+                        :class="{active: uploadType === 'attachment'}"
+                    >
+                        <font-awesome-icon
+                            :icon="['fa','paperclip']"
+                        ></font-awesome-icon>
+                    </div>
+                    <div class="icons"
                         @click.prevent="clickFile('image')"
-                        v-if="mainPreviewData.length === 0 "
+                        v-if="mainPreviewData.length === 0"
+                        title="upload an image"
+                        :class="{active: uploadType === 'image'}"
                     >
                         <font-awesome-icon
                             :icon="['fa','file-image']"
@@ -32,6 +44,8 @@
                     <div class="icons"
                         @click.prevent="clickFile('video')"
                         v-if="mainPreviewData.length === 0"
+                        title="upload a video"
+                        :class="{active: uploadType === 'video'}"
                     >
                         <font-awesome-icon
                             :icon="['fa','file-video']"
@@ -40,10 +54,64 @@
                     <div class="icons"
                         @click.prevent="clickFile('audio')"
                         v-if="mainPreviewData.length === 0"
+                        title="upload an audio"
+                        :class="{active: uploadType === 'audio'}"
                     >
                         <font-awesome-icon
                             :icon="['fa','file-audio']"
                         ></font-awesome-icon>
+                    </div>
+                    <div class="upload-type" 
+                        v-if="uploadType !== '' && uploadType !== 'attachment'">
+                        <div class="upload-item" @click="clickedUpload">
+                            <div class="icon">
+                                <font-awesome-icon
+                                    :icon="['fa','upload']"
+                                ></font-awesome-icon>
+                            </div>
+                            <div class="icon-text">
+                                {{`upload ${uploadType} file`}}
+                            </div>
+                        </div>
+                        <div class="upload-item" 
+                            @click="clickedMediaCapture('image')"
+                            v-if="uploadType === 'image'"
+                        >
+                            <div class="icon">
+                                <font-awesome-icon
+                                    :icon="['fa','camera']"
+                                ></font-awesome-icon>
+                            </div>
+                            <div class="icon-text">
+                                capture image
+                            </div>
+                        </div>
+                        <div class="upload-item" 
+                            @click="clickedMediaCapture('video')"
+                            v-if="uploadType === 'video'"
+                        >
+                            <div class="icon">
+                                <font-awesome-icon
+                                    :icon="['fa','video']"
+                                ></font-awesome-icon>
+                            </div>
+                            <div class="icon-text">
+                                record video
+                            </div>
+                        </div>
+                        <div class="upload-item" 
+                            @click="clickedMediaCapture('audio')"
+                            v-if="uploadType === 'audio'"
+                        >
+                            <div class="icon">
+                                <font-awesome-icon
+                                    :icon="['fa','microphone']"
+                                ></font-awesome-icon>
+                            </div>
+                            <div class="icon-text">
+                                record audio
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <fade-right>
@@ -85,6 +153,7 @@
                     <main-textarea 
                         :textPlaceholder="textPlaceholder"
                         v-model="textareaContent"
+                        v-if="showTextareaContent"
                     ></main-textarea>
                     <just-fade>
                         <template slot="transition" v-if="showPreview">
@@ -123,6 +192,9 @@
                 @change="fileChange"
                 class="d-none">
             <div class="post-bottom">
+                <post-button buttonText="L" 
+                    @click="formType = 'lesson'"
+                    titleText="share a lesson"></post-button>
                 <post-button buttonText="B" 
                     @click="formType = 'book'"
                     titleText="post a book"></post-button>
@@ -141,8 +213,29 @@
                     :active="true"
                     titleText="post an activity"></post-button>
             </div>
+            <div class="attachments-section">
+                <attachment-badge
+                    v-for="(attachment,index) in postAttachments"
+                    :key="index"
+                    :hasClose="true"
+                    :attachment="attachment.data"
+                    :type="attachment.type"
+                    @removeAttachment="clickedRemoveAttachment"
+                ></attachment-badge>
+            </div>
+            <!--for adding attachments -->
+            <just-fade>
+                <template slot="transition" v-if="showAddAttachments">
+                    <post-attachment
+                        :show="showAddAttachments"
+                        :hasSelect="true"
+                        @clickedAttachmentSelection="attachmentSelected"
+                        @hidePostAttachment="hidePostAttachment"
+                    ></post-attachment>
+                </template>
+            </just-fade>
         </div>
-
+        <!-- creating posts types -->
         <just-fade>
             <template slot="transition" v-if="showModal">
                 <create-post
@@ -153,6 +246,23 @@
                 ></create-post>
             </template>
         </just-fade>
+        <!-- creating post lessons -->
+        <just-fade>
+            <template slot="transition" v-if="showLessonModal">
+                <create-lesson
+                    :show="showLessonModal"
+                    @createLessonDisappear="closeCreateLesson"
+                    @clickedCreate="clickedCreateLesson"
+                ></create-lesson>
+            </template>
+        </just-fade>
+        <!-- capturing media -->
+        <media-capture
+            :show="showMediaCapture"
+            :type="uploadType"
+            @closeMediaCapture="closeMediaCapture"
+            @sendFile="receiveMediaCapture"
+        ></media-capture>
     </div>
 </template>
 
@@ -160,27 +270,35 @@
 import PostButton from '../components/PostButton'
 import FilePreview from '../components/FilePreview'
 import CreatePost from '../components/forms/CreatePost'
+import CreateLesson from '../components/forms/CreateLesson'
 import JustFade from '../components/transitions/JustFade'
 import FadeRight from '../components/transitions/FadeRight'
 import ProfilePicture from '../components/profile/ProfilePicture'
 import MainTextarea from '../components/MainTextarea'
 import MainPreview from '../components/MainPreview'
+import AttachmentBadge from '../components/AttachmentBadge'
 import ProfileBar from '../components/profile/ProfileBar'
 import ValidationError from '../components/ValidationError'
+import MediaCapture from '../components/MediaCapture'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
-import {files} from '../services/helpers'
+import PostAttachment from '../components/PostAttachment'
+import {files, strings} from '../services/helpers'
 import {mapActions, mapGetters} from 'vuex'
 
     export default {
         components: {
             PulseLoader,
+            MediaCapture,
             ValidationError,
             ProfileBar,
+            AttachmentBadge,
             MainPreview,
             MainTextarea,
+            PostAttachment,
             ProfilePicture,
             FadeRight,
             JustFade,
+            CreateLesson,
             CreatePost,
             FilePreview,
             PostButton,
@@ -207,18 +325,30 @@ import {mapActions, mapGetters} from 'vuex'
                 textPlaceholder: "do you have anything in mind?",
                 showMainPreview: false,
                 mainPreviewData: [],
+                postAttachments: [],
                 hasPreviewFile: false,
                 showProfiles: false,
                 previewType: '',
+                uploadType: '',
                 account: '',
                 account_id: null,
+                showLessonModal: false,
+                showPostButton: false,
+                showAddAttachments: false,
+                showTextareaContent: true,
+                showSpecifyUpload: false,
+                showMediaCapture: false,
             }
         },
         watch: {
             formType: {
                 immediate: true,
                 handler(newValue){ //for showing modal of and removing preview of post types
-                    if (newValue && newValue != '') {
+                    this.showPostButton = false
+                    if (newValue === 'lesson') {
+                        this.showLessonModal = true
+                    } else if (newValue && newValue !== '') {
+                        this.showTextareaContent = true
                         this.showModal = true
                         this.removeFile()
                         this.removePreview()
@@ -231,6 +361,8 @@ import {mapActions, mapGetters} from 'vuex'
                     if (value.length) {
                         setTimeout(() => {
                             this.alertMessage = ''
+                            this.alertSuccess = false
+                            this.alertError = false
                         }, 3000);
                     }
                 }
@@ -240,7 +372,7 @@ import {mapActions, mapGetters} from 'vuex'
             ...mapGetters(['getProfiles', 'getActiveProfile', 
                 'profile/getActiveProfile']),
             computedPost(){
-                return this.textareaContent != '' || this.file || 
+                return this.textareaContent !== '' || this.file || this.showPostButton || 
                     (this.mainPreviewData && this.mainPreviewData.hasOwnProperty('published')) ?
                     true : false
             },
@@ -265,6 +397,7 @@ import {mapActions, mapGetters} from 'vuex'
             computedPreviewTitle(){
                 return this.mainPreviewData ?
                     this.previewType === 'book' || 
+                    this.previewType === 'lesson' || 
                     this.previewType === 'poem' ?
                     this.mainPreviewData.title : '' : ''
             },       
@@ -284,6 +417,8 @@ import {mapActions, mapGetters} from 'vuex'
                         return this.mainPreviewData.description
                     } else if (this.previewType === 'riddle') {
                         return this.mainPreviewData.riddle
+                    } else if (this.previewType === 'lesson') {
+                        return strings.content(this.mainPreviewData.description)
                     }
                 }
             },
@@ -311,11 +446,39 @@ import {mapActions, mapGetters} from 'vuex'
             }, 
         },
         methods: {
+            ...mapActions(['profile/createPost']),
+            attachmentSelected(data){
+                let index = this.postAttachments.findIndex(attachment=>{
+                    return attachment.type === data.type &&
+                        attachment.data.id ===  data.data.id
+                })
+                if (index === -1) {
+                    this.postAttachments.push(data)
+                }
+            },
+            clickedRemoveAttachment(data){
+                let index = this.postAttachments.findIndex(attachment=>{
+                    return attachment.type === data.type &&
+                        attachment.data.id ===  data.data.id
+                })
+                if (index > -1) {
+                    this.postAttachments.splice(index,1)
+                }
+            },
+            hidePostAttachment(){
+                this.showAddAttachments = false
+                this.uploadType = ''
+            },
             clickedClearActive(){
+                this.showPostButton = false
+                this.showAddAttachments = false
+                this.formType = ''
                 this.textareaContent = ''
                 this.file = null
                 this.account = ''
                 this.account_id = ''
+                this.showPostButton = false
+                this.postAttachments = []
                 this.removePreview()
             },
             clickedProfile(data){
@@ -324,7 +487,6 @@ import {mapActions, mapGetters} from 'vuex'
                 this.showProfiles = false
                 this.createPost()
             },
-            ...mapActions(['profile/createPost']),
             removePreview(){
                 this.showMainPreview = false
                 this.hasPreviewFile = false
@@ -362,20 +524,36 @@ import {mapActions, mapGetters} from 'vuex'
                     this.createPost()
                 }
             },
+            clickedCreateLesson(data){
+                this.mainPreviewData = data
+                this.previewType = this.formType
+                this.showMainPreview = true
+                this.hasPreviewFile = true
+                this.showPostButton = true
+                this.textareaContent = ''
+                this.showTextareaContent = false
+            },
+            closeCreateLesson(){
+                this.showLessonModal = false
+            },
             async createPost(){
                 this.loading = true
                 let fileType = ''
                 let formData = new FormData
 
-                // if (!this.showPreview) {
                 if (this.file) {
                     formData.append('file', this.file)
                     formData.append('fileType', files.fileType(this.file))
                 } else {
-                    console.log('enters')
-                    if (this.previewType != '') {
+                    if (this.previewType !== '') {
                         formData.append('type', this.previewType)
-                    }
+                        if (this.mainPreviewData && this.mainPreviewData.file &&
+                            this.mainPreviewData.file.length > 0 || 
+                            this.previewType !== 'lesson') {
+                            formData.append('previewFile', this.mainPreviewData.file[0])
+                            formData.append('previewFileType', files.fileType(this.mainPreviewData.file[0]))
+                        }
+                    } 
                     
                     if (this.previewType === 'book') {
                         formData.append('title', this.mainPreviewData.title)
@@ -396,20 +574,35 @@ import {mapActions, mapGetters} from 'vuex'
                     } else if (this.previewType === 'question') {
                         formData.append('question', this.mainPreviewData.question)
                         formData.append('score', this.mainPreviewData.score)
-                        if (this.mainPreviewData.hasOwnProperty('possibleAnswers')) {                        formData.append('riddle', this.mainPreviewData.riddle)
+                        if (this.mainPreviewData.hasOwnProperty('possibleAnswers')) { 
                             formData.append('possibleAnswers', JSON.stringify(this.mainPreviewData.possibleAnswers))
                         }
                         formData.append('published', this.mainPreviewData.published)
                     } else if (this.previewType === 'activity') {
                         formData.append('description', this.mainPreviewData.description)
                         formData.append('published', this.mainPreviewData.published)
+                    } else if (this.previewType === 'lesson') {
+                        formData.append('description', this.mainPreviewData.description)
+                        formData.append('title', this.mainPreviewData.title)
+                        formData.append('ageGroup', this.mainPreviewData.ageGroup)
+                        if (this.mainPreviewData.file && this.mainPreviewData.file.length) {
+                            this.mainPreviewData.file.forEach(file=>{
+                                if (file) {
+                                    formData.append('previewFile[]', file)
+                                }
+                            })
+                        }
                     }
+                }
 
-                    if (this.mainPreviewData && this.mainPreviewData.file &&
-                        this.mainPreviewData.file.length > 0) {
-                        formData.append('previewFile', this.mainPreviewData.file[0])
-                        formData.append('previewFileType', files.fileType(this.mainPreviewData.file[0]))
-                    }
+                //check if there are attachments
+                if (this.postAttachments.length) {
+                    formData.append('attachments', JSON.stringify(this.postAttachments.map(attachment=>{
+                        return {
+                            attachable: attachment.type.slice(0,attachment.type.length - 1),
+                            attachableId: attachment.data.id
+                        }
+                    })))
                 }
 
                 if (this.account_id) {
@@ -441,16 +634,53 @@ import {mapActions, mapGetters} from 'vuex'
             clickFile(data) {
                 this.clickedButton = data
                 this.showPreview = false
+                this.uploadType = data
 
-                if (data === 'image') {
+                if (data === 'attachment') {
+                    this.showAddAttachments = !this.showAddAttachments
+                    return 
+                }
+                this.showSpecifyUpload = true
+                setTimeout(() => {
+                    this.uploadType = ''
+                    this.showSpecifyUpload = false
+                }, 4000);
+            },
+            clickedUpload(){
+                if (this.uploadType === 'image') {
                     this.$refs.file.setAttribute('accept', this.imageType)
-                } else if (data === 'video') {
+                } else if (this.uploadType === 'video') {
                     this.$refs.file.setAttribute('accept', this.videoType)
-                } else if (data === 'audio') {
+                } else if (this.uploadType === 'audio') {
                     this.$refs.file.setAttribute('accept', this.audioType)
                 }
 
                 this.$refs.file.click()
+            },
+            clickedMediaCapture(data){
+                this.showMediaCapture = true
+            },
+            receiveMediaCapture(file){
+                if (file.type.includes('image')) {
+                    this.file = new File([file],'my_picture.png',{
+                        type: 'image/png',
+                        lastModified: new Date()
+                    })
+                } else if (file.type.includes('video')) {
+                    this.file = new File([file],'my_video.webm',{
+                        type: 'video/webm',
+                        lastModified: new Date()
+                    })
+                } else if (file.type.includes('audio')) {
+                    this.file = new File([file],'my_audio.mp3',{
+                        type: 'audio/mp3',
+                        lastModified: new Date()
+                    })
+                }
+            },
+            closeMediaCapture(){
+                this.uploadType = ''
+                this.showMediaCapture = false
             },
             fileChange(event) {
                 let file = event.target.files[0]
@@ -480,6 +710,7 @@ import {mapActions, mapGetters} from 'vuex'
                     }
                 }
                 
+                this.uploadType = ''
                 event.target.value = ''
             },
         },
@@ -553,6 +784,31 @@ import {mapActions, mapGetters} from 'vuex'
                         margin-right: 10px;
                         cursor: pointer;
                     }
+
+                    .active{
+                        color: green;
+                    }
+
+                    .upload-type{
+                        position: absolute;
+                        top: 10px;
+                        z-index: 1;
+                        right: 10px;
+                        background: mintcream;
+                        padding: 10px;
+                        border-radius: 10px;
+                        width: 160px;
+
+                        .upload-item{
+                            display: inline-flex;
+                            justify-content: space-evenly;
+                            align-items: center;
+                            width: 150px;
+                            font-size: 14px;
+                            padding: 5px;
+                            flex-wrap: wrap;
+                        }
+                    }
                 }
 
             }
@@ -565,8 +821,8 @@ import {mapActions, mapGetters} from 'vuex'
                 align-items: flex-start;
 
                 .post-picture{
-                    width: 90px;
-                    height: 90px;
+                    width: 75px;
+                    height: 75px;
                     border-radius: 100%;
                 }
 
@@ -594,6 +850,14 @@ import {mapActions, mapGetters} from 'vuex'
                 }
             }
 
+            .attachments-section{
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
             .profiles{
                 position: absolute;
                 width: 200px;
@@ -616,8 +880,8 @@ import {mapActions, mapGetters} from 'vuex'
             .post-middle{
 
                 .post-picture{
-                    width: 70px;
-                    height: 70px;
+                    width: 60px;
+                    height: 60px;
                 }
             }
         }
@@ -631,8 +895,8 @@ import {mapActions, mapGetters} from 'vuex'
 
             .post-middle{
                 .post-picture{
-                    width: 70px;
-                    height: 70px;
+                    width: 60px;
+                    height: 60px;
                 }
             }
         }

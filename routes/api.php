@@ -1,7 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AttachmentController;
+use App\Http\Controllers\Api\ConversationController;
+use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\FlagController;
+use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\GradeController;
+use App\Http\Controllers\Api\ProgramController;
+use App\Http\Controllers\Api\SaveController;
 use App\Http\Controllers\Api\Search;
 use App\Http\Controllers\Api\SubjectController;
 use Illuminate\Http\Request;
@@ -40,11 +46,17 @@ Route::get('/answer/{answer}', 'Api\AnswerController@answerGet');
 Route::get('/{item}/{itemId}/answers/', 'Api\AnswerController@answersGet')
 ->middleware(['CheckAnswerable']);
 
-Route::get('/{requestAccount}/{requestAccountId}/{media}', 'Api\ProfileController@profileMediasGet');
-
 Route::get('/subjects', [SubjectController::class,'subjectsGet']);
 Route::get('/subjects/{search}', [SubjectController::class,'subjectsSearch']);
-Route::get('/subjects', [SubjectController::class,'subjectsGet']);
+Route::get('/subject', [SubjectController::class,'subjectGet']);
+
+Route::get('/programs', [ProgramController::class,'programsGet']);
+Route::get('/programs/{search}', [ProgramController::class,'programsSearch']);
+Route::get('/program', [ProgramController::class,'programGet']);
+
+Route::get('/courses', [CourseController::class,'coursesGet']);
+Route::get('/courses/{search}', [CourseController::class,'coursesSearch']);
+Route::get('/course', [CourseController::class,'courseGet']);
 
 Route::get('/grades', [GradeController::class,'gradesGet']);
 Route::get('/grades/{search}', [GradeController::class,'gradesSearch']);
@@ -60,10 +72,26 @@ Route::get('/search', [Search::class,'search']);
 // });
 
 Route::group(['middleware' => 'auth:api'], function () {
+
+    Route::post('/conversation/{conversationId}/message', [ConversationController::class,'sendMessage']);
+    Route::get('/conversation/{conversationId}/messages', [ConversationController::class,'getMessages']);
+    Route::post('/conversation/{conversationId}/response', [ConversationController::class,'createConversationResponse']);
+    Route::post('/conversation/{conversationId}/block', [ConversationController::class,'blockConversation']);
+    Route::post('/conversation/{conversationId}/unblock', [ConversationController::class,'unblockConversation']);
+    Route::get('/conversations', [ConversationController::class,'getConversations']);
+    Route::get('/conversations/blocked', [ConversationController::class,'getBlockedConversations']);
+    Route::get('/conversations/pending', [ConversationController::class,'getPendingConversations']);
+    Route::post('/conversation', [ConversationController::class,'createConversation']);
+
     Route::get('/user/posts', 'Api\PostController@getUserPosts');
+
+    Route::get('/user/saved', [SaveController::class,'userSavedGet']);
+    Route::get('/user/flagged', [FlagController::class,'userFlaggedGet']);
     
     Route::get('/user', 'Api\AuthController@getUser');
     Route::get('/user/followrequests', 'Api\FollowController@followRequests');
+    Route::get('/user/follownotifications', 'Api\FollowController@followNotifications');
+    Route::post('/user/follownotifications/mark', 'Api\FollowController@markFollowNotifications');
     Route::post('/user/{user}/edit', 'Api\AuthController@editUser');
 
     Route::get('/secret', 'Api\AuthController@getSecretQuestions');
@@ -129,6 +157,18 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/subject/create', [SubjectController::class,'subjectCreate']);
     Route::post('/subject/{subject}/alias', [SubjectController::class,'subjectAliasCreate']);
     Route::delete('/subject/{subject}', [SubjectController::class,'subjectDelete']);
+    
+    Route::post('/program/create', [ProgramController::class,'programCreate']);
+    Route::post('/program/{program}/alias', [ProgramController::class,'programAliasCreate']);
+    Route::delete('/program/{program}', [ProgramController::class,'programDelete']);
+    
+    Route::post('/course/create', [CourseController::class,'courseCreate']);
+    Route::post('/course/{course}/alias', [CourseController::class,'courseAliasCreate']);
+    Route::delete('/course/{course}', [CourseController::class,'courseDelete']);
+    
+    Route::post('/subject/create', [SubjectController::class,'subjectCreate']);
+    Route::post('/subject/{subject}/alias', [SubjectController::class,'subjectAliasCreate']);
+    Route::delete('/subject/{subject}', [SubjectController::class,'subjectDelete']);
 
     Route::post('/grade/create', [GradeController::class,'gradeCreate']);
     Route::post('/grade/{grade}/alias', [GradeController::class,'gradeAliasCreate']);
@@ -136,4 +176,10 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     Route::post('/attachment/create', [AttachmentController::class,'attachmentCreate']);
     Route::delete('/attachment/{attachment}', [AttachmentController::class,'attachmentDelete']);
+
+    Route::get('/user/followers', [FollowController::class,'getFollowers']);
+    Route::get('/user/followings', [FollowController::class,'getFollowings']);
+
 }); 
+
+Route::get('/{requestAccount}/{requestAccountId}/{media}', 'Api\ProfileController@profileMediasGet');

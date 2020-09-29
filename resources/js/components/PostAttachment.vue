@@ -15,6 +15,7 @@
                     <div class="button"
                         :key="key"
                         v-for="(btn,key) in btns"
+                        :class="{active: searchItem === btn}"
                         @click="buttonClicked(btn)"
                     >{{btn}}</div>
                 </div>
@@ -33,6 +34,7 @@
                         v-for="(item,key) in items"
                         :key="key"
                         @click="itemClicked(item)"
+                        :class="{itemActive: item === itemClass}"
                     >
                         {{item.name ? item.name : item}}
                     </div>
@@ -74,6 +76,50 @@
                         @clickedSelection="clickedAttachmentSelection"
                     ></select-input>
                 </div>
+                <div class="no-attachments" v-if="showNoAttachments">
+                    there are no {{searchItem}}
+                </div>
+                <div class="creation" v-if="computedSearchItem.length">
+                    <div class="info">
+                        {{`can't find the ${computedSearchItem} you are looking for?`}}
+                    </div>
+                    <div class="create-button" @click="clickedCreateAttachment">
+                        create
+                    </div>
+                </div>
+                <!-- create subject -->
+                <just-fade>
+                    <template slot="transition" v-if="searchItem === 'subjects' 
+                        && createAttachment">
+                        <create-subject
+                            :show="true"
+                            @closeCreateSubject="closeCreateAttachment"
+                            @attachmentCreated="attachmentCreated"
+                        ></create-subject>
+                    </template>
+                </just-fade>
+                <!-- create grade -->
+                <just-fade>
+                    <template slot="transition" v-if="searchItem === 'grades' 
+                        && createAttachment">
+                        <create-grade
+                            :show="true"
+                            @closeCreateGrade="closeCreateAttachment"
+                            @attachmentCreated="attachmentCreated"
+                        ></create-grade>
+                    </template>
+                </just-fade>
+                <!-- create other types -->
+                <just-fade>
+                    <template slot="transition" v-if="computedCreateAttachment">
+                        <create-attachment
+                            :show="true"
+                            :type="computedSearchItem"
+                            @closeCreateAttachment="closeCreateAttachment"
+                            @attachmentCreated="attachmentCreated"
+                        ></create-attachment>
+                    </template>
+                </just-fade>
             </div>
         </template>
     </fade-down>
@@ -84,6 +130,9 @@ import SearchInput from './SearchInput';
 import SelectInput from './SelectInput';
 import TextTextarea from './TextTextarea';
 import FadeDown from './transitions/FadeDown';
+import CreateGrade from './forms/CreateGrade';
+import CreateSubject from './forms/CreateSubject';
+import CreateAttachment from './forms/CreateAttachment';
 import _ from 'lodash';
 import { mapActions } from 'vuex';
 
@@ -95,6 +144,8 @@ import { mapActions } from 'vuex';
                     return [
                         'subjects',
                         'grades',
+                        'programs',
+                        'courses',
                     ]
                 }
             },
@@ -122,6 +173,9 @@ import { mapActions } from 'vuex';
             },
         },
         components: {
+            CreateAttachment,
+            CreateSubject,
+            CreateGrade,
             FadeDown,
             TextTextarea,
             SelectInput,
@@ -133,9 +187,12 @@ import { mapActions } from 'vuex';
                 item: null,
                 searchItem: '',
                 showLowerSection: false,
+                createAttachment: false,
+                showNoAttachments: false,
                 showNote: false,
                 searchText: '',
                 inputNote: '',
+                itemClass: null //to help set class of clicked item
             }
         },
         watch: {
@@ -157,9 +214,27 @@ import { mapActions } from 'vuex';
                 }
             },
         },
+        computed: {
+            computedSearchItem() {
+                return this.searchItem.slice(0,this.searchItem.length -1)
+            },
+            computedCreateAttachment(){
+                return (this.searchItem !== 'grades' || this.searchItem !== 'subjects') 
+                        && this.createAttachment
+            },
+        },
         methods: {
             ...mapActions(['profile/getGrades','profile/searchGrades',
-                'profile/getSubjects','profile/searchSubjects']),
+                'profile/getSubjects','profile/searchSubjects',
+                'profile/getPrograms','profile/searchPrograms',
+                'profile/getCourses','profile/searchCourses']),
+            closeCreateAttachment(){
+                this.createAttachment = false
+            },
+            attachmentCreated(data){
+                this.showNoAttachments = false
+                this.items.unshift(data.attachment)
+            },
             clickedUnattach(attachment){
                 this.$emit('clickedUnattach', attachment)
             },
@@ -176,19 +251,11 @@ import { mapActions } from 'vuex';
                 
                 this.$emit('itemClicked',data)
             },
+            clickedCreateAttachment(){
+                this.createAttachment = true
+            },
             itemClicked(item) {
-                for (let i = 0; i < this.$refs.previewsection.children.length; i++) {
-                    const child = this.$refs.previewsection.children[i]
-
-                    if (child.classList.contains('active')) {
-                        child.classList.remove('active')
-                    }
-
-                    if (child.innerText === item) {
-                        child.classList.add('active')
-                    }
-                }
-
+                this.itemClass = item
                 let data = {}
                 data.itemId = item.id
                 if (this.searchItem === 'subjects') {
@@ -200,16 +267,9 @@ import { mapActions } from 'vuex';
                 this.showNote = true
             },
             buttonClicked(data) {
-                for (let i = 0; i < this.$refs.buttonsection.children.length; i++) {
-                    const child = this.$refs.buttonsection.children[i]
-
-                    if (child.classList.contains('active')) {
-                        child.classList.remove('active')
-                    }
-
-                    if (child.innerText === data) {
-                        child.classList.add('active')
-                    }
+                if (data === this.searchItem) {
+                    this.searchItem = ''
+                    return
                 }
                 this.searchItem = data
                 this.showNote = false
@@ -226,7 +286,7 @@ import { mapActions } from 'vuex';
                 this.search()
             },100),
             async search(){
-
+                this.showNoAttachments = false
                 let response = null
                 if (this.searchItem === 'subjects') {
                     if (this.searchText.trim().length) {
@@ -244,13 +304,34 @@ import { mapActions } from 'vuex';
                         
                         response = await this['profile/getGrades']()
                     }
+                } else if (this.searchItem === 'programs') {
+                    if (this.searchText.trim().length) {
+                        
+                        response = await this['profile/searchPrograms'](this.searchText)
+                    } else {
+                        
+                        response = await this['profile/getPrograms']()
+                    }
+                } else if (this.searchItem === 'courses') {
+                    if (this.searchText.trim().length) {
+                        
+                        response = await this['profile/searchCourses'](this.searchText)
+                    } else {
+                        
+                        response = await this['profile/getCourses']()
+                    }
                 }
 
                 if (response.status) {
                     this.items = this.searchItem === 'subjects' ? response.data.subjects :
-                        this.searchItem === 'grades' ? response.data.grades : []
+                        this.searchItem === 'grades' ? response.data.grades : 
+                        this.searchItem === 'programs' ? response.data.programs : 
+                        this.searchItem === 'courses' ? response.data.courses : []
+
+                    if (!this.items.length) this.showNoAttachments = true
                 }
             },
+            //create infinite scroll for searches when data grows
         },
     }
 </script>
@@ -283,25 +364,23 @@ import { mapActions } from 'vuex';
 
             .button{
                 width: auto;
-                margin: 0 10px;
+                margin: 0 10px 5px;
                 font-size: 14px;
-                background: rgba(128,128,128,.75);
+                background: gray;
                 padding: 5px;
-                border-radius: 15%;
-                color: aliceblue;
+                border-radius: 10px;
+                color: white;
                 cursor: pointer;
 
                 &:hover{
                     transition: all .5s ease;
-                    color: whitesmoke;
-                    background-color: gray;
+                    background-color: green;
                 }
             }
 
             .active{
                 transition: all .5s ease;
-                color: whitesmoke;
-                background-color: gray;
+                background-color: green;
             }
         }
 
@@ -348,7 +427,7 @@ import { mapActions } from 'vuex';
                 }
             }
 
-            .active{
+            .itemActive{
                 background-color: whitesmoke;
                 box-shadow: 0 0 2px gray;
             }
@@ -387,6 +466,49 @@ import { mapActions } from 'vuex';
                 }
             }
         }
+
+        .no-attachments{
+            font-size: 14px;
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+            color: gray;
+        }
+
+        .creation{
+            margin: 10px 0 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .info{
+                font-size: 12px;
+                color: gray;
+                margin-right: 10px;
+            }
+
+            .create-button{
+                width: auto;
+                margin: 0 10px;
+                font-size: 14px;
+                background: gray;
+                padding: 5px;
+                border-radius: 10px;
+                color: white;
+                cursor: pointer;
+
+                &:hover{
+                    transition: all .5s ease;
+                    background-color: green;
+                }
+            }
+
+            .active{
+                transition: all .5s ease;
+                background-color: green;
+            }
+        }
     }
 
     .hasSelect{
@@ -401,6 +523,7 @@ import { mapActions } from 'vuex';
             right: 10px;
             top: 10px;
             padding: 5px;
+            cursor: pointer;
         }
 
         .buttons-section{

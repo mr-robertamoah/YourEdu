@@ -34,19 +34,7 @@ class ProfileController extends Controller
     public function profileMediaChange(Request $request, $media,$mediaId)
     {
         $mainMedia = null;
-        $account = null;
-
-        if ($request->account === 'learner') {
-            $account = Learner::find($request->accountId);
-        } else if ($request->account === 'facilitator') {
-            $account = Facilitator::find($request->accountId);
-        } else if ($request->account === 'parent') {
-            $account = ParentModel::find($request->accountId);
-        } else if ($request->account === 'professional') {
-            $account = Professional::find($request->accountId);
-        } else if ($request->account === 'admin') {
-            $account = School::find($request->accountId);
-        }
+        $account = getAccountObject($request->account, $request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -104,19 +92,7 @@ class ProfileController extends Controller
     public function profileUploadFile(Request $request, $profile)
     {
         $mainProfile = Profile::find($profile);
-        $account = null;
-
-        if ($request->account === 'learner') {
-            $account = Learner::find($request->accountId);
-        } else if ($request->account === 'facilitator') {
-            $account = Facilitator::find($request->accountId);
-        } else if ($request->account === 'parent') {
-            $account = ParentModel::find($request->accountId);
-        } else if ($request->account === 'professional') {
-            $account = Professional::find($request->accountId);
-        } else if ($request->account === 'admin') {
-            $account = School::find($request->accountId);
-        }
+        $account = getAccountObject($request->account, $request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -209,19 +185,7 @@ class ProfileController extends Controller
     public function profilePicUpdate(Request $request, $profile)
     {
         $mainProfile = Profile::find($profile);
-        $account = null;
-
-        if ($request->account === 'learner') {
-            $account = Learner::find($request->accountId);
-        } else if ($request->account === 'facilitator') {
-            $account = Facilitator::find($request->accountId);
-        } else if ($request->account === 'parent') {
-            $account = ParentModel::find($request->accountId);
-        } else if ($request->account === 'professional') {
-            $account = Professional::find($request->accountId);
-        } else if ($request->account === 'admin') {
-            $account = School::find($request->accountId);
-        }
+        $account = getAccountObject($request->account, $request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -241,10 +205,8 @@ class ProfileController extends Controller
                     if ($request->hasFile('file')) {
                         $fileDetails = getFileDetails($request->file('file'));
                         
-                        // return storage_path() . "a";
-                        $newImage = Image::load(public_path("assets/{$fileDetails['path']}"))
+                        Image::load(public_path("assets/{$fileDetails['path']}"))
                             ->fit(Manipulations::FIT_CONTAIN, 100, 100)->save();
-                        // $path = $newImage->storeAs('images',$newImage);
                         $image = $account->addedImages()->create($fileDetails);
                         $image->ownedby()->associate($account);
                         $image->save();

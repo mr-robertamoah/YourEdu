@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\DeleteAttachment;
+use App\Events\NewAttachment;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PostAttachmentResource;
+use App\Services\Attachment;
 use App\YourEdu\Admin;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Grade;
@@ -24,25 +27,7 @@ class AttachmentController extends Controller
     public function attachmentCreate(Request $request)
     {
         
-        $account = null;
-
-        if ($request->account === 'learner') { 
-            $account = Learner::find($request->accountId);
-        } else if ($request->account === 'parent') {
-            $account = ParentModel::find($request->accountId);
-        } else if ($request->account === 'facilitator') {
-            $account = Facilitator::find($request->accountId);
-        } else if ($request->account === 'professional') {
-            $account = Professional::find($request->accountId);
-        } else if ($request->account === 'admin') {
-            $account = Admin::find($request->accountId);
-        } else if ($request->account === 'school') {
-            $account = School::find($request->accountId);
-        } else {
-            return response()->json([
-                'message' => "unsuccessful, {$request->account} is not a valid account to create an alias for a grade"
-            ],422);
-        } 
+        $account = getAccountObject($request->account,$request->accountId); 
 
         if (is_null($account)) {
             return response()->json([
@@ -61,37 +46,23 @@ class AttachmentController extends Controller
             ],422);
         }
 
-        $attachable = null;
-        if ($request->attachable === 'subject') {
-            $attachable = Subject::find($request->attachableId);
-        } else if ($request->attachable === 'grade') {
-            $attachable = Grade::find($request->attachableId);
-        }
-
-        if (is_null($attachable)) {
-            return response()->json([
-                'message' => "unsuccessful, {$request->attachable} does not exist"
-            ],422);
-        }
-
         try {
             DB::beginTransaction();
-            $attachment = $account->attachments()->create([
-                'note' => $request->note
-            ]);
+            
+            $attachment = Attachment::attach($account, $item, $attachable, $attachableId, $request->note);
 
             if ($attachment) {
-                $attachment->attachedwith()->associate($attachable);
-                $attachment->attachable()->associate($item);
-                $attachment->save();
-
-                $account->point->value += 1;
-                $account->point->save();
 
                 DB::commit();
+                $attachmentResource = new PostAttachmentResource($attachment);
+                broadcast(new NewAttachment([
+                    'attachment' => $attachmentResource,
+                    'item' => $request->item,
+                    'itemId' => $request->itemId
+                ]))->toOthers();
                 return response()->json([
                     'message' => 'successful',
-                    'attachment' => new PostAttachmentResource($attachment),
+                    'attachment' => $attachmentResource,
                 ]);
             } else {
                 return response()->json([
@@ -123,7 +94,14 @@ class AttachmentController extends Controller
             ],422);
         }
 
+        $item = getAccountString($mainAttachment->attachable_type);
+        $itemId = $mainAttachment->attachable_id;
         $mainAttachment->delete();
+        broadcast(new DeleteAttachment([
+            'attachmentId' => $attachment,
+            'item' => $item,
+            'itemId' => $itemId,
+        ]))->toOthers();
 
         return response()->json([
             'message' => 'successful'

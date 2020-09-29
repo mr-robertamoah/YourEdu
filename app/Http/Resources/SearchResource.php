@@ -14,7 +14,6 @@ class SearchResource extends JsonResource
      */
     public function toArray($request)
     {
-        // dd(get_class($this));
         $data = [];
         $data['id'] = $this->id;
         $data['created_at'] = $this->created_at;
@@ -25,7 +24,7 @@ class SearchResource extends JsonResource
             $data['full_name'] = $this->user->full_name;
         }
         if ($this->profileable) {
-            $data['account_type'] = getAccount($this->profileable_type);
+            $data['account_type'] = getAccountString($this->profileable_type);
             if ($data['account_type'] === 'school') {
                 $data['name'] = $this->profileable->company_name;
                 
@@ -39,7 +38,7 @@ class SearchResource extends JsonResource
                 $this->profileable->follows()->whereNotNull('user_id')->get());
         }
         if (!is_null($this->postedby)) {
-            $data['postedby_type'] = getAccount($this->postedby_type);
+            $data['postedby_type'] = getAccountString($this->postedby_type);
             $data['postedby_id'] = $this->postedby_id;
             $data['name'] = $this->postedby->profile->name;
             $data['url'] = $this->postedby->profile->url;
@@ -56,6 +55,7 @@ class SearchResource extends JsonResource
             $data['title'] = $this->poems[0]->title;
             $data['about'] = $this->poems[0]->about;
             $data['author'] = $this->poems[0]->author;
+            $data['poem'] = $this->poems[0]->poemSections[0];
         }
         if (!is_null($this->activities) && count($this->activities)) {
             $data['activity'] = $this->activities[0]->description;

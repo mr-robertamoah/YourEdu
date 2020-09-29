@@ -195,6 +195,7 @@ import { mapActions, mapGetters } from 'vuex'
                 //search
                 searchOutputType: 'all',
                 searchText: '',
+                oldSearchText: '',
                 showSearchOutput: false,
                 searchData: [],
                 searchNextPage: 1,
@@ -209,9 +210,7 @@ import { mapActions, mapGetters } from 'vuex'
             });
         },
         mounted () {
-            Echo.channel('youredu-home').listen('NewPost', post=>{
-                console.log(post);
-            })
+            this.listen()
         },
         watch: {
             sideValue(newValue) {
@@ -303,9 +302,60 @@ import { mapActions, mapGetters } from 'vuex'
                 'home/getUserPostTypes','home/clearHomeQuestionsAttachments'
                 ,'home/clearHomePoemsAttachments','home/clearHomeRiddlesAttachments'
                 ,'home/clearHomeBooksAttachments','home/clearHomeActivitiesAttachments',
-                'home/search','profile/getPost']),
+                'home/search','home/newPost','home/removePost','home/replacePost',
+                'home/newComment','home/removeComment','home/replaceComment',
+                'home/newFlag','home/newLike','home/removeLike',
+                'home/newAttachment','home/removeAttachment','profile/getPost'
+            ]),
             clickedSearchOutputButton(data){
                 this.searchOutputType = data
+            },
+            listen(){
+                Echo.channel('youredu.home')
+                .listen('.newPost', (post)=>{
+                    console.log(post)
+                    this['home/newPost'](post.post)
+                })
+                .listen('.updatePost', post=>{
+                    console.log(post)
+                    this['home/replacePost'](post.post)
+                })
+                .listen('.deletePost', postInfo=>{
+                    console.log(postInfo)
+                    this['home/removePost'](postInfo)
+                })
+                .listen('.newComment', (commentData)=>{
+                    console.log(commentData)
+                    this['home/newComment'](commentData)
+                })
+                .listen('.updateComment', commentData=>{
+                    console.log(commentData)
+                    this['home/replaceComment'](commentData)
+                })
+                .listen('.deleteComment', commentInfo=>{
+                    console.log(commentInfo)
+                    this['home/removeComment'](commentInfo)
+                })
+                .listen('.newAttachment', (attachmentData)=>{
+                    console.log(attachmentData)
+                    this['home/newAttachment'](attachmentData)
+                })
+                .listen('.deleteAttachment', attachmentInfo=>{
+                    console.log(attachmentInfo)
+                    this['home/removeAttachment'](attachmentInfo)
+                })
+                .listen('.newFlag', (flag)=>{
+                    console.log(flag)
+                    this['home/newFlag'](flag)
+                })
+                .listen('.newLike', (likeData)=>{
+                    console.log(likeData)
+                    this['home/newLike'](likeData)
+                })
+                .listen('.deleteLike', like=>{
+                    console.log(like)
+                    this['home/removeLike'](like)
+                })
             },
             async clickedViewPost(data){
                 // this.clearSearchData()
@@ -345,6 +395,7 @@ import { mapActions, mapGetters } from 'vuex'
             },
             clearSearchData(){
                 this.searchText = ''
+                this.oldSearchText = ''
                 this.searchOutputType = 'all'
                 this.searchData = []
             },
@@ -377,7 +428,8 @@ import { mapActions, mapGetters } from 'vuex'
                 response = await this['home/search'](data)
 
                 if (response.status) {
-                    if (this.searchNextPage && this.searchNextPage > 1) {
+                    if (this.oldSearchText === this.searchText && 
+                        this.searchNextPage && this.searchNextPage > 1) {
                         this.searchData.push(...response.data)
                     } else {
                         this.searchData = response.data
@@ -390,6 +442,7 @@ import { mapActions, mapGetters } from 'vuex'
                 } else {
 
                 }
+                this.oldSearchText = this.searchText
                 this.searchLoading = false
             },
             clickedSideMenuItem(data){
@@ -613,7 +666,7 @@ import { mapActions, mapGetters } from 'vuex'
                 if (this.params.hasOwnProperty('mine')) {
                     if (data === 'posts') {
                         nextPage = this.postsMineNextPage
-                        if (this['home/getHomePostsMine']) {
+                        if (nextPage !== 1 && this['home/getHomePostsMine']) {
                             cancel = true
                         }
                     } else if (data === 'reads') {
@@ -622,34 +675,34 @@ import { mapActions, mapGetters } from 'vuex'
                         
                     } else if (data === 'questions') {
                         nextPage = this.questionsMineNextPage
-                        if (this['home/getHomeQuestionsMine']) {
+                        if (nextPage !== 1 && this['home/getHomeQuestionsMine']) {
                             cancel = true
                         }
                     } else if (data === 'riddles') {
                         nextPage = this.riddlesMineNextPage
-                        if (this['home/getHomeRiddlesMine']) {
+                        if (nextPage !== 1 && this['home/getHomeRiddlesMine']) {
                             cancel = true
                         }
                     } else if (data === 'poems') {
                         nextPage = this.poemsMineNextPage
-                        if (this['home/getHomePoemsMine']) {
+                        if (nextPage !== 1 && this['home/getHomePoemsMine']) {
                             cancel = true
                         }
                     } else if (data === 'activities') {
                         nextPage = this.activitiesMineNextPage
-                        if (this['home/getHomeActivitiesMine']) {
+                        if (nextPage !== 1 && this['home/getHomeActivitiesMine']) {
                             cancel = true
                         }
                     } else if (data === 'books') {
                         nextPage = this.booksMineNextPage
-                        if (this['home/getHomeBooksMine']) {
+                        if (nextPage !== 1 && this['home/getHomeBooksMine']) {
                             cancel = true
                         }
                     }
                 } else if (this.params.hasOwnProperty('followers')) {
                     if (data === 'posts') {
                         nextPage = this.postsFollowersNextPage
-                        if (this['home/getHomePostsFollowers']) {
+                        if (nextPage !== 1 && this['home/getHomePostsFollowers']) {
                             cancel = true
                         }
                     } else if (data === 'reads') {
@@ -658,34 +711,34 @@ import { mapActions, mapGetters } from 'vuex'
                         
                     } else if (data === 'questions') {
                         nextPage = this.questionsFollowersNextPage
-                        if (this['home/getHomeQuestionsFollowers']) {
+                        if (nextPage !== 1 && this['home/getHomeQuestionsFollowers']) {
                             cancel = true
                         }
                     } else if (data === 'riddles') {
                         nextPage = this.riddlesFollowersNextPage
-                        if (this['home/getHomeRiddlesFollowers']) {
+                        if (nextPage !== 1 && this['home/getHomeRiddlesFollowers']) {
                             cancel = true
                         }
                     } else if (data === 'poems') {
                         nextPage = this.poemsFollowersNextPage
-                        if (this['home/getHomePoemsFollowers']) {
+                        if (nextPage !== 1 && this['home/getHomePoemsFollowers']) {
                             cancel = true
                         }
                     } else if (data === 'activities') {
                         nextPage = this.activitiesFollowersNextPage
-                        if (this['home/getHomeActivitiesFollowers']) {
+                        if (nextPage !== 1 && this['home/getHomeActivitiesFollowers']) {
                             cancel = true
                         }
                     } else if (data === 'books') {
                         nextPage = this.booksFollowersNextPage
-                        if (this['home/getHomeBooksFollowers']) {
+                        if (nextPage !== 1 && this['home/getHomeBooksFollowers']) {
                             cancel = true
                         }
                     }
                 } else if (this.params.hasOwnProperty('followings')) {
                     if (data === 'posts') {
                         nextPage = this.postsFollowingsNextPage
-                        if (this['home/getHomePostsFollowings']) {
+                        if (nextPage !== 1 && this['home/getHomePostsFollowings']) {
                             cancel = true
                         }
                     } else if (data === 'reads') {
@@ -694,34 +747,34 @@ import { mapActions, mapGetters } from 'vuex'
                         
                     } else if (data === 'questions') {
                         nextPage = this.questionsFollowingsNextPage
-                        if (this['home/getHomeQuestionsFollowings']) {
+                        if (nextPage !== 1 && this['home/getHomeQuestionsFollowings']) {
                             cancel = true
                         }
                     } else if (data === 'riddles') {
                         nextPage = this.riddlesFollowingsNextPage
-                        if (this['home/getHomeRiddlesFollowings']) {
+                        if (nextPage !== 1 && this['home/getHomeRiddlesFollowings']) {
                             cancel = true
                         }
                     } else if (data === 'poems') {
                         nextPage = this.poemsFollowingsNextPage
-                        if (this['home/getHomePoemsFollowings']) {
+                        if (nextPage !== 1 && this['home/getHomePoemsFollowings']) {
                             cancel = true
                         }
                     } else if (data === 'activities') {
                         nextPage = this.activitiesFollowingsNextPage
-                        if (this['home/getHomeActivitiesFollowings']) {
+                        if (nextPage !== 1 && this['home/getHomeActivitiesFollowings']) {
                             cancel = true
                         }
                     } else if (data === 'books') {
                         nextPage = this.booksFollowingsNextPage
-                        if (this['home/getHomeBooksFollowings']) {
+                        if (nextPage !== 1 && this['home/getHomeBooksFollowings']) {
                             cancel = true
                         }
                     }
                 } else if (this.params.hasOwnProperty('attachments')) {
                     if (data === 'posts') {
                         nextPage = this.postsAttachmentsNextPage
-                        if (this['home/getHomePostsAttachments'] && 
+                        if (nextPage !== 1 && this['home/getHomePostsAttachments'] && 
                             (this.menuAttachment.data.id === this.postsAttachmentAfter.data.id) &&
                             (this.menuAttachment.type === this.postsAttachmentAfter.type)) {
                             cancel = true
@@ -734,7 +787,7 @@ import { mapActions, mapGetters } from 'vuex'
                         
                     } else if (data === 'questions') {
                         nextPage = this.questionsAttachmentsNextPage
-                        if (this['home/getHomeQuestionsAttachments'] && 
+                        if (nextPage !== 1 && this['home/getHomeQuestionsAttachments'] && 
                             (this.menuAttachment.data.id === this.questionsAttachmentAfter.data.id) &&
                             (this.menuAttachment.type === this.questionsAttachmentAfter.type)) {
                             cancel = true
@@ -743,7 +796,7 @@ import { mapActions, mapGetters } from 'vuex'
                         }
                     } else if (data === 'riddles') {
                         nextPage = this.riddlesAttachmentsNextPage
-                        if (this['home/getHomeRiddlesAttachments'] && 
+                        if (nextPage !== 1 && this['home/getHomeRiddlesAttachments'] && 
                             (this.menuAttachment.data.id === this.riddlesAttachmentAfter.data.id) &&
                             (this.menuAttachment.type === this.riddlesAttachmentAfter.type)) {
                             cancel = true
@@ -752,7 +805,7 @@ import { mapActions, mapGetters } from 'vuex'
                         }
                     } else if (data === 'poems') {
                         nextPage = this.poemsAttachmentsNextPage
-                        if (this['home/getHomePoemsAttachments'] && 
+                        if (nextPage !== 1 && this['home/getHomePoemsAttachments'] && 
                             (this.menuAttachment.data.id === this.poemsAttachmentAfter.data.id) &&
                             (this.menuAttachment.type === this.poemsAttachmentAfter.type)) {
                             cancel = true
@@ -761,7 +814,7 @@ import { mapActions, mapGetters } from 'vuex'
                         }
                     } else if (data === 'activities') {
                         nextPage = this.activitiesAttachmentsNextPage
-                        if (this['home/getHomeActivitiesAttachments'] && 
+                        if (nextPage !== 1 && this['home/getHomeActivitiesAttachments'] && 
                             (this.menuAttachment.data.id === this.activitiesAttachmentAfter.data.id) &&
                             (this.menuAttachment.type === this.activitiesAttachmentAfter.type)) {
                             cancel = true
@@ -770,7 +823,7 @@ import { mapActions, mapGetters } from 'vuex'
                         }
                     } else if (data === 'books') {
                         nextPage = this.booksAttachmentsNextPage
-                        if (this['home/getHomeBooksAttachments'] && 
+                        if (nextPage !== 1 && this['home/getHomeBooksAttachments'] && 
                             (this.menuAttachment.data.id === this.booksAttachmentAfter.data.id) &&
                             (this.menuAttachment.type === this.booksAttachmentAfter.type)) {
                             cancel = true
@@ -781,7 +834,7 @@ import { mapActions, mapGetters } from 'vuex'
                 } else {
                     if (data === 'posts') {
                         nextPage = this.postsNextPage
-                        if (this['home/getHomePosts']) {
+                        if (nextPage !== 1 && this['home/getHomePosts']) {
                             cancel = true
                         }
                     } else if (data === 'reads') {
@@ -790,31 +843,32 @@ import { mapActions, mapGetters } from 'vuex'
                         
                     } else if (data === 'questions') {
                         nextPage = this.questionsNextPage
-                        if (this['home/getHomeQuestions']) {
+                        if (nextPage !== 1 && this['home/getHomeQuestions']) {
                             cancel = true
                         }
                     } else if (data === 'riddles') {
                         nextPage = this.riddlesNextPage
-                        if (this['home/getHomeRiddles']) {
+                        if (nextPage !== 1 && this['home/getHomeRiddles']) {
                             cancel = true
                         }
                     } else if (data === 'poems') {
                         nextPage = this.poemsNextPage
-                        if (this['home/getHomePoems']) {
+                        if (nextPage !== 1 && this['home/getHomePoems']) {
                             cancel = true
                         }
                     } else if (data === 'activities') {
                         nextPage = this.activitiesNextPage
-                        if (this['home/getHomeActivities']) {
+                        if (nextPage !== 1 && this['home/getHomeActivities']) {
                             cancel = true
                         }
                     } else if (data === 'books') {
                         nextPage = this.booksNextPage
-                        if (this['home/getHomeBooks']) {
+                        if (nextPage !== 1 && this['home/getHomeBooks']) {
                             cancel = true
                         }
                     }
                 }
+                console.log(`nextpage ${nextPage} cancel ${cancel}`);
                 return {nextPage, cancel}
             },
             setAttachmentAfter(){
@@ -835,6 +889,7 @@ import { mapActions, mapGetters } from 'vuex'
                 } 
             },
             async getPosts() {
+                console.log('in get posts');
                 let {nextPage, cancel} = this.checkNextPageCancel('posts')
                 
                 if (cancel) {

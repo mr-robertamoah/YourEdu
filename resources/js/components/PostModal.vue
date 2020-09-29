@@ -331,12 +331,13 @@ import { strings } from '../services/helpers';
                         } else {
                             this.noCommentAnswer = 'there are no comments'
                         }
-                        if (this.data.hasOwnProperty('type') && 
+                        if (this.data.hasOwnProperty('type') && this.data.type &&
                             this.data.type.hasOwnProperty('possible_answers')) {
                             this.showAnswerList = true
                         }
                     }
-                    this.getCommentsAnswers()
+                    // this.getCommentsAnswers()
+                    this.listen()
                 }
             },
             data: {
@@ -399,6 +400,25 @@ import { strings } from '../services/helpers';
         methods: {
             ...mapActions(['profile/getComments','profile/getAnswers',
                 'profile/updateAnswer','profile/createAnswer']),
+            listen(){
+                if (this.type === 'post') {
+                    Echo.channel(`.youredu.post.${this.data.id}`)
+                        .listen('.deleteComment', commentInfo=>{
+                            // this.removeItem(commentInfo.comment.id, 'comment')
+                            console.log('commentInfo :>> ', commentInfo);
+                        })
+                } else if (this.type === 'posttype' && this.data.typeName === 'question') {
+                    Echo.channel(`.youredu.question.${this.data.type.id}`)
+                        .listen('.deleteAnswer', answerInfo=>{
+                            this.removeItem(answerInfo.answer.id, 'answer')
+                        })
+                } else if (this.type === 'posttype' && this.data.typeName === 'riddle') {
+                    Echo.channel(`.youredu.riddle.${this.data.type.id}`)
+                        .listen('.deleteAnswer', answerInfo=>{
+                            this.removeItem(answerInfo.answer.id, 'answer')
+                        })
+                }
+            },
             answerMarkedSuccessful(data){ //from main answer or ans in answers
                 if (data.main) {
                     this.$emit("answerMarkedSuccessfulMain",data)

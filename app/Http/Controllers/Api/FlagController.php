@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FlaggedResource;
 use App\Http\Resources\FlagResource;
 use App\YourEdu\Answer;
 use App\YourEdu\ClassModel;
@@ -14,11 +15,15 @@ use App\YourEdu\Learner;
 use App\YourEdu\ParentModel;
 use App\YourEdu\Post;
 use App\YourEdu\Professional;
+use App\YourEdu\Profile;
 use App\YourEdu\Read;
 use App\YourEdu\School;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use \Debugbar;
 
 class FlagController extends Controller
 {
@@ -167,4 +172,66 @@ class FlagController extends Controller
             ], 422);
         }
     }
+
+    public function userFlaggedGet(Request $request)
+    {
+        $type = $request->type;
+        $flags = new Collection();
+        if ($type === 'accounts') {
+            $flags = $flags->merge($this->getFlaggedProfiles());
+        } else if ($type === 'comments') {
+            $flags = $flags->merge($this->getFlaggedComments());
+        } else if ($type === 'answers') {
+            $flags = $flags->merge($this->getFlaggedAnswers());
+        } else if ($type === 'posts') {
+            $flags = $flags->merge($this->getFlaggedPosts());
+        } else {
+            $flags = $flags->merge($this->getFlaggedProfiles());
+            $flags = $flags->merge($this->getFlaggedPosts());
+            $flags = $flags->merge($this->getFlaggedAnswers());
+            $flags = $flags->merge($this->getFlaggedComments());
+        }
+
+        Debugbar::info($flags);
+        return FlaggedResource::collection(paginate($flags->sortByDesc('updated_at'), 5));
+    }
+
+    public function getFlaggedProfiles()
+    {
+        return Profile::with(['profileable.flags','user','images'])
+            ->whereHasMorph('profileable','*',function(Builder $query){
+            $query->whereHas('flags',function(Builder $query){
+                $query->where('user_id', auth()->id());
+            });
+        })->latest()->get();
+    }
+
+    public function getFlaggedPosts()
+    {
+        return Post::with(['questions','activities','riddles','postedby.flags',
+            'poems.poemSections','books','postedby.profile.images',
+            'files','audios','videos'])
+            ->whereHas('flags',function(Builder $query){
+                $query->where('user_id', auth()->id());
+            })->latest()->get();
+    }
+
+    public function getFlaggedComments()
+    {
+        return Comment::with(['commentedby.flags','images','commentedby.profile.images',
+            'files','audios','videos'])
+            ->whereHas('flags',function(Builder $query){
+                $query->where('user_id', auth()->id());
+            })->latest()->get();
+    }
+
+    public function getFlaggedAnswers()
+    {
+        return Answer::with(['answeredby.flags','images','answeredby.profile.images',
+            'files','audios','videos'])
+            ->whereHas('flags',function(Builder $query){
+                $query->where('user_id', auth()->id());
+            })->latest()->get();
+    }
+    
 }

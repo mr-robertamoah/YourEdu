@@ -12,7 +12,7 @@ const actions = {
 
         commit('END_REQUEST')
         if (response.data.message === 'successful') {
-            commit('FOLLOW_BACK_SUCCESS')
+            commit('FOLLOW_BACK_SUCCESS',response.data.following)
             return 'successful'
         } else{
             return 'unsuccessful'
@@ -27,7 +27,7 @@ const actions = {
 
         commit('END_REQUEST')
         if (response.data.message === 'successful') {
-            // commit('FOLLOW_SUCCESS', data)
+            commit('DECLINE_FOLLOW_SUCCESS')
             return 'successful'
         } else{
             return 'unsuccessful'
@@ -47,16 +47,55 @@ const actions = {
             return 'unsuccessful'
         }
     },
+    async getFollowers({commit}){
+        let response = await UserService.followersGet()
+        
+        if (response.data.data) {
+            commit('FOLLOWERS_SUCCESS', response.data.data)
+        } else{
+            console.log('error',response);
+            commit('FOLLOWERS_FAILURE')
+        }
+    },
+    async getFollowings({commit}){
+        let response = await UserService.followingsGet()
+        
+        if (response.data.data) {
+            commit('FOLLOWINGS_SUCCESS', response.data.data)
+        } else{
+            console.log('error',response);
+            commit('FOLLOWINGS_FAILURE')
+        }
+    },
     async userFollowRequests({},data){
         let response = await UserService.userFollowRequests(data)
 
-        // commit('miscellaneous/LOAD_CONTENT_COMPLETE')
         if (response.data.data) {
-            // commit('RELOAD_SUCCESS', response.data.user)
             return response.data
         } else{
             return 'unsuccessful'
         }
+    },
+    async userFollowNotifications(){
+        let response = await UserService.userFollowNotifications()
+
+        if (response.data.data) {
+            return response.data
+        } else{
+            return 'unsuccessful'
+        }
+    },
+    async markFollowNotifications(){
+        let response = await UserService.markFollowNotifications()
+
+        if (response.data.data) {
+            return response.data
+        } else{
+            return 'unsuccessful'
+        }
+    },
+    updateUserFollows({commit},data){
+        commit('UPDATE_USER_FOLLOWS',data)
     },
 
     ////////////////////////////// profiles
@@ -108,7 +147,33 @@ const actions = {
         commit('LOAD_PROFILE_COMPLETE')
     },
 
-    ///////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////// user
+
+    async getUserSaved({commit}, data){
+        let response = await UserService.userSavedGet(data)
+
+        if (response.data.data) {
+            return {
+                next: response.data.links.next,
+                data: response.data.data
+            }
+        } else {
+            return 'unsuccessful'
+        }
+    },
+
+    async getUserFlagged({commit}, data){
+        let response = await UserService.userFlaggedGet(data)
+
+        if (response.data.data) {
+            return {
+                next: response.data.links.next,
+                data: response.data.data
+            }
+        } else {
+            return 'unsuccessful'
+        }
+    },
 
     async login ({commit}, credentials){
         commit('LOGIN_REQUEST')

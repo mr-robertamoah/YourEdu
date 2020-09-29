@@ -31,7 +31,7 @@
             ></optional-actions>
         </div>
         <div class="post-attachment" 
-            v-if="showAttach && computedAttachments"
+            v-if="computedAttachments"
             @click.self="showAttach = false"
         >
             <post-attachment
@@ -55,12 +55,11 @@
                 {{computedCreated}}
             </div>
         </div>
-        <div class="body"
+        <div class="body" 
+            v-if="!computedLesson"
             @dblclick="clickedShowPostComments"
         >
-            <div class="creator"
-                @click="clickedProfilePicture"
-            >
+            <div class="creator">
                 <profile-picture>
                     <template slot="image">
                         <img :src="computedUrl">
@@ -105,7 +104,7 @@
                 </div>
             </div>
         </div>
-        <template v-if="computedType">
+        <template v-if="computedType && !computedLesson">
             <post-preview
                 :type="computedType"
                 :typeName="computedTypeName"
@@ -114,6 +113,15 @@
                 @clickedShowPostPreview="clickedShowPostPreview"
                 :post="post"
             ></post-preview>
+        </template>
+        <template v-if="computedType && computedLesson">
+            <lesson-preview
+                :lesson="computedType"
+                :profileUrl="post.profile_url"
+                :full="postMediaFull"
+                @clickedMedia="clickedMedia"
+                :post="post"
+            ></lesson-preview>
         </template>
         <div class="bottom">
             <div class="main">
@@ -207,12 +215,23 @@
                         <comment-single
                             :key="comment.id" v-for="comment in computedComments"
                             :comment="comment"
+                            :simple="true"
                             @askLoginRegister="askLoginRegister"
                             @clickedMedia="clickedMedia"
+                            @clickedShowPostComments="clickedShowPostComments"
                         ></comment-single>
                     </template>
                 </div>
             </div>
+        </div>
+        <div class="attachments-section">
+            <attachment-badge 
+                v-for="(attachment,index) in postAttachments"
+                :key="index"
+                :hasClose="true"
+                :attachment="attachment.data"
+                :type="attachment.type"
+            ></attachment-badge>
         </div>
         <just-fade>
             <template slot="transition" v-if="showEdit">
@@ -220,6 +239,7 @@
                     :edit="showEdit"
                     :editableData="post"
                     :showForm="showEdit"
+                    :loading="createPostLoading"
                     :type="post.typeName"
                     @clickedEdit="clickedEdit"
                     @mainModalDisappear="showEdit=false"
@@ -267,15 +287,18 @@ import PostButton from './PostButton'
 import AddComment from './AddComment'
 import MainTextarea from './MainTextarea'
 import PostPreview from './PostPreview'
+import LessonPreview from './LessonPreview'
 import NumberOf from './NumberOf'
 import ProfileBar from './profile/ProfileBar'
 import CreatePost from './forms/CreatePost'
 import OptionalActions from './OptionalActions'
 import PostAttachment from './PostAttachment'
+import AttachmentBadge from './AttachmentBadge'
 import FlagReason from './FlagReason'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 import FadeUp from './transitions/FadeUp'
 import JustFade from './transitions/JustFade'
+import _ from 'lodash'
 import {dates, strings, files} from '../services/helpers'
 import { mapGetters, mapActions } from 'vuex'
 
@@ -285,11 +308,13 @@ import { mapGetters, mapActions } from 'vuex'
             ProfilePicture,
             JustFade,
             FadeUp,
+            AttachmentBadge,
             PostAttachment,
             OptionalActions,
             CreatePost,
             ProfileBar,
             NumberOf,
+            LessonPreview,
             PostPreview,
             MainTextarea,
             AddComment,
@@ -319,6 +344,7 @@ import { mapGetters, mapActions } from 'vuex'
                 alertSuccess: false,
                 alertDanger: false,
                 loading: false,
+                createPostLoading: false,
                 //small modal
                 showSmallModal: false,
                 smallModalLoading: false,
@@ -353,6 +379,7 @@ import { mapGetters, mapActions } from 'vuex'
                 isAttached: false, //means i have attached and it goes for likes, etc
                 myAttachments: null,
                 attachments: 0,
+                postAttachments: [],
                 attachable: null,
                 showAttach: false,
                 selectedAttachment: null
@@ -461,7 +488,10 @@ import { mapGetters, mapActions } from 'vuex'
             },
             computedComments(){
                 return this.post && this.post.comments.length > 0 ?
-                    this.post.comments : null
+                    _.take(this.post.comments,2) : null
+            },
+            computedLesson(){
+                return this.post.typeName === 'lesson' ? true : false
             },
             computedFileUrl(){
 
@@ -522,13 +552,19 @@ import { mapGetters, mapActions } from 'vuex'
                             }
                         })
 
+                        this.postAttachments = this.post.attachments.map(attach=>{
+                            return {
+                                data: {name: attach.name},
+                                type: strings.getAccount(attach.attachedwith_type)
+                            }
+                        })
                         if (attachments.length) {
                             this.isAttached = true
                             this.myAttachments = attachments
                         }
                     }
                 }
-                return true
+                return this.showAttach && !this.computedLesson
             },
             computedFlags(){ //check flagging
                 if (this.getUser) {
@@ -810,10 +846,13 @@ import { mapGetters, mapActions } from 'vuex'
                     this.alertMessage = `${state} unsuccessful`
                 }
                 setTimeout(() => {
-                    this.alertSuccess = false
-                    this.alertDanger = false
-                    this.alertMessage = ''
+                    this.clearAlert()
                 }, 3000);
+            },
+            clearAlert(){
+                this.alertSuccess = false
+                this.alertDanger = false
+                this.alertMessage = ''
             },
             postAddComplete(data){
                 if (data === 'successful') {
@@ -911,15 +950,16 @@ import { mapGetters, mapActions } from 'vuex'
                 }
             },
             async clickedEdit(data){
-                let otherData = {}
-                let formData = new FormData
+                let otherData = {},
+                    formData = new FormData
+                this.createPostLoading = true
 
                 // if (!this.showPreview) {
                 if (data.hasOwnProperty('contentFile') && data.contentFile) {
                     formData.append('file', data.contentFile)  
                 } else {
                     console.log('enters',data)
-                    if (data.type !== '' || data.type !== null) {
+                    if (data.type !== '' && data.type !== null) {
                         formData.append('type', this.post.typeName)
                         formData.append('typeId', this.post.type[0].id)
                     }
@@ -965,6 +1005,7 @@ import { mapGetters, mapActions } from 'vuex'
                 
                 let response = await this['profile/updatePost'](main)
 
+                this.createPostLoading = false
                 if (response === 'successful') {
                     this.showEdit = false
                 } else {
@@ -1000,6 +1041,7 @@ import { mapGetters, mapActions } from 'vuex'
                     setTimeout(() => {
                         this.smallModalAlerting = false
                         this.showSmallModal = false
+                        this.clearAlert()
                         if (this.postMediaFull) {
                             this.$emit('postDeleteSuccess',{postId: data.postId})
                         }
@@ -1119,8 +1161,8 @@ import { mapGetters, mapActions } from 'vuex'
             align-items: flex-start;
 
             .creator{
-                width: 90px;
-                height: 90px;
+                width: 75px;
+                height: 75px;
                 background-color: antiquewhite;
                 border-radius: 100%;
             }
@@ -1273,6 +1315,14 @@ import { mapGetters, mapActions } from 'vuex'
                 }
             }
         }
+
+        .attachments-section{
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-wrap: wrap;
+        }
     }
 
 
@@ -1284,8 +1334,8 @@ import { mapGetters, mapActions } from 'vuex'
             font-size: 2vw;
 
             .creator{
-                width: 70px;
-                height: 70px;
+                width: 60px;
+                height: 60px;
                 top: 45px;
             }
 
@@ -1312,8 +1362,8 @@ import { mapGetters, mapActions } from 'vuex'
             font-size: 2.2vw;
 
             .creator{
-                width: 70px;
-                height: 70px;
+                width: 60px;
+                height: 60px;
             }
 
             .media{

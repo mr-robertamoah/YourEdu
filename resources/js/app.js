@@ -12,7 +12,10 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, faTrash, 
         faBan, faSearch, faUserCircle, faExclamationCircle, faEdit,
         faFileImage,faFileVideo,faFileAudio, faPlus, faMinus, faThumbsUp, faFlag,
-        faChevronDown, faComment, faChevronLeft, faCheck, faCommentAlt, faCheckDouble, faPen, faBookmark, faPaperclip, faHome, faEllipsisH} from "@fortawesome/free-solid-svg-icons"
+        faChevronDown, faComment, faChevronLeft, faCheck, faCommentAlt, faCheckDouble, 
+        faPen, faBookmark, faPaperclip, faHome, faEllipsisH, faEllipsisV, faLongArrowAltLeft,
+        faGrin,faMicrophone,faVideo, faCamera, faPaperPlane, faImage, faMusic, faFilm,
+        faArrowCircleRight} from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { BootstrapVue } from 'bootstrap-vue'
 import AppNav from './components/Nav.vue'
@@ -29,10 +32,11 @@ Vue.use(BootstrapVue)
 Vue.use(VuePageTransition)
 
 library.add(faUserCircle, faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, 
-    faTrash, faBan, faSearch, faExclamationCircle, faEdit,faFileAudio,
-    faFileImage,faFileVideo, faPlus, faMinus,faThumbsUp,faFlag, faChevronDown,
+    faTrash, faBan, faSearch, faExclamationCircle, faEdit,faFileAudio, faMicrophone, faVideo,
+    faFileImage,faFileVideo, faPlus, faMinus,faThumbsUp,faFlag, faChevronDown, faCamera,
     faComment, faChevronLeft,faCheck,faCommentAlt,faCheckDouble,faPen,faBookmark,
-    faPaperclip, faHome,faEllipsisH);
+    faPaperclip, faHome,faEllipsisH, faEllipsisV,faLongArrowAltLeft,faGrin,faPaperPlane,
+    faImage,faMusic,faFilm,faArrowCircleRight);
 
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
@@ -60,6 +64,9 @@ Vue.component('media-modal', require('./components/MediaModal.vue').default);
 Vue.component('post-modal', require('./components/PostModal.vue').default);
 Vue.component('welcome-form', require('./components/welcome/WelcomeForm.vue').default);
 Vue.component('just-fade', require('./components/transitions/JustFade.vue').default);
+Vue.component('user-addons', require('./components/UserAddons.vue').default);
+Vue.component('addon-modal', require('./components/AddonModal.vue').default);
+Vue.component('file-preview', require('./components/FilePreview.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to
@@ -78,6 +85,10 @@ const app = new Vue({
             
             ApiService.setHeaderAuth()
             store.dispatch('reloadUser')
+            setTimeout(() => {
+                store.dispatch('getFollowers')
+                store.dispatch('getFollowings')
+            }, 1000);
         } 
         else {
             

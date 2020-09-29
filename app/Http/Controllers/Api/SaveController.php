@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SavedResource;
 use App\Http\Resources\SaveResource;
 use App\YourEdu\Admin;
 use App\YourEdu\Answer;
@@ -20,6 +21,8 @@ use App\YourEdu\Read;
 use App\YourEdu\Save;
 use App\YourEdu\School;
 use App\YourEdu\Word;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -133,5 +136,52 @@ class SaveController extends Controller
                 'message' => "{$account} does not exit."
             ], 422);
         }
+    }
+
+    public function userSavedGet(Request $request)
+    {
+        $type = $request->type;
+        $saves = new Collection();
+        if ($type === 'comments') {
+            $saves = $saves->merge($this->getSavedComments());
+        } else if ($type === 'answers') {
+            $saves = $saves->merge($this->getSavedAnswers());
+        } else if ($type === 'posts') {
+            $saves = $saves->merge($this->getSavedPosts());
+        } else {
+            $saves = $saves->merge($this->getSavedPosts());
+            $saves = $saves->merge($this->getSavedAnswers());
+            $saves = $saves->merge($this->getSavedComments());
+        }
+
+        return SavedResource::collection(paginate($saves->sortByDesc('updated_at'), 5));
+    }
+
+    public function getSavedPosts()
+    {
+        return Post::with(['questions','activities','riddles','beenSaved',
+            'poems.poemSections','books','postedby.profile.images',
+            'files','audios','videos'])
+            ->whereHas('beenSaved',function(Builder $query){
+                $query->where('user_id', auth()->id());
+            })->latest()->get();
+    }
+
+    public function getSavedComments()
+    {
+        return Comment::with(['beenSaved','images','commentedby.profile.images',
+            'files','audios','videos'])
+            ->whereHas('beenSaved',function(Builder $query){
+                $query->where('user_id', auth()->id());
+            })->latest()->get();
+    }
+
+    public function getSavedAnswers()
+    {
+        return Answer::with(['beenSaved','images','answeredby.profile.images',
+            'files','audios','videos'])
+            ->whereHas('beenSaved',function(Builder $query){
+                $query->where('user_id', auth()->id());
+            })->latest()->get();
     }
 }

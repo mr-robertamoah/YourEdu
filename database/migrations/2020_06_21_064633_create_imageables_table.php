@@ -16,7 +16,7 @@ class CreateImageablesTable extends Migration
         Schema::create('imageables', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('image_id');
-            $table->morphs('imageable'); //question answer profile comment lesson post activity
+            $table->morphs('imageable'); //question answer profile comment lesson post activity message
             $table->enum('state',['PUBLIC','PRIVATE'])->default('PUBLIC');
             $table->boolean('thumbnail')->default(0);
             $table->timestamps();

@@ -283,12 +283,8 @@ import { mapActions, mapGetters } from 'vuex';
                     response = null
                 data.account = who.account
                 data.accountId = who.accountId
-                if (this.inputName) {
-                    data.name = this.inputName.trim()
-                }
-                if (this.inputDescription) {
-                    data.description = this.inputDescription.trim()
-                }
+                data.name = this.inputName ? this.inputName.trim() : this.inputName
+                data.description = this.inputDescription ? this.inputDescription.trim() : this.inputDescription
 
                 if (this.actionType === 'subject') {
 
@@ -299,9 +295,8 @@ import { mapActions, mapGetters } from 'vuex';
                         return
                     }
                     
-                    if (this.inputRationale) {
-                        data.rationale = this.inputRationale.trim()
-                    }
+                    data.rationale = this.inputRationale ? this.inputRationale.trim() : this.inputRationale
+                    
                     let sections = this.aliasesArray
                     if (this.aliasesArrayPositions === this.aliasesCurrentPosition) {
                         if (this.inputAliases && this.inputAliases.trim() !== '') {
@@ -314,6 +309,7 @@ import { mapActions, mapGetters } from 'vuex';
                             sections.push(this.temporaryInputAliases.trim())
                         }
                     }
+                    
                     data.aliases = sections
 
                     response = await this['profile/createSubject'](data)
@@ -323,12 +319,15 @@ import { mapActions, mapGetters } from 'vuex';
                         data, subjectId: this.subject.id})
                 }
 
-
                 this.loading = false
                 if (response.status) {
                     this.subjectRequestnumber = 0
                     this.alertSuccess = true
                     this.alertMessage = `successfully created ${data.name} ${this.actionType}`
+                    this.$emit('attachmentCreated', {
+                        attachment: response.data.subject,
+                        type: 'subject'
+                    })
                     this.clearData()
                 } else {
                     this.alertError = true
@@ -344,6 +343,7 @@ import { mapActions, mapGetters } from 'vuex';
             },
             closeModal(){
                 this.clearData()
+                this.$emit('closeCreateSubject')
             },
             clearData(){
                 this.inputName = ''

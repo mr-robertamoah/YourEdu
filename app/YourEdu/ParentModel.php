@@ -215,6 +215,16 @@ class ParentModel extends Model
         return $this->morphMany(Word::class,'wordable');
     }
 
+    public function lessonsAdded()
+    {
+        return $this->morphMany(Lesson::class,'addedby');
+    }
+
+    public function lessonsOwned()
+    {
+        return $this->morphMany(Lesson::class,'ownedby');
+    }
+
     public function poemsAdded()
     {
         return $this->morphMany(Poem::class,'addedby');
@@ -278,5 +288,25 @@ class ParentModel extends Model
     public function addedAudio()
     {
         return $this->morphMany(Audio::class,'addedby');
+    }
+
+    public function conversations()
+    {
+        return $this->morphToMany(Conversation::class,'accountable','conversationables');
+    }
+
+    public function conversationAccounts()
+    {
+        return $this->morphMany(ConversationAccount::class,'accountable');
+    }
+
+    public function messagesSent()
+    {
+        return $this->morphMany(Message::class,'fromable');
+    }
+
+    public function messagesReceived()
+    {
+        return $this->morphMany(Message::class,'toable');
     }
 }

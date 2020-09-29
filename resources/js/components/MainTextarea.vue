@@ -16,7 +16,6 @@
 </template>
 
 <script>
-import autosize from 'autosize';
 
     export default {
         watch: {

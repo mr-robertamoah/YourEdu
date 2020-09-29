@@ -3,6 +3,7 @@
         @mainModalDisappear='closeModal'
         :alertMessage="alertMessage"
         :alertError="alertError"
+        :loading="computedLoading"
         @clearAlert="clearAlert"
      >  
         <template slot="loading" v-if="computedLoading">
@@ -38,13 +39,13 @@
                             v-model="inputRiddle"></text-textarea>
                     </div>
                     <div class="form-edit" v-if="computedRiddle || computedQuestion">
-                        <text-input inputType="number"
+                        <number-input
                             title = 'answers scored over...'
                             placeholder="answers scored over*" 
                             :error="errorScore"
                             :bottomBorder="true"
-                            @input="getInputScore"
-                            v-model="inputScore"></text-input>
+                            @numberinput="getInputScore"
+                            :value="inputScore"></number-input>
                     </div>
                     <div class="ask-answers" v-if="computedRiddle || computedQuestion">
                        max value is 100 and min value is 5
@@ -127,6 +128,7 @@
 
 <script>
 import TextInput from '../TextInput'
+import NumberInput from '../NumberInput'
 import FileInput from '../FileInput'
 import {dates} from '../../services/helpers'
 import DatePicker from '../DatePicker'
@@ -167,6 +169,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             TextTextarea,
             DatePicker,
             FileInput,
+            NumberInput,
             TextInput,
         },
         data() {
@@ -421,6 +424,11 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         this.alertMessage='please enter at least 2 possible answers'
                         this.errorAnswers = true
                         error = true
+                    } else if (Number(this.inputScore) < 5) {
+                        this.alertError=true
+                        this.alertMessage='please enter number greater than 5'
+                        this.errorScore = true
+                        error = true
                     } else if (this.inputScore.trim() === '') {
                         this.alertError=true
                         this.alertMessage='please enter number for scoring answers'
@@ -455,6 +463,11 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         this.alertError=true
                         this.alertMessage='please enter the riddle'
                         this.errorRiddle = true
+                        error = true
+                    } else if (Number(this.inputScore) < 5) {
+                        this.alertError=true
+                        this.alertMessage='please enter number greater than 5'
+                        this.errorScore = true
                         error = true
                     } else if (this.inputScore.trim() === '') {
                         this.alertError=true
@@ -498,7 +511,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         data['type'] = this.editableData.typeName
                         data['postId'] = this.editableData.id
                         data['content'] = this.textareaContent
-                        data['contentFile'] = this.inputContent
+                        data['contentFile'] = this.inputFile
                         this.$emit('clickedEdit', data)
                     } else {
                         this.$emit('clickedCreate', data)

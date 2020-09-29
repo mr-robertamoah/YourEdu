@@ -15,35 +15,37 @@ class FollowRequestResource extends JsonResource
      */
     public function toArray($request)
     {
+        $account = getAccountString($this->requestfrom_type);
         $data = [];
         $data = [
             'id' => $this->id,
             'requestable_id' => $this->requestable_id,
             'name' => $this->requestfrom->name,
             'url' => $this->requestfrom->profile->url,
+            'about' => $this->requestfrom->profile->about,
         ];
 
-        if (Str::contains(strtolower($this->requestfrom),'learner')) {
+        if ($account === 'learner') {
             $data['params'] = [
                 'account' => 'learner',
                 'accountId' => $this->requestfrom_id,
             ];
-        } else if (Str::contains(strtolower($this->requestfrom),'facilitator')) {
+        } else if ($account === 'facilitator') {
             $data['params'] = [
                 'account' => 'facilitator',
                 'accountId' => $this->requestfrom_id,
             ];
-        } else if (Str::contains(strtolower($this->requestfrom),'parent')) {
+        } else if ($account === 'parent') {
             $data['params'] = [
                 'account' => 'parent',
                 'accountId' => $this->requestfrom_id,
             ];
-        } else if (Str::contains(strtolower($this->requestfrom),'professional')) {
+        } else if ($account === 'professional') {
             $data['params'] = [
                 'account' => 'professional',
                 'accountId' => $this->requestfrom_id,
             ];
-        } else if (Str::contains(strtolower($this->requestfrom),'school')) {
+        } else if ($account === 'school') {
             $data['params'] = [
                 'account' => 'school',
                 'accountId' => $this->requestfrom_id,

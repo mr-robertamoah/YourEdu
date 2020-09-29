@@ -423,6 +423,10 @@ import { mapActions, mapGetters } from 'vuex';
                     this.gradeRequestnumber = 0
                     this.alertSuccess = true
                     this.alertMessage = `successfully created ${data.name} ${this.actionType}`
+                    this.$emit('attachmentCreated', {
+                        attachment: response.data.grade,
+                        type: 'grade'
+                    })
                     this.clearData()
                 } else {
                     this.alertError = true
@@ -438,6 +442,7 @@ import { mapActions, mapGetters } from 'vuex';
             },
             closeModal(){
                 this.clearData()
+                this.$emit('closeCreateGrade')
             },
             clearData(){
                 this.inputName = ''

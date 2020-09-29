@@ -1,16 +1,24 @@
 <template>
     <div class="action-button-wrapper"
-        :class="{green:green,red:red,clicked:clicked}"
+        :class="{green:green,red:red,clicked:clicked,background:background}"
         @click="clickedAction"
     >
-        <slot name="icon"></slot>
+        {{loading ? '' : text}}
+        <slot name="icon" v-if="!loading"></slot>
+        <pulse-loader :loading="loading" :size="'6px'"></pulse-loader>
     </div>
 </template>
 
 <script>
+import PulseLoader from 'vue-spinner/src/PulseLoader'
+
     export default {
         props: {
             green: {
+                type: Boolean,
+                default: false
+            },
+            background: {
                 type: Boolean,
                 default: false
             },
@@ -22,6 +30,17 @@
                 type: Boolean,
                 default: false
             },
+            loading: {
+                type: Boolean,
+                default: false
+            },
+            text: {
+                type: String,
+                default: ''
+            },
+        },
+        components: {
+            PulseLoader,
         },
         data() {
             return {
@@ -43,7 +62,8 @@
 
     .action-button-wrapper{
         padding: 5px;
-        font-size: 16px;
+        font-size: 14px;
+        cursor: pointer;
 
         &:hover{
             transition: all 1s ease;
@@ -70,6 +90,10 @@
     .clicked{
         transition: all 1s ease;
         box-shadow: 0 0 3px gray;
+    }
+
+    .background{
+        background-color: honeydew;
     }
 
 @media screen and (max-width: 800px) {

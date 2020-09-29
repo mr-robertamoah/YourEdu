@@ -32,6 +32,7 @@
         position: absolute;
         font-size: 14px;
         cursor: pointer;
+        z-index: 1;
     }
 
 @media screen and (max-width: 800px) {

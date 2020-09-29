@@ -10,6 +10,20 @@ class Course extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'name','description','rationale'
+    ];
+
+    public function addedby()
+    {
+        return $this->morphTo();
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(PostAttachment::class,'attachedwith');
+    }
+
     public function likes(){
         return $this->morphMany(Like::class,'likeable');
     }
@@ -34,6 +48,10 @@ class Course extends Model
         return $this->morphOne(Collaboration::class,'collaborationable');
     }
 
+    public function grades(){
+        return $this->belongsToMany(Grade::class)->withTimestamps();
+    }
+
     public function topics()
     {
         return $this->morphMany(Topic::class,'topicable');
@@ -52,6 +70,26 @@ class Course extends Model
     public function discussion()
     {
         return $this->morphOne(Discussion::class,'discussionable');
+    }
+    
+    public function aliases()
+    {
+        return $this->morphMany(Alias::class,'aliasable');
+    }
+
+    public function professionals()
+    {
+        return $this->belongsToMany(Professional::class)->withTimestamps();
+    }
+
+    public function facilitators()
+    {
+        return $this->belongsToMany(Facilitator::class)->withTimestamps();
+    }
+    
+    public function discussions()
+    {
+        return $this->morphMany(Discussion::class,'discussionon');
     }
 
 

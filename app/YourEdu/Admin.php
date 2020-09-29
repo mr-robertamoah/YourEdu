@@ -66,6 +66,16 @@ class Admin extends Model
     {
         return $this->morphMany(Subject::class,'addedby');
     }
+
+    public function uniqueProgramsAdded()
+    {
+        return $this->morphMany(Program::class,'addedby');
+    }
+
+    public function uniqueCoursesAdded()
+    {
+        return $this->morphMany(Course::class,'addedby');
+    }
     
     public function images()
     {

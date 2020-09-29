@@ -240,6 +240,9 @@ import { mapGetters, mapActions } from "vuex";
             this.getPosts()
             next();
         },
+        mounted () {
+            this.listen()
+        },
         computed: {
             ...mapGetters(['authenticatingUser','getUser','getLoading','profile/getProfile',
                 'profile/getHomePosts','profile/getPostNextPage','getProfiles']),
@@ -285,6 +288,60 @@ import { mapGetters, mapActions } from "vuex";
             },
         },
         methods: {
+            ...mapActions(['profileGet','profile/getProfilePosts','profile/clearPosts',
+                'profile/createFlag','profile/deleteFlag',
+                'profile/newPost','profile/removePost','profile/replacePost',
+                'profile/newComment','profile/removeComment','profile/replaceComment',
+                'profile/newFlag','profile/newLike','profile/removeLike',
+                'profile/newAttachment','profile/removeAttachment',
+            ]),
+            listen(){
+                Echo.channel(`youredu.${this.$router.params.account}.${this.$router.params.accountId}`)
+                .listen('.newPost', (post)=>{
+                    console.log(post)
+                    this['profile/newPost'](post.post)
+                })
+                .listen('.updatePost', post=>{
+                    console.log(post)
+                    this['profile/replacePost'](post.post)
+                })
+                .listen('.deletePost', postInfo=>{
+                    console.log(postInfo)
+                    this['profile/removePost'](postInfo)
+                })
+                .listen('.newComment', (commentData)=>{
+                    console.log(commentData)
+                    this['profile/newComment'](commentData)
+                })
+                .listen('.updateComment', commentData=>{
+                    console.log(commentData)
+                    this['profile/replaceComment'](commentData)
+                })
+                .listen('.deleteComment', commentInfo=>{
+                    console.log(commentInfo)
+                    this['profile/removeComment'](commentInfo)
+                })
+                .listen('.newAttachment', (attachment)=>{
+                    console.log(attachment)
+                    this['profile/newAttachment'](attachment)
+                })
+                .listen('.deleteAttachment', attachmentInfo=>{
+                    console.log(attachmentInfo)
+                    this['profile/removeAttachment'](attachmentInfo)
+                })
+                .listen('.newFlag', (flag)=>{
+                    console.log(flag)
+                    this['profile/newFlag'](flag)
+                })
+                .listen('.newLike', (like)=>{
+                    console.log(like)
+                    this['profile/newLike'](like)
+                })
+                .listen('.deleteLike', likeInfo=>{
+                    console.log(likeInfo)
+                    this['profile/removeLike'](likeInfo)
+                })
+            },
             clickedShowPostPreview(data){
                 this.postModalData = data.data
                 this.postModalType = 'posttype'
@@ -487,8 +544,6 @@ import { mapGetters, mapActions } from "vuex";
                     account, accountId
                 })
             },
-            ...mapActions(['profileGet','profile/getProfilePosts','profile/clearPosts',
-                'profile/createFlag','profile/deleteFlag']),
         },
     }
 </script>

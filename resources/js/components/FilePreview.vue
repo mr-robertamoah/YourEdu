@@ -10,7 +10,11 @@
                 v-if="showEdit"
             ></black-white-badge>
             </div>
-        <div class="inner-wrapper" ref="preview" v-if="type === 'normal'"></div>
+        <div class="inner-wrapper" 
+            ref="preview" 
+            v-if="type === 'normal'"
+            :class="{middle:middle}"
+        ></div>
         <div class="circle" v-if="type === 'circle'">
             <div class="inner-circle" ref="circlepreview"></div>
             <div class="inner-circle" ref="circlepreviewimg" v-if="hasCircleImg">
@@ -32,8 +36,11 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                 type: Boolean,
                 default: false
             },
+            middle: {
+                type: Boolean,
+                default: false
+            },
             file: {
-                // type: File,
                 default: null,
             },
             showRemove: {
@@ -89,25 +96,19 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                 immediate: true,
                 handler(newValue){
                     let fileReader = new FileReader
-                     var inner = document.getElementById('img')
-                    if (inner) {
-                        this.$refs.preview.removeChild(inner)
-                    }
-                    inner = document.getElementById('audio')
-                    if (inner) {
-                        this.$refs.preview.removeChild(inner)
-                    }
-                    inner = document.getElementById('video')
-                    if (inner) {
-                        this.$refs.preview.removeChild(inner)
+                    if (this.$refs.preview) {
+                        this.$refs.preview.innerHTML = ''
                     }
                     fileReader.addEventListener("load",function(){
                         if (newValue.type.includes('image')) {
                             let el = document.createElement('img')
                             el.setAttribute('id','img')
                             if (this.type === 'normal') {
-                                el.style.width = this.width
                                 this.$refs.preview.appendChild(el)
+                                el.style.width = '100%'
+                                el.style.height = '100%'
+                                el.style.objectFit = 'contain'
+                                el.style.objectPosition = 'center'
                             } else {
                                 this.$refs.circlepreview.appendChild(el)
                                 el.style.width = 'inherit'
@@ -120,7 +121,10 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                             el.setAttribute('id','video')
                             el.setAttribute('controls','true')
                             el.setAttribute('controlslist','nodownload')
-                            el.style.width = '75%'
+                            el.style.width = '100%'
+                            el.style.height = '100%'
+                            el.style.objectFit = 'contain'
+                            el.style.objectPosition = 'center'
                             this.$refs.preview.appendChild(el)
                             el.src = fileReader.result
                         } else if (newValue.type.includes('audio')) {
@@ -151,23 +155,7 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
         },
         methods: {
             clickedRemove() {
-                 var inner = document.getElementById('img')
-                if (inner) {
-                    if (this.type === 'normal') {
-                        this.$refs.preview.removeChild(inner)
-                    } else {
-                        this.$refs.circlepreview.removeChild(inner)
-                    }
-                    
-                }
-                inner = document.getElementById('audio')
-                if (inner) {
-                    this.$refs.preview.removeChild(inner)
-                }
-                inner = document.getElementById('video')
-                if (inner) {
-                    this.$refs.preview.removeChild(inner)
-                }
+                this.$refs.preview.innerHTML = ''
 
                 this.$emit('removeFile')
             }
@@ -195,19 +183,14 @@ $input-color: rgba(22, 233, 205, 1);
                 width: 100%;
             }
 
-            img{
-                width: 100%;
-                height: auto;
-            }
-            
-            video{
-                width: auto;
-                height: auto;
-            }
-
             .audio{
                 width: 100%;
             }
+        }
+
+        .middle{
+            width: 100%;
+            height: 100%;
         }
 
         .circle{
@@ -224,12 +207,6 @@ $input-color: rgba(22, 233, 205, 1);
                 width: 130px;
                 height: 130px;
                 border-radius: inherit;
-
-                img{
-                    width: inherit;
-                    height: inherit;
-                    border-radius: inherit;
-                }
             }
         }
     }

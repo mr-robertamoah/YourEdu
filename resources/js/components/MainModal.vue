@@ -1,10 +1,13 @@
 <template>
     <div class="modal-wrapper" v-if="show" @click.self="disappear">
-        <div class="main-modal" @click.self="clickedMain">
+        <div class="main-modal" 
+            :class="{dark}" 
+            @click.self="clickedMain"
+        >
             <div class="close" @click="disappear">
                 <font-awesome-icon :icon="['fas','times']"></font-awesome-icon>
             </div>
-            <template v-if="!showAlert">
+            <template>
                 <div class="heading" v-if="computedHeading">
                     <slot name="heading"></slot>
                 </div>
@@ -18,13 +21,18 @@
                 <div class="main-other" v-if="!loading">
                     <slot name="main-other"></slot>
                 </div>
+                <div class="requests" v-if="!loading && requests">
+                    <slot name="requests"></slot>
+                </div>
             </template>
             <fade-right>
                 <template slot="transition"  v-if="showAlert">
-                    <div class="alert"
-                        :class="{alertError:alertError,alertSuccess:alertSuccess}"
-                    >
-                        {{alertMessage}}
+                    <div class="alert-wrapper">
+                        <div class="alert"
+                            :class="{alertError:alertError,alertSuccess:alertSuccess}"
+                        >
+                            {{alertMessage}}
+                        </div>
                     </div>
                 </template>
             </fade-right>
@@ -41,6 +49,14 @@ import FadeRight from "./transitions/FadeRight";
                 default: true,
             },
             main: {
+                type: Boolean,
+                default: true,
+            },
+            dark: {
+                type: Boolean,
+                default: false,
+            },
+            requests: {
                 type: Boolean,
                 default: true,
             },
@@ -191,31 +207,42 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 min-height: 75%;
             }
 
-            .alert{
-                width: 100%;
-                text-align: center;
-                padding: 10px;
-                background-color: rgba(8, 170, 245, 0.486);
-                color: rgba(8, 170, 245,1);
-                border: 2px solid rgba(8, 170, 245,1);
+            .alert-wrapper{
                 position: absolute;
-                top: 45%;
-            }
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: inherit;
 
-            .alertError{
-                color: rgba(201, 6, 6, 0.9);
-                background-color: rgba(201, 6, 6, 0.4);
-                border: 2px solid rgba(201, 6, 6, 0.4);
-            }
+                .alert{
+                    position: relative;
+                    width: 100%;
+                    text-align: center;
+                    padding: 10px;
+                    background-color: rgba(8, 170, 245, 0.486);
+                    color: white;
+                    border: 2px solid rgba(8, 170, 245,1);
+                    position: absolute;
+                    top: 45%;
+                }
 
-            .alertSuccess{
-                color: rgba(0, 128, 0, 0.9);
-                background-color: rgba(0, 128, 0, 0.4);
-                border: 2px solid rgba(0, 128, 0, 0.4);
+                .alertError{
+                    // color: rgba(201, 6, 6, 0.9);
+                    background-color: rgba(201, 6, 6, 0.4);
+                    border: 2px solid rgba(201, 6, 6, 0.4);
+                }
+
+                .alertSuccess{
+                    // color: rgba(0, 128, 0, 0.9);
+                    background-color: rgba(0, 128, 0, 0.4);
+                    border: 2px solid rgba(0, 128, 0, 0.4);
+                }
             }
         }
 
-        .main-other{
+        .main-other,
+        .requests{
             display: block;
             padding: 10px;
             padding-top: 50px;
@@ -229,6 +256,17 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 padding: 5px;
                 border-radius: 10px;
             }
+        }
+
+        .dark{
+            display: block;
+            background: black;
+        }
+
+        .requests{
+            overflow-x: hidden;
+            overflow-y: auto;
+            height: 85vh;
         }
     }
 

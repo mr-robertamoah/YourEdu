@@ -16,7 +16,6 @@ class CreateSubjectsTable extends Migration
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
             $table->nullableMorphs('addedby'); // facilitator school admin professional
-            // $table->nullableMorphs('subjectable'); // school class 
             $table->string('name');
             $table->text('description')->nullable();
             $table->text('rationale')->nullable();

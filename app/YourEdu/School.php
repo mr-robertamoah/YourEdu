@@ -172,10 +172,15 @@ class School extends Model
         return $this->morphMany(Group::class,'ownedby');
     }
 
-    // public function uniqueSubjects()
-    // {
-    //     return $this->morphMany(Subject::class,'subjectable');
-    // }
+    public function uniqueProgramsAdded()
+    {
+        return $this->morphMany(Program::class,'addedby');
+    }
+
+    public function uniqueCoursesAdded()
+    {
+        return $this->morphMany(Course::class,'addedby');
+    }
 
     public function uniqueSubjectsAdded()
     {
@@ -394,6 +399,36 @@ class School extends Model
     public function activitiesOwned()
     {
         return $this->morphMany(Activity::class,'owned');
+    }
+
+    public function lessonsAdded()
+    {
+        return $this->morphMany(Lesson::class,'addedby');
+    }
+
+    public function lessonsOwned()
+    {
+        return $this->morphMany(Lesson::class,'ownedby');
+    }
+
+    public function conversations()
+    {
+        return $this->morphToMany(Conversation::class,'accountable','conversationables');
+    }
+
+    public function conversationAccounts()
+    {
+        return $this->morphMany(ConversationAccount::class,'accountable');
+    }
+
+    public function messagesSent()
+    {
+        return $this->morphMany(Message::class,'fromable');
+    }
+
+    public function messagesReceived()
+    {
+        return $this->morphMany(Message::class,'toable');
     }
 
     

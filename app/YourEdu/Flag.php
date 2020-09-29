@@ -14,6 +14,10 @@ class Flag extends Model
         'user_id', 'admin_id', 'status', 'reason'
     ];
 
+    protected $touches = [
+        'flaggable'
+    ];
+
     public function flaggedby()
     {
         return $this->morphTo();

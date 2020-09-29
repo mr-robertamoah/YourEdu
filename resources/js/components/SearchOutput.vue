@@ -252,9 +252,8 @@ $second-color: rebeccapurple;
 
 
         .close{
-            position: absolute;
-            right: 5px;
-            top: 10px;
+            position: fixed;
+            right: 22%;
             padding: 5px;
             color: gray;
             cursor: pointer;
@@ -361,10 +360,14 @@ $second-color: rebeccapurple;
 
 @media screen and (max-width: 800px) {
     .search-output-wrapper{
-        width: 75%;
+        width: 85%;
         height: 90vh;
         top: 8vh;
-        left: 12.5%;
+        left: 7.5%;
+
+        .close{
+            right: 12%;
+        }
     }
 }
 
@@ -374,6 +377,10 @@ $second-color: rebeccapurple;
         height: 90vh;
         top: 8vh;
         left: 0;
+
+        .close{
+            right: 5%;
+        }
 
         .output-section{
             justify-content: center;

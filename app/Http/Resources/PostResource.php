@@ -31,6 +31,9 @@ class PostResource extends JsonResource
         } else if ($this->questions()->exists()) {
             $typeName = 'question';
             $type = QuestionResource::collection($this->questions()->latest()->get());
+        } else if ($this->lessons()->exists()) {
+            $typeName = 'lesson';
+            $type = LessonResource::collection($this->lessons()->latest()->get());
         }
 
         $images = null;
@@ -55,7 +58,7 @@ class PostResource extends JsonResource
             'typeName' => $typeName,
             'likes' => LikeResource::collection($this->likes),
             'comments_number' => $this->comments()->count(),
-            'comments' => CommentResource::collection($this->comments()->latest()->take(2)->get()),
+            'comments' => CommentResource::collection($this->comments()->latest()->take(1)->get()),
             'postedby' => $this->postedby->name,
             'postedby_type' => $this->postedby_type,
             'postedby_id' => $this->postedby_id,

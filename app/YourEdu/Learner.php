@@ -238,6 +238,16 @@ class Learner extends Model
         return $this->morphMany(Book::class,'addedby');
     }
 
+    public function lessonsAdded()
+    {
+        return $this->morphMany(Lesson::class,'addedby');
+    }
+
+    public function lessonsOwned()
+    {
+        return $this->morphMany(Lesson::class,'ownedby');
+    }
+
     public function readsJoined()
     {
         return $this->morphToMany(Read::class,'readable','readables');
@@ -291,6 +301,26 @@ class Learner extends Model
     public function members()
     {
         return $this->morphMany(Member::class,'memberable');
+    }
+
+    public function conversations()
+    {
+        return $this->morphToMany(Conversation::class,'accountable','conversationables');
+    }
+
+    public function conversationAccounts()
+    {
+        return $this->morphMany(ConversationAccount::class,'accountable');
+    }
+
+    public function messagesSent()
+    {
+        return $this->morphMany(Message::class,'fromable');
+    }
+
+    public function messagesReceived()
+    {
+        return $this->morphMany(Message::class,'toable');
     }
     
 

@@ -135,6 +135,8 @@ const strings = {
             return 'school'
         } else if (account.toString().toLocaleLowerCase().includes('post')) {
             return 'post'
+        } else if (account.toString().toLocaleLowerCase().includes('discussion')) {
+            return 'discussion'
         } else if (account.toString().toLocaleLowerCase().includes('comment')) {
             return 'comment'
         } else if (account.toString().toLocaleLowerCase().includes('subject')) {

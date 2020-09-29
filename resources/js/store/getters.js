@@ -35,6 +35,14 @@ const getters = {
         return state.user ? state.user : null
     },
 
+    getUserFollowings(state){
+        return state.userFollowings ? state.userFollowings : []
+    },
+
+    getUserFollowers(state){
+        return state.userFollowers ? state.userFollowers : []
+    },
+
     getUserId(state){
         return state.user ? state.user.id : null
     },

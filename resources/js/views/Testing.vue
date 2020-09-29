@@ -1,14 +1,11 @@
 <template>
-    <div class="testing" @click.self="show = !show">
-        <select-input
-        ></select-input>
-        
+    <div class="testing">
+        <lesson-preview></lesson-preview>
     </div>
 </template>
 
 <script>
-import SelectInput from '../components/SelectInput'
-import CreateSubject from '../components/forms/CreateSubject'
+import LessonPreview from '../components/LessonPreview'
 
     export default {
         data() {
@@ -18,8 +15,7 @@ import CreateSubject from '../components/forms/CreateSubject'
             }
         },
         components: {
-            CreateSubject,
-            SelectInput,
+            LessonPreview,
         },
         methods: {
             input(data){

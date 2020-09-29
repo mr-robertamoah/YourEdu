@@ -12,9 +12,17 @@
 */
 
 Broadcast::channel('App.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
+    return auth()->check();
 });
 
-// Broadcast::channel('chat', function ($user) {
-//     return $user;
-// });
+Broadcast::channel('youredu.user.{id}', function ($user, $id) {
+    return  (int) $user->id === (int) $id;
+});
+
+Broadcast::channel('youredu.message.{id}', function ($user, $id) {
+    return  true;
+});
+
+Broadcast::channel('youredu.chat', function ($user) {
+    return  $user->id;
+});

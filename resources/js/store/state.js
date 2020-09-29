@@ -13,6 +13,8 @@ const state = {
     followedby:null,
     validationErrors: null,
     userFollowRequest: null,
+    userFollowers: [],
+    userFollowings: [],
     requestingStatus: null,
     requestMessage: '',
 }

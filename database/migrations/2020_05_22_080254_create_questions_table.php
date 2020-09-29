@@ -17,7 +17,7 @@ class CreateQuestionsTable extends Migration
             $table->id();
             $table->nullableMorphs('owned'); // facilitator professional school parent learner member group collaboration
             $table->nullableMorphs('questionedby'); // facilitator professional parent learner member
-            $table->nullableMorphs('questionable'); // assessmentsection post discussion message
+            $table->nullableMorphs('questionable'); // conversation assessmentsection post discussion message
             $table->text('question');
             $table->enum('state',['PENDING','ANSWERED','COMPLETE'])->nullable();
             $table->timestamp('published')->nullable();

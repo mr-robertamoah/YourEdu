@@ -25,6 +25,7 @@
     <div id="app">
         
         <router-view></router-view>
+        <user-addons></user-addons>
     </div>
 </body>
 </html>
