@@ -57,6 +57,8 @@ class FollowRequest extends Notification
      */
     public function toArray($notifiable)
     {
-        return $this->requestInfo;
+        return [
+            $this->requestInfo
+        ];
     }
 }

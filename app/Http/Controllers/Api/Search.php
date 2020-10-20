@@ -32,14 +32,15 @@ class Search extends Controller
 
             if ($user) {
                 $learner = $user->learner;
-                if ($learner && $learner->parents) {
+                if ($learner && count($learner->parents)) {
                     $parentsLearnerUserIds = $learner->parents->pluck('user_id');
                 }
                 $parentsLearnerUserIds[] = $user->id;
             }
         }
-
-        if ($request->has('searchType') && $request->searchType === 'learners') {
+        if ($request->has('searchType') && $request->searchType === 'profiles') {
+            $searchItems = $this->getProfile($search,null,$parentsLearnerUserIds);
+        }else if ($request->has('searchType') && $request->searchType === 'learners') {
             $searchItems = $this->getProfile($search,Learner::class,$parentsLearnerUserIds);
         } else if ($request->has('searchType') && $request->searchType === 'parents') {
             $searchItems = $this->getProfile($search,ParentModel::class,$parentsLearnerUserIds);

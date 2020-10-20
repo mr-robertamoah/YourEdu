@@ -8,19 +8,31 @@ use App\YourEdu\Professional;
 use App\YourEdu\Admin;
 use App\YourEdu\Answer;
 use App\YourEdu\Book;
+use App\YourEdu\Character;
 use App\YourEdu\ClassModel;
 use App\YourEdu\Comment;
 use App\YourEdu\Conversation;
 use App\YourEdu\Course;
 use App\YourEdu\Discussion;
+use App\YourEdu\Flag;
+use App\YourEdu\Follow;
 use App\YourEdu\Grade;
+use App\YourEdu\Keyword;
 use App\YourEdu\Lesson;
+use App\YourEdu\Like;
+use App\YourEdu\Mark;
+use App\YourEdu\Message;
 use App\YourEdu\Poem;
 use App\YourEdu\Post;
+use App\YourEdu\PostAttachment;
 use App\YourEdu\Program;
+use App\YourEdu\Question;
 use App\YourEdu\Read;
+use App\YourEdu\Request;
+use App\YourEdu\Save;
 use App\YourEdu\School;
 use App\YourEdu\Subject;
+use App\YourEdu\Word;
 use Illuminate\Container\Container;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -61,6 +73,53 @@ function getAccountString($account)
     } else if (Str::contains(strtolower($account), 'answer')) {
         return 'answer';
     } else if (Str::contains(strtolower($account), 'comment')) {
+        return 'comment';
+    } else if (Str::contains(strtolower($account), 'discussion')) {
+        return 'discussion';
+    } else if (Str::contains(strtolower($account), 'character')) {
+        return 'character';
+    } else if (Str::contains(strtolower($account), 'keyword')) {
+        return 'keyword';
+    } else if (Str::contains(strtolower($account), 'word')) {
+        return 'word';
+    } else if (Str::contains(strtolower($account), 'expression')) {
+        return 'expression';
+    }
+}
+
+function getAccountClass($string)
+{
+    if ($string === 'learner') {
+        return Learner::class;
+    } else if ($string === 'parent') {
+        return ParentModel::class;
+    } else if ($string === 'facilitator') {
+        return Facilitator::class;
+    } else if ($string === 'professional') {
+        return Professional::class;
+    } else if ($string === 'school') {
+        return School::class;
+    } else if ($string === 'admin') {
+        return Admin::class;
+    } else if ($string === 'post') {
+        return 'post';
+    } else if ($string === 'school') {
+        return 'school';
+    } else if ($string === 'question') {
+        return 'question';
+    } else if ($string === 'riddle') {
+        return 'riddle';
+    } else if ($string === 'poem') {
+        return 'poem';
+    } else if ($string === 'activity') {
+        return 'activity';
+    } else if ($string === 'Lesson') {
+        return 'lesson';
+    } else if ($string === 'book') {
+        return 'book';
+    } else if ($string === 'answer') {
+        return 'answer';
+    } else if ($string === 'comment') {
         return 'comment';
     }
 }
@@ -110,6 +169,30 @@ function getAccountObject($accountText, $accountTextId)
         $account = Subject::find($accountTextId);
     } else if ($accountText === 'conversation') {
         $account = Conversation::find($accountTextId);
+    } else if ($accountText === 'message') {
+        $account = Message::find($accountTextId);
+    } else if ($accountText === 'question') {
+        $account = Question::find($accountTextId);
+    } else if ($accountText === 'follow') {
+        $account = Follow::find($accountTextId);
+    } else if ($accountText === 'request') {
+        $account = Request::find($accountTextId);
+    } else if ($accountText === 'mark') {
+        $account = Mark::find($accountTextId);
+    } else if ($accountText === 'word') {
+        $account = Word::find($accountTextId);
+    } else if ($accountText === 'keyword') {
+        $account = Keyword::find($accountTextId);
+    } else if ($accountText === 'character') {
+        $account = Character::find($accountTextId);
+    } else if ($accountText === 'like') {
+        $account = Like::find($accountTextId);
+    } else if ($accountText === 'flag') {
+        $account = Flag::find($accountTextId);
+    } else if ($accountText === 'save') {
+        $account = Save::find($accountTextId);
+    } else if ($accountText === 'postattachment') {
+        $account = PostAttachment::find($accountTextId);
     }
 
     return $account;
@@ -125,11 +208,52 @@ function uploadYourEduFiles($files)
     return $uploadedFilePaths;
 }
 
+function deleteYourEduFiles($item)
+{
+    if (!is_null($item)) {
+        $files = $item->files;
+        $files = $files->merge($item->audios);
+        $files = $files->merge($item->videos);
+        $files = $files->merge($item->images);
+        
+        foreach ($files as $file) {
+            deleteYourEduFile($file);
+        }
+    }
+}
+
+function deleteYourEduFile($file)
+{
+    if (!is_null($file)) {
+        Storage::delete($file->path);
+        $file->delete();
+    }
+}
+
+function deleteFile($fileId, $fileType)
+{
+    $file = null;
+    if (Str::contains($fileType,'image')) {
+        $file = getAccountObject('image', $fileId);
+    } else if (Str::contains($fileType,'video')) {
+        $file = getAccountObject('video', $fileId);
+    } else if (Str::contains($fileType,'audio')) {
+        $file = getAccountObject('audio', $fileId);
+    } else if (Str::contains($fileType,'file')) {
+        $file = getAccountObject('file', $fileId);
+    }
+
+    if (!is_null($file)) {
+        Storage::delete($file->path);
+        $file->delete();
+    }
+}
+
 function getFileDetails($actualFile, $save = true)
 {
-    $file = $actualFile;
-    $fileArray['mime'] = $file->getClientMimeType();
-    $fileArray['size'] = $file->getSize();
+    $fileArray['mime'] = $actualFile->getClientMimeType();
+    $fileArray['name'] = $actualFile->getClientOriginalName();
+    $fileArray['size'] = $actualFile->getSize();
     if ($save) {
         $fileArray['path'] = uploadYourEduFile($actualFile);
     }

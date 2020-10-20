@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Events;
+
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class RemoveDiscussionParticipant implements ShouldBroadcast
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    private $userId;
+    private $discussionId;
+    /**
+     * Create a new event instance.
+     *
+     * @return void
+     */
+    public function __construct($userId,$discussionId)
+    {
+        $this->userId = $userId;
+        $this->discussionId = $discussionId;
+    }
+
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return \Illuminate\Broadcasting\Channel|array
+     */
+    public function broadcastOn()
+    {
+        return new Channel("youredu.discussion.{$this->discussionId}");
+    }
+
+    public function broadcastAs()
+    {
+        return 'removeDiscussionParticipant';
+    }
+
+    public function broadcastWith()
+    {
+        return [
+            'userId' => $this->userId,
+            'discussionId' => $this->discussionId,
+        ];
+    }
+}

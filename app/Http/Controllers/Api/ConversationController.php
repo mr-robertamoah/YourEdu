@@ -3,52 +3,196 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\ConversationResponse;
+use App\Events\DeleteChatMessage;
+use App\Events\NewChatAnswer;
+use App\Events\NewChatMark;
 use App\Events\NewChatMessage;
+use App\Events\NewChatQuestion;
 use App\Events\NewConversation;
+use App\Events\UpdatedChatItemState;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ConversationAccountResource;
+use App\Http\Resources\AnswerResource;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
+use App\Http\Resources\ChatQuestionResource;
+use App\Http\Resources\MessageQuestionResource;
+use App\Services\AnswerService;
+use App\Services\ConversationService;
+use App\Services\MarkService;
+use App\Services\MessageService;
+use App\Services\QuestionService;
+use App\YourEdu\Answer;
 use App\YourEdu\Conversation;
-use App\YourEdu\Facilitator;
 use App\YourEdu\Follow;
-use App\YourEdu\Learner;
 use App\YourEdu\Message;
-use App\YourEdu\ParentModel;
-use App\YourEdu\Professional;
+use App\YourEdu\Question;
 use \Debugbar;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ConversationController extends Controller
 {
     //
 
-    public function getMessages($conversationId)
+    public function updateItemState(Request $request)
     {
-        $conversation = Conversation::find($conversationId);
+        $mainItem = getAccountObject($request->item, $request->itemId);
 
-        if (is_null($conversation)) {
+        if (is_null($mainItem)) {
             return response()->json([
-                'message' => 'unsuccessful, conversation does not exist.'
+                'message' => "unsuccessful, {$request->item} does not exist"
             ], 422);
         }
 
-        $messages = $conversation->messages()->with(['images','videos','audios','files'])
-            ->latest()->paginate(10);
-        return MessageResource::collection($messages);
+        $mainItem->setTouchedRelations([]);
+        $mainItem->timestamps = false;
+        $mainItem->state = $request->state;
+        $mainItem->save();
+
+        $itemResource = new MessageQuestionResource($mainItem);
+        broadcast(new UpdatedChatItemState($request->item,$itemResource,$request->userId, $request->conversationId));
+        return response()->json([
+            'message' => "successful",
+            'chatItem' => $itemResource
+        ]);
     }
 
-    public function sendMessage(Request $request,$conversationId)
+    public function deleteItem(Request $request)
     {
-        $conversation = getAccountObject('conversation',$conversationId);
-        $toable = getAccountObject($request->account,$request->accountId);
-        $fromable = getAccountObject($request->chattingAccount,$request->chattingAccountId);
+        try {
+            DB::beginTransaction();
+            $mainItem = null;
+            $id = auth()->id();
+            if ($request->item === 'message') {
+                $mainItem = (new MessageService())
+                    ->deleteMessage($id,$request->itemId,$request->action);
+            } else if ($request->item === 'quesiton') {
+                $mainItem = (new QuestionService())
+                    ->deleteQuestion($id,$request->itemId,$request->action);
+            }
+            
+            DB::commit();
+            if ($request->action === 'delete') {
+                broadcast(new DeleteChatMessage($mainItem['item'], $mainItem['itemId'], 
+                    $request->conversationId,$request->userId));
+                return response()->json([
+                    'message' => 'successful'
+                ]);
+            } else if ($request->action === 'self') {
+                return response()->json([
+                    'message' => 'successful',
+                    'chatItem' => new MessageQuestionResource($mainItem)
+                ]);
+            }
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
 
-        if (is_null($toable) || is_null($fromable)) {
+    public function getMessages($conversationId)
+    {
+        $chats = (new ConversationService())->getMessages($conversationId, auth()->id());
+
+        return MessageQuestionResource::collection(paginate($chats->sortByDesc('updated_at'),10));
+    }
+
+    public function markAnswer(Request $request)
+    {
+        $answer = getAccountObject('answer', $request->answerId);
+        $account = getAccountObject($request->account, $request->accountId);
+
+        if (is_null($answer) || is_null($account)) {
             return response()->json([
-                'message' => 'unsuccessful, one of the accounts does not exist.'
+                'message' => 'unsuccessful, account or answer does not exist'
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+            $mark = (new MarkService())->createMark($request,$account,$answer);
+            if (is_null($mark)) {
+                return response()->json([
+                    'message' => "unsuccessful, mark was not created",
+                ],422);
+            }
+            DB::commit();
+            $answerResource = new AnswerResource(Answer::find($answer->id)
+                ->load('images','videos','audios','files'));
+            $questionResource = new ChatQuestionResource(Question::find($request->questionId)
+                ->load('images','videos','audios','files'));
+            broadcast(new NewChatMark($questionResource, $request->chattingUserId));
+            return response()->json([
+                'message' => "successful",
+                'chatAnswer' => $answerResource
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+            return response()->json([
+                'message' => "unsuccessful, something unfortunate happened",
+            ],422);
+        }
+    }
+
+    public function sendAnswer(Request $request)
+    {
+        $question = Question::find($request->questionId);
+
+        if (is_null($question)) {
+            return response()->json([
+                'message' => 'unsuccessful, question does not exist'
+            ], 422);
+        }
+
+        $account = getAccountObject($request->account, $request->accountId);
+
+        if (is_null($account)) {
+            return response()->json([
+                'message' => 'unsuccessful, account does not exist'
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+            $answer = (new AnswerService())->createAnswer($request,$account,$question,true);
+    
+            if (is_null($answer)) {
+                return response()->json([
+                    'message' => 'unsuccessful, answer was not created.'
+                ], 422);
+            }
+
+            DB::commit();
+            $questionResource = new ChatQuestionResource(Question::find($question->id));
+            broadcast(new NewChatAnswer($questionResource, $request->chattingUserId));
+            return response()->json([
+                'message' => 'successful',
+                'chatQuestion' => $questionResource
+            ]);
+            
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+        
+    }
+
+    public function sendQuestion(Request $request, $conversationId)
+    {
+        $request->validate([
+            'question' => 'required|string',
+            'score' => 'nullable',
+            'possibleAnswers' => 'nullable|string',
+            'file' => 'nullable|file',
+        ]);
+
+        $conversation = getAccountObject('conversation',$conversationId);
+        $account = getAccountObject($request->account,$request->accountId);
+
+        if (is_null($account)) {
+            return response()->json([
+                'message' => 'unsuccessful, one of the account does not exist.'
             ], 422);
         }
         
@@ -60,31 +204,41 @@ class ConversationController extends Controller
 
         try {
             DB::beginTransaction();
-            $message = $conversation->messages()->create([
-                'message' => $request->message,
-                'to_user_id' => $request->chattingUserId,
-                'from_user_id' => auth()->id(),
-                'state' => 'SENT',
-            ]);
-    
-            $message->toable()->associate($toable);
-            $message->fromable()->associate($fromable);
-            $message->save();
-    
+            $question = (new QuestionService)->createQuestion($request, $conversation, $account,'conversation');
+            
             if ($request->has('file')) {
-                //fromable has uploaded a file and that file is attached to a message
-                $fileDetails = getFileDetails($request->file('file'));
-    
-                $uploadedFile = accountCreateFile($fromable,$fileDetails,$message);
-                $uploadedFile->ownedby()->associate($fromable);
-                $uploadedFile->save();
-    
+                //account has uploaded a file and that file is attached to a question
+                $this->accountCreateFile($request, $account, $question);
             }
     
-            $message = Message::find($message->id)->load('images','videos','audios','files');
-            $messageResource = new MessageResource($message);
+            DB::commit();
+            $question = Question::find($question->id)->load('images','videos','audios','files');
+            $questionResource = new ChatQuestionResource($question);
 
-            broadcast(new NewChatMessage($messageResource))->toOthers();
+            broadcast(new NewChatQuestion($questionResource,$request->chattingUserId))->toOthers();
+            return response()->json([
+                'message' => 'successful',
+                'chatQuestion' => $questionResource
+            ]);
+        } catch (\Throwable $th) {
+            DB::commit();
+            throw $th;
+            return response()->json([
+                'message' => 'unsuccessful, something happened.'
+            ], 422);
+        }
+    }
+
+    public function sendMessage(Request $request,$conversationId)
+    {
+        try {
+            DB::beginTransaction();
+            $message = (new MessageService())->createMessage('conversation',$conversationId,
+                $request->account,$request->accountId,auth()->id(),$request->message,'sent',
+                $request->file('file'),$request->chattingAccount,
+                $request->chattingAccountId,$request->chattingUserId);
+            $messageResource = new MessageResource($message);
+            broadcast(new NewChatMessage($messageResource));
             DB::commit();
             return response()->json([
                 'message' => 'successful',
@@ -97,6 +251,15 @@ class ConversationController extends Controller
                 'message' => 'unsuccessful, something happened.'
             ], 422);
         }
+    }
+
+    private function accountCreateFile($request, $account, $item)
+    {
+        $fileDetails = getFileDetails($request->file('file'));
+    
+        $uploadedFile = accountCreateFile($account,$fileDetails,$item);
+        $uploadedFile->ownedby()->associate($account);
+        $uploadedFile->save();
     }
 
     private function getPaginatedConversations($states)

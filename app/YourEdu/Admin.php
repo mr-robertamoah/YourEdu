@@ -19,6 +19,11 @@ class Admin extends Model
     {
         return $this->hasMany(Verification::class);
     }
+    
+    public function participants()
+    {
+        return $this->morphMany(Participant::class,'accountable');
+    }
 
     public function secretQuestions()
     {

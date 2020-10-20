@@ -21,11 +21,14 @@ class MessageResource extends JsonResource
 
         if ($this->images()->exists()) {
             $images = ImageResource::collection($this->images);
-        } else if ($this->videos()->exists()) {
+        } 
+        if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
-        } else if ($this->audios()->exists()) {
+        } 
+        if ($this->audios()->exists()) {
             $audios = AudioResource::collection($this->audios);
-        } else if ($this->files()->exists()) {
+        } 
+        if ($this->files()->exists()) {
             $files = FileResource::collection($this->files);
         }
         return [
@@ -38,7 +41,10 @@ class MessageResource extends JsonResource
             'fromable_id' => $this->fromable_id,
             'fromable_type' => $this->fromable_type,
             'from_user_id' => $this->from_user_id,
+            'state' => $this->state,
+            'updated_at' => $this->updated_at,
             'created_at' => $this->created_at,
+            'userDeletes' => $this->user_deletes,
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,

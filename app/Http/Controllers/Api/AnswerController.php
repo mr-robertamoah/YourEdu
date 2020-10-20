@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AnswerResource;
+use App\Services\AnswerService;
 use App\YourEdu\Answer;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Learner;
@@ -42,8 +43,6 @@ class AnswerController extends Controller
                 ],422);
         }
 
-        $answer = null;
-        $file = null;
         $account = getAccountObject($request->account,$request->accountId);
 
         if (!$account) {
@@ -59,57 +58,22 @@ class AnswerController extends Controller
         }
 
         try {
-            if ($account->user_id === auth()->id()) {
-                DB::beginTransaction();
-                
-                if ($request->has('possible_answer_id') && 
-                    $request->possible_answer_id !== ''  && 
-                    is_null($request->possible_answer_id)) {
-                    $answerPossibleAnswerId = (int) $request->possible_answer_id;
-                } else {
-                    $answerPossibleAnswerId = null;
-                }
-
-                $answer = $account->answers()->create([
-                    'answer' => $request->answer,
-                    'possible_answer_id' => $answerPossibleAnswerId,
-                ]);
-
-                $file = null;
-                if ($request->hasFile('file')) {
-                    $fileDetails = [];
-                    $fileDetails = getFileDetails($request->file('file'));
-
-                    $file = accountCreateFile(
-                        $account, 
-                        $fileDetails,
-                        $answer
-                    );
-                }
-            } else {
-                return response()->json([
-                    'message' => "unsuccessful. {$request->account} does not exist 0r does not belong to you."
-                ]);
-            }
+            $file = null;
+            DB::beginTransaction();
     
-            $dontRollBack = true;
+            $mainItem = null;
             if ($item === 'riddle') {
-                $riddle = Riddle::find($itemId);
-
-                $dontRollBack = $this->answerAssociate($answer, $riddle);
+                $mainItem = Riddle::find($itemId);
             } else if ($item === 'question') {
-                $question = Question::find($itemId);
-
-                $dontRollBack = $this->answerAssociate($answer, $question);
+                $mainItem = Question::find($itemId);
             }
 
-            if (!$dontRollBack) {
-                if($file){
-                    Storage::delete($file->path);
-                }
+            $answer = (new AnswerService())->createAnswer($request,$account,$mainItem);
+
+            if (is_null($answer)) {
                 DB::rollback();
                 return response()->json([
-                    'message' => "unsuccessful. {$item} does not exist or answer was not created"
+                    'message' => "unsuccessful. answer was not created"
                 ]);
             }
 

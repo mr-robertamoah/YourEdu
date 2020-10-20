@@ -111,6 +111,10 @@ const mutations = {
         state.user.follow_requests -= 1
     },
 
+    ADD_USER_FOLLOWER(state, follow){
+        state.userFollowers.push(follow)
+    },
+
     UPDATE_USER_FOLLOWS(state, data){
         if (data.type === 'conversation') {
             let ownAccount = null,

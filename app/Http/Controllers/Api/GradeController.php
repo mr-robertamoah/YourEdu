@@ -2,41 +2,28 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\GradeAliasCreateRequest;
+use App\Http\Requests\GradeCreateRequest;
 use App\Http\Resources\GradeResource;
-use App\Services\Attachment;
+use App\Services\GradeService;
 use App\YourEdu\Grade;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class GradeController extends Attachment
+class GradeController extends Controller
 {
     //
 
-    public function gradeCreate(Request $request)
+    public function gradeCreate(GradeCreateRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-            'ageGroup' => 'nullable|string',
-            'aliases' => 'nullable|array',
-        ]);
-        if ($request->account === 'learner' || $request->account === 'parent') {
-            return response()->json([
-                'message' => 'unsuccessful, learner or parent can only create an alias of a program'
-            ],422);
-        }
-
         try { 
-
             DB::beginTransaction();
-            $grade = $this->createAttachment($request, 'grade');
 
-            if (!$grade) {
-                return response()->json([
-                    'message' => 'unsuccessful, grade was not created'
-                ],422);
-            }
+            $grade = (new GradeService())->gradeCreate($request->account,
+                $request->accountId,$request->name,$request->description,
+                $request->rationale,json_decode($request->aliases));
 
             DB::commit();
             return response()->json([
@@ -53,31 +40,14 @@ class GradeController extends Attachment
 
     }
 
-    public function gradeAliasCreate(Request $request,$grade)
+    public function gradeAliasCreate(GradeAliasCreateRequest $request,$grade)
     {
-        $mainGrade = Grade::find($grade);
-
-        if (!$mainGrade) {
-            return response()->json([
-                'message' => 'unsuccessful, grade does not exist'
-            ],422);
-        }
-
-        $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-        ]);
-
         try {
 
             DB::beginTransaction();
-            $alias = $this->createAttachmentAlias($request,$mainGrade);
-
-            if (!$alias) {
-                return response()->json([
-                    'message' => 'unsuccessful, alias was not created'
-                ],422);
-            }
+            
+            $mainGrade = (new GradeService())->gradeAliasCreate($grade,
+                $request->account,$request->accountId,$request->name,$request->description);
 
             DB::commit();
             return response()->json([
@@ -117,23 +87,14 @@ class GradeController extends Attachment
 
     public function gradeDelete($grade)
     {
-        $mainGrade = Grade::find($grade);
-        if (!$mainGrade) {
+        try {
+            $gradeInfo = (new GradeService())->gradeDelete($grade,auth()->id());
+
             return response()->json([
-                'message' => 'unsuccessful, grade does not exist'
-            ],422);
+                'message' => $gradeInfo
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
         }
-
-        if ($mainGrade->addedby->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => 'unsuccessful, you cannot delete grade you did not create'
-            ],422);
-        }
-
-        $mainGrade->delete();
-
-        return response()->json([
-            'message' => 'successful'
-        ]);
     }
 }

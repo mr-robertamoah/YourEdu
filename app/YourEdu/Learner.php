@@ -37,6 +37,11 @@ class Learner extends Model
     public function follows(){
         return $this->morphMany(Follow::class,'followable');
     }
+    
+    public function participants()
+    {
+        return $this->morphMany(Participant::class,'accountable');
+    }
 
     public function activitiesAdded()
     {
@@ -281,6 +286,11 @@ class Learner extends Model
     public function riddlesAuthored()
     {
         return $this->morphMany(Riddle::class,'authoredby');
+    }
+
+    public function discussions()
+    {
+        return $this->morphMany(Discussion::class,'raisedby');
     }
 
     public function posts()

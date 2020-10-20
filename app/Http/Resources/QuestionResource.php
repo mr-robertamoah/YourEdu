@@ -32,10 +32,13 @@ class QuestionResource extends JsonResource
         return [
             'id' => $this->id,
             'question' => $this->question,
+            'questionId' => $this->questionable_id,
             'state' => $this->state,
             'score_over' => $this->score_over,
             'sections' => $this->poemSections,
             'published' => $this->published,
+            'updated_at' => $this->updated_at,
+            'state' => $this->state,
             'possible_answers' => PossibleAnswerResource::collection($this->possibleAnswers),
             'answers_number' => $this->answers()->count(),
             'answers' => $this->answers()->latest(),

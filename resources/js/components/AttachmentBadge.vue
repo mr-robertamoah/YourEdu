@@ -1,5 +1,7 @@
 <template>
-    <div class="attachment-item-wrapper">
+    <div class="attachment-item-wrapper"
+        :class="{borderRadius:!hasClose}"
+    >
         {{attachment.name}}
         <div class="close" 
             @click="clickedClose"
@@ -50,6 +52,7 @@
         position: relative;
         background-color: mintcream;
         color: gray;
+        cursor: pointer;
 
         .close{
             font-size: 14px;
@@ -59,5 +62,9 @@
             right: 5px;
             cursor: pointer;
         }
+    }
+
+    .borderRadius{
+        border-radius: 10px;
     }
 </style>

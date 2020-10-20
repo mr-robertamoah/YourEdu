@@ -37,6 +37,11 @@ class ParentModel extends Model
     public function verification(){
         return $this->morphOne(Verification::class,'verifiable');
     }
+    
+    public function participants()
+    {
+        return $this->morphMany(Participant::class,'accountable');
+    }
 
     public function activitiesAdded()
     {
@@ -248,6 +253,11 @@ class ParentModel extends Model
     public function riddlesAuthored()
     {
         return $this->morphMany(Riddle::class,'authoredby');
+    }
+
+    public function discussions()
+    {
+        return $this->morphMany(Discussion::class,'raisedby');
     }
 
     public function posts()

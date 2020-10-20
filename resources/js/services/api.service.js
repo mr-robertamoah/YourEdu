@@ -29,6 +29,12 @@ const ApiService = {
             return axios.post(resource,data, {
                 headers:{
                     'Content-Type': 'multipart/form-data'
+                },
+                onUploadProgress: e=>{
+                    if (e.lengthComputable) {
+                        window.progress = (e.loaded/e.total) * 100
+                    }
+                    window.uploadEvent = e
                 }
             })
         } else {

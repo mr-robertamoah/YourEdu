@@ -66,9 +66,8 @@ const UserService = {
 
 ////////////////////////////////////////////////////// requests
     async declineFollowRequest(data){
-        let {requestId} = data
         try {
-            let response = await ApiService.post(`/api/decline/request/${requestId}`)
+            let response = await ApiService.post(`/api/request/decline`, data)
             
             return response
         } catch (error) {
@@ -76,11 +75,8 @@ const UserService = {
         }
     },
     async acceptFollowRequest(data){
-        let {requestId, account, accountId} = data
         try {
-            let response = await ApiService.post(`/api/accept/request/${requestId}`,{
-                account, accountId
-            })
+            let response = await ApiService.post(`/api/request/accept`, data)
             
             return response
         } catch (error) {
@@ -105,35 +101,41 @@ const UserService = {
             return error.response
         }
     },
-    async getFollowRequests(data){
+    async getUserRequests(data){
         let {nextPage} = data
 
         try {
-            let response = null
-            if (!nextPage) {
-                response = await ApiService.get(`/api/requests/follow`)
-            } else {
-                response = await ApiService.get(`/api/requests/follow?page=${nextPage}`)
-            }
-            return response
-        } catch (error) {
-            return error.response
-        }
-    },
-    async userFollowNotifications(){
-
-        try {
-            let response = await ApiService.get(`/api/user/follownotifications`)
+            let response = await ApiService.get(`/api/user/requests?page=${nextPage}`)
 
             return response
         } catch (error) {
             return error.response
         }
     },
-    async markFollowNotifications(){
+    async userNotifications(data){
 
         try {
-            let response = await ApiService.post(`/api/user/follownotifications/mark`)
+            let response = await ApiService.get(`/api/user/notifications?page=${data.nextPage}`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async markNotifications(){
+
+        try {
+            let response = await ApiService.post(`/api/user/notifications/mark`)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async markOtherNotifications(data){
+
+        try {
+            let response = await ApiService.post(`/api/user/notifications/mark`,data)
 
             return response
         } catch (error) {
@@ -192,8 +194,6 @@ const UserService = {
         try {
             return await loginRegister.loginRegisterTry('/api/login', data)
         } catch (error) {
-            // console.log('error in login user.service',error)
-            // throw new AuthenticationError(error.response.status, error.response.data.details)
             throw new AuthenticationError(error.response.status, 
                 error.response.statusText, error.response.data.errors)
         }
@@ -202,7 +202,6 @@ const UserService = {
         try {
             return await loginRegister.loginRegisterTry('/api/register', data)
         } catch (error) {
-        // console.log('thow new', error.response)
             throw new AuthenticationError(error.response.status, 
                 error.response.statusText, error.response.data.errors)
         }

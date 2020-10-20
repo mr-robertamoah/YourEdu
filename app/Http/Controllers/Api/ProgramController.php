@@ -2,40 +2,25 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\ProgramAliasCreateRequest;
+use App\Http\Requests\ProgramCreateRequest;
 use App\Http\Resources\ProgramResource;
-use App\Services\Attachment;
+use App\Services\ProgramService;
 use App\YourEdu\Program;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class ProgramController extends Attachment
+class ProgramController extends Controller
 {
-    public function programCreate(Request $request)
+    public function programCreate(ProgramCreateRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-            'rationale' => 'nullable|string',
-            'aliases' => 'nullable|array',
-        ]);
-        if ($request->account === 'learner' || $request->account === 'parent') {
-            return response()->json([
-                'message' => 'unsuccessful, learner or parent can only create an alias of a program'
-            ],422);
-        }
-
         try { 
-
             DB::beginTransaction();
             
-            $program = $this->createAttachment($request, 'program');
-
-            if (is_null($program)) {
-                return response()->json([
-                    'message' => 'unsuccessful'
-                ],422);
-            }
+            $program = (new ProgramService())->programCreate($request->account,
+                $request->accountId,$request->name,$request->description,
+                $request->rationale,json_decode($request->aliases));
 
             DB::commit();
             return response()->json([
@@ -52,35 +37,15 @@ class ProgramController extends Attachment
 
     }
 
-    public function programAliasCreate(Request $request,$program)
+    public function programAliasCreate(ProgramAliasCreateRequest $request,$program)
     {
-        $mainProgram = Program::find($program);
-
-        if (!$mainProgram) { 
-            return response()->json([
-                'message' => 'unsuccessful, program does not exist'
-            ],422);
-        }
-
-        $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-        ]);
-
         try {
-
             DB::beginTransaction();
 
-            $alias = $this->createAttachmentAlias($request,$mainProgram);
-
-            if (is_null($alias)) {
-                return response()->json([
-                    'message' => "unsuccessful, alias was not created."
-                ]);
-            }
+            $mainProgram = (new ProgramService())->programAliasCreate($program,
+                $request->account,$request->accountId,$request->name,$request->description);
 
             DB::commit();
-            $mainProgram = Program::find($mainProgram->id);
             return response()->json([
                 'message' => "successful",
                 'program' => new ProgramResource($mainProgram)
@@ -118,23 +83,14 @@ class ProgramController extends Attachment
 
     public function programsDelete($program)
     {
-        $mainProgram = Program::find($program);
-        if (!$mainProgram) {
+        try {
+            $programInfo = (new ProgramService())->programDelete($program,auth()->id());
+
             return response()->json([
-                'message' => 'unsuccessful, program does not exist'
-            ],422);
+                'message' => $programInfo
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
         }
-
-        if ($mainProgram->addedby->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => 'unsuccessful, you cannot delete program you did not create'
-            ],422);
-        }
-
-        $mainProgram->delete();
-
-        return response()->json([
-            'message' => 'successful'
-        ]);
     }
 }

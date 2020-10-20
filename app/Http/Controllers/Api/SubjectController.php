@@ -2,41 +2,27 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\SubjectAliasCreateRequest;
+use App\Http\Requests\SubjectCreateRequest;
 use App\Http\Resources\SubjectResource;
-use App\Services\Attachment;
+use App\Services\SubjectService;
 use App\YourEdu\Subject;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class SubjectController extends Attachment
+class SubjectController extends Controller
 {
     //
 
-    public function subjectCreate(Request $request)
+    public function subjectCreate(SubjectCreateRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-            'rationale' => 'nullable|string',
-            'aliases' => 'nullable|array',
-        ]);
-        if ($request->account === 'learner' || $request->account === 'parent') {
-            return response()->json([
-                'message' => 'unsuccessful, learner or parent can only create an alias of a subject'
-            ],422);
-        }
-
-        try { 
-
+        try {
             DB::beginTransaction();
-            $subject = $this->createAttachment($request, 'subject');
 
-            if (!$subject) {
-                return response()->json([
-                    'message' => 'unsuccessful, subject was not created'
-                ],422);
-            }
+            $subject = (new SubjectService())->subjectCreate($request->account,
+                $request->accountId,$request->name,$request->description,
+                $request->rationale,json_decode($request->aliases));
 
             DB::commit();
             return response()->json([
@@ -53,31 +39,13 @@ class SubjectController extends Attachment
 
     }
 
-    public function subjectAliasCreate(Request $request,$subject)
+    public function subjectAliasCreate(SubjectAliasCreateRequest $request,$subject)
     {
-        $mainSubject = Subject::find($subject);
-
-        if (!$mainSubject) {
-            return response()->json([
-                'message' => 'unsuccessful, subject does not exist'
-            ],422);
-        }
-
-        $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-        ]);
-
         try {
-
             DB::beginTransaction();
-            $alias = $this->createAttachmentAlias($request,$mainSubject);
-
-            if (!$alias) {
-                return response()->json([
-                    'message' => 'unsuccessful, alias was not created'
-                ],422);
-            }
+            
+            $mainSubject = (new SubjectService())->subjectAliasCreate($subject,
+                $request->account,$request->accountId,$request->name,$request->description);
 
             DB::commit();
             return response()->json([
@@ -117,23 +85,14 @@ class SubjectController extends Attachment
 
     public function subjectsDelete($subject)
     {
-        $mainSubject = Subject::find($subject);
-        if (!$mainSubject) {
+        try {
+            $subjectInfo = (new SubjectService())->subjectDelete($subject,auth()->id());
+
             return response()->json([
-                'message' => 'unsuccessful, subject does not exist'
-            ],422);
+                'message' => $subjectInfo
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
         }
-
-        if ($mainSubject->addedby->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => 'unsuccessful, you cannot delete subject you did not create'
-            ],422);
-        }
-
-        $mainSubject->delete();
-
-        return response()->json([
-            'message' => 'successful'
-        ]);
     }
 }

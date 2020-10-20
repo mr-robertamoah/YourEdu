@@ -1,5 +1,5 @@
 <template>
-    <div class="bar-wrapper" :class="{'bar-small':barSmall}" >
+    <div class="side-bar-wrapper" :class="{'bar-small':barSmall}" >
         <div class="icon" @click="switchIcon" :title="iconTitle">
             <font-awesome-icon :icon="icons"></font-awesome-icon>
         </div>
@@ -80,12 +80,12 @@
 </script>
 
 <style lang="scss" scoped>
-    .bar-wrapper{
+    .side-bar-wrapper{
         position: absolute;
         width: 150px;
         background-color: rgba(22, 233, 205, 0.65);
         height: 100vh;
-        z-index: 10000;
+        z-index: 100;
         transition: width 1s ease-in-out;
         top: 0;
         left: 0;

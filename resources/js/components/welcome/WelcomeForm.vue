@@ -86,6 +86,7 @@ $input-color: rgba(22, 233, 205, 1);
                 display: flex;
                 justify-content: space-around;
                 align-items: center;
+                position: relative;
             }
 
             .form-edit{
@@ -97,6 +98,7 @@ $input-color: rgba(22, 233, 205, 1);
                 display: inline-flex;
                 align-items: center;
                 font-size: 12px;
+                margin-bottom: 10px;
 
                 .no{
                     color: red;

@@ -44,6 +44,11 @@ class Professional extends Model
     public function emails(){
         return $this->morphMany(Email::class,'emailable');
     }
+    
+    public function participants()
+    {
+        return $this->morphMany(Participant::class,'accountable');
+    }
 
     public function schools()
     {
@@ -355,6 +360,11 @@ class Professional extends Model
     public function riddlesAuthored()
     {
         return $this->morphMany(Riddle::class,'authoredby');
+    }
+
+    public function discussions()
+    {
+        return $this->morphMany(Discussion::class,'raisedby');
     }
 
     public function posts()

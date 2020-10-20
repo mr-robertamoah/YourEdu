@@ -3,6 +3,7 @@
         <div class="main-modal" 
             :class="{dark}" 
             @click.self="clickedMain"
+            ref="mainmodal"
         >
             <div class="close" @click="disappear">
                 <font-awesome-icon :icon="['fas','times']"></font-awesome-icon>
@@ -18,7 +19,7 @@
                 <div class="main" v-if="computedMain">
                     <slot name="main"></slot>
                 </div>
-                <div class="main-other" v-if="!loading">
+                <div class="main-other" v-if="computedMainOther">
                     <slot name="main-other"></slot>
                 </div>
                 <div class="requests" v-if="!loading && requests">
@@ -52,6 +53,10 @@ import FadeRight from "./transitions/FadeRight";
                 type: Boolean,
                 default: true,
             },
+            mainOther: {
+                type: Boolean,
+                default: true,
+            },
             dark: {
                 type: Boolean,
                 default: false,
@@ -61,6 +66,10 @@ import FadeRight from "./transitions/FadeRight";
                 default: true,
             },
             loading: {
+                type: Boolean,
+                default: false,
+            },
+            scrollUp: {
                 type: Boolean,
                 default: false,
             },
@@ -98,6 +107,11 @@ import FadeRight from "./transitions/FadeRight";
                     }
                 }
             },
+            scrollUp(newValue){
+                if (newValue) {
+                    this.$refs.mainmodal.scrollTo(0,0)
+                }
+            },
             alertMessage: {
                 immediate:true,
                 handler(newValue){
@@ -120,6 +134,10 @@ import FadeRight from "./transitions/FadeRight";
             computedMain(){
                 return this.loading ? false :
                     this.main ? true : false
+            },
+            computedMainOther(){
+                return this.loading ? false :
+                    !this.mainOther ? false : true
             },
             computedHeading(){
                 return this.heading.length > 0 ? true : false

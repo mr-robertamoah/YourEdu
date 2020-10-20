@@ -1,6 +1,6 @@
 <template>
     <just-fade>
-        <template slot="transition">
+        <template slot="transition" v-if="show">
             <main-modal
                 :show="show"
                 :main="false"
@@ -9,6 +9,7 @@
                 class="modal-wrapper"
                 :alertMessage="alertMessage"
                 :showAlert="alertMessage.length"
+                :scrollUp="scrollUp"
             >
                 <template slot="main-other">
                     <h5>Create a Lesson</h5>
@@ -34,7 +35,7 @@
                                     :bottomBorder="true"
                                     v-model="lessonData.title"></text-input>
                             </div>
-                            <div class="section">Resources</div>
+                            <div class="section">Lesson Resources</div>
                             <div class="info">you can up upload three different files for a lesson</div>
                             <div class="files">
                                 <div class="file"
@@ -143,7 +144,7 @@
             
                         <template slot="buttons">
                             <post-button 
-                                :buttonText="'ok'" 
+                                :buttonText="'create'" 
                                 buttonStyle='success'
                                 @click="clickedCreate"
                             ></post-button>
@@ -210,6 +211,7 @@ import WelcomeForm from '.././welcome/WelcomeForm';
                 errorFile: false,
                 mediaCaptureType: '',
                 showMediaCapture: false,
+                scrollUp: false,
                 alertMessage: '',
             }
         },
@@ -237,13 +239,29 @@ import WelcomeForm from '.././welcome/WelcomeForm';
             errorFile(newValue){
                 if (newValue) {
                     this.alertMessage = 'a lesson requires at least one file'
+                    this.clearAlert()
+                }
+            },
+            errorTitle(newValue){
+                if (newValue) {
+                    this.alertMessage = 'a lesson requires a title'
+                    this.clearAlert()
+                }
+            },
+            scrollUp(newValue) {
+                if (newValue) {
                     setTimeout(() => {
-                        this.alertMessage = ''
-                    }, 4000);
+                        this.scrollUp = false
+                    }, 3000);
                 }
             },
         },
         methods: {
+            clearAlert(){
+                setTimeout(() => {
+                    this.alertMessage = ''
+                }, 4000);
+            },
             mainModalDisappear() {
                 this.$emit('createLessonDisappear')
             },
@@ -295,10 +313,12 @@ import WelcomeForm from '.././welcome/WelcomeForm';
             },
             clickedCreate(){
                 if (!this.lessonData.title.length) {
+                    this.scrollUp = true
                     this.errorTitle = true
                     return 
                 }
                 if (!this.imageFile || !this.videoFile || !this.audioFile) {
+                    this.scrollUp = true
                     this.errorFile = true
                     return 
                 }
@@ -352,9 +372,7 @@ import WelcomeForm from '.././welcome/WelcomeForm';
             removeFile(){
                 this.fileType = ''
                 this.showFilePreview = false
-                this.imageFile = null
-                this.videoFile = null
-                this.audioFile = null
+                this.clickedBan(this.activeFile)
             },
         },
     }
@@ -446,6 +464,10 @@ import WelcomeForm from '.././welcome/WelcomeForm';
                     }
                 }
             }
+        }
+
+        .file-preview{
+            height: 200px;
         }
     }
 

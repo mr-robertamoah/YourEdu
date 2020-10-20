@@ -23,7 +23,7 @@
                             @click="clickedFlag"
                             :class="{flagged:isFlagged,flagActive:flagActive}"
                             :title="flagTitle"
-                            v-if="computedFlags"
+                            v-if="!computedOwner && computedFlags"
                         >
                             <font-awesome-icon :icon="['fa','flag']"></font-awesome-icon>
                         </div>
@@ -245,10 +245,10 @@ import { mapGetters, mapActions } from "vuex";
         },
         computed: {
             ...mapGetters(['authenticatingUser','getUser','getLoading','profile/getProfile',
-                'profile/getHomePosts','profile/getPostNextPage','getProfiles']),
+                'profile/profilePosts','profile/getPostNextPage','getProfiles']),
             computedPosts(){
-                return this['profile/getHomePosts'] && this['profile/getHomePosts'].length > 0 ? 
-                    this['profile/getHomePosts'] : null
+                return this['profile/profilePosts'] && this['profile/profilePosts'].length > 0 ? 
+                    this['profile/profilePosts'] : null
             },
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
@@ -292,11 +292,12 @@ import { mapGetters, mapActions } from "vuex";
                 'profile/createFlag','profile/deleteFlag',
                 'profile/newPost','profile/removePost','profile/replacePost',
                 'profile/newComment','profile/removeComment','profile/replaceComment',
+                'profile/newDiscussion','profile/removeDiscussion','profile/replaceDiscussion',
                 'profile/newFlag','profile/newLike','profile/removeLike',
                 'profile/newAttachment','profile/removeAttachment',
             ]),
             listen(){
-                Echo.channel(`youredu.${this.$router.params.account}.${this.$router.params.accountId}`)
+                Echo.channel(`youredu.${this.$route.params.account}.${this.$route.params.accountId}`)
                 .listen('.newPost', (post)=>{
                     console.log(post)
                     this['profile/newPost'](post.post)
@@ -321,9 +322,9 @@ import { mapGetters, mapActions } from "vuex";
                     console.log(commentInfo)
                     this['profile/removeComment'](commentInfo)
                 })
-                .listen('.newAttachment', (attachment)=>{
-                    console.log(attachment)
-                    this['profile/newAttachment'](attachment)
+                .listen('.newAttachment', (attachmentData)=>{
+                    console.log(attachmentData)
+                    this['profile/newAttachment'](attachmentData)
                 })
                 .listen('.deleteAttachment', attachmentInfo=>{
                     console.log(attachmentInfo)
@@ -340,6 +341,18 @@ import { mapGetters, mapActions } from "vuex";
                 .listen('.deleteLike', likeInfo=>{
                     console.log(likeInfo)
                     this['profile/removeLike'](likeInfo)
+                })
+                .listen('.newDiscussion', (discussion)=>{
+                    console.log(discussion)
+                    this['profile/newDiscussion'](discussion.discussion)
+                })
+                .listen('.updateDiscussion', discussion=>{
+                    console.log(discussion)
+                    this['profile/replaceDiscussion'](discussion.discussion)
+                })
+                .listen('.deleteDiscussion', discussionInfo=>{
+                    console.log(discussionInfo)
+                    this['profile/removeDiscussion'](discussionInfo)
                 })
             },
             clickedShowPostPreview(data){
@@ -401,9 +414,9 @@ import { mapGetters, mapActions } from "vuex";
             },
             profilesAppear(){
                 this.showProfiles = true
-                // setTimeout(() => {
-                //     this.showProfiles = false
-                // }, 4000);
+                setTimeout(() => {
+                    this.showProfiles = false
+                }, 4000);
             },
             reasonGiven(data){
                 this.showFlagReason = false
@@ -515,7 +528,7 @@ import { mapGetters, mapActions } from "vuex";
             getPosts(){
                 let account = this.profileAccount
                 let accountId = this.profileAccountId
-
+                
                 this['profile/clearPosts']()
                 this['profile/getProfilePosts']({
                     account, accountId

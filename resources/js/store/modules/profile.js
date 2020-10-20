@@ -13,7 +13,6 @@ const profile = {
         postNextPage: 0,
         done: false,
         posts: [],
-        discussions: [],
         comments: [],
         postingStatus: null,
         commentingStatus: null,
@@ -171,6 +170,131 @@ const profile = {
             }
         },
 
+        /////////////////////////////////////////////////////////// discussions
+        DISCUSSION_CREATE_SUCCESS(state,data){
+            state.message = 'discussion successful'
+            state.posts.unshift(data.discussion)
+        },
+        DISCUSSION_UPDATE_SUCCESS(state,data){
+            let index = state.posts.findIndex(el=>{
+                return el.id === data.discussion.id && el.isDiscussion
+            })
+
+            if (index >= 0) {
+                state.posts.splice(index, 1, data.discussion)
+            }
+        },
+        DISCUSSION_DELETE_SUCCESS(state,discussionId){
+            let index = state.posts.findIndex(el=>{
+                return el.id == discussionId && el.isDiscussion
+            })
+
+            if (index >= 0) {
+                state.posts.splice(index, 1)
+                state.message = 'successfully deleted post.'
+            }
+        },
+        CREATE_DISCUSSION_PARTICIPANT(state,data){
+            let index = state.posts.findIndex(item=>{
+                return item.id === data.discussionId && item.isDiscussion
+            })
+            if (index > -1) {
+                state.posts[index].participants.push(data.discussionParticipant)
+            }
+        },
+        CREATE_PENDING_DISCUSSION_PARTICIPANT(state,data){
+            let index = state.posts.findIndex(item=>{
+                return item.id === data.discussionId && item.isDiscussion
+            })
+            if (index > -1) {
+                state.posts[index].pendingJoinParticipants.push(data.pendingParticipant)
+            }
+        },
+        NEW_DISCUSSION(state,discussion){ //from websocket to profile
+            state.posts.unshift(discussion)
+        },
+        REPLACE_DISCUSSION(state,discussion){
+            let index = state.posts.findIndex(oldPost=>{
+                return oldPost.id === discussion.id && oldPost.isDiscussion
+            })
+            if (index > -1) {
+                state.posts.splice(index,1,discussion)
+            }
+        },
+        REMOVE_DISCUSSION(state,info){
+            let postIndex
+            postIndex = state.posts.findIndex(discussion=>{
+                return discussion.id == info.discussionId && 
+                    discussion.isDiscussion
+            })
+            if (postIndex > -1) {
+                state.posts.splice(postIndex,1)
+            }
+        },
+        NEW_DISCUSSION_PARTICIPANT(state,data){
+            let index = state.posts.findIndex(post=>{
+                return post.id == data.discussionId && post.isDiscussion
+            })
+            if (index > -1) {
+                state.posts[index].participants.push(data.discussionParticipant)
+            }
+        },
+        UPDATE_DISCUSSION_PARTICIPANT(state,data){
+            let index,
+                participantIndex
+            index = state.posts.findIndex(post=>{
+                return post.id == data.discussionId && post.isDiscussion
+            })
+            if (index > -1) {
+                participantIndex = state.posts[index].participants.findIndex(participant=>{
+                    return participant.userId === data.discussionParticipant.userId
+                })
+                if (participantIndex > -1) {
+                    state.posts[index].participants.
+                        splice(participantIndex,1,data.discussionParticipant)
+                }
+            }
+        },
+        REMOVE_DISCUSSION_PARTICIPANT(state,data){
+            let index,
+                participantIndex
+            index = state.posts.findIndex(post=>{
+                return post.id == data.discussionId && post.isDiscussion
+            })
+            if (index > -1) {
+                participantIndex = state.posts[index].participants.findIndex(participant=>{
+                    return participant.userId == data.userId
+                })
+                if (participantIndex > -1) {
+                    state.posts[index].participants.
+                        splice(participantIndex,1)
+                }
+            }
+        },
+        NEW_DISCUSSION_PENDING_PARTICIPANT(state,data){
+            let index = state.posts.findIndex(post=>{
+                return post.id == data.discussionId && post.isDiscussion
+            })
+            if (index > -1) {
+                state.posts[index].pendingJoinParticipants.push(data.pendingParticipant)
+            }
+        },
+        REMOVE_DISCUSSION_PENDING_PARTICIPANT(state,data){
+            let index,
+                pendingIndex
+            index = state.posts.findIndex(post=>{
+                return post.id == data.discussionId && post.isDiscussion
+            })
+            if (index > -1) {
+                pendingIndex = state.posts[index].pendingJoinParticipants.findIndex(p=>{
+                    return p.userId === data.pendingParticipant.userId
+                })
+                if (pendingIndex > -1) {
+                    state.posts[index].pendingJoinParticipants.splice(pendingIndex,1)
+                }
+            }
+        },
+
         /////////////////////////////////////////////////////////// posts
         CLEAR_POSTS(state){
             state.posts = []
@@ -185,7 +309,7 @@ const profile = {
             let index = null
 
             index = posts.findIndex(el=>{
-                return el.id === data.post.id
+                return el.id === data.post.id && el.isPost
             })
 
             if (index >= 0) {
@@ -197,7 +321,7 @@ const profile = {
             let index = null
 
             index = posts.findIndex(el=>{
-                return el.id === data.postId
+                return el.id === data.postId && el.isPost
             })
 
             if (index >= 0) {
@@ -215,15 +339,22 @@ const profile = {
             }
         },
         NEW_POST(state,post){
-            let oldPost = state.posts[0]
-            if (oldPost.postedby_id === post.postedby_id &&
-                oldPost.postedby_type === post.postedby_type) {
-                state.posts.unshift(post)
-            }
+            // let oldPost = state.posts[0]
+            // if (oldPost.isDiscussion &&
+            //     oldPost.raisedby_id === post.postedby_id &&
+            //     oldPost.raisedby_type === post.postedby_type) {
+            //     state.posts.unshift(post)
+            //     return
+            // }
+            // if (oldPost.isPost &&
+            //     oldPost.postedby_id === post.postedby_id &&
+            //     oldPost.postedby_type === post.postedby_type) {
+            //     }
+            state.posts.unshift(post)
         },
         REPLACE_POST(state,post){
             let postIndex = state.posts.findIndex(oldPost=>{
-                return oldPost.id === post.id
+                return oldPost.id === post.id && oldPost.isPost
             })
             if (postIndex > -1) {
                 state.posts.splice(postIndex,1,post)
@@ -233,7 +364,7 @@ const profile = {
             let postIndex = null,
                 postId = Number(postInfo.postId)
             postIndex = state.posts.findIndex(p=>{
-                return p.id === postId
+                return p.id === postId && p.isPost
             })
             if (postIndex > -1) {
                 state.posts.splice(postIndex,1)
@@ -292,7 +423,20 @@ const profile = {
         COMMENT_UPDATE_SUCCESS(state,data){
             if (data.comment.commentable_type.toLocaleLowerCase().includes('post')) {
                 let postIndex = state.posts.findIndex(post=>{
-                    return post.id === data.comment.commentable_id
+                    return post.id === data.comment.commentable_id && post.isPost
+                })
+                if (postIndex > -1) {
+                    let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        state.posts[postIndex].comments.splice(commentIndex,1,data.comment)
+                        return
+                    }
+                }
+            } else if (data.comment.commentable_type.toLocaleLowerCase().includes('discussion')) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.comment.commentable_id && post.isDiscussion
                 })
                 if (postIndex > -1) {
                     let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
@@ -313,31 +457,50 @@ const profile = {
             }
         },
         COMMENT_DELETE_SUCCESS(state,data){
+            let postIndex,
+                commentIndex
             if (data.owner.toLocaleLowerCase().includes('post')) {
-                let postIndex = state.posts.findIndex(post=>{
-                    return post.id === data.ownerId
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.ownerId && post.isPost
                 })
-                if (postIndex > -1) {
-                    let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
-                        return comment.id === data.commentId
-                    })
-                    if (commentIndex > -1) {
-                        state.posts[postIndex].comments.splice(commentIndex,1)
-                    }
-                } else if (data.owner.toLocaleLowerCase().includes('post')) {
-                    let commentIndex = state.comments.findIndex(comment=>{
-                        return comment.id === data.commentId
-                    })
-                    if (commentIndex > -1) {
-                        state.comments.splice(commentIndex,1)
-                    }
+            } else if (data.owner.toLocaleLowerCase().includes('discussion')) {
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.ownerId && post.isDiscussion
+                })
+            }
+            if (postIndex > -1) {
+                commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                    return comment.id === data.commentId
+                })
+                if (commentIndex > -1) {
+                    state.posts[postIndex].comments.splice(commentIndex,1)
+                }
+            } else if (data.owner.toLocaleLowerCase().includes('comment')) {
+                commentIndex = state.comments.findIndex(comment=>{
+                    return comment.id === data.commentId
+                })
+                if (commentIndex > -1) {
+                    state.comments.splice(commentIndex,1)
                 }
             }
         },
         COMMENT_SUCCESS(state, data){
             if (data.comment.commentable_type.toLocaleLowerCase().includes('post')) {
                 let postIndex = state.posts.findIndex(post=>{
-                    return post.id === data.comment.commentable_id
+                    return post.id === data.comment.commentable_id && post.isPost
+                })
+                if (postIndex > -1) {
+                    let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                        return comment.id === data.comment.id
+                    })
+                    if (commentIndex > -1) {
+                        return
+                    }
+                    state.posts[postIndex].comments.unshift(data.comment)
+                }
+            } else if (data.comment.commentable_type.toLocaleLowerCase().includes('discussion')) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.comment.commentable_id && post.isDiscussion
                 })
                 if (postIndex > -1) {
                     let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
@@ -364,9 +527,15 @@ const profile = {
         NEW_COMMENT(state, data){ //only for posts
             let itemId = Number(data.commentData.itemId),
                 postIndex = null
-            postIndex = state.posts.findIndex(post=>{
-                return post.id === itemId
-            })
+            if (data.commentData.item === 'post') {
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId && post.isPost
+                })
+            } else if (data.commentData.item === 'discussion') {
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId && post.isDiscussion
+                })
+            }
             if (postIndex > -1) {
                 state.posts[postIndex].comments.unshift(data.commentData.comment)
             }
@@ -375,9 +544,15 @@ const profile = {
             let itemId = Number(data.commentData.itemId),
                 postIndex = null,
                 commentIndex = null
-            postIndex = state.posts.findIndex(post=>{
-                return post.id === itemId
-            })
+            if (data.commentData.item === 'post') {
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId && post.isPost
+                })
+            } else if (data.commentData.item === 'discussion') {
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId && post.isDiscussion
+                })
+            }
             if (postIndex > -1) {
                 commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
                     return comment.id === data.commentData.comment.id
@@ -392,9 +567,15 @@ const profile = {
                 commentId = Number(data.commentData.commentId),
                 postIndex = null,
                 commentIndex = null
-            postIndex = state.posts.findIndex(post=>{
-                return post.id === itemId
-            })
+            if (data.commentData.item === 'post') {
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId && post.isPost
+                })
+            } else if (data.commentData.item === 'discussion') {
+                postIndex = state.posts.findIndex(post=>{
+                    return post.id === itemId && post.isDiscussion
+                })
+            }
             if (postIndex > -1) {
                 commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
                     return comment.id === commentId
@@ -407,10 +588,12 @@ const profile = {
         //////////////////////////////////////// saves
         
         SAVE_CREATE_SUCCESS(state, data){
-            let saveIndex = null
+            let saveIndex = null,
+                postIndex = null,
+                commentIndex = null
             if (data.item === 'comment') {
                 if (data.owner.toLocaleLowerCase().includes('comment')) {
-                    let commentIndex = state.comments.findIndex(comment=>{
+                    commentIndex = state.comments.findIndex(comment=>{
                         return comment.id === data.itemId
                     })
 
@@ -423,12 +606,9 @@ const profile = {
                         }
                         state.comments[commentIndex].saves.push(data.save)
                     }
-                } else if (data.owner.toLocaleLowerCase().includes('post')) {
-                    let postIndex = null
-                    let commentIndex = null
-                    
+                } else if (data.owner.toLocaleLowerCase().includes('post')) {                    
                     postIndex = state.posts.findIndex(post=>{
-                        return post.id === data.ownerId
+                        return post.id === data.ownerId && post.isPost
                     })
                     if (postIndex > -1) {
                         commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
@@ -445,8 +625,27 @@ const profile = {
                             state.posts[postIndex]
                                 .comments[commentIndex].saves.push(data.save)
                         }
-                    }
-                    
+                    }                    
+                } else if (data.owner.toLocaleLowerCase().includes('discussion')) {                    
+                    postIndex = state.posts.findIndex(post=>{
+                        return post.id === data.ownerId && post.isDiscussion
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.itemId
+                        })
+                        if (commentIndex > -1) {
+                            saveIndex = state.posts[postIndex]
+                                .comments[commentIndex].saves.findIndex(save=>{
+                                return save.id === data.sava.id
+                            })
+                            if (saveIndex > -1) {
+                                return
+                            }
+                            state.posts[postIndex]
+                                .comments[commentIndex].saves.push(data.save)
+                        }
+                    }                    
                 }
             } else if (data.item === 'post') {
                 let postIndex = state.posts.findIndex(post => {
@@ -465,14 +664,17 @@ const profile = {
         
         },
         SAVE_DELETE_SUCCESS(state, data){
+            let postIndex = null,
+                commentIndex = null,
+                saveIndex = null
             if (data.item === 'comment') {
                 if (data.owner.toLocaleLowerCase().includes('comment')) {
-                    let commentIndex = state.comments.findIndex(comment=>{
+                    commentIndex = state.comments.findIndex(comment=>{
                         return comment.id === data.itemId
                     })
 
                     if (commentIndex > -1) {
-                        let saveIndex = state.comments[commentIndex].findIndex(save=>{
+                        saveIndex = state.comments[commentIndex].findIndex(save=>{
                             return save.id === data.saveId
                         })
 
@@ -481,13 +683,30 @@ const profile = {
                             return
                         }
                     }
-                } else if (data.owner.toLocaleLowerCase().includes('post')) {
-                    let postIndex = null
-                    let commentIndex = null
-                    let saveIndex = null
-                    
+                } else if (data.owner.toLocaleLowerCase().includes('post')) {                    
                     postIndex = state.posts.findIndex(post=>{
-                        return post.id === data.ownerId
+                        return post.id === data.ownerId && post.isPost
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.itemId
+                        })
+
+                        if (commentIndex > -1) {
+                            saveIndex = state.posts[postIndex]
+                                .comments[commentIndex].saves.findIndex(save =>{
+                                return save.id === data.saveId
+                            })
+                            if (saveIndex > -1) {
+                                state.posts[postIndex].comments[commentIndex]
+                                    .saves.splice(saveIndex,1)
+                                return
+                            }
+                        }
+                    }                    
+                } else if (data.owner.toLocaleLowerCase().includes('discussion')) {                    
+                    postIndex = state.posts.findIndex(post=>{
+                        return post.id === data.ownerId && post.isDiscussion
                     })
                     if (postIndex > -1) {
                         commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
@@ -510,7 +729,19 @@ const profile = {
                 }
             } else if (data.item === 'post') {
                 let postIndex = state.posts.findIndex(post => {
-                    return post.id === data.itemId
+                    return post.id === data.itemId && post.isPost
+                })
+                if (postIndex > -1) {
+                    let saveIndex = state.posts[postIndex].saves.findIndex(save=>{
+                        return save.id === data.saveId
+                    })
+                    if (saveIndex > -1) {
+                        state.posts[postIndex].saves.splice(saveIndex,1)
+                    }
+                }
+            } else if (data.item === 'discussion') {
+                let postIndex = state.posts.findIndex(post => {
+                    return post.id === data.itemId && post.isDiscussion
                 })
                 if (postIndex > -1) {
                     let saveIndex = state.posts[postIndex].saves.findIndex(save=>{
@@ -521,12 +752,6 @@ const profile = {
                     }
                 }
             }
-        },
-        NEW_SAVE(state,data){
-
-        },
-        REMOVE_SAVE(state,data){
-
         },
 
         //////////////////////////////////////// likes
@@ -553,7 +778,7 @@ const profile = {
                     let commentIndex = null
                     
                     postIndex = state.posts.findIndex(post=>{
-                        return post.id === data.ownerId
+                        return post.id === data.ownerId && post.isPost
                     })
                     if (postIndex > -1) {
                         commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
@@ -572,6 +797,30 @@ const profile = {
                             .likes.push(data.like)
                         }
                     }
+                } else if (data.owner.toLocaleLowerCase().includes('discussion')) {
+                    let index = null
+                    let commentIndex = null
+                    
+                    index = state.posts.findIndex(post=>{
+                        return post.id === data.ownerId && post.isDiscussion
+                    })
+                    if (index > -1) {
+                        commentIndex = state.posts[index].comments.findIndex(comment=>{
+                            return comment.id === data.itemId
+                        })
+
+                        if (commentIndex > -1) {
+                            likeIndex = state.posts[index].comments[commentIndex]
+                                .likes.findIndex(like=>{
+                                    return like.id = data.like.id
+                                })
+                            if (likeIndex > -1) {
+                                return
+                            }
+                            state.posts[index].comments[commentIndex]
+                            .likes.push(data.like)
+                        }
+                    }
                     
                 }
             } else if (data.item === 'post') {
@@ -587,6 +836,20 @@ const profile = {
                         return
                     }
                     state.posts[postIndex].likes.push(data.like)
+                }
+            } else if (data.item === 'post') {
+                console.log('data :>> ', data);
+                let index = state.posts.findIndex(post => {
+                    return post.id === data.itemId && post.isDiscussion
+                })
+                if (index > -1) {
+                    likeIndex = state.posts[index].likes.findIndex(like=>{
+                        return like.id === data.like.id
+                    })
+                    if (likeIndex > -1) {
+                        return
+                    }
+                    state.posts[index].likes.push(data.like)
                 }
             }
         
@@ -615,7 +878,7 @@ const profile = {
                     let likeIndex = null
                     
                     postIndex = state.posts.findIndex(post=>{
-                        return post.id === data.ownerId
+                        return post.id === data.ownerId && post.isPost
                     })
                     if (postIndex > -1) {
                         commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
@@ -633,12 +896,49 @@ const profile = {
                                 return
                             }
                         }
-                    }
+                    }                    
+                } else if (data.owner.toLocaleLowerCase().includes('discussion')) {
+                    let postIndex = null
+                    let commentIndex = null
+                    let likeIndex = null
                     
+                    postIndex = state.posts.findIndex(post=>{
+                        return post.id === data.ownerId
+                    })
+                    if (postIndex > -1) {
+                        commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.itemId && post.isDiscussion
+                        })
+
+                        if (commentIndex > -1) {
+                            likeIndex = state.posts[postIndex]
+                                .comments[commentIndex].likes.findIndex(like =>{
+                                return like.id === data.likeId
+                            })
+                            if (likeIndex > -1) {
+                                state.posts[postIndex].comments[commentIndex]
+                                    .likes.splice(likeIndex,1)
+                                return
+                            }
+                        }
+                    }                    
                 }
             } else if (data.item === 'post') {
                 state.posts.forEach(post => {
-                    if (post.likes && post.id === data.itemId) {
+                    if (post.likes && post.id === data.itemId && post.isPost) {
+                        // console.log('the right post id', post.id)
+                        let index = post.likes.findIndex(like=>{
+                            return like.id === data.likeId
+                        })
+                        if (index > -1) {
+                            post.likes.splice(index,1)
+                            return
+                        }
+                    }
+                })
+            } else if (data.item === 'discussion') {
+                state.posts.forEach(post => {
+                    if (post.likes && post.id === data.itemId && post.isDiscussion) {
                         // console.log('the right post id', post.id)
                         let index = post.likes.findIndex(like=>{
                             return like.id === data.likeId
@@ -651,22 +951,13 @@ const profile = {
                 })
             }
         },
-        LIKE_FAILURE(state, data){
-
-        },
-        LIKING_START(state){
-
-        },
-        LIKING_END(state){
-            
-        },
         NEW_LIKE(state,like){
             let index = null,
                 likeIndex = null,
                 likeable = strings.getAccount(like.likeable_type)
             if (likeable === 'post') {
                 index = state.posts.findIndex(post=>{
-                    return post.id === like.likeable_id
+                    return post.id === like.likeable_id && post.isPost
                 })
                 if (index > -1) {
                     likeIndex = state.posts[index].likes.findIndex(l=>{
@@ -677,8 +968,8 @@ const profile = {
                     }
                 }
             } else if (likeable === 'discussion') {
-                index = state.discussions.findIndex(discussion=>{
-                    return discussion.id === like.likeable_id
+                index = state.posts.findIndex(discussion=>{
+                    return discussion.id === like.likeable_id && discussion.isDiscussion
                 })
                 if (index > -1) {
                     likeIndex = state.posts[index].likes.findIndex(l=>{
@@ -708,7 +999,7 @@ const profile = {
                 likeable = strings.getAccount(like.likeable_type)
             if (likeable === 'post') {
                 index = state.posts.findIndex(post=>{
-                    return post.id === like.likeable_id
+                    return post.id === like.likeable_id && post.isPost
                 })
                 if (index > -1) {
                     likeIndex = state.posts[index].likes.findIndex(l=>{
@@ -719,15 +1010,15 @@ const profile = {
                     }
                 }
             } else if (likeable === 'discussion') {
-                index = state.discussions.findIndex(discussion=>{
-                    return discussion.id === like.likeable_id
+                index = state.posts.findIndex(discussion=>{
+                    return discussion.id === like.likeable_id && discussion.isDiscussion
                 })
                 if (index > -1) {
-                    likeIndex = state.discussions[index].likes.findIndex(l=>{
+                    likeIndex = state.posts[index].likes.findIndex(l=>{
                         return l.id === like.id
                     })
                     if (likeIndex > -1) {
-                        state.discussions[index].likes.splice(likeIndex,1)
+                        state.posts[index].likes.splice(likeIndex,1)
                     }
                 }
             } else if (likeable === 'comment') {
@@ -753,24 +1044,42 @@ const profile = {
                 state.profile.flags.unshift(data.flag)
             } else if (data.data.hasOwnProperty('post') && data.data.post) {
                 let postIndex = state.posts.findIndex(post=>{
-                    return post.id === data.data.itemId //itemId is the post id
+                    return post.id === data.data.itemId && post.isPost //itemId is the post id
+                })
+                if (postIndex > -1) {
+                    state.posts.splice(postIndex,1)
+                }
+            } else if (data.data.hasOwnProperty('discussion') && data.data.discussion) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.data.itemId && post.isDiscussion //itemId is the post id
                 })
                 if (postIndex > -1) {
                     state.posts.splice(postIndex,1)
                 }
             } else if (data.data.hasOwnProperty('comment') && data.data.comment) {
-                if (strings.getAccount(data.data.commentable_type) !== 'post') {
-                    return
-                }
-                let postIndex = state.posts.findIndex(post=>{
-                    return post.id === data.data.commentable_id //commentable_id is the post id
-                })
-                if (postIndex > -1) {
-                    let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
-                        return comment.id === data.data.itemId
+                if (strings.getAccount(data.data.commentable_type) === 'post') {
+                    let postIndex = state.posts.findIndex(post=>{
+                        return post.id === data.data.commentable_id && post.isPost //commentable_id is the post id
                     })
-                    if (commentIndex > -1) {
-                        state.posts[postIndex].comments.splice(commentIndex,1)
+                    if (postIndex > -1) {
+                        let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.data.itemId
+                        })
+                        if (commentIndex > -1) {
+                            state.posts[postIndex].comments.splice(commentIndex,1)
+                        }
+                    }
+                } else if (strings.getAccount(data.data.commentable_type) === 'discussion') {
+                    let postIndex = state.posts.findIndex(post=>{
+                        return post.id === data.data.commentable_id && post.isDiscussion //commentable_id is the post id
+                    })
+                    if (postIndex > -1) {
+                        let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
+                            return comment.id === data.data.itemId
+                        })
+                        if (commentIndex > -1) {
+                            state.posts[postIndex].comments.splice(commentIndex,1)
+                        }
                     }
                 }
             }
@@ -785,7 +1094,19 @@ const profile = {
                 }
             } else if (data.hasOwnProperty('post') && data.post) {
                 let postIndex = state.posts.findIndex(post=>{
-                    return post.id === data.itemId //itemId is the post id
+                    return post.id === data.itemId && post.isPost //itemId is the post id
+                })
+                if (postIndex > -1) {
+                    let flagIndex = state.posts[postIndex].flags.findIndex(flag=>{
+                        return flag.id === data.flagId
+                    })
+                    if (flagIndex > -1) {
+                        state.posts[postIndex].flags.splice(flagIndex,1)
+                    }
+                }
+            } else if (data.hasOwnProperty('discussion') && data.discussion) {
+                let postIndex = state.posts.findIndex(post=>{
+                    return post.id === data.itemId && post.isDiscussion
                 })
                 if (postIndex > -1) {
                     let flagIndex = state.posts[postIndex].flags.findIndex(flag=>{
@@ -796,9 +1117,16 @@ const profile = {
                     }
                 }
             } else if (data.hasOwnProperty('comment') && data.comment) {
-                let postIndex = state.posts.findIndex(post=>{
-                    return post.id === data.commentable_id //itemId is the post id
-                })
+                let postIndex
+                if (strings.getAccount(data.comment.commentable_type) === 'post') {
+                    postIndex = state.posts.findIndex(post=>{
+                        return post.id === data.commentable_id && post.isPost//itemId is the post id
+                    })
+                } else if (strings.getAccount(data.comment.commentable_type) === 'discussion') {
+                    postIndex = state.posts.findIndex(post=>{
+                        return post.id === data.commentable_id && post.isDiscussion
+                    })
+                }
                 if (postIndex > -1) {
                     let commentIndex = state.posts[postIndex].comments.findIndex(comment=>{
                         return comment.id === data.itemId
@@ -821,17 +1149,17 @@ const profile = {
                 flaggable = strings.getAccount(flag.flaggable_type)
             if (flaggable === 'post') {
                 index = state.posts.findIndex(post=>{
-                    return post.id === flag.flaggable_id
+                    return post.id === flag.flaggable_id && post.isPost
                 })
                 if (index > -1) {
                     state.posts.splice(index,1)
                 }
             } else if (flaggable === 'discussion') {
-                index = state.discussions.findIndex(discussion=>{
-                    return discussion.id === flag.flaggable_id
+                index = state.posts.findIndex(discussion=>{
+                    return discussion.id === flag.flaggable_id && discussion.isDiscussion
                 })
                 if (index > -1) {
-                    state.discussions.slice(index,1)
+                    state.posts.slice(index,1)
                 }
             } else if (flaggable === 'comment') {
                 index = state.comments.findIndex(comment=>{
@@ -846,28 +1174,48 @@ const profile = {
         //////////////////////////////////////// attachments
         
         ATTACHMENT_CREATE_SUCCESS(state, data){
-            let attachmentIndex = null
+            let attachmentIndex = null,
+                postIndex
             if (data.data.item === 'post') {
-                let postIndex = state.posts.findIndex(post => {
-                    return post.id === data.data.itemId
+                postIndex = state.posts.findIndex(post => {
+                    return post.id === data.data.itemId && post.isPost
                 })
-                if (postIndex > -1) {
-                    attachmentIndex = state.posts[postIndex]
-                        .attachments.findIndex(attachment=>{
-                            return attachment.id === data.attachment.id
-                        })
-                    if (attachmentIndex > -1) {
-                        return 
-                    }
-                    state.posts[postIndex].attachments.push(data.attachment)
+            } else if (data.data.item === 'discussion') {
+                postIndex = state.posts.findIndex(post => {
+                    return post.id === data.data.itemId && post.isDiscussion
+                })
+            }
+            if (postIndex > -1) {
+                attachmentIndex = state.posts[postIndex]
+                    .attachments.findIndex(attachment=>{
+                        return attachment.id === data.attachment.id
+                    })
+                if (attachmentIndex > -1) {
+                    return 
                 }
+                state.posts[postIndex].attachments.push(data.attachment)
             }
         },
         ATTACHMENT_DELETE_SUCCESS(state, data){
+            let index
             if (data.item === 'post') {
                 state.posts.forEach(post => {
-                    if (post.attachments && post.id === data.itemId) {
-                        let index = post.attachments.findIndex(attachment=>{
+                    if (post.attachments && post.id === data.itemId &&
+                            post.isPost) {
+                        index = post.attachments.findIndex(attachment=>{
+                            return attachment.id === data.attachmentId
+                        })
+                        if (index > -1) {
+                            post.attachments.splice(index,1)
+                            return
+                        }
+                    }
+                })
+            } else if (data.item === 'discussion') {
+                state.posts.forEach(post => {
+                    if (post.attachments && post.id === data.itemId &&
+                            post.isDiscussion) {
+                        index = post.attachments.findIndex(attachment=>{
                             return attachment.id === data.attachmentId
                         })
                         if (index > -1) {
@@ -883,17 +1231,17 @@ const profile = {
                 attachable = strings.getAccount(attachment.attachable_type)
             if (attachable === 'post') {
                 index = state.posts.findIndex(post=>{
-                    return post.id === attachment.attachable_id
+                    return post.id === attachment.attachable_id && post.isPost
                 })
                 if (index > -1) {
                     state.posts[index].attachments.push(attachment)
                 }
             } else if (attachable === 'discussion') {
-                index = state.discussions.findIndex(discussion=>{
-                    return discussion.id === attachment.attachable_id
+                index = state.posts.findIndex(discussion=>{
+                    return discussion.id === attachment.attachable_id && discussion.isDiscussion
                 })
                 if (index > -1) {
-                    state.discussions[index].attachments.push(attachment)
+                    state.posts[index].attachments.push(attachment)
                 }
             }
         },
@@ -903,7 +1251,7 @@ const profile = {
                 attachable = strings.getAccount(attachment.attachable_type)
             if (attachable === 'post') {
                 index = state.posts.findIndex(post=>{
-                    return post.id === attachment.attachable_id
+                    return post.id === attachment.attachable_id && post.isPost
                 })
                 if (index > -1) {
                     attachmentIndex = state.posts[index].attachments.findIndex(attach=>{
@@ -914,15 +1262,15 @@ const profile = {
                     }
                 }
             } else if (attachable === 'discussion') {
-                index = state.discussions.findIndex(discussion=>{
-                    return discussion.id === attachment.attachable_id
+                index = state.posts.findIndex(discussion=>{
+                    return discussion.id === attachment.attachable_id && discussion.isDiscussion
                 })
                 if (index > -1) {
-                    attachmentIndex = state.discussions[index].attachments.findIndex(attach=>{
+                    attachmentIndex = state.posts[index].attachments.findIndex(attach=>{
                         return attach.id === attachment.id
                     })
                     if (attachmentIndex > -1) {
-                        state.discussions[index].attachments.splice(attachmentIndex,1)
+                        state.posts[index].attachments.splice(attachmentIndex,1)
                     }
                 }
             }
@@ -1049,22 +1397,18 @@ const profile = {
             commit("CLEAR_MEDIA")
         },
         async getMedia({commit},data){
-            // commit('CLEAR_MEDIA')
             let response = await ProfileService.profileMediaGet(data)
 
             if (response.data.data) {
-                // commit('GET_MEDIA_SUCCESS',{mainData: response.data,data})
                 return response.data
             }else {
                 return 'unsuccessful'
             }
         },
         async getPrivateMedia({commit},data){
-            // dispatch('clearMedia')
             let response = await ProfileService.profilePrivateMediaGet(data)
 
             if (response.data.data) {
-                // commit('GET_MEDIA_SUCCESS',{mainData: response.data,data})
                 return response.data
             }else {
                 return 'unsuccessful'
@@ -1170,6 +1514,87 @@ const profile = {
                 return {status: false, message: response}
             }
         },
+        async sendChatAnswer({commit},data){
+
+            let response = await ProfileService.sendChatAnswer(data)
+
+            if (response.data.message === 'successful') {
+                return {status: true, chatQuestion: response.data.chatQuestion}
+            }else {
+                return {status: false, message: response}
+            }
+        },
+        async sendChatMark({commit},data){
+
+            let response = await ProfileService.sendChatMark(data)
+
+            if (response.data.message === 'successful') {
+                return {status: true, chatAnswer: response.data.chatAnswer}
+            }else {
+                return {status: false, message: response}
+            }
+        },
+        async sendChatQuestion({commit},data){
+
+            let response = await ProfileService.sendChatQuestion(data)
+
+            if (response.data.message === 'successful') {
+                return {status: true, chatQuestion: response.data.chatQuestion}
+            }else {
+                return {status: false, message: response}
+            }
+        },
+        async deleteChatQuestion({commit},data){
+
+            let response = await ProfileService.deleteChatItem(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true,
+                    chatQuestion: response.data.chatItem
+                }
+            }else {
+                return {status: false, message: response}
+            }
+        },
+        async deleteChatAnswer({commit},data){
+
+            let response = await ProfileService.deleteChatItem(data)
+
+            if (response.data.message === 'successful') {
+                return  {
+                    status: true,
+                    chatAnswer: response.data.chatItem
+                }
+            }else {
+                return {status: false, message: response}
+            }
+        },
+        async deleteChatMessage({commit},data){
+
+            let response = await ProfileService.deleteChatItem(data)
+
+            if (response.data.message === 'successful') {
+                return  {
+                    status: true,
+                    chatMessage: response.data.chatItem
+                }
+            }else {
+                return {status: false, message: response}
+            }
+        },
+        async updateChatItemStatus({commit},data){
+            let response = await ProfileService.updateChatItemStatus(data)
+
+            if (response.data.message === 'successful') {
+                return  {
+                    status: true,
+                    chatItem: response.data.chatItem
+                }
+            }else {
+                return {status: false, message: response}
+            }
+        },
         async getChatMessages({commit},data){
 
             let response = await ProfileService.getChatMessages(data)
@@ -1247,13 +1672,14 @@ const profile = {
         ////////////////////////////////////// saves
 
         async createSave({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.saveCreate(data)
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
                 data['save'] = response.data.save
-                commit('SAVE_CREATE_SUCCESS', data)
-                commit('home/SAVE_CREATE_SUCCESS', data,{root: true})
+                if (data.where === 'profile') {
+                    commit('SAVE_CREATE_SUCCESS', data)
+                } else if (data.where === 'home') {
+                    commit('home/SAVE_CREATE_SUCCESS', data,{root: true})
+                }
                 return {status: true, save: response.data.save}
             }else {
                 commit('PROFILE_FAILURE','saving unsuccessful')
@@ -1261,12 +1687,13 @@ const profile = {
             }
         },
         async deleteSave({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.saveDelete(data)
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
-                commit('SAVE_DELETE_SUCCESS', data)
-                commit('home/SAVE_DELETE_SUCCESS', data, {root: true})
+                if (data.where === 'profile') {
+                    commit('SAVE_DELETE_SUCCESS', data)
+                } else if (data.where === 'home') {
+                    commit('home/SAVE_DELETE_SUCCESS', data, {root: true})
+                }
                 return {status: true, message: 'successful'}
             }else {
                 commit('PROFILE_FAILURE','liking unsuccessful')
@@ -1277,13 +1704,14 @@ const profile = {
         ////////////////////////////////////// likes
 
         async createLike({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.likeCreate(data)
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
                 data['like'] = response.data.like
-                commit('LIKE_CREATE_SUCCESS', data)
-                commit('home/LIKE_CREATE_SUCCESS', data, {root: true})
+                if (data.where === 'profile') {
+                    commit('LIKE_CREATE_SUCCESS', data)
+                } else if (data.where === 'home') {
+                    commit('home/LIKE_CREATE_SUCCESS', data, {root: true})
+                }
                 return response.data.like
             }else {
                 commit('PROFILE_FAILURE','liking unsuccessful')
@@ -1291,12 +1719,13 @@ const profile = {
             }
         },
         async deleteLike({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.likeDelete(data)
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
-                commit('LIKE_DELETE_SUCCESS', data)
-                commit('home/LIKE_DELETE_SUCCESS', data, {root: true})
+                if (data.where === 'profile') {
+                    commit('LIKE_DELETE_SUCCESS', data)
+                } else if (data.where === 'home') {
+                    commit('home/LIKE_DELETE_SUCCESS', data, {root: true})
+                }
                 return data
             }else {
                 commit('PROFILE_FAILURE','liking unsuccessful')
@@ -1313,14 +1742,15 @@ const profile = {
         ////////////////////////////////////// flags
 
         async createFlag({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.flagCreate(data)
 
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
                 data['flag'] = response.data.flag
-                commit('FLAG_CREATE_SUCCESS', {data,flag: response.data.flag})
-                commit('home/FLAG_CREATE_SUCCESS', {data,flag: response.data.flag}, {root: true})
+                if (data.where === 'profile') {
+                    commit('FLAG_CREATE_SUCCESS', {data,flag: response.data.flag})
+                } else if (data.where === 'home') {
+                    commit('home/FLAG_CREATE_SUCCESS', {data,flag: response.data.flag}, {root: true})
+                }
                 return {status: true,flag: response.data.flag}
             }else {
                 commit('PROFILE_FAILURE','flagging unsuccessful')
@@ -1328,13 +1758,14 @@ const profile = {
             }
         },
         async deleteFlag({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.flagDelete(data)
 
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
-                commit('FLAG_DELETE_SUCCESS', data)
-                commit('home/FLAG_DELETE_SUCCESS', data, {root: true})
+                if (data.where === 'profile') {
+                    commit('FLAG_DELETE_SUCCESS', data)
+                } else if (data.where === 'home') {
+                    commit('home/FLAG_DELETE_SUCCESS', data, {root: true})
+                }
                 return {data,status: true}
             }else {
                 commit('PROFILE_FAILURE','unflagging unsuccessful')
@@ -1348,20 +1779,21 @@ const profile = {
         ////////////////////////////////////// attachments
 
         async createAttachment({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.attachmentCreate(data)
 
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
                 data['attachment'] = response.data.attachment
-                commit('ATTACHMENT_CREATE_SUCCESS', {
-                    data,
-                    attachment: response.data.attachment
-                })
-                commit('home/ATTACHMENT_CREATE_SUCCESS', {
-                    data,
-                    attachment: response.data.attachment
-                }, {root: true})
+                if (data.where === 'profile') {
+                    commit('ATTACHMENT_CREATE_SUCCESS', {
+                        data,
+                        attachment: response.data.attachment
+                    })
+                } else if (data.where === 'home') {
+                    commit('home/ATTACHMENT_CREATE_SUCCESS', {
+                        data,
+                        attachment: response.data.attachment
+                    }, {root: true})
+                }
                 return {status: true,attachment: response.data.attachment}
             }else {
                 commit('PROFILE_FAILURE','attaching unsuccessful')
@@ -1369,13 +1801,14 @@ const profile = {
             }
         },
         async deleteAttachment({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.attachmentDelete(data)
 
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
-                commit('ATTACHMENT_DELETE_SUCCESS', data)
-                commit('home/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
+                if (data.where === 'profile') {
+                    commit('ATTACHMENT_DELETE_SUCCESS', data)
+                } else if (data.where === 'home') {
+                    commit('home/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
+                }
                 return {data,status: true}
             }else {
                 commit('PROFILE_FAILURE','unattaching unsuccessful')
@@ -1392,14 +1825,25 @@ const profile = {
         ////////////////////////////////////// marks
 
         async createMark({commit},data){
-            commit('LIKING_START')
             let response = await ProfileService.markCreate(data)
-            commit('LIKING_END')
             if (response.data.message === 'successful') {
                 return {status: true, data: response.data}
             }else {
                 commit('PROFILE_FAILURE','marking unsuccessful')
                 return {status: false, message: response.data.message}
+            }
+        },
+        async getAnswerMarks({commit},data){
+            let response = await ProfileService.getAnswerMarks(data)
+
+            if (response.data.data) {
+                return {
+                    status: true,
+                    data: response.data.data,
+                    next: response.data.links.next
+                }
+            } else {
+                return {status: false, response}
             }
         },
 
@@ -1443,7 +1887,7 @@ const profile = {
                 commit('home/COMMENT_UPDATE_SUCCESS',response.data, {root: true})
                 return response.data
             }else {
-                commit('PROFILE_FAILURE','post update unsuccessful')
+                commit('PROFILE_FAILURE','comment update unsuccessful')
                 return 'unsuccessful'
             }
         },
@@ -1727,7 +2171,7 @@ const profile = {
                 // commit('COMMENT_UPDATE_SUCCESS',response.data)
                 return response.data
             }else {
-                commit('PROFILE_FAILURE','post update unsuccessful')
+                commit('PROFILE_FAILURE','answer update unsuccessful')
                 return response.data.message
             }
         },
@@ -1747,6 +2191,239 @@ const profile = {
             }
         },
 
+        ////////////////////////////////// discussions
+
+        async createDiscussion({commit},data){
+            let response = await ProfileService.discussionCreate(data.formData)
+
+            if (response.data.message === 'successful') {
+                if (data.where === 'profile') {
+                    commit('DISCUSSION_CREATE_SUCCESS',response.data)
+                } else if (data.where === 'home') {
+                    commit('home/DISCUSSION_CREATE_SUCCESS',response.data, {root: true})
+                }
+                return {status: true}
+            }else {
+                commit('PROFILE_FAILURE','discussion unsuccessful')
+                return {status: false, response: response}
+            }
+        },
+        async discusionContributionResponse({commit},data){
+            let response = await ProfileService.discusionContributionResponse(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true,
+                    discussionMessage: response.data.discussionMessage
+                }
+            } else {
+                return {status: false, response}
+            }
+        },
+        async joinDiscussionResponse({commit},data){
+            let response = await ProfileService.joinDiscussionResponse(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true
+                }
+            } else {
+                return {status: false, response}
+            }
+        },
+        async invitationDiscussionResponse({commit},data){
+            let response = await ProfileService.invitationDiscussionResponse(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true
+                }
+            } else {
+                return {status: false, response}
+            }
+        },
+        async updateDiscussion({commit},data){
+            let response = await ProfileService.discussionUpdate(data)
+
+            if (response.data.message === 'successful') {
+                if (data.where === 'profile') {
+                    commit('DISCUSSION_UPDATE_SUCCESS',response.data)
+                } else if (data.where === 'home') {
+                    commit('home/DISCUSSION_UPDATE_SUCCESS',response.data, {root: true})
+                }
+                return {status: true}
+            }else {
+                commit('PROFILE_FAILURE','discussion update unsuccessful')
+                return {status: false, response: response}
+            }
+        },
+        async deleteDiscussion({commit},data){
+            let response = await ProfileService.discussionDelete(data.discussionId)
+
+            if (response.data.message === 'successful') {
+                if (data.where === 'profile') {
+                    commit('DISCUSSION_DELETE_SUCCESS',data)
+                } else if (data.where === 'home') {
+                    commit('home/DISCUSSION_DELETE_SUCCESS',data, {root: true})
+                }
+                return {status: true}
+            }else {
+                commit('PROFILE_FAILURE','post deletion unsuccessful')
+                return {status: false, response: response}
+            }
+        },
+        async deleteDiscussionMessage({commit},data){
+            let response = await ProfileService.deleteDiscussionMessage(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true, 
+                    discussionMessage: response.data.discussionMessage,
+                }
+            } else {
+                return {status: false, response: response}
+            }
+        },
+        async updateParticpantState({commit},data){
+            let response = await ProfileService.updateParticpantState(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true, 
+                    discussionParticipant: response.data.discussionParticipant,
+                }
+            } else {
+                return {status: false, response: response}
+            }
+        },
+        async deleteDiscussionParticipant({commit},data){
+            let response = await ProfileService.deleteDiscussionParticipant(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true,
+                }
+            } else {
+                return {status: false, response: response}
+            }
+        },
+        async getDiscussionParticipants({commit},data){
+            let response = await ProfileService.getDiscussionParticipants(data)
+
+            if (response.data.data) {
+                return {
+                    status: true, 
+                    data: response.data.data,
+                    next: response.data.links.next
+                }
+            } else {
+                return {status: false, response: response}
+            }
+        },
+        async getDiscussionMessages({commit},data){
+            let response = await ProfileService.getDiscussionMessages(data)
+
+            if (response.data.data) {
+                return {
+                    status: true, 
+                    data: response.data.data,
+                    next: response.data.links.next
+                }
+            } else {
+                return {status: false, response: response}
+            }
+        },
+        async sendDiscussionMessage({commit},data){
+            let response = await ProfileService.sendDiscussionMessage(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true, 
+                    discussionMessage: response.data.discussionMessage
+                }
+            } else {
+                return {status: false, response: response}
+            }
+
+        },
+        async inviteParticipant({commit},data){
+            let response = await ProfileService.inviteParticipant(data)
+
+            if (response.data.message === 'successful') {
+                return {
+                    status: true
+                }
+            } else {
+                return {status: false, response: response}
+            }
+
+        },
+        async discussionSearch({commit},data){
+            let response = await ProfileService.discussionSearch(data)
+
+            if (response.data.data) {
+                return {
+                    status: true, 
+                    data: response.data.data,
+                    next: response.data.links.next
+                }
+            } else {
+                return {status: false, response: response}
+            }
+        },
+        async joinDiscussion({commit},data){
+            let response = await ProfileService.joinDiscussion(data)
+
+            if (response.data.message === 'successful') {
+                if (data.data.type === 'PRIVATE') {
+                    commit('CREATE_PENDING_DISCUSSION_PARTICIPANT',{
+                        pendingParticipant: response.data.pendingParticipant,
+                        discussionId: data.discussionId
+                    })
+                    commit('home/CREATE_PENDING_DISCUSSION_PARTICIPANT',{
+                        pendingParticipant: response.data.pendingParticipant,
+                        discussionId: data.discussionId
+                    }, {root: true})
+                } else {
+                    commit('CREATE_DISCUSSION_PARTICIPANT',{
+                        discussionParticipant: response.data.discussionParticipant,
+                        discussionId: data.discussionId
+                    })
+                    commit('home/CREATE_DISCUSSION_PARTICIPANT',{
+                        discussionParticipant: response.data.discussionParticipant,
+                        discussionId: data.discussionId
+                    }, {root: true})
+                }
+                return {status: true}
+            } else {
+                return {status: false, response: response}
+            }
+        },
+        newDiscussion({commit}, discussion){
+            commit('NEW_DISCUSSION', discussion)
+        },
+        replaceDiscussion({commit}, discussion){
+            commit('REPLACE_DISCUSSION', discussion)
+        },
+        removeDiscussion({commit}, discussionInfo){
+            commit('REMOVE_DISCUSSION', discussionInfo)
+        },
+        newDiscussionParticipant({commit}, discussion){
+            commit('NEW_DISCUSSION_PARTICIPANT', discussion)
+        },
+        removeDiscussionParticipant({commit}, discussion){
+            commit('REMOVE_DISCUSSION_PARTICIPANT', discussion)
+        },
+        updateDiscussionParticipant({commit}, discussion){
+            commit('UPDATE_DISCUSSION_PARTICIPANT', discussion)
+        },
+        newDiscussionPendingParticipant({commit}, data){
+            commit('NEW_DISCUSSION_PENDING_PARTICIPANT', data)
+        },
+        removeDiscussionPendingParticipant({commit}, data){
+            commit('REMOVE_DISCUSSION_PENDING_PARTICIPANT', data)
+        },
+
         ////////////////////////////////// posts
 
         clearPosts({commit}){
@@ -1754,12 +2431,15 @@ const profile = {
         },
         async createPost({commit},data){
             commit('POST_START')
-            let response = await ProfileService.postCreate(data)
+            let response = await ProfileService.postCreate(data.formData)
 
             commit('POST_END')
             if (response.data.message === 'successful') {
-                commit('POST_CREATE_SUCCESS',response.data)
-                commit('home/POST_CREATE_SUCCESS',response.data, {root: true})
+                if (data.where === 'profile') {
+                    commit('POST_CREATE_SUCCESS',response.data)
+                } else if (data.where === 'home') {
+                    commit('home/POST_CREATE_SUCCESS',response.data, {root: true})
+                }
                 return 'success'
             }else {
                 commit('PROFILE_FAILURE','post unsuccessful')
@@ -1775,16 +2455,17 @@ const profile = {
                 return 'unsuccessful'
             }
         },
-
         async updatePost({commit},data){
             commit('POST_START')
             let response = await ProfileService.postUpdate(data)
 
             commit('POST_END')
-            console.log('update post', response)
             if (response.data.message === 'successful') {
-                commit('POST_UPDATE_SUCCESS',response.data)
-                commit('home/POST_UPDATE_SUCCESS',response.data, {root: true})
+                if (data.otherData.where === 'profile') {
+                    commit('POST_UPDATE_SUCCESS',response.data)
+                } else if (data.otherData.where === 'home') {
+                    commit('home/POST_UPDATE_SUCCESS',response.data, {root: true})
+                }
                 return 'successful'
             }else {
                 commit('PROFILE_FAILURE','post update unsuccessful')
@@ -1806,15 +2487,17 @@ const profile = {
 
             commit('POST_END')
             if (response.data.message === 'successful') {
-                commit('POST_DELETE_SUCCESS',data)
-                commit('home/POST_DELETE_SUCCESS',data, {root: true})
+                if (data.where === 'profile') {
+                    commit('POST_DELETE_SUCCESS',data)
+                } else if (data.where === 'home') {
+                    commit('home/POST_DELETE_SUCCESS',data, {root: true})
+                }
                 return 'successful'
             }else {
                 commit('PROFILE_FAILURE','post deletion unsuccessful')
                 return 'unsuccessful'
             }
         },
-
         async getProfilePosts({commit},data){
             commit('LOADING_START')
             console.log('responsedata',data)
@@ -1845,6 +2528,9 @@ const profile = {
         },
         getProfile(state){
             return state.profile ? state.profile : null
+        },
+        profilePosts(state){
+            return state.posts
         },
         getMsg(state){
             return state.message ? state.message : null

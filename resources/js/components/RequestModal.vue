@@ -6,6 +6,7 @@
                 @mainModalDisappear="requestsModalDisappear"
                 @clickedMain="showFollowProfiles = false"
                 :main="false"
+                :mainOther="false"
                 :loading="requestLoading"
             >
                 <template slot="loading" v-if="requestLoading">
@@ -13,19 +14,58 @@
                 </template>
                 <template slot="requests">
                     <div class="no-requests" 
-                        v-if="!computedRequests">
-                        there are no requests
+                        v-if="!computedRequests && !requestLoading">
+                        {{`there are no ${type}`}}
+                    </div>
+                    <div class="has-requests" 
+                        v-if="computedRequests && !requestLoading">
+                        {{`these are your${type === 'requests' ? ' pending' : ''} ${type}`}}
                     </div>
                     <slide-right-group>
-                        <template slot="transition">
-                            <account-badge
+                        <template slot="transition" v-if="requests.length">
+                            <template
                                 v-for="request in requests"
-                                :key="request.id"
-                                @clickedAction="clickedRequestAction"
-                                :account="request"
-                                :request="true"
-                                class="account-badge"
-                            ></account-badge>
+                            >
+                                <account-badge
+                                    v-if="request.isAccount"
+                                    :key="`account.${request.id}`"
+                                    @clickedAction="clickedRequestAction"
+                                    :account="request"
+                                    :request="true"
+                                    class="request-badge"
+                                ></account-badge>
+                                <participant-badge
+                                    v-if="request.isParticipant"
+                                    :key="`participant.${request.id}`"
+                                    @clickedAction="clickedParticipantAction"
+                                    :account="request"
+                                    :request="true"
+                                    class="request-badge"
+                                ></participant-badge>
+                                <discussion-badge
+                                    v-if="request.isMessage"
+                                    :key="`message.${request.id}`"
+                                    :message="request"
+                                    :request="true"
+                                    @clickedAction="clickedRequestAction"
+                                    class="request-badge"
+                                ></discussion-badge>
+                            </template>
+                        </template>
+                        <template slot="transition" v-if="notifications.length">
+                            <template
+                                v-for="notification in notifications"
+                            >
+                                <participant-badge
+                                    :key="notification.id"
+                                    @clickedAction="clickedParticipantAction"
+                                    :account="notification.data.account"
+                                    :message="notification.data.message"
+                                    :createdAt="notification.data.created_at"
+                                    :notification="true"
+                                    class="request-badge"
+                                ></participant-badge>
+                            </template>
                         </template>
                     </slide-right-group>
                     <div class="show-more"
@@ -45,30 +85,35 @@ import JustFade from './transitions/JustFade';
 import SlideRightGroup from './transitions/SlideRightGroup';
 import MainModal from './MainModal';
 import AccountBadge from "./dashboard/AccountBadge";
+import ParticipantBadge from "./discussion/ParticipantBadge";
+import DiscussionBadge from "./DiscussionBadge";
 import PulseLoader from "vue-spinner/src/PulseLoader";
 import { mapActions, mapGetters } from 'vuex';
     export default {
-        props: {
-            show: {
-                type: Boolean,
-                default: false
-            },
-            notifications: {
-                type: Number,
-                default: 0
-            },
-        },
         components: {
             MainModal,
             SlideRightGroup,
             JustFade,
             PulseLoader,
+            DiscussionBadge,
+            ParticipantBadge,
             AccountBadge,
+        },
+        props: {
+            show: {
+                type: Boolean,
+                default: false
+            },
+            type: {
+                type: String,
+                default: ''
+            },
         },
         data() {
             return {
                 showMoreRequests: false,
                 requestNextPage: 1,
+                notifications: [],
                 requests: [],
                 showMoreRequests: false,
                 requestLoading: false,
@@ -83,6 +128,9 @@ import { mapActions, mapGetters } from 'vuex';
                         this.requestNextPage = 1
                         this.requestLoading = true
                         this.moreRequests()
+                    } else {
+                        this.requests = []
+                        this.notifications = []
                     }
                 }
             }
@@ -90,14 +138,20 @@ import { mapActions, mapGetters } from 'vuex';
         computed: {
             ...mapGetters([]),
             computedRequests(){
-                return this.requests.length
+                return this.type === 'requests' ? this.requests.length :
+                    this.notifications.length
             },
         },
         methods: {
-            ...mapActions(['acceptFollowRequest','declineFollowRequest','userFollowRequests']),
-            removeRequest(){ //remove request on success
+            ...mapActions(['acceptFollowRequest','declineFollowRequest','userRequests',
+                'profile/discusionContributionResponse','profile/joinDiscussionResponse',
+                'userNotifications','profile/invitationDiscussionResponse']),
+            removeRequest(id, type ="message"){ //remove request on success
                 let requestIndex = this.requests.findIndex(request=>{
-                    return request.id === this.requestId
+                    return request.id === id && 
+                        (type === 'message' && request.isMessage || 
+                        type === 'account' && request.isAccount || 
+                        type === 'participant' && request.isParticipant)
                 })
                 if (requestIndex > -1) {
                     this.requests.splice(requestIndex,1)
@@ -106,38 +160,113 @@ import { mapActions, mapGetters } from 'vuex';
             requestsModalDisappear(){
                 this.$emit('requestsModalDisappear')
             },
-            async clickedRequestAction(accountData){
-                let response = null
-                this.requestId = accountData.requestId
-                let data = {}
-                if (accountData.action === 'accept') {
+            clickedRequestAction(data){
+                console.log('accountData :>> ', data);
+                if (data.hasOwnProperty('message')) {
+                    this.acceptOrRejectMessage(data)
+                } else if (data.hasOwnProperty('account')) {
+                    this.acceptOrDeclineAccount(data)
+                }
+            },
+            clickedParticipantAction(participantData){
+                if (participantData.type === 'invitation') {
+                    this.invitationDiscussionResponse(participantData)
+                } else {
+                    this.joinDiscussionResponse(participantData)
+                }
+            },
+            async invitationDiscussionResponse(participantData){
+                let response,
                     data = {
-                        requestId: accountData.requestId,
-                        account: accountData.account,
-                        accountId: accountData.accountId,
+                        account: participantData.account.account,
+                        accountId: participantData.account.accountId,
+                        requestId: participantData.account.id,
+                        discussionId: participantData.account.discussionId,
+                        action: participantData.action
                     }
+                
+                response = await this['profile/invitationDiscussionResponse'](data)
+
+                if (response.status) {
+                    this.removeRequest(participantData.account.id,'participant')
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            async joinDiscussionResponse(participantData){
+                let response,
+                    data = {
+                        account: participantData.account.account,
+                        accountId: participantData.account.accountId,
+                        requestId: participantData.account.id,
+                        discussionId: participantData.account.discussionId,
+                        action: participantData.action
+                    }
+                
+                response = await this['profile/joinDiscussionResponse'](data)
+
+                if (response.status) {
+                    this.removeRequest(participantData.account.id,'participant')
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            async acceptOrDeclineAccount(accountData){
+                let response,
+                    data = {
+                        account: accountData.account.account_type,
+                        userId: accountData.account.userId,
+                        accountId: accountData.account.account_id,
+                        myAccount: accountData.account.myAccount,
+                        myAccountId: accountData.account.myAccountId
+                    }
+                if (accountData.action === 'accept') {
+                    
                     response = await this.acceptFollowRequest(data)
                 } else if (accountData.action === 'decline') {
-                    data = {
-                        requestId: accountData.requestId,
-                    }
+                    
                     response = await this.declineFollowRequest(data)
                 }
                 if (response === 'successful') {
-                    this.removeRequest()
+                    this.removeRequest(accountData.account.id, 'account')
+                }
+            },
+            async acceptOrRejectMessage(messageData){
+                let response,
+                    data = {
+                        userId: messageData.message.userId,
+                        messageId: messageData.message.messageId,
+                        action: messageData.action
+                    }
+
+                response = await this['profile/discusionContributionResponse'](data)
+
+                if (response.status) {
+                    this.removeRequest(messageData.message.id,'message')
+                } else {
+                    console.log('response :>> ', response);
                 }
             },
             async moreRequests(){
-                let data = {
-                    nextPage: this.requestNextPage,
+                let response,
+                    data = {
+                        nextPage: this.requestNextPage,
+                    }
+                if (this.type === 'requests') {
+                    response = await this.userRequests(data)
+                } else if (this.type === 'notifications') {
+                    response = await this.userNotifications(data)
                 }
 
-                let response = await this.userFollowRequests(data)
-
                 this.requestLoading = false
-                if (response !== 'unsuccessful' ) {
-                    this.requests.push(...response.data)
-                    if (response.links.next) {
+                if (response.status) {
+                    if (this.type === 'requests') {
+                        this.requests.push(...response.data)
+                    } else if (this.type === 'notifications') {
+                        this.notifications.push(...response.data)
+                    }
+                    
+                    if (response.next) {
                         this.requestNextPage += 1
                         this.showMoreRequests = true
                     } else {
@@ -145,6 +274,7 @@ import { mapActions, mapGetters } from 'vuex';
                     }
                 } else {
                     // this.showMoreRequests = true
+                    console.log('response :>> ', response);
                 }
             },
         },
@@ -160,7 +290,8 @@ import { mapActions, mapGetters } from 'vuex';
         margin: 5px auto;
     }
 
-    .no-requests{
+    .no-requests,
+    .has-requests{
         min-height: 100px;
         width: 100%;
         text-align: center;
@@ -169,7 +300,11 @@ import { mapActions, mapGetters } from 'vuex';
         font-weight: 450;
     }
 
-    .account-badge{
-        margin-bottom: 5px;
+    .has-requests{
+        min-height: unset;
+    }
+
+    .request-badge{
+        margin-bottom: 10px;
     }
 </style>

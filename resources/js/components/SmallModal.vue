@@ -9,8 +9,8 @@
             <div class="alerting" v-if="alerting">
                 <auto-alert
                     :message="computedAlert"
-                    :success="alertSuccess"
-                    :danger="alertDanger"
+                    :success="success"
+                    :danger="danger"
                     @hideAlert="hideAlert"
                 ></auto-alert>
             </div>
@@ -51,6 +51,14 @@ import AutoAlert from './AutoAlert'
                 type: Boolean,
                 default: false,
             },
+            success: {
+                type: Boolean,
+                default: false,
+            },
+            danger: {
+                type: Boolean,
+                default: false,
+            },
             title: {
                 type: String,
                 default: '',
@@ -63,12 +71,6 @@ import AutoAlert from './AutoAlert'
         components: {
             AutoAlert,
             SyncLoader,
-        },
-        data() {
-            return {
-                alertSuccess:false,
-                alertDanger:false,
-            }
         },
         computed: {
             computedAlert() {

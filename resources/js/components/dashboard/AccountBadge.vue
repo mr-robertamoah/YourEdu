@@ -3,24 +3,62 @@
         <div class="account-badge-wrapper"
             v-if="account"
             @click.self="goToProfile(account)"
+            :class="{alert}"
         >
-            <div class="right-section">
-                <div class="profile-picture"
+            <div class="top">
+                <div class="right-section">
+                    <div class="profile-picture"
+                        @click="goToProfile(account)"
+                    >
+                        <profile-picture>
+                            <template slot="image">
+                                <img :src="account.url" >
+                            </template>
+                        </profile-picture>
+                    </div>
+                    <div class="action-button"
+                        v-if="computedActionFollow"
+                        @click="clickedFollow"
+                    >
+                        {{loading ? '' : computedFollowing}}
+                        <pulse-loader :loading="loading" :size="'6px'"></pulse-loader>
+                    </div>
+                </div>
+                <div class="other-section"
                     @click="goToProfile(account)"
                 >
-                    <profile-picture>
-                        <template slot="image">
-                            <img :src="account.url" >
-                        </template>
-                    </profile-picture>
+                    <div class="name">
+                        {{account.name}}
+                    </div>
+                    <div class="account-type">
+                        {{computedAccountType}}
+                    </div>
+                    <div class="my-account" v-if="request">
+                        {{`following ${account.myName}(${account.myAccount})`}}
+                    </div>
+                    <div class="my-account" v-if="alert">
+                        {{computedAction}}
+                    </div>
                 </div>
-                <div class="action-button"
-                    v-if="computedActionFollow"
-                    @click="clickedFollow"
+                <div class="profiles"
+                    v-if="showProfiles && !alert"
                 >
-                    {{loading ? '' : computedFollowing}}
-                    <pulse-loader :loading="loading" :size="'6px'"></pulse-loader>
+                    <span>
+                        {{`${profileAction} as`}}
+                    </span>
+                    <div :key="key" v-for="(profile,key) in computedProfiles">
+                        <profile-bar
+                            :name="profile.name"
+                            :type="profile.params.account"
+                            :smallType="true"
+                            :routeParams="profile.params"
+                            :navigate="false"
+                            @clickedProfile="clickedProfile"
+                        ></profile-bar>
+                    </div>
                 </div>
+            </div>
+            <div class="bottom" v-if="computedActionAccept">
                 <action-button
                     @click="clickedAccept"
                     :green="true"
@@ -38,38 +76,8 @@
                     :text="'decline'"
                 ></action-button>
             </div>
-            <div class="other-section"
-                @click="goToProfile(account)"
-            >
-                <div class="name">
-                    {{account.name}}
-                </div>
-                <div class="account-type">
-                    {{computedAccountType}}
-                </div>
-                <div class="extra" v-if="account.about">
-                    {{account.about}}
-                </div>
-            </div>
-            <div class="profiles"
-                v-if="showProfiles"
-            >
-                <span>
-                    {{`${profileAction} as`}}
-                </span>
-                <div :key="key" v-for="(profile,key) in computedProfiles">
-                    <profile-bar
-                        :name="profile.name"
-                        :type="profile.params.account"
-                        :smallType="true"
-                        :routeParams="profile.params"
-                        :navigate="false"
-                        @clickedProfile="clickedProfile"
-                    ></profile-bar>
-                </div>
-            </div>
         </div>
-        <div class="action-button-special">
+        <div class="action-button-special" v-if="computedActionFlag">
             <action-button
                 @click="clickedFlag"
                 text="unflag"
@@ -98,6 +106,10 @@ import { mapActions, mapGetters } from 'vuex'
                 }
             },
             request: {
+                type: Boolean,
+                default: false
+            },
+            alert: {
                 type: Boolean,
                 default: false
             },
@@ -163,6 +175,11 @@ import { mapActions, mapGetters } from 'vuex'
                 this.followButtonText = 'follow'
                 return 'follow'
             },
+            computedAction(){
+                return !this.alert ? '' : this.account.action === 'followed' ?
+                    `following ${this.account.myName}(${this.account.myAccount})` :
+                    `followed ${this.account.myName}(${this.account.myAccount}) back`
+            },
             computedOwner(){
                 if (this.getUser && this.account) {
                     
@@ -175,16 +192,22 @@ import { mapActions, mapGetters } from 'vuex'
                     this.account.hasOwnProperty('params') ? this.account.params.account :
                     this.account.hasOwnProperty('account') ? this.account.account : ''
             },
+            computedAccountId(){
+                return this.account.hasOwnProperty('account_id') ? this.account.account_id :
+                    this.account.hasOwnProperty('params') ? this.account.params.accountId :
+                    this.account.hasOwnProperty('account') ? this.account.accountId : ''
+            },
             computedActionFollow(){
-                return this.computedProfiles.length && !this.computedOwner &&
+                return this.alert ? false : this.computedProfiles.length && 
+                    !this.computedOwner &&
                     !this.flag && !this.request && this.action ? true : false
             },
             computedActionAccept(){
-                return this.computedProfiles.length && 
+                return this.alert ? false : this.computedProfiles.length && 
                     this.request && this.action ? true : false
             },
             computedActionFlag(){
-                return this.computedProfiles.length && 
+                return this.alert ? false : this.computedProfiles.length && 
                     this.flag && this.action ? true : false
             },
         },
@@ -214,7 +237,15 @@ import { mapActions, mapGetters } from 'vuex'
                 }
             },
             clickedDecline(){
+                if (this.acceptLoading) return
                 this.declineLoading = true
+                if (this.profileAction === 'accept') {
+                    this.$emit('clickedAction',{
+                        account: this.account,
+                        action: 'decline'
+                    })
+                    return
+                }
                 this.$emit('clickedAction',{
                     account: this.account.params.account, 
                     accountId: this.account.params.accountId,
@@ -223,6 +254,16 @@ import { mapActions, mapGetters } from 'vuex'
                 })
             },
             clickedAccept(){
+                if (this.profileAction === 'accept') {
+                    if (this.declineLoading) return
+                    this.acceptLoading = true
+                    let data = {
+                        action: 'accept',
+                        account: this.account
+                    }
+                    this.$emit('clickedAction',data)
+                    return
+                }
                 this.profilesAppear()
             },
             async clickedProfile(who){
@@ -252,16 +293,7 @@ import { mapActions, mapGetters } from 'vuex'
     
                     }
                     this.loading = false
-                } else if (this.profileAction === 'accept') {
-                    this.acceptLoading = true
-                    data = {
-                        requestId: this.account.id,
-                        account: who.account,
-                        accountId: who.accountId,
-                        action: this.profileAction
-                    }
-                    this.$emit('clickedAction',data)
-                }
+                } 
             },
             async clickedUnfollow(){
                 this.loading = true 
@@ -292,8 +324,8 @@ import { mapActions, mapGetters } from 'vuex'
                 this.$router.push({
                     name: 'profile', 
                     params: {
-                        account: data.account_type, 
-                        accountId: data.account_id
+                        account: this.computedAccountType, 
+                        accountId: this.computedAccountId
                     }
                 })
             },
@@ -304,9 +336,6 @@ import { mapActions, mapGetters } from 'vuex'
 <style lang="scss" scoped>
 
     .account-badge-wrapper{
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
         padding: 10px;
         box-shadow: 0 0 2px;
         border-radius: 10px;
@@ -317,57 +346,80 @@ import { mapActions, mapGetters } from 'vuex'
             font-weight: 500;
         }
 
-        .right-section{
-            width: 30%;
-            text-align: center;
+        .top{
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
             
-            .profile-picture{
-                width: 30px;
-                height: 30px;
-                margin: auto;
+            .right-section{
+                
+                .profile-picture{
+                    width: 30px;
+                    height: 30px;
+                    min-width: 30px;
+                    margin: auto;
+                }
+
+                .action-button{
+                    width: 100%;
+                    text-align: center;
+                    padding: 5px;
+                    border-radius: 5px;
+                    color: white;
+                    background: gray;
+                    font-size: 10px;
+                    margin: 10px 0 5px;
+
+                    &:hover{
+                        box-shadow: 0 0 2px gray;
+                    }
+                }
             }
 
-            .action-button{
-                width: 100%;
-                text-align: center;
-                padding: 5px;
-                border-radius: 5px;
-                color: white;
-                background: gray;
-                font-size: 10px;
-                margin: 10px 0 5px;
+            .other-section{
+                width: 70%;
+                margin-left: 5px;
 
-                &:hover{
-                    box-shadow: 0 0 2px gray;
+                .name{
+                    font-size: 12px;
+                    font-weight: 500;
+                    text-transform: capitalize;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
+
+                .account-type{
+                    font-size: 10px;
+                    text-align: right;
+                    padding-right: 5px;
+                }
+
+                .my-account{
+                    font-size: 12px;
+                    color: gray;
+                    margin: 5px 0;
+                }
+                
+                .extra{
+                    font-size: 11px;
+                    text-align: justify;
+                    font-style: italic;
                 }
             }
         }
 
-        .other-section{
-            width: 70%;
-            margin-left: 5px;
-
-            .name{
-                font-size: 12px;
-                font-weight: 500;
-                text-transform: capitalize;
-                text-overflow: ellipsis;
-                overflow: hidden;
-                white-space: nowrap;
-            }
-
-            .account-type{
-                font-size: 10px;
-                text-align: right;
-                padding-right: 5px;
-            }
-            
-            .extra{
-                font-size: 11px;
-                text-align: justify;
-                font-style: italic;
-            }
+        .bottom{
+            width: 100%;
+            margin-top: 5px;
+            display: inline-flex;
+            justify-content: space-around;
         }
+
+    }
+
+    .alert{
+        background: rgb(240,248,255);
     }
 
     .action-button-special{

@@ -15,7 +15,7 @@ class CreatePostAttachmentsTable extends Migration
     { //may be used for attachments other than posts
         Schema::create('post_attachments', function (Blueprint $table) {
             $table->id();
-            $table->morphs('attachedby'); // facilitator professional school
+            $table->nullableMorphs('attachedby'); // facilitator professional school
             $table->nullableMorphs('attachable'); // post
             $table->nullableMorphs('attachedwith'); // subject curriculumdetail  grade
             $table->string('note')->nullable();

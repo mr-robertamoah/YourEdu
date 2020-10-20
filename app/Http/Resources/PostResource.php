@@ -42,13 +42,13 @@ class PostResource extends JsonResource
         $files = null;
 
         if ($this->images()->exists()) {
-            $images = new ImageCollection($this->images);
+            $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
-            $videos = new VideoCollection($this->videos);
+            $videos = VideoResource::collection($this->videos);
         } else if ($this->audios()->exists()) {
-            $audios = new AudioCollection($this->audios);
+            $audios = AudioResource::collection($this->audios);
         } else if ($this->videos()->exists()) {
-            $files = new FileCollection($this->files);
+            $files = FileResource::collection($this->files);
         }
 
         return [
@@ -56,12 +56,13 @@ class PostResource extends JsonResource
             'content' => $this->content,
             'type' => $type,
             'typeName' => $typeName,
+            'isPost' => true,
             'likes' => LikeResource::collection($this->likes),
             'comments_number' => $this->comments()->count(),
-            'comments' => CommentResource::collection($this->comments()->latest()->take(1)->get()),
+            'comments' => CommentResource::collection($this->comments()
+                ->orderby('updated_at','desc')->take(1)->get()),
             'postedby' => $this->postedby->name,
             'postedby_type' => $this->postedby_type,
-            'postedby_id' => $this->postedby_id,
             'postedby_id' => $this->postedby_id,
             'profile_url' => $this->postedby->profile->url,
             'flags' => FlagResource::collection($this->flags),

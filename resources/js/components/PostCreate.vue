@@ -259,6 +259,7 @@
         <!-- capturing media -->
         <media-capture
             :show="showMediaCapture"
+            v-if="showMediaCapture"
             :type="uploadType"
             @closeMediaCapture="closeMediaCapture"
             @sendFile="receiveMediaCapture"
@@ -615,7 +616,8 @@ import {mapActions, mapGetters} from 'vuex'
 
                 formData.append('content', this.textareaContent)                
                 
-                let response = await this['profile/createPost'](formData)
+                let response = await this['profile/createPost']({formData,
+                    where: this.$route.name})
 
                 this.loading = false
                 if (response !== 'unsuccessful') {

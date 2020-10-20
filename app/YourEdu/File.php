@@ -11,7 +11,7 @@ class File extends Model
     use SoftDeletes;
     
     protected $fillable = [
-        'path', 'mime', 'size',
+        'path', 'mime', 'size','name'
     ];
     
     protected $appends = [

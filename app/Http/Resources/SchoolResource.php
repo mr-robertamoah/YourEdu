@@ -26,29 +26,23 @@ class SchoolResource extends JsonResource
                 $this->phoneNumbers()->take(3),
                 $this->phoneNumbers
             ),
-            'subjects' => $this->when(
-                $this->subjects()->exists() && 
-                $this->subjects()->count() > 3,
-                $this->subjects()->take(3),
-                $this->subjects
-            ),
-            'grades' => $this->when(
-                $this->grades()->exists() && 
-                $this->grades()->count() > 3 &&
-                $this->grades()->take(3),
-                $this->grades
-            ),
-            'schools' => $this->when(
-                $this->schools()->exists() && 
-                $this->schools()->count() > 3,
-                $this->schools()->take(3),
-                $this->groups
-            ),
+            // 'subjects' => $this->when(
+            //     $this->subjects()->exists() && 
+            //     $this->subjects()->count() > 3,
+            //     $this->subjects()->take(3),
+            //     $this->subjects
+            // ),
+            // 'grades' => $this->when(
+            //     $this->grades()->exists() && 
+            //     $this->grades()->count() > 3 &&
+            //     $this->grades()->take(3),
+            //     $this->grades
+            // ),
             'groups' => $this->when(
-                $this->groups()->exists() && 
-                $this->groups()->count() > 3 &&
-                $this->groups()->take(3),
-                $this->groups
+                $this->groupsOwned()->exists() && 
+                $this->groupsOwned()->count() > 3 &&
+                $this->groupsOwned()->take(3),
+                $this->groupsOwned
             ),
             'classes' => $this->when(
                 $this->classes()->exists() && 

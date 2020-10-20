@@ -86,6 +86,7 @@
                     </template>
                     </profile-picture>
                     <div class="middle">
+                        <div class="online-alert" v-if="computedChattingAccountOnlineStatus"></div>
                         <div class="name">{{chattingAccount.name}}</div>
                         <div class="account" v-if="!chattingAccountTyping">{{chattingAccount.account}}</div>
                         <div class="typing" v-if="chattingAccountTyping">typing...</div>
@@ -192,12 +193,28 @@
                                 <font-awesome-icon :icon="['fa','ellipsis-h']"></font-awesome-icon>
                             </div>
                             <template v-if="!creatingConversation && chatMessages.length">
-                                <message-badge
-                                    class="message-badge"
-                                    v-for="(message, index) in chatMessages"
-                                    :message="message"
-                                    :key="index"
-                                ></message-badge>
+                                <template class="message-area"
+                                        v-for="(message, index) in chatMessages"
+                                >
+                                    <message-badge
+                                        class="message-badge"
+                                        v-if="message.hasOwnProperty('message')"
+                                        :message="message"
+                                        :key="index"
+                                        @clickedMedia="clickedMedia"
+                                        @clickedOption="clickedOption"
+                                    ></message-badge>
+                                    <question-badge
+                                        class="question-badge"
+                                        v-else
+                                        :question="message"
+                                        :key="index"
+                                        @clickedMedia="clickedMedia"
+                                        @clickedAnswer="clickedAnswer"
+                                        @markChatAnswer="markChatAnswer"
+                                        @clickedOption="clickedOption"
+                                    ></question-badge>
+                                </template>
                             </template>
                             <div class="message-sending" v-if="messageSending">
                                 <pulse-loader :loading="messageSending" size="10px"></pulse-loader>
@@ -220,7 +237,7 @@
                                 >accept</div>
                                 <div class="decline"
                                     @click="clickedMessageResponse('decline')"
-                                    v-if="!messageResponseLoading && computedChatStatus"
+                                    v-if="!messageResponseLoading && !computedChatStatus"
                                     title="decline to chat this account"
                                 >decline</div>
                                 <div class="response-loading" v-if="messageResponseLoading">
@@ -253,10 +270,25 @@
                     @sendMessage="sendChatMessage"
                     @sendQuestion="sendChatQuestion"
                     @fileChange="chatFileChange"
+                    @clickedClearAnswer="clickedClearAnswer"
                     :disabledChat="!computedOtherChatStatus || !computedChatStatus"
                     :blocked="computedChatBlock"
+                    :answer="answering"
+                    :possibleAnswer="questionObject && questionObject.answer ? true : false"
                 ></chat-textarea>
             </div>
+            <!-- media modal for viewing media -->
+            <just-fade>
+                <template slot="transition" v-if="showMediaModal">
+                    <media-modal
+                        :show="showMediaModal"
+                        :justUrl="true"
+                        :url="mediaModalUrl.url"
+                        :urlType="mediaModalUrl.type"
+                        @mainModalDisappear="closeMediaModal"
+                    ></media-modal>
+                </template>
+            </just-fade>
         </template>
     </addon-modal>
 </template>
@@ -267,11 +299,12 @@ import FadeRight from './transitions/FadeRight'
 import UserAccount from './chat/UserAccount'
 import ChatTextarea from './chat/ChatTextarea'
 import MessageBadge from './chat/MessageBadge'
+import QuestionBadge from './chat/QuestionBadge'
 import ConversationBadge from './chat/ConversationBadge'
 import OtherUserAccount from './chat/OtherUserAccount'
 import ProfilePicture from './profile/ProfilePicture'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
-import { strings } from '../services/helpers'
+import { dates, strings } from '../services/helpers'
 import InfiniteLoading from 'vue-infinite-loading'
     export default {
         components: {
@@ -279,6 +312,7 @@ import InfiniteLoading from 'vue-infinite-loading'
             ProfilePicture,
             OtherUserAccount,
             ConversationBadge,
+            QuestionBadge,
             MessageBadge,
             ChatTextarea,
             UserAccount,
@@ -306,7 +340,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                 chatMessageFileCaption: '',
                 chatMessageFile: null,
                 chatMessagesNextPage: 1,
-                chatMessages: [],
+                chatMessages: [], //for messages and questions
                 conversationId: 0,
                 conversationsNextPage: 1,
                 blockedConversationsNextPage: 1,
@@ -329,6 +363,12 @@ import InfiniteLoading from 'vue-infinite-loading'
                 typingAccounts: [],
                 newConversationAlert: false,
                 newPendingConversationsNumber: 0,
+                //for media modal
+                showMediaModal: false,
+                mediaModalUrl: {},
+                //for answering
+                answering: false,
+                questionObject: null,
             }
         },
         watch: {
@@ -393,13 +433,30 @@ import InfiniteLoading from 'vue-infinite-loading'
                 return this.showAccounts || this.showMessages ? false : this.showMenu ?
                     true : false
             },
+            computedChattingAccountOnlineStatus(){
+                let index = -1
+                index = this.onlineFollowers.findIndex(follow=>{
+                    return follow.account === this.chattingAccount.account && 
+                        follow.accountId === this.chattingAccount.accountId
+                })
+                if (index > -1) {
+                    return true
+                }
+                index = this.onlineFollowings.findIndex(follow=>{
+                    return follow.account === this.chattingAccount.account && 
+                        follow.accountId === this.chattingAccount.accountId
+                })
+                if (index > -1) {
+                    return true
+                }
+            },
             computedMoreMessages(){
                 return this.creatingConversation || this.messagesLoading  || 
                     !this.chatMessagesNextPage  || this.chatMessages.length < 10 ? false : true
             },
             computedShowRequestResponse(){
                 return this.messagesLoading ? false : this.computedChatStatusRequest ? false : 
-                    this.computedChatStatus ? true : this.computedChatStatusPending && 
+                    this.computedChatStatus ? false : this.computedChatStatusPending && 
                     !this.chatMessages.length ? true : this.computedChatStatusPending &&  
                     this.chatMessages.filter(message=>message.from_user_id === this.getUser.id).length < 1
                     ? true : false
@@ -520,7 +577,212 @@ import InfiniteLoading from 'vue-infinite-loading'
                 'profile/createConversation','profile/sendMessageResponse',
                 'profile/blockConversation','profile/unblockConversation',
                 'profile/getBlockedConversations','profile/getPendingConversations',
-                'updateUserFollows']),
+                'updateUserFollows','profile/sendChatQuestion',
+                'profile/sendChatAnswer','profile/sendChatMark',
+                'profile/deleteChatMessage','profile/deleteChatQuestion',
+                'profile/deleteChatAnswer','profile/updateChatItemStatus']),
+            clickedOption(data){
+                if (data.type === 'message' && data.action.includes('delete')) {
+                    this.deleteMessage(data)
+                } else if (data.type === 'question' && data.action.includes('delete')) {
+                    this.deleteQuestion(data)
+                } else if (data.type === 'answer' && data.action.includes('delete')) {
+                    this.deleteAnswer(data)
+                }
+            },
+            clickedMedia(data){
+                this.mediaModalUrl = data
+                this.showMediaModal = true
+            },
+            clickedAnswer(data){
+                if (data.answer) {
+                    this.chatMessage = data.answer.option
+                }
+                this.questionObject = data
+                this.answering = true
+            },
+            clickedClearAnswer(){
+                this.answering = false
+                this.chatMessage = ''
+                this.questionObject = null
+            },
+            async deleteMessage(message){
+                let response,
+                    userId = this.chattingAccount.hasOwnProperty('account_user_id') ?
+                    this.chattingAccount.account_user_id : this.chattingAccount.user_id
+
+                response = await this['profile/deleteChatMessage']({
+                    item: 'message',
+                    itemId: message.message.id,
+                    userId,
+                    conversationId: message.conversationId,
+                    action: message.action === 'delete' ? message.action : 'self'
+                })
+
+                if (response.status) {
+                    if (message.action === 'delete') {
+                        this.removeChatItem('message',message.message.id,message.conversationId)
+                    } else {
+                        this.replaceChatItem('message',response.chatMessage,message.conversationId)
+                    }
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            async deleteQuestion(question){
+                let response,
+                    userId = this.chattingAccount.hasOwnProperty('account_user_id') ?
+                    this.chattingAccount.account_user_id : this.chattingAccount.user_id
+
+                response = await this['profile/deleteChatQuestion']({
+                    item: 'question',
+                    itemId: question.question.id,
+                    userId,
+                    conversationId: question.conversationId,
+                    action: question.action === 'delete' ? question.action : 'self'
+                })
+
+                if (response.status) {
+                    if (question.action === 'delete') {
+                        this.removeChatItem('question',question.question.id,question.conversationId)
+                    } else {
+                        this.replaceChatItem('question',response.chatQuestion,question.conversationId)
+                    }
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            async deleteAnswer(answer){
+                let response,
+                    userId = this.chattingAccount.hasOwnProperty('account_user_id') ?
+                    this.chattingAccount.account_user_id : this.chattingAccount.user_id
+
+                response = await this['profile/deleteChatAnswer']({
+                    item: 'answer',
+                    itemId: answer.answer.id,
+                    userId,
+                    conversationId: answer.conversationId,
+                    action: 'delete'
+                })
+
+                if (response.status) {
+                    this.removeChatItem('answer',answer.answer.id,answer.conversationId)
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            removeChatItem(item, itemId, conversationId){
+                if (this.conversationId != conversationId) {
+                    return
+                }
+                let index
+                if (item === 'question') {
+                    index = this.chatMessages.findIndex(question=>{
+                        return question.id === itemId && question.hasOwnProperty('question')
+                    })
+                } else if (item === 'message') {
+                    index = this.chatMessages.findIndex(message=>{
+                        return message.id === itemId && message.hasOwnProperty('message')
+                    })
+                } else if (item === 'answer') {
+                    this.chatMessages.forEach(item=>{
+                        if (item.hasOwnProperty('question')) {
+                            index = item.answers.findIndex(answer=>{
+                                return answer.id === itemId
+                            })
+                            if (index > -1) {
+                                item.answers.splice(index,1)
+                                return
+                            }
+                        }
+                    })
+                }
+                if (index > -1) {
+                    this.chatMessages.splice(index,1)
+                }
+                this.moveConversationUp(conversationId)
+            },
+            replaceChatItem(item, chatItem, conversationId){
+                if (this.conversationId != conversationId) {
+                    return
+                }
+                let index
+                if (item === 'question') {
+                    index = this.chatMessages.findIndex(question=>{
+                        return question.id === chatItem.id && question.hasOwnProperty('question')
+                    })
+                } else if (item === 'message') {
+                    index = this.chatMessages.findIndex(message=>{
+                        return message.id === chatItem.id && message.hasOwnProperty('message')
+                    })
+                }
+                if (index > -1) {
+                    this.chatMessages.splice(index,1,chatItem)
+                }
+                this.moveConversationUp(conversationId)
+            },
+            async markChatAnswer(markDetails){
+                this.messageSending = true
+                let response,
+                    data = {},
+                    userId = this.chattingAccount.hasOwnProperty('account_user_id') ? 
+                        this.chattingAccount.account_user_id : this.chattingAccount.user_id
+                
+                data.account = this.getActiveProfile.params.account
+                data.accountId = this.getActiveProfile.params.accountId
+                data.chattingUserId = userId
+                data.answerId = markDetails.answerId
+                data.questionId = markDetails.questionId
+                data.score = markDetails.score
+                data.score_over = markDetails.scoreOver
+                data.remark = markDetails.remark
+
+                response = await this['profile/sendChatMark']({
+                    conversationId:this.conversationId,data})
+
+                if (response.status) {
+                    this.moveQuestionDownById(response.chatAnswer)
+                    this.moveConversationUp(this.conversationId)
+                } else {
+                    console.log('response :>> ', response);
+                }
+
+                this.messageSending = false
+            },
+            async sendChatItemStatus(data){
+                let response
+
+                response = await this['profile/updateChatItemStatus'](data)
+
+                if (response.status) {
+                    this.replaceChatItem(data.item,response.chatItem,data.conversationId)
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            moveQuestionDownById(answer){ //for updating the position of a question by id and replacing answer
+                let index,
+                    ques,
+                    answerIndex
+                index = this.chatMessages.findIndex(message=>{
+                    return message.id === answer.answerable_id && 
+                        message.hasOwnProperty('question')
+                })
+                if (index > -1) {
+                    answerIndex = this.chatMessages[index].answers.findIndex(ans=>{
+                        return ans.id === answer.id
+                    })
+                    if (answerIndex > -1) {
+                        this.chatMessages[index].answers.splice(answerIndex,1,answer)
+                    }
+                    ques = this.chatMessages[index]
+                    this.chatMessages.splice(index,1)
+                    this.chatMessages.push(ques)
+                }
+            },
+            closeMediaModal(){
+                this.showMediaModal = false
+            },
             chatFileChange(fileData){
                 this.chatMessageFile = fileData.file
                 this.chatMessageFileCaption = fileData.caption
@@ -658,6 +920,18 @@ import InfiniteLoading from 'vue-infinite-loading'
                     console.log(response);
                 }
             },
+            markMessagesQuestionsSeen(conversationId){
+                if (this.conversationId != conversationId) {
+                    console.log('returned');
+                    return
+                }
+                this.chatMessages.forEach(chatItem=>{
+                    if (chatItem.from_user_id === this.getUser.id ||
+                        chatItem.user_id === this.getUser.id) {
+                        chatItem.state = 'SEEN'
+                    }
+                })
+            },
             listen(){
                 Echo.private(`youredu.message.${this.getUser.id}`)
                     .listenForWhisper('typing',data=>{
@@ -665,10 +939,56 @@ import InfiniteLoading from 'vue-infinite-loading'
                         this.setTyping(data.conversationId)
                     })
                     .listen('.newChatMessage', message=>{
+                        this.moveConversationUp(message.message.conversationId)
                         if (message.message.conversationId === this.conversationId) {
                             this.chatMessages.push(message.message)
                             this.scrollDown()
+                            this.sendChatItemStatus({
+                                item: 'message',
+                                itemId: message.message.id,
+                                conversationId: message.message.conversationId,
+                                state: 'SEEN',
+                                userId: message.message.from_user_id
+                            })
+                        } else {
+                            this.sendChatItemStatus({
+                                item: 'message',
+                                itemId: message.message.id,
+                                conversationId: message.message.conversationId,
+                                state: 'RECEIVED',
+                                userId: message.message.from_user_id
+                            })
                         }
+                    })
+                    .listen('.newChatQuestion', question=>{
+                        this.moveConversationUp(question.question.questionableId)
+                        if (question.question.questionableId === this.conversationId) {
+                            this.chatMessages.push(question.question)
+                            this.scrollDown()
+                            this.sendChatItemStatus({
+                                item: 'question',
+                                itemId: question.question.id,
+                                conversationId: question.question.questionableId,
+                                state: 'SEEN',
+                                userId: question.question.user_id
+                            })
+                        } else {
+                            this.sendChatItemStatus({
+                                item: 'question',
+                                itemId: question.question.id,
+                                conversationId: question.question.questionableId,
+                                state: 'RECEIVED',
+                                userId: question.question.user_id
+                            })
+                        }
+                    })
+                    .listen('.newChatAnswer', question=>{
+                        this.moveConversationUp(question.question.questionableId)
+                        this.moveQuestionDown(question.question)
+                    })
+                    .listen('.newChatMark', question=>{
+                        this.moveConversationUp(question.question.questionableId)
+                        this.moveQuestionDown(question.question)
                     })
                     .listen('.newConversation', data=>{
                         this.newConversationAlert = true
@@ -693,6 +1013,15 @@ import InfiniteLoading from 'vue-infinite-loading'
                         }                   
                         this.updateChattingAccount(data.conversation.id,data.response,false)
                         this.updateOnlineAccounts(data.conversation.id,data.response,'response',data.conversation,false)
+                    })
+                    .listen('.deleteChatItem', data=>{
+                        this.removeChatItem(data.item, data.itemId, data.conversationId)
+                    })
+                    .listen('.updatedChatItemState', data=>{
+                        this.replaceChatItem(data.item, data.chatItem, data.conversationId)
+                    })
+                    .listen('.updatedChatItemsState', data=>{
+                        this.markMessagesQuestionsSeen(data.conversationId)
                     })
 
                 Echo.join('youredu.chat')
@@ -808,7 +1137,6 @@ import InfiniteLoading from 'vue-infinite-loading'
                     if (index > -1) {
                         return true
                     }
-
                 }
             },
             makeActiveProfile(params){
@@ -1031,6 +1359,9 @@ import InfiniteLoading from 'vue-infinite-loading'
                 } else if (this.fromToMessages === 'conversations') {
                     this.showChatConversations = true
                 }
+                if (this.answering) {
+                    this.clickedClearAnswer()
+                }
             },
             async createConversation(){
                 let response = null,
@@ -1059,6 +1390,70 @@ import InfiniteLoading from 'vue-infinite-loading'
                 }
                 this.creatingConversation = false
             },
+            moveConversationUp(conversationId){ //for updating the position of a conversation
+                
+                let index,
+                    conversation
+                index = this.conversations.findIndex(conv=>{
+                    return conv.id === conversationId
+                })
+                if (index > -1) {
+                    conversation = this.conversations[index]
+                    this.conversations.splice(index,1)
+                    this.conversations.unshift(conversation)
+                }
+            },
+            moveQuestionDown(question){ //for updating the position of a question
+
+                if (this.conversationId !== question.questionableId) {
+                    return 
+                }
+                let index = this.chatMessages.findIndex(message=>{
+                    return message.id === question.id && message.hasOwnProperty('question')
+                })
+                if (index > -1) {
+                    this.chatMessages.splice(index,1)
+                }
+                this.chatMessages.push(question)
+            },
+            async sendChatQuestion(data){
+                this.messageSending = true
+                let formData = new FormData,
+                    conversationId =  this.conversationId,
+                    response,
+                    userId = this.chattingAccount.hasOwnProperty('account_user_id') ? 
+                        this.chattingAccount.account_user_id : this.chattingAccount.user_id
+
+                formData.append('account', this.getActiveProfile.params.account)
+                formData.append('accountId', this.getActiveProfile.params.accountId)
+                formData.append('chattingUserId',userId)
+                formData.append('question', data.question)
+                formData.append('published', new Date().toDateString())
+                formData.append('score', data.score ? data.score : null)
+                if (data.file && data.file.length) {
+                    formData.append('file', data.file[0])
+                }
+                if (data.possibleAnswers) {
+                    formData.append('possibleAnswers', JSON.stringify(data.possibleAnswers))
+                }
+
+                response = await this['profile/sendChatQuestion']({
+                    conversationId, formData
+                })
+
+                if (response.status) {
+                    this.chatMessages.push(response.chatQuestion)
+                    this.chatMessage = ''
+                    this.moveConversationUp(response.chatQuestion.questionableId)
+                    if (this.computedShowRequestResponse) {
+                        this.clickedMessageResponse('accept')
+                    }
+                } else {
+                    console.log('response :>> ', response);
+                }
+                this.messageSending = false
+                this.scrollDown()
+            },
             async sendChatMessage(){
                 if ((this.chatMessage === null || this.chatMessage === '') &&
                     this.chatMessageFile === null) {
@@ -1071,29 +1466,57 @@ import InfiniteLoading from 'vue-infinite-loading'
                     userId = this.chattingAccount.hasOwnProperty('account_user_id') ? 
                         this.chattingAccount.account_user_id : this.chattingAccount.user_id
 
-                if (this.chatMessageFile) {
-                    formData.append('message',this.chatMessageFileCaption)
-                    formData.append('file',this.chatMessageFile)
-                } else {
-                    formData.append('message',this.chatMessage)
-                }
-
                 formData.append('account',this['getActiveProfile'].params.account)
                 formData.append('accountId',this['getActiveProfile'].params.accountId)
-                formData.append('chattingAccount',this.chattingAccount.account)
-                formData.append('chattingAccountId',this.chattingAccount.accountId)
                 formData.append('chattingUserId',userId)
-
-                data.formData = formData
-                data.conversationId = this.conversationId
                 
-                response = await this['profile/sendChatMessage'](data)
+                data.conversationId = this.conversationId
+                if (!this.answering) {
+                    
+                    if (this.chatMessageFile) {
+                        formData.append('message',this.chatMessageFileCaption)
+                        formData.append('file',this.chatMessageFile)
+                    } else {
+                        formData.append('message',this.chatMessage)
+                    }
+
+                    formData.append('chattingAccount',this.chattingAccount.account)
+                    formData.append('chattingAccountId',this.chattingAccount.accountId)
+    
+                    data.formData = formData
+                    
+                    response = await this['profile/sendChatMessage'](data)
+                } else {
+                    
+                    formData.append('questionId',this.questionObject.question.id)
+                    if (this.questionObject.answer) {
+                        formData.append('possible_answer_id',this.questionObject.answer.id)
+                        formData.append('answer',this.chatMessage)
+                    } else {
+                        if (this.chatMessageFile) {
+                            formData.append('file',this.chatMessageFile)
+                            formData.append('answer',this.chatMessageFileCaption)
+                        } else {
+                            formData.append('answer',this.chatMessage)
+                        }
+                    }
+
+                    data.formData = formData
+                    
+                    response = await this['profile/sendChatAnswer'](data)
+                }
 
                 if (response.status) {
-                    let check = this.computedShowRequestResponse
-                    this.chatMessages.push(response.chatMessage)
+                    if (!this.answering) {
+                        this.chatMessages.push(response.chatMessage)
+                        this.moveConversationUp(response.chatMessage.conversationId)
+                    } else {
+                        this.moveQuestionDown(response.chatQuestion)
+                        this.moveConversationUp(response.chatQuestion.questionableId)
+                        this.clickedClearAnswer()
+                    }
                     this.chatMessage = ''
-                    if (check) {
+                    if (this.computedShowRequestResponse) {
                         this.clickedMessageResponse('accept')
                     }
                 } else {
@@ -1116,12 +1539,12 @@ import InfiniteLoading from 'vue-infinite-loading'
                 response = await this['profile/getChatMessages'](data)
 
                 if (response.status) {
-                    let responseArray = _.sortBy(response.data,function(message){
-                        return message.id
-                    })
-                    this.chatMessages.unshift(...responseArray)
+                    let responseArray = _.reverse(response.data)
                     if (this.chatMessagesNextPage === 1) {
+                        this.chatMessages.push(...responseArray)
                         this.scrollDown()
+                    } else {
+                        this.chatMessages.unshift(...responseArray)
                     }
                     if (response.next) {
                         this.chatMessagesNextPage +=1
@@ -1384,6 +1807,18 @@ import InfiniteLoading from 'vue-infinite-loading'
             .middle{
                 width: 50%;
                 padding: 5px;
+                position: relative;
+
+                .online-alert{
+                    position: absolute;
+                    bottom: 80%;
+                    left: -10px;
+                    background: green;
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 10px;
+                    border: 2px solid aquamarine;
+                }
 
                 .name{
                     font-size: 12px;
@@ -1508,7 +1943,7 @@ import InfiniteLoading from 'vue-infinite-loading'
             }
 
             .message-badge{
-                margin: 0 auto 20px;
+                margin: 0 auto 30px;
             }
 
             .more-messages{

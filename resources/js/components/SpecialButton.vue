@@ -3,7 +3,7 @@
         @click="onClick"
     >
         {{buttonText}}
-        <slot v-if="!buttonText" name="icon"></slot>
+        <slot  name="loader"></slot>
     </button>
 </template>
 

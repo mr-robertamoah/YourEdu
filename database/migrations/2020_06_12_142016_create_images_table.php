@@ -18,6 +18,7 @@ class CreateImagesTable extends Migration
             $table->nullableMorphs('ownedby'); //facilitator parent learner school professional collaboration
             $table->morphs('addedby'); //facilitator learner admin professional parent
             $table->string('path');
+            $table->string('name');
             $table->string('mime');
             $table->string('size');
             $table->softDeletes();

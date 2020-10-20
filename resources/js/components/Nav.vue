@@ -1,90 +1,121 @@
 <template>
-    <div class="nav-outer">
-        <div class="nav-shadow-wrapper" 
-            @click.self="showOrHide()"
-            v-if="show && computedUser"
-        ></div>
-        <div class="nav-menu-container" @click="showOrHide()">
-            <div class="nav-container-outer">
-                <div class="nav-container-inner">
-                    <div>
-                        <font-awesome-icon :icon="navState"/>
+    <div>
+        <div class="main-alert" v-if="alerts.length">
+            <main-alert
+                v-for="alert in alerts"
+                :key="alert.id"
+                :id="alert.id"
+                :show="alert.hasOwnProperty('id')"
+                :isMessage="alert.isMessage"
+                :text="alert.text"
+                :isAccount="alert.isAccount"
+                @removeAlert="clickedRemoveAlert"
+                :account="alert.account"
+                :message="alert.message"
+            ></main-alert>
+        </div>
+        <div class="nav-outer">
+            <div class="nav-shadow-wrapper" 
+                @click.self="showOrHide()"
+                v-if="show"
+            ></div>
+            <div class="nav-menu-container" @click="showOrHide()">
+                <div class="nav-container-outer"
+                    :class="{navNotification:newNotification}"
+                >
+                    <div class="nav-container-inner">
+                        <div>
+                            <font-awesome-icon :icon="navState"/>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <fade-up>
-            <template slot="transition">
-                <div class="nav-main-container" 
-                    v-if="show"
-                >
-                    <div class="nav-main-main">
-                        <div class="nav-main-logo">
-                            <router-link class="logo" to="/">
-                                <div class="logo-main">
-                                    YourEdu
-                                </div>
-                            </router-link>
-                        </div>
-                        <div class="nav-main-login">
-                            <div class="nav-login-section">
-                                <router-link 
-                                    v-if="computedRegistration"
-                                    to="/register">Register</router-link>
-                                <router-link 
-                                    v-if="computedLogin"
-                                    to="/login">Login</router-link>
-                                <a href="#" 
-                                    v-if="getUser" 
-                                    @click.prevent="navLogout()">Logout</a>
-                                <a href="#" 
-                                    v-if="getProfiles" 
-                                    class="request"
-                                    @click="clickedRequest">
-                                        <div>Requests</div>
-                                        <div
-                                            class="notification"
-                                            v-if="followNotifications.length"
-                                        >{{followNotifications.length}}</div>
+            <fade-up>
+                <template slot="transition">
+                    <div class="nav-main-container" 
+                        v-if="show"
+                    >
+                        <div class="nav-main-main">
+                            <div class="nav-main-logo">
+                                <router-link class="logo" to="/">
+                                    <div class="logo-main">
+                                        YourEdu
+                                    </div>
+                                </router-link>
+                            </div>
+                            <div class="nav-main-login">
+                                <div class="nav-login-section">
+                                    <router-link 
+                                        v-if="computedRegistration"
+                                        to="/register">Register</router-link>
+                                    <router-link 
+                                        v-if="computedLogin"
+                                        to="/login">Login</router-link>
+                                    <a href="#" 
+                                        v-if="getUser" 
+                                        @click.prevent="navLogout()">Logout</a>
+                                    <a href="#" 
+                                        v-if="getProfiles" 
+                                        class="request"
+                                        @click="clickedRequest">
+                                            <div>Requests</div>
+                                            <div
+                                                class="notification"
+                                                v-if="requestNotifications.length"
+                                            >{{requestNotifications.length}}</div>
                                     </a>
+                                    <a href="#" 
+                                        v-if="getUser" 
+                                        class="request"
+                                        @click="clickedNotifications">
+                                            <div>
+                                                <font-awesome-icon :icon="['fa','bell']"></font-awesome-icon>
+                                            </div>
+                                            <div
+                                                class="notification"
+                                                v-if="otherNotifications.length"
+                                            >{{otherNotifications.length}}</div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="nav-main-other">
+                            <div class="nav-other-section">
+                                <router-link 
+                                    v-if="computedWelcome"
+                                    to="/welcome">Welcome</router-link>
+                                <router-link 
+                                    v-if="computedDashboard" 
+                                    to="/dashboard">Dashboard</router-link>
+                                <div class="a-profile"
+                                    v-if="computedProfiles"
+                                    @click.prevent="showProfiles = !showProfiles"
+                                >Profiles</div>
+                            </div>
+                            <div class="nav-other-sub" v-if="showProfiles">
+                                <div v-for="(profile,key) in computedProfiles"
+                                    :key="key">
+                                    <profile-bar
+                                        v-if="profileAccount != profile.params.account ||
+                                            profileAccountId != profile.params.accountId"
+                                        :name="profile.name"
+                                        :type="profile.params.account"
+                                        :src="profile.url"
+                                        :routeParams="profile.params"
+                                    ></profile-bar>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="nav-main-other">
-                        <div class="nav-other-section">
-                            <router-link 
-                                v-if="computedWelcome"
-                                to="/welcome">Welcome</router-link>
-                            <router-link 
-                                v-if="computedDashboard" 
-                                to="/dashboard">Dashboard</router-link>
-                            <div class="a-profile"
-                                v-if="computedProfiles"
-                                @click.prevent="showProfiles = !showProfiles"
-                            >Profiles</div>
-                        </div>
-                        <div class="nav-other-sub" v-if="showProfiles">
-                            <div v-for="(profile,key) in computedProfiles"
-                                :key="key">
-                                <profile-bar
-                                    v-if="profileAccount != profile.params.account ||
-                                        profileAccountId != profile.params.accountId"
-                                    :name="profile.name"
-                                    :type="profile.params.account"
-                                    :src="profile.url"
-                                    :routeParams="profile.params"
-                                ></profile-bar>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </fade-up>
-        <request-modal
-            :show="showRequestModal"
-            @requestsModalDisappear="requestsModalDisappear"
-            :notifications="followNotifications.length"
-        ></request-modal>
+                </template>
+            </fade-up>
+            <request-modal
+                :show="showRequestModal"
+                :type="requestModalType"
+                @requestsModalDisappear="requestsModalDisappear"
+                :requestNotifications="requestNotifications.length"
+            ></request-modal>
+        </div>
     </div>
 </template>
 
@@ -93,8 +124,10 @@ import ProfilePicture from "../components/profile/ProfilePicture";
 import ProfileBar from "../components/profile/ProfileBar";
 import FadeRight from "../components/transitions/FadeRight";
 import FadeUp from "../components/transitions/FadeUp";
+import MainAlert from "../components/transitions/MainAlert";
 import RequestModal from "../components/RequestModal";
 import { mapActions, mapGetters } from "vuex";
+import { strings } from '../services/helpers';
 
     export default {
         props: {
@@ -109,6 +142,7 @@ import { mapActions, mapGetters } from "vuex";
         },
         components: {
             RequestModal,
+            MainAlert,
             FadeUp,
             FadeRight,
             ProfileBar,
@@ -118,17 +152,23 @@ import { mapActions, mapGetters } from "vuex";
             return {
                 navState: ['fa','bars'],
                 show: false,
-                isUser: null,
                 showProfiles: false,
                 ///follow requests
                 showRequestModal: false,
-                followNotifications: []
+                otherNotifications: [], 
+                requestNotifications: [], 
+                newNotification: false,
+                requestModalType: '',
+                //alert
+                alerts: [],
             }
         },
         watch: {
-            isUser(newValue) {
+            newNotification(newValue) {
                 if (newValue) {
-                    this.listen()
+                    setTimeout(() => {
+                        this.newNotification = false
+                    }, 4000);
                 }
             }
         },
@@ -137,7 +177,8 @@ import { mapActions, mapGetters } from "vuex";
             next();
         },
         computed:{
-            ...mapGetters(['getProfiles','getUser', 'getLoggedin','getUserFollowRequest']),
+            ...mapGetters(['getProfiles','getUser', 'getLoggedin','getUserFollowRequest',
+                ]),
             computedRegistration(){
                 return this.getLoggedin ? false : 
                     this.$route.name !== 'register' ? true : false
@@ -157,34 +198,54 @@ import { mapActions, mapGetters } from "vuex";
             computedProfiles(){ //replace with get profiles
                 return this.getProfiles
             },
-            computedUser(){ 
-                if (this.getUser) {
-                    this.isUser = true
-                } else {
-                    this.isUser = false
-                }
-                return true
-            },
         },
         methods: {
-            ...mapActions([
-                'logout', 'userFollowNotifications', 'markFollowNotifications'
-            ]),
+            ...mapActions(['logout', 'userNotifications', 'markNotifications',
+                'addUserFollower','markOtherNotifications']),
             requestsModalDisappear(){
                 this.showRequestModal = false
-            },
+            }, //generalize requestNotifications
             clickedRequest(){
+                this.requestModalType = 'requests'
                 this.showRequestModal = true
-                if (this.followNotifications.length) {
-                    this.markFollowNotifications()
+                if (this.requestNotifications.length) {
+                    this.markUserNotifications()
                 }
             },
-            async getFollowNotifications(){
-                let response = await this.userFollowNotifications()
+            clickedNotifications(){
+                this.requestModalType = 'notifications'
+                this.showRequestModal = true
+                this.markOtherUserNotifications()
+            },
+            async markUserNotifications(){
 
-                if (response !== 'unsuccessful') {
-                    this.followNotifications = response
+                let response = await this.markNotifications()
+
+                if (response.status) {
+                    this.requestNotifications = []
+                } else {
+                    console.log('response :>> ', response);
                 }
+            },
+            async markOtherUserNotifications(){
+
+                let response = await this.markOtherNotifications({other:true})
+
+                if (response.status) {
+                    this.otherNotifications = []
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            async getNotifications(){
+                let response = await this.userNotifications()
+
+                if (response.status) {
+                    this.requestNotifications = response.data
+                } else {
+                    console.log('response :>> ', response);
+                }
+                this.listen()
             },
             showOrHide() {
                 if (this.navState[1] ==='bars') {
@@ -197,19 +258,111 @@ import { mapActions, mapGetters } from "vuex";
                 }
                 
             },
-            listen(){
-                Echo.private(`youredu.user.${this.getUser.id}`)
-                    .notification(notification=>{
-                        console.log(notification);
+            clickedRemoveAlert(id){
+                let index = this.alerts.findIndex(a=>{
+                    return a.id === id
+                })
+                if (index > -1) {
+                    this.alerts.splice(index,1)
+                }
+            },
+            clearAlert(id){
+                setTimeout((id) => {
+                    let index = this.alerts.findIndex(a=>{
+                        return a.id === id
                     })
+                    if (index > -1) {
+                        this.alerts.splice(index,1)
+                    }
+                }, 5000);
+            },
+            listen(){
+                if (this.getUser) {
+                    
+                    Echo.private(`youredu.user.${this.getUser.id}`)
+                        .notification((notification) => {
+                            console.log(notification);
+                            if (notification.type == 'App\\Notifications\\DiscussionRequestNotification' ||
+                                notification.type == 'App\\Notifications\\FollowRequest' ||
+                                notification.type == 'App\\Notifications\\NewDiscussionMessageNotification') {
+                                
+                                this.requestNotifications.push(notification)
+                            } else if (notification.type === 'App\\Notifications\\DiscussionJoinResponseNotification') {
+                                this.otherNotifications.push(notification)
+                                let alert = {
+                                    isMessage: true,
+                                    text: `your request to join discussion with title: ${notification.title.toUpperCase()} has been ${notification.action}`
+                                }
+                                alert.id = Math.floor(Math.random() * 100)
+                                this.alerts.unshift(alert)
+                                this.clearAlert(alert.id)
+                            } else if (notification.type === 'App\\Notifications\\DiscussionInvitationNotification') {
+                                this.requestNotifications.push(notification)
+                                this.otherNotifications.push(notification)
+                                let alert = {
+                                    isMessage: true,
+                                    text: notification.message
+                                }
+                                alert.id = Math.floor(Math.random() * 100)
+                                this.alerts.unshift(alert)
+                                this.clearAlert(alert.id)
+                            } else if (notification.type === 'App\\Notifications\\DiscussionInvitationResponseNotification' ||
+                                notification.type === 'App\\Notifications\\UpdateParticipantStateNotification' ||
+                                notification.type === 'App\\Notifications\\RemoveDiscussionParticipantNotification') {
+                                this.otherNotifications.push(notification)
+                                let alert = {
+                                    isMessage: true,
+                                    account: notification.account,
+                                    text: notification.message
+                                }
+                                alert.id = Math.floor(Math.random() * 100)
+                                this.alerts.unshift(alert)
+                                this.clearAlert(alert.id)
+                            }
+                            this.newNotification = true
+                        })
+                        .listen('.newFollower', data=>{
+                            console.log('data :>> ', data);
+                            let alert = {}
+                            alert.id = Math.floor(Math.random() * 100)
+                            alert.account = {
+                                account: strings.getAccount(data.follower.followedby_type),
+                                accountId: data.follower.followedby_id,
+                                myAccount: strings.getAccount(data.follower.followable_type),
+                                myName: data.follower.my_name,
+                                url: data.follower.url,
+                                action: data.action
+                            }
+                            alert.isAccount = true
+                            this.alerts.unshift(alert)
+                            setTimeout(() => {
+                                this.clearAlert(alert.id)
+                            }, 5000);
+                            this.addUserFollower(data.follower)
+                        })
+                        .listen('.newDiscussionMessageResponse', data=>{
+                            console.log('data :>> ', data);
+                            let alert = {}
+                            alert.id = Math.floor(Math.random() * 100)
+                            alert.message = data.message
+                            alert.isMessage = true
+                            this.alerts.unshift(alert)
+                            setTimeout(() => {
+                                this.clearAlert(alert.id)
+                            }, 5000);
+                        })
+                } else {
+                    setTimeout(() => {
+                        this.listen()
+                    }, 3000);
+                }
             },
             navLogout(){
                 this.logout()
             },
         },
         mounted () {
-            this.getFollowNotifications()
-            // this.listen()
+            this.listen()
         },
     }
 </script>
@@ -232,6 +385,18 @@ $homeLogoColor : rgba(2, 104, 90, .6);
 
 .nav-bar-enter-active, .nav-bar-leave-active{
     transition: all 1s ease-in-out;
+}
+
+.main-alert{
+    background: transparent;
+    position: fixed;
+    width: fit-content;
+    max-width: 50%;
+    height: 300px;
+    top: 40px;
+    padding: 10px;
+    right: 0;
+    z-index: 1;
 }
 
 .nav-outer{
@@ -274,6 +439,22 @@ $homeLogoColor : rgba(2, 104, 90, .6);
                 justify-content: center;
                 align-items: center;
                 cursor: pointer;
+            }
+        }
+
+        .navNotification{
+            background: red;
+            animation-name: shake;
+            animation-duration: 1.5s;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+
+            .nav-container-inner{
+
+                animation-name: spin;
+                animation-duration: 2s;
+                animation-iteration-count: infinite;
+                animation-timing-function: ease-in-out;
             }
         }
             
@@ -355,16 +536,14 @@ $homeLogoColor : rgba(2, 104, 90, .6);
     }
 }
 
-@media only screen and (max-width: 400px){
-    
-    .nav-main-container{
-        margin: -20px 0 0 auto;
+@media only screen and (max-width: 800px){
+
+    .main-alert{
+        max-width: 75%;
         width: 100%;
+        z-index: 1;
     }
     
-}
-
-@media only screen and (max-width: 800px){
     .nav-outer{
 
         .nav-main-container{
@@ -422,6 +601,48 @@ $homeLogoColor : rgba(2, 104, 90, .6);
         }
     }
     } 
+}
+
+@media only screen and (max-width: 400px){
+
+    .main-alert{
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .nav-main-container{
+        margin: -20px 0 0 auto;
+        width: 100%;
+    }
+    
+}
+
+@keyframes spin {
+    from{
+        transform: rotateZ(0deg);
+    }
+
+    to{
+        transform: rotateZ(360deg);
+    }
+}
+
+@keyframes shake {
+    0%{
+        transform: translate(10px,0);
+    }
+
+    33%{
+        transform: translate(0,10px);
+    }
+
+    66%{
+        transform: translate(-10px,0);
+    }
+
+    100%{
+        transform: translate(0,-10px);
+    }
 }
 
 </style>

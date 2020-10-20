@@ -20,7 +20,7 @@
             </div>
             <div class="edit"
                 @click="showOptions = !showOptions"
-                v-if="computedProfiles.length"
+                v-if="computedEdit"
             >
                 <font-awesome-icon
                     :icon="['fa','chevron-down']"
@@ -30,9 +30,10 @@
                 <optional-actions
                     :show="showOptions"
                     :showEdit="!answer.marks.length"
-                    :hasSave="!computedOwner"
+                    :hasSave="!chat && !computedOwner"
                     :isSaved="isSaved"
-                    :hasEdit="computedOwner"
+                    :hasAttachment="!chat"
+                    :hasEdit="!chat && computedOwner"
                     :hasDelete="computedOwner"
                     @clickedOption="clickedOption"
                 ></optional-actions>
@@ -55,16 +56,17 @@
             <div class="main-area">
                 <div class="left-wrapper">
                     <div class="top-section">
-                        <div class="profile-picture">
+                        <div class="profile-picture" v-if="!chat">
                             <profile-picture
                                 @click="clickedProfilePicture"
+                                
                             >
                                 <template slot="image">
                                     <img :src="answer.url" alt="profile">
                                 </template>
                             </profile-picture>
                         </div>
-                        <div class="other-info">
+                        <div class="other-info" @click="clickedShowRemarks">
                             <div class="info">{{computedCreatedAt}}</div>
                             <div class="info">
                                 {{`${computedAverageScore} - average`}}
@@ -76,6 +78,12 @@
                                 {{`${computedMinimumScore} - minimum`}}
                             </div>
                         </div>
+                        <remarks-badge
+                            v-if="showRemarks"
+                            :show="showRemarks"
+                            :answerId="answer.id"
+                            @clickedCloseRemark="clickedCloseRemark"
+                        ></remarks-badge>
                     </div>
                     <div class="bottom-section">
                         <div class="textarea">
@@ -99,7 +107,7 @@
                             </template>
                         </div>
                     </div>
-                    <div class="lower-section">
+                    <div class="lower-section" v-if="!chat">
                         <div class="extra-info">
                             <div class="info" v-if="computedMarkings">
                                 {{`${computedMarkings} accounts marked this answer`}}
@@ -160,7 +168,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="add-comment">
+                        <div class="add-comment" v-if="!chat">
                             <fade-right-fast>
                                 <template slot="transition" v-if="showAddComment">
                                     <add-comment
@@ -175,7 +183,7 @@
                                 </template>
                             </fade-right-fast>
                         </div>
-                        <div class="edit-anser">
+                        <div class="edit-anser" v-if="!chat">
                             <fade-right-fast>
                                 <template slot="transition" v-if="editAnswer">
                                     <add-answer
@@ -202,7 +210,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="right-wrapper">
+                <div class="right-wrapper" v-if="computedShouldMark">
                     <div class="marking" v-if="computedMarks">
                         <div class="correct"
                             @click="markAnswer('correct')"
@@ -233,7 +241,7 @@
             </div>
         </div>
         <div class="answer-single-profiles"
-            v-if="showProfiles"
+            v-if="!chat && showProfiles"
         >
             <span>
                 {{showProfilesText}}
@@ -251,7 +259,7 @@
         </div>
 
         <!-- for deleting answer -->
-        <fade-up>
+        <fade-up v-if="!chat">
             <template slot="transition" v-if="showSmallModal">
                 <small-modal
                     :title="smallModalTitle"
@@ -298,6 +306,7 @@ import FadeRightFast from './transitions/FadeRightFast'
 import FadeRight from './transitions/FadeRight'
 import AddComment from './AddComment'
 import OptionalActions from './OptionalActions'
+import RemarksBadge from './RemarksBadge'
 import FadeUp from './transitions/FadeUp'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 import { mapGetters, mapActions } from 'vuex'
@@ -309,11 +318,19 @@ import { dates, strings } from '../services/helpers'
                 type: Boolean,
                 default: false
             },
+            chat: { //when in the chat section
+                type: Boolean,
+                default: false
+            },
             answer: {
                 type: Object,
                 default(){
                     return {}
                 }
+            },
+            conversationId: {
+                type: Number,
+                default: null
             },
             possibleAnswers: {
                 type: Array,
@@ -327,6 +344,7 @@ import { dates, strings } from '../services/helpers'
             FadeUp,
             AddComment,
             FadeRight,
+            RemarksBadge,
             OptionalActions,
             FadeRightFast,
             MainList,
@@ -339,6 +357,7 @@ import { dates, strings } from '../services/helpers'
         },
         data() {
             return {
+                showRemarks: false,
                 profile: null,
                 showAddComment: false,
                 alertMessage: '',
@@ -400,9 +419,9 @@ import { dates, strings } from '../services/helpers'
         watch: {
             showOptions(newValue) {
                 if (newValue) {
-                    setTimeout(() => {
-                        this.showOptions = false
-                    }, 4000);
+                    // setTimeout(() => {
+                    //     this.showOptions = false
+                    // }, 4000);
                 }
             },
             isLiked(newValue){
@@ -501,6 +520,13 @@ import { dates, strings } from '../services/helpers'
                     return true
                 }
             },
+            computedEdit(){
+                if (this.chat) {
+                    return this.computedOwner
+                } else {
+                    return this.computedProfiles.length
+                }
+            },
             computedVideoUrl() {
                 return this.answer && this.answer.videos ? this.answer.videos[0].url : ''
             },
@@ -570,6 +596,12 @@ import { dates, strings } from '../services/helpers'
 
                 return answerOwner
             },
+            computedShouldMark(){
+                if (!this.computedOwner) {
+                    return this.chat && this.myMark && this.myMark.user_id ? false : true
+                }
+                return false
+            },
             computedOwner(){
                 let profiles = this.getProfiles
                 let profile = null
@@ -594,6 +626,14 @@ import { dates, strings } from '../services/helpers'
             ...mapActions(['profile/createMark','profile/deleteLike','profile/createLike',
                 'profile/updateAnswer','profile/deleteAnswer','profile/createFlag',
                 'profile/deleteFlag','profile/deleteSave','profile/createSave']),
+            clickedShowRemarks(){
+                if (this.answer.marks.length) {
+                    this.showRemarks = true
+                }
+            },
+            clickedCloseRemark(){
+                this.showRemarks = false
+            },
             getScore(data){
                 if (this.state === 'PARTIAL') {
                     this.score = data.score
@@ -604,6 +644,18 @@ import { dates, strings } from '../services/helpers'
                 }
                 this.remark = data.remark
                 this.showScore = false
+                
+                if (this.chat) {
+                    this.$emit('markChatAnswer',{
+                        answerId: this.answer.id,
+                        questionId: this.answer.answerable_id,
+                        score: this.score,
+                        state: this.state,
+                        remark: this.remark,
+                        scoreOver: this.computedScoreOver
+                    })
+                    return
+                }
                 this.profilesAppear()
             },
             clickedProfilePicture(){
@@ -714,19 +766,20 @@ import { dates, strings } from '../services/helpers'
                         this.isLiked = false
                         
                         if (this.myLike && this.myLike.hasOwnProperty('id')) {
-                            let data = {
+                            let newData = {
                                 likeId: this.myLike.id,
                                 item: 'answer',
                                 itemId: this.answer.id,
                             }
 
-                            let response = await this['profile/deleteLike'](data)
+                            newData.where = this.$route.name
+                            let response = await this['profile/deleteLike'](newData)
                             if (response === 'unsuccessful') {
                                 this.isLiked = true
                                 this.likes += 1
                             } else {
-                                data.main = this.answerFull
-                                this.$emit('answerUnlikeSuccessful',data)
+                                newData.main = this.answerFull
+                                this.$emit('answerUnlikeSuccessful',newData)
                             }
                         } else {
                             this.likes += 1
@@ -791,6 +844,15 @@ import { dates, strings } from '../services/helpers'
                     this.showProfilesAction = 'save'
                     this.profilesAppear()
                 } else if (data === 'delete') {
+                    if (this.chat) {
+                        this.$emit('clickedOption',{
+                            action: 'delete',
+                            type: 'answer',
+                            answer: this.answer,
+                            conversationId: this.conversationId
+                        })
+                        return
+                    }
                     this.smallModalTitle = 'are you sure you want to delete this?'
                     this.showSmallModal = true
                     this.smallModalAction = 'delete'
@@ -949,6 +1011,7 @@ import { dates, strings } from '../services/helpers'
                     response = null,
                     state = ''
 
+                data.where = this.$route.name
                 if (who) {
                     data.account = who.account
                     data.accountId = who.accountId
@@ -1000,6 +1063,7 @@ import { dates, strings } from '../services/helpers'
                     accountId: who.accountId,
                 }
 
+                data.where = this.$route.name
                 let response = await this['profile/createLike'](data)
 
                 if (response === 'unsuccessful') {
@@ -1016,6 +1080,7 @@ import { dates, strings } from '../services/helpers'
             async flag(who){
                 this.loading = true
                 let data = {}
+                data.where = this.$route.name
                 let response = null
                 if (who) {
                     data.account = who.account
@@ -1220,6 +1285,8 @@ $profile-picture-width: 50px;
                         max-width: 50%;
                         text-align: end;
                         font-size: 8px;
+                        margin-left: auto;
+                        cursor: pointer;
 
                         .info{
                             border-bottom: 1px solid gray;
@@ -1333,7 +1400,7 @@ $profile-picture-width: 50px;
                 width: 15%;
                 padding: 0 10px;
                 border-left: 1px solid gray;
-                position: absolute;
+                position: relative;
                 top: 0;
 
                 .marking{
@@ -1349,18 +1416,18 @@ $profile-picture-width: 50px;
                     cursor: pointer;
                     text-align: center;
 
-                    &:hover{
-                        box-shadow: 0 0 2px;
-                        transition: all .5s ease;
-                    }
+                    // &:hover{
+                    //     box-shadow: 0 0 2px;
+                    //     transition: all .5s ease;
+                    // }
                 }
 
-                .checkActive,
-                .checkDoubleActive,
-                .timesActive{
-                    box-shadow: 0 0 2px;
-                    transition: all .5s ease;
-                }
+                // .checkActive,
+                // .checkDoubleActive,
+                // .timesActive{
+                //     box-shadow: 0 0 2px;
+                //     transition: all .5s ease;
+                // }
 
                 .timesActive{
                     color: red;

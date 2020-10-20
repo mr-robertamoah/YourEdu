@@ -11,12 +11,17 @@ class Question extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'question', 'state','published'
+        'question', 'state','published','user_deletes','updated_at'
     ];
 
-    // protected $touches = [
-    //     'posts'
-    // ];
+    protected $touches = [
+        'questionable'
+    ];
+
+    protected $casts = [
+        'user_deletes' => 'json'
+    ];
+
 
     public function questionedby(){
         return $this->morphTo();

@@ -221,19 +221,43 @@
                         :loading="computedPostCreating"
                     ></sync-loader>
                 </div>
+                <div class="extras-section">
+                    <post-button buttonText="discussion" 
+                        @click="clickedShowDiscussion"
+                        titleText="have something to discuss?"></post-button>
+                </div>
+                <div class="loading" v-if="discussionLoading">
+                    <pulse-loader :loading="discussionLoading" :size="'10px'"></pulse-loader>
+                </div>
+                <div class="alert" 
+                    v-if="modalAlertMessage.length"
+                    :class="{success:modalAlertSuccess, danger:modalAlertDanger}"
+                >
+                    {{modalAlertMessage}}
+                </div>
                 <post-create
                     v-if="computedPostCreate"
                 ></post-create>
                 <template v-if="!isFlagged && computedPosts">
-                    <post-show
-                        @askLoginRegister="askLoginRegister"
-                        @clickedShowPostComments="clickedShowPostComments"
-                        @clickedShowPostPreview="clickedShowPostPreview"
-                        :key="key"
-                        v-for="(post,key) in computedPosts"
-                        :post="post"
-                        @clickedMedia="clickedMedia"
-                    ></post-show>
+                    <template
+                        v-for="post in computedPosts"
+                    >
+                        <post-show
+                            :key="`post.${post.id}`"
+                            v-if="post.isPost"
+                            :post="post"
+                            @askLoginRegister="askLoginRegister"
+                            @clickedMedia="clickedMedia"
+                            @clickedShowPostComments="clickedShowPostComments"
+                            @clickedShowPostPreview="clickedShowPostPreview"
+                        ></post-show>
+                        <discussion-single
+                            v-if="post.isDiscussion"
+                            :key="`discussion.${post.id}`"
+                            :discussion="post"
+                            @askLoginRegister="askLoginRegister"
+                        ></discussion-single>
+                    </template>
                 </template>
                 <post-none v-if="isFlagged"
                     :loading="unflagLoading"
@@ -380,6 +404,14 @@
                 </media-modal>
             </template>
         </just-fade>
+        
+        <!-- create discussion -->
+        <create-discussion
+            v-if="showCreateDiscussion"
+            :show="showCreateDiscussion"
+            @createDiscussionDisappear="clickedCloseDiscussion"
+            @clickedCreate="clickedCreateDiscussion"
+        ></create-discussion>
     </div>
 </template>
 
@@ -398,6 +430,7 @@ import PostShow from '../PostShow'
 import LinkItem from '../profile/LinkItem'
 import FilePreview from '../FilePreview'
 import TextInput from '../TextInput'
+import DiscussionSingle from '../DiscussionSingle'
 import PostNone from '../PostNone'
 import GroupSection from './GroupSection'
 import { mapGetters, mapActions } from 'vuex'
@@ -410,6 +443,7 @@ import { mapGetters, mapActions } from 'vuex'
             PostButton,
             GroupSection,
             PostNone,
+            DiscussionSingle,
             TextInput,
             FilePreview,
             LinkItem,
@@ -481,6 +515,9 @@ import { mapGetters, mapActions } from 'vuex'
                 showMoreText: '',
                 getMediaType: 'public',
                 mediaType: '',
+                //discussion
+                showCreateDiscussion: false,
+                discussionLoading: false,
             }
         },
         computed: {
@@ -492,7 +529,7 @@ import { mapGetters, mapActions } from 'vuex'
                 return false
             },
             ...mapGetters(['profile/getProfile','profile/getAccount','getUserId',
-                'profile/getMsg','profile/getPostingStatus','profile/getHomePosts',
+                'profile/getMsg','profile/getPostingStatus','profile/profilePosts',
                 'profile/getLoadingStatus','profile/getPostsDone','profile/getNextPage',
                 'profile/getStateMedia','profile/getMoreMedia']),
             computedImages(){
@@ -511,8 +548,8 @@ import { mapGetters, mapActions } from 'vuex'
                 return this['profile/getProfile'] ? this['profile/getProfile'].socials : null
             },
             computedPosts(){
-                return this['profile/getHomePosts'] && this['profile/getHomePosts'].length > 0 ? 
-                    this['profile/getHomePosts'] : null
+                return this['profile/profilePosts'] && this['profile/profilePosts'].length > 0 ? 
+                    this['profile/profilePosts'] : null
             },
             computedAbout() {
                 return this['profile/getProfile'] && this['profile/getProfile'].about ?
@@ -584,6 +621,54 @@ import { mapGetters, mapActions } from 'vuex'
             },
         },
         methods: {
+            ...mapActions(['profile/getProfilePosts','profile/addInfo','profile/markInfo',
+                'profile/removeInfo','profile/uploadFile','profile/getMedia',
+                'profile/getPrivateMedia','profile/changeMedia','profile/deleteMedia']),
+            clickedShowDiscussion(){
+                this.showCreateDiscussion = true
+            },
+            clickedCloseDiscussion(){
+                this.showCreateDiscussion = false
+            },
+            async clickedCreateDiscussion(data){
+                let response,
+                    formData = new FormData,
+                    where = this.$route.name
+
+                this.discussionLoading = true
+
+                formData.append('account', data.account)
+                formData.append('accountId', data.accountId)
+                formData.append('title', data.title)
+                formData.append('type', data.type)
+                formData.append('allowed', data.allowed)
+                formData.append('restricted', JSON.stringify(data.restricted))
+                formData.append('preamble', data.preamble)
+                data.files.forEach(file=>{
+                    formData.append('file[]', file)
+                })
+                if (data.postAttachments.length) {
+                    formData.append('attachments', JSON.stringify(data.postAttachments.map(attachment=>{
+                        return {
+                            attachable: attachment.type.slice(0,attachment.type.length - 1),
+                            attachableId: attachment.data.id
+                        }
+                    })))
+                }
+
+                response = await this['profile/createDiscussion']({formData,where})
+
+                this.discussionLoading = false
+                if (response.status) {
+                    this.modalAlertSuccess = true
+                    this.modalAlertMessage = 'discussion created successfully'
+                } else {
+                    console.log('response :>> ', response);
+                    this.modalAlertError = true
+                    this.modalAlertMessage = 'discussion creation failed'
+                }
+                this.clearAlert()
+            },
             clickedUnflag(){
                 this.$emit('clickedUnflag')
             },
@@ -923,9 +1008,6 @@ import { mapGetters, mapActions } from 'vuex'
             askLoginRegister(){
                 this.$emit('askLoginRegister','profileSsecond')
             },
-            ...mapActions(['profile/getProfilePosts','profile/addInfo','profile/markInfo',
-                'profile/removeInfo','profile/uploadFile','profile/getMedia',
-                'profile/getPrivateMedia','profile/changeMedia','profile/deleteMedia']),
             editProfile(){
                 this.$emit('editProfile')
             },
@@ -1046,8 +1128,32 @@ import { mapGetters, mapActions } from 'vuex'
             }
 
             .activity{
+                
                 .spinner{
                     text-align: center;
+                }
+
+                .extras-section{
+                    width: 100%;
+                    display: inline-flex;
+                    justify-content: space-around;
+                    flex-wrap: wrap;
+                    align-items: center;
+                }
+
+                .loading,
+                .alert{
+                    text-align: center;
+                    width: 100%;
+                    font-size: 14px;
+                }
+
+                .alert{
+                    color: white;
+                }
+
+                .success{
+                    background-color: green;
                 }
             }
         }

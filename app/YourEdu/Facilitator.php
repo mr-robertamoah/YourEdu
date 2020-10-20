@@ -186,6 +186,11 @@ class Facilitator extends Model
     {
         return $this->morphMany(Grade::class,'addedby');
     }
+    
+    public function participants()
+    {
+        return $this->morphMany(Participant::class,'accountable');
+    }
 
     public function uniqueProgramsAdded()
     {
@@ -377,6 +382,11 @@ class Facilitator extends Model
     public function lessonsOwned()
     {
         return $this->morphMany(Lesson::class,'ownedby');
+    }
+
+    public function discussions()
+    {
+        return $this->morphMany(Discussion::class,'raisedby');
     }
 
     public function posts()

@@ -11,11 +11,24 @@ class Message extends Model
     //
     use SoftDeletes;
 
-    protected $fillable = ['from_user_id','to_user_id','state','message'];
+    protected $fillable = [
+        'from_user_id','to_user_id','state','message','user_deletes','updated_at'
+    ];
+
+    protected $touches = ['conversation','messageable'];
+
+    protected $casts = [
+        'user_deletes' => 'json'
+    ];
 
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);
+    }
+
+    public function messageable()
+    {
+        return $this->morphTo();
     }
 
     public function fromUser()
@@ -60,5 +73,10 @@ class Message extends Model
     {
         return $this->morphToMany(Image::class,'imageable')
         ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function flags()
+    {
+        return $this->morphMany(Flag::class,'flaggable');
     }
 }

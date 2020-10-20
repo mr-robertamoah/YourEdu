@@ -1,12 +1,18 @@
 <?php
 
+use App\Http\Controllers\Api\AnswerController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\DiscussionController;
 use App\Http\Controllers\Api\FlagController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\GradeController;
+use App\Http\Controllers\Api\MarkController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ProgramController;
+use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\SaveController;
 use App\Http\Controllers\Api\Search;
 use App\Http\Controllers\Api\SubjectController;
@@ -42,27 +48,31 @@ Route::get('/comment/{comment}', 'Api\CommentController@commentGet');
 Route::get('/{item}/{itemId}/comments/', 'Api\CommentController@commentsGet')
 ->middleware(['CheckItem']);
 
-Route::get('/answer/{answer}', 'Api\AnswerController@answerGet');
-Route::get('/{item}/{itemId}/answers/', 'Api\AnswerController@answersGet')
+Route::get('/answer/{answerId}/marks', [MarkController::class,'getAnswerMarks']);
+Route::get('/answer/{answer}', [AnswerController::class,'answerGet']);
+Route::get('/{item}/{itemId}/answers/', [AnswerController::class,'answersGet'])
 ->middleware(['CheckAnswerable']);
 
 Route::get('/subjects', [SubjectController::class,'subjectsGet']);
 Route::get('/subjects/{search}', [SubjectController::class,'subjectsSearch']);
-Route::get('/subject', [SubjectController::class,'subjectGet']);
+Route::get('/subject/{subjectId}', [SubjectController::class,'subjectGet']);
 
 Route::get('/programs', [ProgramController::class,'programsGet']);
 Route::get('/programs/{search}', [ProgramController::class,'programsSearch']);
-Route::get('/program', [ProgramController::class,'programGet']);
+Route::get('/program/{programId}', [ProgramController::class,'programGet']);
 
 Route::get('/courses', [CourseController::class,'coursesGet']);
 Route::get('/courses/{search}', [CourseController::class,'coursesSearch']);
-Route::get('/course', [CourseController::class,'courseGet']);
+Route::get('/course/{courseId}', [CourseController::class,'courseGet']);
 
 Route::get('/grades', [GradeController::class,'gradesGet']);
 Route::get('/grades/{search}', [GradeController::class,'gradesSearch']);
-Route::get('/grades', [GradeController::class,'gradesGet']);
+Route::get('/grade/{gradeId}', [GradeController::class,'gradeGet']);
 
 Route::get('/search', [Search::class,'search']);
+
+Route::get('/discussion/{discussionId}/messages', [DiscussionController::class,'getMessages']);
+Route::get('/discussion/{discussionId}/participants', [DiscussionController::class,'getParticipants']);
 
 
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
@@ -73,7 +83,28 @@ Route::get('/search', [Search::class,'search']);
 
 Route::group(['middleware' => 'auth:api'], function () {
 
+    Route::post('/discussion', [DiscussionController::class,'createDiscussion']);
+    Route::delete('/discussion/{discussionId}', [DiscussionController::class,'deleteDiscussion']);
+    Route::post('/discussion/message/delete', [DiscussionController::class,'deleteMessage']);
+    Route::post('/discussion/message/updatestate', [DiscussionController::class,'updateMessageState']);
+    Route::post('/discussion/participant/update', [DiscussionController::class,'updateParticipantState']);
+    Route::post('/discussion/participant/delete', [DiscussionController::class,'deleteDiscussionParticipant']);
+    Route::post('/discussion/{discussionId}/message', [DiscussionController::class,'sendMessage']);
+    Route::post('/discussion/{discussionId}/join', [DiscussionController::class,'joinDiscussion']);
+    Route::post('/discussion/contribution/response', [DiscussionController::class,'contributionResponse']);
+    Route::post('/discussion/join/response', [DiscussionController::class,'joinResponse']);
+    Route::post('/discussion/invitation', [DiscussionController::class,'inviteParticipant']);
+    Route::get('/discussion/search', [DiscussionController::class,'discussionSearch']);
+    Route::post('/discussion/invitation/response', [DiscussionController::class,'invitationResponse']);
+    Route::post('/discussion/{discussionId}/update', [DiscussionController::class,'updateDiscussion'])
+        ->where('discussionId','[0-9]+');
+
+    Route::post('/conversation/item/deleteitem', [ConversationController::class,'deleteItem']);
+    Route::post('/conversation/item/updatestate', [ConversationController::class,'updateItemState']);
     Route::post('/conversation/{conversationId}/message', [ConversationController::class,'sendMessage']);
+    Route::post('/conversation/{conversationId}/question', [ConversationController::class,'sendQuestion']);
+    Route::post('/conversation/{conversationId}/answer', [ConversationController::class,'sendAnswer']);
+    Route::post('/conversation/{conversationId}/markanswer', [ConversationController::class,'markAnswer']);
     Route::get('/conversation/{conversationId}/messages', [ConversationController::class,'getMessages']);
     Route::post('/conversation/{conversationId}/response', [ConversationController::class,'createConversationResponse']);
     Route::post('/conversation/{conversationId}/block', [ConversationController::class,'blockConversation']);
@@ -89,22 +120,23 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/user/flagged', [FlagController::class,'userFlaggedGet']);
     
     Route::get('/user', 'Api\AuthController@getUser');
-    Route::get('/user/followrequests', 'Api\FollowController@followRequests');
-    Route::get('/user/follownotifications', 'Api\FollowController@followNotifications');
-    Route::post('/user/follownotifications/mark', 'Api\FollowController@markFollowNotifications');
-    Route::post('/user/{user}/edit', 'Api\AuthController@editUser');
+    Route::get('/user/requests', [RequestController::class,'getUserRequests']);
 
+    Route::get('/user/notifications',  [NotificationController::class,'getNotifications']);
+    Route::post('/user/notifications/mark',  [NotificationController::class,'markNotifications']);
+    
+    Route::post('/user/{user}/edit', 'Api\AuthController@editUser');
     Route::get('/secret', 'Api\AuthController@getSecretQuestions');
     Route::post('/secret', 'Api\AuthController@postSecretQuestions');
     Route::post('/create', 'Api\YourEduController@create');
 
     
-    Route::post('/profile/{profile}/update', 'Api\ProfileController@profileUpdate');
-    Route::post('/profile/{profile}/addinfo', 'Api\ProfileController@profileAddInfo');
-    Route::post('/profile/{profile}/profilepic', 'Api\ProfileController@profilePicUpdate');
-    Route::post('/markinfo', 'Api\ProfileController@profileMarkInfo');
-    Route::post('/deleteinfo', 'Api\ProfileController@profileDeleteInfo');
-    Route::post('/profile/{profile}/uploadfile', 'Api\ProfileController@profileUploadFile');
+    Route::post('/profile/{profile}/update', [ProfileController::class,'profileUpdate']);
+    Route::post('/profile/{profile}/addinfo', [ProfileController::class,'profileAddInfo']);
+    Route::post('/profile/{profile}/profilepic', [ProfileController::class,'profilePicUpdate']);
+    Route::post('/markinfo', [ProfileController::class,'profileMarkInfo']);
+    Route::post('/deleteinfo', [ProfileController::class,'profileDeleteInfo']);
+    Route::post('/profile/{profile}/uploadfile', [ProfileController::class,'profileUploadFile']);
     
     Route::post('/post', 'Api\PostController@postCreate');
     Route::post('/post/{post}/{account}/{accountId}', 'Api\PostController@postEdit')
@@ -148,9 +180,9 @@ Route::group(['middleware' => 'auth:api'], function () {
     ->middleware(['CheckItem']);
 
     
-    Route::get('/requests/follow', 'Api\RequestController@getFollowRequests');
-    Route::post('/decline/request/{requestId}', 'Api\RequestController@declineRequest');
-    Route::post('/accept/request/{requestId}', 'Api\FollowController@followBack');
+    Route::get('/requests/follow', [FollowController::class,'getFollowRequests']);
+    Route::post('/request/decline', [FollowController::class,'declineRequest']);
+    Route::post('/request/accept', [FollowController::class,'followBack']);
     
     Route::get('/{requestAccount}/{requestAccountId}/{media}/private', 'Api\ProfileController@profilePrivateMediasGet');
     
@@ -165,10 +197,6 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/course/create', [CourseController::class,'courseCreate']);
     Route::post('/course/{course}/alias', [CourseController::class,'courseAliasCreate']);
     Route::delete('/course/{course}', [CourseController::class,'courseDelete']);
-    
-    Route::post('/subject/create', [SubjectController::class,'subjectCreate']);
-    Route::post('/subject/{subject}/alias', [SubjectController::class,'subjectAliasCreate']);
-    Route::delete('/subject/{subject}', [SubjectController::class,'subjectDelete']);
 
     Route::post('/grade/create', [GradeController::class,'gradeCreate']);
     Route::post('/grade/{grade}/alias', [GradeController::class,'gradeAliasCreate']);
@@ -182,4 +210,5 @@ Route::group(['middleware' => 'auth:api'], function () {
 
 }); 
 
-Route::get('/{requestAccount}/{requestAccountId}/{media}', 'Api\ProfileController@profileMediasGet');
+Route::get('/{requestAccount}/{requestAccountId}/{media}', 'Api\ProfileController@profileMediasGet')
+    ->where('requestAccount', 'learner|facilitator|parent|professional|school|admin');

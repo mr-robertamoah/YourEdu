@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\RequestResource;
 use App\User;
 use App\YourEdu\Facilitator;
+use App\YourEdu\Follow;
 use App\YourEdu\Learner;
+use App\YourEdu\Message;
 use App\YourEdu\ParentModel;
 use App\YourEdu\Professional;
 use App\YourEdu\Request as YourEduRequest;
 use App\YourEdu\School;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -18,59 +22,30 @@ class RequestController extends Controller
 {
     //
 
-    public function getFollowRequests()
+    public function getUserRequests()
     {
-        // $mergeFollowRequest = [];
-
-        $user = User::find(auth()->id());
-
         try {
-            if ($user) {
-                if ($user->facilitator) {
-                    $mergeRequest = $user->facilitator()->whereHas('requestsReceived',function(Builder $query){
-                        $query->where('requestable_type','App\YourEdu\Follow')
-                        ->where('state','PENDING');
-                    })->with('requestsReceived')->get();
-                }
-                
-                if ($user->learner) {
-                    $mergeRequest->merge($user->learner()->whereHas('requestsReceived',function(Builder $query){
-                        $query->where('requestable_type','App\YourEdu\Follow')
-                        ->where('state','PENDING');
-                    })->with('requestsReceived')->get());
-                }
-                
-                if ($user->professionals) {
-                    $mergeRequest->merge($user->professionals()->whereHas('requestsReceived',function(Builder $query){
-                        $query->where('requestable_type','App\YourEdu\Follow')
-                        ->where('state','PENDING');
-                    })->with('requestsReceived')->get());
-                }
-                
-                if ($user->schools) {
-                    $mergeRequest->merge($user->schools()->whereHas('requestsReceived',function(Builder $query){
-                        $query->where('requestable_type','App\YourEdu\Follow')
-                        ->where('state','PENDING');
-                    })->with('requestsReceived')->get());
-                }
-    
-                if ($mergeRequest) {
-                    return response()->json([
-                        'message'=> 'successful',
-                        'requests'=> paginate($mergeRequest,10)
-                        // 'requests'=> paginate($mergeRequest,10)
+            $id = auth()->id();
+            $request = YourEduRequest::where('state','PENDING')
+                ->whereHasMorph('requestto','*',function(Builder $query, $type) use ($id){
+                    if ($type == 'App\YourEdu\School') {
+                        $query->where('owner_id',$id);
+                    } else{
+                        $query->where('user_id',$id);
+                    }
+                })
+                ->with(['requestfrom.profile'])
+                ->with(['requestable'=>function(MorphTo $query){
+                    $query->morphWith([
+                        Message::class =>['images','videos','audios','files',],
+                        Discussion::class =>['images','videos','audios','files','likes',
+                            'comments','beenSaved','raisedby.profile','attachments',
+                            'participants'],
                     ]);
-                }
+                }])->get();
 
-                return response()->json([
-                    'message'=> 'successful',
-                    'requests'=> []
-                ]);
-            } else {
-                return response()->json([
-                    'message'=> 'unsuccessful. user does not exist',
-                ],422);
-            }
+            // return $request;
+            return RequestResource::collection(paginate($request->sortByDesc('updated_at'),10));
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -83,17 +58,8 @@ class RequestController extends Controller
         $mainRequest = YourEduRequest::find($requestId);
 
         if ($mainRequest) {
-            if (Str::contains(strtolower($mainRequest->requestto_type), 'learner')) {
-                $requestTo = Learner::find($mainRequest->requestto_id);
-            } else if (Str::contains(strtolower($mainRequest->requestto_type), 'facilitator')) {
-                $requestTo = Facilitator::find($mainRequest->requestto_id);
-            } else if (Str::contains(strtolower($mainRequest->requestto_type), 'professional')) {
-                $requestTo = Professional::find($mainRequest->requestto_id);
-            } else if (Str::contains(strtolower($mainRequest->requestto_type), 'parent')) {
-                $requestTo = ParentModel::find($mainRequest->requestto_id);
-            } else if (Str::contains(strtolower($mainRequest->requestto_type), 'school')) {
-                $requestTo = School::find($mainRequest->requestto_id);
-            }
+            $requestTo = getAccountObject(getAccountString($mainRequest->requestto_type),
+                $mainRequest->requestto_id);
 
             if (!$requestTo) {
                 return response()->json([

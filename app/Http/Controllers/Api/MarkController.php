@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MarkResource;
+use App\Http\Resources\RemarkResource;
+use App\Services\MarkService;
 use App\YourEdu\Admin;
 use App\YourEdu\Answer;
 use App\YourEdu\Facilitator;
@@ -20,28 +22,14 @@ class MarkController extends Controller
 
     public function markCreate(Request $request,$answer, $answerId)
     {
-        $mainItem = null;
-        $mainAccount = null;
-        $account = $request->account;
-        $accountId = $request->accountId;
-
-        if ($account === 'learner') {
-            $mainAccount = Learner::find($accountId);
-        } else if ($account === 'parent') {
-            $mainAccount = ParentModel::find($accountId);
-        } else if ($account === 'facilitator') {
-            $mainAccount = Facilitator::find($accountId);
-        } else if ($account === 'professional') {
-            $mainAccount = Professional::find($accountId);
-        } else if ($account === 'school') {
-            $mainAccount = School::find($accountId);
-        }
-
+        $mainAccount = getAccountObject($request->account,$request->accountId);
+        
         if ($mainAccount) {
+            $mainItem = null;
             if ($answer === 'answer') {
                 $mainItem = Answer::find($answerId);
             }
-            // return $mainAccount;
+            
             try {
                 if ($mainItem) {
                     $request->validate([
@@ -58,22 +46,12 @@ class MarkController extends Controller
                         ],422);
                     }
 
-                    $mark = $mainAccount->marks()->create([
-                        'user_id' => auth()->id(),
-                        'answer_id' => $answerId,
-                        'remark' => $request->remark,
-                        'state' => strtoupper($request->state),
-                        'score' => (int)$request->score,
-                        'score_over' => (int)$request->score_over,
-                    ]);
-                    $point = $mainAccount->point->value;
-                    $mainAccount->point()->update([
-                        'value' => $point + 1
-                    ]);
-    
-                    $mark->markable()->associate($mainItem);
-                    $mark->save();
-
+                    $mark = (new MarkService())->createMark($request,$mainAccount,$mainItem);
+                    if (is_null($mark)) {
+                        return response()->json([
+                            'message' => "unsuccessful, mark was not created",
+                        ],422);
+                    }
                     DB::commit();
                     return response()->json([
                         'message' => "successful",
@@ -96,8 +74,21 @@ class MarkController extends Controller
             }
         } else {
             return response()->json([
-                'message' => "{$account} does not exit."
+                'message' => "{$request->account} does not exit."
             ], 422);
         }
+    }
+
+    public function getAnswerMarks($answerId)
+    {
+        $answer = getAccountObject('answer', $answerId);
+
+        if (is_null($answer)) {
+            return response()->json([
+                'message' => "unsuccessful, answer not found",
+            ],422);
+        }
+
+        return RemarkResource::collection($answer->marks()->latest()->paginate(10));
     }
 }

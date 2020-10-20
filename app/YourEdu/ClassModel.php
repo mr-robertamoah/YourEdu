@@ -70,7 +70,7 @@ class ClassModel extends Model
 
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extra','extracurricumable');
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra');
     }
 
     public function fees()

@@ -15,9 +15,13 @@ class CreateDiscussionsTable extends Migration
     {
         Schema::create('discussions', function (Blueprint $table) {
             $table->id();
-            $table->morphs('raisedby'); 
-            $table->morphs('discussionfor'); // class group
-            $table->morphs('discussionable'); //lesson subject curriculumdetail extracurriculum topic
+            $table->morphs('raisedby'); //learner parent professional
+            $table->nullableMorphs('discussionfor'); // class group
+            $table->string('title');
+            $table->string('preamble');
+            $table->boolean('restricted'); //can be changed anytime by raisedby
+            $table->enum('type',['PUBLIC','PRIVATE']);
+            $table->enum('allowed',['ALL','LEARNERS','PARENTS','FACILITATORS','PROFESSIONALS','SCHOOLS']);
             $table->softDeletes();
             $table->timestamps();
         });

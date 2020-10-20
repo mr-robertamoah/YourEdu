@@ -166,19 +166,19 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
                     return
                 }
                 if (this.recordState === 'recording') {
+                    this.recordState = 'stop recording'
                     mediaRecorder.stop()
                     if (this.type === 'audio') {
                         this.audioState = 'doneRecording'
                     }
-                    this.recordState = 'stop recording'
                 } else {
                     this.previewShow = false
                     this.file = null
                     if (this.type === 'audio') {
                         this.audioState = 'recording'
                     }
-                    mediaRecorder.start()
                     this.recordState = 'recording'
+                    mediaRecorder.start()
                 }
             },
             clickedSwitch(){
@@ -343,11 +343,12 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
                 justify-content: center;
                 align-items: center;
             }
+            
+            .recording{
+                background-color: red;
+            }
         }
 
-        .recording{
-            background-color: red;
-        }
     }
 
 </style>

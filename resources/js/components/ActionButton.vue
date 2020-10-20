@@ -50,7 +50,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
         methods: {
             clickedAction() {
                 if (!this.prevent) {
-                    this.$emit('click')
+                    this.$emit('click', this.text)
                     this.clicked = !this.clicked
                 }
             }
@@ -64,6 +64,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
         padding: 5px;
         font-size: 14px;
         cursor: pointer;
+        border-radius: 10px;
 
         &:hover{
             transition: all 1s ease;

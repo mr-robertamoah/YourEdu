@@ -4,7 +4,7 @@
             <div class="post-attachment-wrapper" :class="{hasSelect:hasSelect}">
                 <div class="close" 
                     @click="hidePostAttachment"
-                    v-if="hasSelect"
+                    v-if="hasClose && hasSelect"
                 >
                     <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
                 </div>
@@ -162,6 +162,10 @@ import { mapActions } from 'vuex';
             hasSelect: {
                 type: Boolean,
                 default: false,
+            },
+            hasClose: {
+                type: Boolean,
+                default: true,
             },
             attachmentsNumber: {
                 type: Number,
@@ -361,6 +365,7 @@ import { mapActions } from 'vuex';
             justify-content: center;
             align-items: center;
             flex-wrap: wrap;
+            font-size: 14px;
 
             .button{
                 width: auto;

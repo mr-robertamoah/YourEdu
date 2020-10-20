@@ -15,7 +15,7 @@
         </div>
         <div class="edit"
             @click="clickedShowOptions"
-            v-if="computedProfiles.length && !simple"
+            v-if="computedProfiles.length"
         >
             <font-awesome-icon
                 :icon="['fa','chevron-down']"
@@ -87,7 +87,7 @@
             v-if="!simple"
         >
             <number-of>
-                {{`${likes} likes`}}
+                {{likes === 1 ? `${likes} like` : `${likes} likes`}}
             </number-of>
             <div class="comment-number" 
                 v-if="computedCommentNumber"
@@ -136,7 +136,7 @@
                     ></font-awesome-icon>
                 </div>
                 <div class="comment" 
-                    v-if="computedFlags"
+                    v-if="computedFlags && !computedOwner"
                     @click="clickedFlag"
                     :class="{flagged:isFlagged}"
                 >
@@ -614,6 +614,7 @@ import { mapGetters, mapActions } from 'vuex'
                 data.commentable_type = this.comment.commentable_type
                 data.commentable_id = this.comment.commentable_id
                 data.itemId = this.comment.id
+                data.where = this.$route.name
                 let response = null
                 if (who) {
                     data.account = who.account
@@ -675,6 +676,7 @@ import { mapGetters, mapActions } from 'vuex'
                         ownerId: this.comment.commentable_id,
                     }
 
+                    data.where = this.$route.name
                     let response = await this['profile/createLike'](data)
 
                     if (response === 'unsuccessful') {
@@ -720,6 +722,7 @@ import { mapGetters, mapActions } from 'vuex'
                     response = null,
                     state = ''
 
+                data.where = this.$route.name
                 if (who) {
                     data.account = who.account
                     data.accountId = who.accountId
@@ -778,7 +781,7 @@ import { mapGetters, mapActions } from 'vuex'
                         this.isLiked = false
                         
                         if (this.myLike && this.myLike.hasOwnProperty('id')) {
-                            let data = {
+                            let newData = {
                                 likeId: this.myLike.id,
                                 item: 'comment',
                                 itemId: this.comment.id,
@@ -786,12 +789,13 @@ import { mapGetters, mapActions } from 'vuex'
                                 ownerId: this.comment.commentable_id,
                             }
 
-                            let response = await this['profile/deleteLike'](data)
+                            newData.where = this.$route.name
+                            let response = await this['profile/deleteLike'](newData)
                             if (response === 'unsuccessful') {
                                 this.isLiked = true
                                 this.likes += 1
                             } else {
-                                this.$emit('commentUnlikeSuccessful',data)
+                                this.$emit('commentUnlikeSuccessful',newData)
                             }
                         } else {
                             this.likes += 1
@@ -978,15 +982,19 @@ $comment-font-size: 13px;
 
                 .media{
                     width: 100%;
-                    margin: 0px 0 10px;
-                    max-height: 120px;
+                    margin: 10px 0 10px;
+                    max-height: 100px;
                     overflow: hidden;
 
                     video,
-                    audio,
                     img{
                         width: 100%;
-                        height: auto;
+                        height: 100%;
+                        object-fit: contain;
+                    }
+
+                    audio{
+                        width: 100%;
                     }
                 }
 

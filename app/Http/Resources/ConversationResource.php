@@ -25,6 +25,7 @@ class ConversationResource extends JsonResource
             'account_type' => $this->account_type,
             'description' => $this->description,
             'profile_url' => $this->profile_url,
+            'updated_at' => $this->updated_at,
             'created_at' => $this->created_at,
             'message' => $message,
             'conversationAccounts' => ConversationAccountResource::collection($this->conversationAccounts),

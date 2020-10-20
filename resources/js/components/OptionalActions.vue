@@ -1,5 +1,5 @@
 <template>
-    <fade-down>
+    <just-fade>
         <template slot="transition" v-if="show">
             <div class="options-wrapper">
                 <div class="option" v-if="hasSave">
@@ -22,13 +22,16 @@
                     <font-awesome-icon :icon="['fa','trash']"></font-awesome-icon>
                     <span @click="clickedOption('delete')">delete</span>
                 </div>
+                <div class="option" v-if="hasExtra">
+                    <slot name="extraicon"></slot>
+                    <span @click="clickedOption(extraText)">{{extraText}}</span>
+                </div>
             </div>
         </template>
-    </fade-down>
+    </just-fade>
 </template>
 
 <script>
-import FadeDown from './transitions/FadeDown';
     export default {
         props: {
             show: {
@@ -55,13 +58,21 @@ import FadeDown from './transitions/FadeDown';
                 type: Boolean,
                 default: true
             },
+            hasExtra: {
+                type: Boolean,
+                default: false
+            },
+            extraText: {
+                type: String,
+                default: ''
+            },
             showEdit: { //need to find the use of this
                 type: Boolean,
                 default: true
             },
         },
         components: {
-            FadeDown,
+            
         },
         methods: {
             clickedOption(data) {
@@ -75,7 +86,7 @@ import FadeDown from './transitions/FadeDown';
     
 
     .options-wrapper{
-        font-size: 14px;
+        font-size: 12px;
         margin: 5px;
         background-color: whitesmoke;
         width: 100px;

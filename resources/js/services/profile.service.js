@@ -275,6 +275,67 @@ const ProfileService = {
             return error.response
         }
     },
+    async sendChatAnswer(data){
+
+        let response = null,
+            {conversationId, formData} = data
+        try {
+            response = await ApiService.post(`api/conversation/${conversationId}/answer`,
+            formData, true)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async sendChatMark(main){
+
+        let response = null,
+            {conversationId, data} = main
+        try {
+            response = await ApiService.post(`api/conversation/${conversationId}/markanswer`,
+            data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async sendChatQuestion(data){
+
+        let response = null,
+            {conversationId, formData} = data
+        try {
+            response = await ApiService.post(`api/conversation/${conversationId}/question`,
+            formData, true)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async deleteChatItem(data){
+
+        let response = null
+        try {
+            response = await ApiService.post(`api/conversation/item/deleteitem`, data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async updateChatItemStatus(data){
+
+        let response = null
+        try {
+            response = await ApiService.post(`api/conversation/item/updatestate`, data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
     async getChatMessages(data){
 
         let response = null,
@@ -424,6 +485,16 @@ const ProfileService = {
         try {
             let {item, itemId} = main
             let response = await ApiService.post(`/api/${item}/${itemId}/mark`,main)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getAnswerMarks(main){
+        try {
+            let {answerId, nextPage} = main
+            let response = await ApiService.get(`/api/answer/${answerId}/marks?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -680,6 +751,156 @@ const ProfileService = {
         }
     },
 
+    ///////////////////////////////////// discussions
+    async discussionCreate(data){
+        try {
+            let response = await ApiService.post(`/api/discussion`,data, true)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async discussionUpdate(main){
+        let {discussionId, formData} = main
+        try {
+            let response = await ApiService
+                .post(`/api/discussion/${discussionId}/update`,formData)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async discussionDelete(discussionId){
+        try {
+            let response = await ApiService.delete(`/api/discussion/${discussionId}`)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async discusionContributionResponse(data){
+        try {
+            let response = await ApiService.post(`/api/discussion/contribution/response`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async joinDiscussionResponse(data){
+        try {
+            let response = await ApiService.post(`/api/discussion/join/response`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async invitationDiscussionResponse(data){
+        try {
+            let response = await ApiService.post(`/api/discussion/invitation/response`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async deleteDiscussionMessage(data){
+        try {
+            let response = await ApiService.post(`/api/discussion/message/delete`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async updateParticpantState(data){
+        try {
+            let response = await ApiService.post(`/api/discussion/participant/update`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async deleteDiscussionParticipant(data){
+        try {
+            let response = await ApiService.post(`/api/discussion/participant/delete`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getDiscussionParticipants(data){
+        let response,
+            {discussionId, nextPage} = data
+        try {
+            response = await ApiService.get(`/api/discussion/${discussionId}/participants?page=${nextPage}`)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async getDiscussionMessages(data){
+        let response,
+            {discussionId, nextPage, type} = data
+        try {
+            response = await ApiService.get(`/api/discussion/${discussionId}/messages?page=${nextPage}`,{type})
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async sendDiscussionMessage(data){
+        let response,
+            {discussionId, formData} = data
+        try {
+            response = await ApiService.post(`/api/discussion/${discussionId}/message`,formData)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async inviteParticipant(data){
+        let response
+        try {
+            response = await ApiService.post(`/api/discussion/invitation`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async discussionSearch(data){
+        let response,
+            {nextPage, params} = data
+        try {
+            response = await ApiService.get(`/api/discussion/search?page=${nextPage}`,params)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async joinDiscussion(main){
+        let response,
+            {discussionId, data} = main
+        try {
+            response = await ApiService.post(`/api/discussion/${discussionId}/join`,data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
     ///////////////////////////////////// posts
     async postCreate(data){
         try {
@@ -725,13 +946,10 @@ const ProfileService = {
     async profilePostsGet(data){
         let {account, accountId , nextPage} = data
         try {
-            // console.log('profile post data',data )
             let response = null
             if (nextPage) {
-                // console.log('nextPageurl',`/api/posts/${account}/${accountId}?page=${nextPage}`)
                 response = await ApiService.get(`/api/posts/${account}/${accountId}?page=${nextPage}`)
             } else{
-                // console.log('nextPageurl',`/api/posts/${account}/${accountId}`)
                 response = await ApiService.get(`/api/posts/${account}/${accountId}`)
             }
     

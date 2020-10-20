@@ -112,6 +112,14 @@
                     }
                 }
             },
+            value: {
+                immediate:true,
+                handler(newValue){
+                    if (newValue && newValue.length) {
+                        this.inputValue = newValue
+                    }
+                }
+            },
         },
         methods: {
             checkInput(event) {
@@ -217,9 +225,13 @@ $buttonColor : rgba(2, 104, 90, .6);
 @media screen and (max-width:800px) {
     
     .text-input-wrapper{
-        input,
-        input::placeholder{
-            font-size: 14px;
+
+        .main-section{
+
+            input,
+            input::placeholder{
+                font-size: 14px;
+            }
         }
     }
 }
@@ -228,9 +240,12 @@ $buttonColor : rgba(2, 104, 90, .6);
     
     .text-input-wrapper{
 
-        input,
-        input::placeholder{
-            font-size: 12px;
+        .main-section{
+
+            input,
+            input::placeholder{
+                font-size: 12px;
+            }
         }
     }
 }

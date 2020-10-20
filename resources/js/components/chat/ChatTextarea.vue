@@ -11,21 +11,36 @@
         >
             <div class="emoji" 
                 @click="clickedEmoji"
-                v-if="!typingState"
+                v-if="!possibleAnswer && !typingState"
+                title="add an emoji to your text"
             >
                 <font-awesome-icon :icon="['fa','grin']"></font-awesome-icon>
             </div>
             <div class="attachment"
                 @click="clickedAttachments"
-                v-if="!typingState"
+                v-if="!possibleAnswer && !typingState"
+                title="add a file"
             >
                 <font-awesome-icon :icon="['fa','paperclip']"></font-awesome-icon>
             </div>
             <div class="attachment"
+                @click="clickedCreateQuestion"
+                v-if="!possibleAnswer && !typingState"
+                title="ask a question"
+            >
+                <font-awesome-icon :icon="['fa','question-circle']"></font-awesome-icon>
+            </div>
+            <div class="attachment"
                 @click="typingState = false"
-                v-if="typingState"
+                v-if="!possibleAnswer && typingState"
             >
                 <font-awesome-icon :icon="['fa','arrow-circle-right']"></font-awesome-icon>
+            </div>
+            <div class="attachment"
+                @click="clickedClearAnswer"
+                v-if="possibleAnswer"
+            >
+                <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
             </div>
             <div class="main-attachments-wrapper"
                 @click="clickedCloseAttachments"
@@ -99,12 +114,13 @@
             @keyup.enter="sendMessage"
             rows="1"
             @focus="focusTextarea"
+            :readonly="possibleAnswer"
         ></textarea>
         <div class="send-button"
             @click="sendMessage"
             v-if="computedSendButton"
         >
-            send
+            {{answer ? 'answer' : 'send'}}
         </div>
         <!-- file preview -->
         <addon-modal
@@ -123,7 +139,9 @@
                         class="file-preview-wrapper"
                     ></file-preview>
 
-                    <input type="text" class="form-control caption" placeholder="add a caption"
+                    <input type="text" class="form-control caption" 
+                        placeholder="add a caption"
+                        v-if="!answer"
                         v-model="fileCaption">
                     <div class="buttons">
                         <div class="send" @click="clickedSendPreview">send</div>
@@ -156,9 +174,11 @@
         ></media-capture>
         <!-- create post -->
         <create-post
-            :show="showCreatePost"
+            :showForm="showCreateQuestion"
             type="question"
             @clickedCreate="clickedCreate"
+            :chat="true"
+            @mainModalDisappear="closeCreateQuestion"
         ></create-post>
     </div>
 </template>
@@ -180,6 +200,14 @@ import CreatePost from '../forms/CreatePost';
                 default: ''
             },
             error: {
+                type: Boolean,
+                default: false
+            },
+            answer: {
+                type: Boolean,
+                default: false
+            },
+            possibleAnswer: {
                 type: Boolean,
                 default: false
             },
@@ -223,7 +251,7 @@ import CreatePost from '../forms/CreatePost';
                 showFilePreview: false,
                 file: null,
                 showMediaCapture: false,
-                showCreatePost: false,
+                showCreateQuestion: false,
                 mediaCaptureType: '',
                 typingState: false, //for changing classes of ui when user is typing
             }
@@ -254,8 +282,17 @@ import CreatePost from '../forms/CreatePost';
         },
         methods: {
             clickedCreate(data){
-
+                this.textareaValue = ''
                 this.$emit('sendQuestion', data)
+            },
+            clickedClearAnswer(){
+                this.$emit('clickedClearAnswer')
+            },
+            clickedCreateQuestion(){
+                this.showCreateQuestion = true
+            },
+            closeCreateQuestion(){
+                this.showCreateQuestion = false
             },
             focusTextarea() {
                 if (this.disabledChat) {
@@ -328,7 +365,6 @@ import CreatePost from '../forms/CreatePost';
                 this.showEmoji = !this.showEmoji
             },
             selectEmoji(e){
-                console.log(e);
                 this.textareaValue = this.textareaValue + e.data
             },
             clickedCloseAttachments(){

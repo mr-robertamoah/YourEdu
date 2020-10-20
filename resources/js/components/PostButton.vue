@@ -94,10 +94,12 @@
     
     .danger{
         background-color: $danger-button-background;
+        color: white;
     }
     
     .success{
         background-color: $success-button-background;
+        color: white;
     }
     
     .active{

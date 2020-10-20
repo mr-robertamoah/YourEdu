@@ -75,7 +75,7 @@ class User extends Authenticatable
 
     public function receivesBroadcastNotificationsOn()
     {
-        return 'youredu.users.'.$this->id;
+        return "youredu.user.{$this->id}";
     }
     
     public function getFullNameAttribute()

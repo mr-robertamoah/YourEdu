@@ -420,17 +420,7 @@ class ProfileController extends Controller
         $mainAccount = null;
 
         try {
-            if ($account === 'learner') {
-                $mainAccount = Learner::find($accountId);
-            } else if ($account === 'parent') {
-                $mainAccount = ParentModel::find($accountId);
-            } else if ($account === 'facilitator') {
-                $mainAccount = Facilitator::find($accountId);
-            } else if ($account === 'school') {
-                $mainAccount = School::find($accountId);            
-            } else if ($account === 'professional') {
-                $mainAccount = Professional::find($accountId);
-            }
+            $mainAccount = getAccountObject($account, $accountId);
     
             if ($mainAccount && $mainAccount->profile) {
                 return response()->json([
@@ -458,17 +448,7 @@ class ProfileController extends Controller
 
     public function profilePrivateMediasGet($requestAccount,$requestAccountId,$media)
     {
-        if ($requestAccount === 'learner') {
-            $account = Learner::find($requestAccountId);
-        } else if ($requestAccount === 'facilitator') {
-            $account = Facilitator::find($requestAccountId);
-        } else if ($requestAccount === 'parent') {
-            $account = ParentModel::find($requestAccountId);
-        } else if ($requestAccount === 'professional') {
-            $account = Professional::find($requestAccountId);
-        } else if ($requestAccount === 'admin') {
-            $account = School::find($requestAccountId);
-        }
+        $account = getAccountObject($requestAccount, $requestAccountId);
 
         if (!$account) {
             return response()->json([
@@ -502,18 +482,7 @@ class ProfileController extends Controller
     
     public function profileMediasGet($requestAccount,$requestAccountId,$media)
     {
-        if ($requestAccount === 'learner') {
-            $account = Learner::find($requestAccountId);
-        } else if ($requestAccount === 'facilitator') {
-            $account = Facilitator::find($requestAccountId);
-        } else if ($requestAccount === 'parent') {
-            $account = ParentModel::find($requestAccountId);
-        } else if ($requestAccount === 'professional') {
-            $account = Professional::find($requestAccountId);
-        } else if ($requestAccount === 'admin') {
-            $account = School::find($requestAccountId);
-        }
-
+        $account = getAccountObject($requestAccount,$requestAccountId);
         if (!$account) {
             return response()->json([
                 'message' => 'unsuccessful, your account does not exist.'
@@ -543,17 +512,7 @@ class ProfileController extends Controller
         $mainProfile = Profile::find($profile);
         $mainMedia = null;
 
-        if ($requestAccount === 'learner') {
-            $account = Learner::find($requestAccountId);
-        } else if ($requestAccount === 'facilitator') {
-            $account = Facilitator::find($requestAccountId);
-        } else if ($requestAccount === 'parent') {
-            $account = ParentModel::find($requestAccountId);
-        } else if ($requestAccount === 'professional') {
-            $account = Professional::find($requestAccountId);
-        } else if ($requestAccount === 'admin') {
-            $account = School::find($requestAccountId);
-        }
+        $account = getAccountObject($requestAccount,$requestAccountId);
 
         if (!$account) {
             return response()->json([

@@ -131,6 +131,12 @@ import { mapActions, mapGetters } from 'vuex'
         data() {
             return {
                 showLoginRegister: false,
+                //discussions
+                discussionsNextPage: 1,
+                discussionsMineNextPage: 1,
+                discussionsFollowersNextPage: 1,
+                discussionsFollowingsNextPage: 1,
+                discussionsAttachmentsNextPage: 1,
                 //posts
                 postsNextPage: 1,
                 postsMineNextPage: 1,
@@ -304,6 +310,7 @@ import { mapActions, mapGetters } from 'vuex'
                 ,'home/clearHomeBooksAttachments','home/clearHomeActivitiesAttachments',
                 'home/search','home/newPost','home/removePost','home/replacePost',
                 'home/newComment','home/removeComment','home/replaceComment',
+                'home/newDiscussion','home/removeDiscussion','home/replaceDiscussion',
                 'home/newFlag','home/newLike','home/removeLike',
                 'home/newAttachment','home/removeAttachment','profile/getPost'
             ]),
@@ -312,53 +319,65 @@ import { mapActions, mapGetters } from 'vuex'
             },
             listen(){
                 Echo.channel('youredu.home')
-                .listen('.newPost', (post)=>{
-                    console.log(post)
-                    this['home/newPost'](post.post)
-                })
-                .listen('.updatePost', post=>{
-                    console.log(post)
-                    this['home/replacePost'](post.post)
-                })
-                .listen('.deletePost', postInfo=>{
-                    console.log(postInfo)
-                    this['home/removePost'](postInfo)
-                })
-                .listen('.newComment', (commentData)=>{
-                    console.log(commentData)
-                    this['home/newComment'](commentData)
-                })
-                .listen('.updateComment', commentData=>{
-                    console.log(commentData)
-                    this['home/replaceComment'](commentData)
-                })
-                .listen('.deleteComment', commentInfo=>{
-                    console.log(commentInfo)
-                    this['home/removeComment'](commentInfo)
-                })
-                .listen('.newAttachment', (attachmentData)=>{
-                    console.log(attachmentData)
-                    this['home/newAttachment'](attachmentData)
-                })
-                .listen('.deleteAttachment', attachmentInfo=>{
-                    console.log(attachmentInfo)
-                    this['home/removeAttachment'](attachmentInfo)
-                })
-                .listen('.newFlag', (flag)=>{
-                    console.log(flag)
-                    this['home/newFlag'](flag)
-                })
-                .listen('.newLike', (likeData)=>{
-                    console.log(likeData)
-                    this['home/newLike'](likeData)
-                })
-                .listen('.deleteLike', like=>{
-                    console.log(like)
-                    this['home/removeLike'](like)
-                })
+                    .listen('.newPost', (post)=>{
+                        console.log(post)
+                        this['home/newPost'](post.post)
+                    })
+                    .listen('.updatePost', post=>{
+                        console.log(post)
+                        this['home/replacePost'](post.post)
+                    })
+                    .listen('.deletePost', postInfo=>{
+                        console.log(postInfo)
+                        this['home/removePost'](postInfo)
+                    })
+                    .listen('.newComment', (commentData)=>{
+                        console.log(commentData)
+                        this['home/newComment'](commentData)
+                    })
+                    .listen('.updateComment', commentData=>{
+                        console.log(commentData)
+                        this['home/replaceComment'](commentData)
+                    })
+                    .listen('.deleteComment', commentInfo=>{
+                        console.log(commentInfo)
+                        this['home/removeComment'](commentInfo)
+                    })
+                    .listen('.newAttachment', (attachmentData)=>{
+                        console.log(attachmentData)
+                        this['home/newAttachment'](attachmentData)
+                    })
+                    .listen('.deleteAttachment', attachmentInfo=>{
+                        console.log(attachmentInfo)
+                        this['home/removeAttachment'](attachmentInfo)
+                    })
+                    .listen('.newFlag', (flag)=>{
+                        console.log(flag)
+                        this['home/newFlag'](flag)
+                    })
+                    .listen('.newLike', (likeData)=>{
+                        console.log(likeData)
+                        this['home/newLike'](likeData)
+                    })
+                    .listen('.deleteLike', like=>{
+                        console.log(like)
+                        this['home/removeLike'](like)
+                    })
+                    .listen('.newDiscussion', (discussion)=>{
+                        console.log(discussion)
+                        this['home/newDiscussion'](discussion.discussion)
+                    })
+                    .listen('.updateDiscussion', discussion=>{
+                        console.log(discussion)
+                        this['home/replaceDiscussion'](discussion.discussion)
+                    })
+                    .listen('.deleteDiscussion', discussionInfo=>{
+                        console.log(discussionInfo)
+                        this['home/removeDiscussion'](discussionInfo)
+                    })
+                
             },
             async clickedViewPost(data){
-                // this.clearSearchData()
                 this.showPostModal = true
                 this.postModalLoading = true
                 let response = await this['profile/getPost'](data.id)

@@ -131,7 +131,7 @@
                 >
                     <post-button 
                         :titleText="flagTitle"
-                        v-if="computedFlags"
+                        v-if="computedFlags && !computedOwner"
                         @click="clickedFlag"
                         :postButtonClass="flagRed"
                     >
@@ -152,7 +152,7 @@
                     </div>
                     <div class="like">
                         <number-of>
-                            {{`${likes} likes`}}
+                            {{likes === 1 ? `${likes} like` : `${likes} likes`}}
                         </number-of>
                         <div class="others" 
                             :class="{unsetPosition: showProfilesAction === 'save' || 
@@ -228,7 +228,7 @@
             <attachment-badge 
                 v-for="(attachment,index) in postAttachments"
                 :key="index"
-                :hasClose="true"
+                :hasClose="false"
                 :attachment="attachment.data"
                 :type="attachment.type"
             ></attachment-badge>
@@ -395,17 +395,17 @@ import { mapGetters, mapActions } from 'vuex'
             },
             isLiked(newValue){
                 if (newValue) {
-                    this.likeTitle = 'unlike this comment'
+                    this.likeTitle = 'unlike this post'
                 } else {
-                    this.likeTitle = 'like this comment'
+                    this.likeTitle = 'like this post'
                 }
             },
             isFlagged(newValue){
                 if (newValue) {
-                    this.flagTitle = 'unflag this answer'
+                    this.flagTitle = 'unflag this post'
                     this.flagRed = 'red'
                 } else {
-                    this.flagTitle = 'flag this answer'
+                    this.flagTitle = 'flag this post'
                     this.flagRed = ''
                 }
             },
@@ -497,13 +497,13 @@ import { mapGetters, mapActions } from 'vuex'
 
             },
             computedImageUrl(){
-                return this.post && this.post.images ? this.post.images.data[0].url : ''
+                return this.post && this.post.images ? this.post.images[0].url : ''
             },
             computedVideoUrl(){
-                return this.post && this.post.videos ? this.post.videos.url : ''
+                return this.post && this.post.videos ? this.post.videos[0].url : ''
             },
             computedAudioUrl(){
-                return this.post && this.post.audios ? this.post.audios.url : ''
+                return this.post && this.post.audios ? this.post.audios[0].url : ''
             },
             computedType(){
                 return this.post && this.post.type ?
@@ -592,6 +592,10 @@ import { mapGetters, mapActions } from 'vuex'
             },
         },
         methods: {
+            ...mapActions(['profile/deletePost','profile/updatePost',
+                'profile/createLike','profile/deleteLike','profile/createFlag',
+                'profile/deleteFlag','profile/deleteSave','profile/createSave',
+                'profile/createAttachment','profile/deleteAttachment']),
             clickedShowPostPreview(data){
                 this.$emit('clickedShowPostPreview',data)
             },
@@ -639,10 +643,6 @@ import { mapGetters, mapActions } from 'vuex'
             askLoginRegister(){
                 this.$emit('askLoginRegister','postShow')
             },
-            ...mapActions(['profile/deletePost','profile/updatePost',
-                'profile/createLike','profile/deleteLike','profile/createFlag',
-                'profile/deleteFlag','profile/deleteSave','profile/createSave',
-                'profile/createAttachment','profile/deleteAttachment']),
             clickedInfoOk(){
                 this.showSmallModal = false
             },
@@ -714,6 +714,7 @@ import { mapGetters, mapActions } from 'vuex'
             async flag(who){
                 this.loading = true
                 let data = {}
+                data.where = this.$route.name
                 data.post = true
                 data.itemId = this.post.id
                 let response = null
@@ -773,7 +774,7 @@ import { mapGetters, mapActions } from 'vuex'
                         this.isLiked = false
                         
                         if (this.myLike && this.myLike.hasOwnProperty('id')) {
-                            let data = {
+                            let newData = {
                                 likeId: this.myLike.id,
                                 item: 'post',
                                 itemId: this.post.id,
@@ -781,7 +782,8 @@ import { mapGetters, mapActions } from 'vuex'
                                 ownerId: this.post.postedby_id,
                             }
 
-                            let response = await this['profile/deleteLike'](data)
+                            newData.where = this.$route.name
+                            let response = await this['profile/deleteLike'](newData)
                             if (response === 'unsuccessful') {
                                 this.isLiked = true
                                 this.likes += 1
@@ -816,6 +818,7 @@ import { mapGetters, mapActions } from 'vuex'
                     response = null,
                     state = ''
 
+                data.where = this.$route.name
                 data.item = 'post'
                 data.itemId = this.post.id
                 if (who) {
@@ -881,6 +884,7 @@ import { mapGetters, mapActions } from 'vuex'
                     ownerId: this.post.postedby_id,
                 }
 
+                data.where = this.$route.name
                 let response = await this['profile/createLike'](data)
 
                 if (response === 'unsuccessful') {
@@ -900,6 +904,7 @@ import { mapGetters, mapActions } from 'vuex'
                     response = null,
                     state = ''
 
+                data.where = this.$route.name
                 if (who) {
                     data.account = who.account
                     data.accountId = who.accountId
@@ -998,6 +1003,7 @@ import { mapGetters, mapActions } from 'vuex'
                 otherData['postId'] = this.post.id
                 otherData['account'] = this.profile.params.account
                 otherData['accountId'] = this.profile.params.accountId
+                otherData['where'] = this.$route.name
 
                 let main = {
                     otherData, formData
@@ -1023,6 +1029,7 @@ import { mapGetters, mapActions } from 'vuex'
                     account: this.profile.params.account,
                     accountId: this.profile.params.accountId,
                 }
+                data.where = this.$route.name
                 let response = await this['profile/deletePost'](data)
                 
                 if (response === 'successful') {
@@ -1092,14 +1099,15 @@ import { mapGetters, mapActions } from 'vuex'
 
     .alert{
         font-size: 12px;
+        color: white;
     }
 
     .success{
-        color: green;
+        background-color: green;
     }
 
     .danger{
-        color: red;
+        background-color: red;
     }
 
     .post-attachment{
@@ -1239,6 +1247,7 @@ import { mapGetters, mapActions } from 'vuex'
                         align-items: center;
                         justify-content: space-between;
                         width: 50%;  
+                        margin-left: auto;
 
                         .others{
                             display: inline-flex;

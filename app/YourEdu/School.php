@@ -19,7 +19,6 @@ class School extends Model
     protected static function booted()
     {
         static::created(function ($school){
-            $user = $school->user;
             $school->profile()->create([
                 'user_id' => $school->owner_id,
                 'name' => $school->company_name ,
@@ -27,7 +26,7 @@ class School extends Model
             $school->verification()->create();
 
             $school->point()->create([
-                'user_id' => $school->user_id
+                'user_id' => $school->owner_id
             ]);
         });
     }
@@ -204,7 +203,7 @@ class School extends Model
 
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extra','extracurricumable');
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra');
     }
 
     public function fees()
@@ -364,6 +363,11 @@ class School extends Model
     public function riddlesAdded()
     {
         return $this->morphMany(Riddle::class,'addedby');
+    }
+
+    public function discussions()
+    {
+        return $this->morphMany(Discussion::class,'raisedby');
     }
 
     public function posts()

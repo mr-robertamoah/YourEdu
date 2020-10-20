@@ -5,6 +5,7 @@
         :alertError="alertError"
         :loading="computedLoading"
         @clearAlert="clearAlert"
+        :request="false"
      >  
         <template slot="loading" v-if="computedLoading">
             <pulse-loader :loading="computedLoading"></pulse-loader>
@@ -52,9 +53,9 @@
                     </div>
                     <div class="ask-answers" v-if="computedQuestion">
                         does it have possible answers? <div class="no"
-                            :class="{yes:answerYes}"
+                            :class="{yes:!answerYes}"
                             @click="clickedAnswerYes"
-                        >yes</div>
+                        >{{answerYes ? 'no' : 'yes'}}</div>
                     </div>
                     <template v-if="showPossibleAnswers">
                         <text-array
@@ -107,7 +108,7 @@
                     </div>
 
                     <file-input
-                        :fileMax="2"
+                        :fileMax="fileMax"
                         :error="errorFile"
                         :bottomBorder="true"
                         @uploadedFiles="uploadedFiles"
@@ -153,6 +154,14 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                 default: false
             },
             edit: {
+                type: Boolean,
+                default: false
+            },
+            fileMax: {
+                type: Number,
+                default: 1
+            },
+            chat: {
                 type: Boolean,
                 default: false
             },
@@ -306,7 +315,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                     this.edit && this.editableData.typeName === 'activity' ? true : false
             },
             computedPublished() {
-                if (this.edit && this.editableData.type === null) {
+                if (this.chat || (this.edit && this.editableData.type === null)) {
                     return false
                 }
                 return true
@@ -516,6 +525,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                     } else {
                         this.$emit('clickedCreate', data)
                     }
+                    this.closeModal()
                 }
             },
             closeModal(){

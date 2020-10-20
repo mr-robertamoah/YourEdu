@@ -6,24 +6,17 @@ use App\Events\DeletePost;
 use App\Events\NewPost;
 use App\Events\UpdatePost;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\DiscussionPostResource;
 use App\Http\Resources\PostResource;
 use App\Services\Attachment;
+use App\Services\QuestionService;
 use App\User;
-use App\YourEdu\Facilitator;
-use App\YourEdu\Follow;
-use App\YourEdu\Learner;
-use App\YourEdu\ParentModel;
+use App\YourEdu\Discussion;
 use App\YourEdu\Post;
-use App\YourEdu\Professional;
-use App\YourEdu\School;
 use Carbon\Carbon;
 use \Debugbar;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -178,31 +171,7 @@ class PostController extends Controller
                         'previewFileType' => 'nullable|string',
                     ]);
 
-                    $input['question'] = $request->question;
-                    $input['state'] = 'PENDING';
-
-                    if ((int)$request->score > 100) {
-                        $input['score_over'] = 100;
-                    } else if (is_null($request->score) || (int)$request->score < 5) {
-                        $input['score_over'] = 5;
-                    } else {
-                        $input['score_over'] = (int) $request->score;
-                    }
-
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();
-                    $type = $account->questionsAdded()->create($input);
-                    $type->questionable()->associate($post);
-                    $type->save();
-
-                    if ($request->has('possibleAnswers') && 
-                        !is_null($request->possibleAnswers)) {
-                        $possibleAnswers = json_decode($request->possibleAnswers);
-                        foreach ($possibleAnswers as $key => $possibleAnswer) {
-                            $type->possibleAnswers()->create([
-                                'option' => $possibleAnswer,
-                            ]);
-                        }
-                    }
+                    $type = (new QuestionService)->createQuestion($request, $post, $account,'post');
                 }  else if ($request->type === 'lesson') {
                     $request->validate([
                         'title' => 'required|string',
@@ -281,7 +250,6 @@ class PostController extends Controller
 
     public function getUserPosts(Request $request)
     {
-        $posts = null;
         $parentsLearnerUserIds = [];
         $learner = User::find(auth()->id())->learner;
         try {
@@ -290,7 +258,7 @@ class PostController extends Controller
             }
             $parentsLearnerUserIds [] = auth()->id();
 
-            $posts = Post::with(['books'=>function(MorphMany $query){
+            $items = Post::with(['books'=>function(MorphMany $query){
                     $query->with(['images','videos','audios','files','comments']);
                 },'poems'=>function(MorphMany $query){
                     $query->with(['images','videos','audios','files','comments']);
@@ -301,10 +269,15 @@ class PostController extends Controller
                 },'questions'=>function(MorphMany $query){
                     $query->with(['images','videos','audios','files','answers']);
                 },'comments'])->hasPostTypes()->withFilter()->hasPublished()
-                ->hasNoFlags($parentsLearnerUserIds)->orderBy('updated_at', 'desc')
-                ->paginate(5);
+                ->hasNoFlags($parentsLearnerUserIds)
+                ->get();
 
-            return PostResource::collection($posts);            
+            $items = $items->merge(Discussion::with([
+                'images','videos','audios','files','comments','flags','attachments',
+                'beenSaved','messages','raisedby.profile','requests.requestfrom'])
+                ->get());
+            // return PostResource::collection($posts);            
+            return DiscussionPostResource::collection(paginate($items->sortByDesc('updated_at'), 5));            
         } catch (\Throwable $th) {
             // return response()->json([
             //     'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
@@ -572,7 +545,8 @@ class PostController extends Controller
             'activities.files','activities.audios','riddles.images','riddles.videos',
             'riddles.files','riddles.audios','poems.images','poems.videos',
             'poems.files','poems.audios','books.images','books.videos','books.files',
-            'books.audios','postedby.profile'])->find($post);
+            'books.audios','postedby.profile','lessons.images','lessons.videos',
+            'lessons.files','lessons.audios'])->find($post);
 
         if (!$item) {
             return response()->json([
@@ -595,9 +569,20 @@ class PostController extends Controller
             ]);
         }
 
-        return PostResource::collection($mainAccount->posts()
-            ->with(['questions','activities','riddles',
-            'poems','books','postedby.profile'])
-            ->latest()->paginate(5));
+        $items = $mainAccount->posts()
+            ->with(['questions.images','questions.videos',
+            'questions.audios','questions.files','activities.images','activities.videos',
+            'activities.files','activities.audios','riddles.images','riddles.videos',
+            'riddles.files','riddles.audios','poems.images','poems.videos',
+            'poems.files','poems.audios','books.images','books.videos','books.files',
+            'books.audios','postedby.profile','lessons.images','lessons.videos',
+            'lessons.files','lessons.audios'])->get();
+        
+        $items = $items->merge($mainAccount->discussions()->with([
+            'images','videos','audios','files','likes','comments','messages',
+            'attachments','participants','beenSaved','flags','raisedby.profile',
+        ])->get());
+
+        return DiscussionPostResource::collection(paginate($items->sortByDesc('updated_at'), 5));
     }
 }

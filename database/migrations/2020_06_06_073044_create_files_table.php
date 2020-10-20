@@ -18,6 +18,7 @@ class CreateFilesTable extends Migration
             $table->nullableMorphs('ownedby'); //facilitator learner school professional collaboration
             $table->morphs('addedby'); //facilitator learner school professional
             $table->string('path');
+            $table->string('name');
             $table->string('mime');
             $table->string('size');
             $table->softDeletes();

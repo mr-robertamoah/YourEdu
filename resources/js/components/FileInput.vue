@@ -3,7 +3,6 @@
         <div class="input-wrapper" 
             :class="{'input-error':error,bottomborder:bottomBorder}">
             <input type="text" readonly v-if="inputType"
-                @click.prevent="clickInput"
                 :placeholder="inputPlaceholder" 
                 class="form-control input-text">
             <div @click.prevent="clickInput" v-else
@@ -21,11 +20,36 @@
                 @click.prevent="clickInput">
                 <font-awesome-icon :icon="['fas','upload']"></font-awesome-icon>
             </div>
+            <div class="input-prepend" title="add files"
+                v-if="hasExtraButtons"
+                @click="clickedCapture">
+                <font-awesome-icon :icon="['fas','camera-retro']"></font-awesome-icon>
+            </div>
+            <div class="file-capture" v-if="showFileCapture">
+                <div class="capture"
+                    title="capture an image"
+                    @click="clickedFileCapture('image')"
+                >
+                    <font-awesome-icon :icon="['fas','camera']"></font-awesome-icon>
+                </div>
+                <div class="capture"
+                    title="record a video"
+                    @click="clickedFileCapture('video')"
+                >
+                    <font-awesome-icon :icon="['fas','video']"></font-awesome-icon>
+                </div>
+                <div class="capture"
+                    title="record an audio"
+                    @click="clickedFileCapture('audio')"
+                >
+                    <font-awesome-icon :icon="['fas','microphone']"></font-awesome-icon>
+                </div>
+            </div>
         </div>
         <input type="file" ref="fileInput" :multiple='inputMultiple' 
             @change="inputFiles" class="d-none">
 
-        <div class="file-number-wrapper">
+        <div class="file-number-wrapper" v-if="fileMax > 1">
             <div class="file-number">{{fileNumber}}</div>
         </div>
 
@@ -60,14 +84,25 @@
                 </div>
             </div>
         </div>
+        
+        <!-- media capture -->
+        <media-capture
+            v-if="showMediaCapture"
+            :show="showMediaCapture"
+            :type="mediaCaptureType"
+            @closeMediaCapture="closeMediaCapture"
+            @sendFile="receivedMediaCapture"
+        ></media-capture>
     </div>
 </template>
 
 <script>
 import PostButton from './PostButton'
+import MediaCapture from './MediaCapture'
 
     export default {
         components: {
+            MediaCapture,
             PostButton,
         },
         props: {
@@ -121,6 +156,9 @@ import PostButton from './PostButton'
                 imageType: 'image/apng,image/bmp,image/gif,image/x-icon,image/jpeg,image/png,image/svg+xml,image/webp',
                 videoType: 'video/webm,video/mp4,video/ogg',
                 audioType: 'audio/mpeg,audio/ogg,audio/wav',
+                showFileCapture: false,
+                showMediaCapture: false,
+                mediaCaptureType: '',
             }
         },
         computed: {
@@ -170,6 +208,50 @@ import PostButton from './PostButton'
             },
         },
         methods: {
+            clickedCapture(){
+                this.showFileCapture = true
+                setTimeout(() => {
+                    this.showFileCapture = false
+                }, 4000);
+            },
+            clickedFileCapture(data){
+                this.mediaCaptureType = data
+                this.showMediaCapture = true
+            },
+            receivedMediaCapture(blob){
+                let file,
+                    fileName,
+                    time = new Date
+                    time = time.getTime()
+                if (blob.type.includes('image')) {
+                    fileName = `my_picture${time}.png`
+                    file = new File([blob],fileName,{
+                        type: 'image/png',
+                        lastModified: new Date()
+                    })
+                } else if (blob.type.includes('video')) {
+                    fileName = `my_video${time}.webm`
+                    file = new File([blob],fileName,{
+                        type: 'video/webm',
+                        lastModified: new Date()
+                    })
+                } else if (blob.type.includes('audio')) {
+                    fileName = `my_audio${time}.mp3`
+                    file = new File([blob],fileName,{
+                        type: 'audio/mp3',
+                        lastModified: new Date()
+                    })
+                }
+                // this.files.push(file)
+                // this.previewFiles.push(file)
+                // this.fileNamesArray.push(fileName)
+                // this.fileNames = this.fileNamesArray.join(', ')
+                this.previewInput([file])
+            },
+            closeMediaCapture(){
+                this.mediaCaptureType = ''
+                this.showMediaCapture = false
+            },
             showPreview(){
                 this.previewFiles = []
                 if (this.previewButton === 'preview') {
@@ -288,9 +370,6 @@ import PostButton from './PostButton'
                     
                     this.fileNames = this.fileNamesArray.join(', ')
                     this.$emit('fileInputChange', this.files, this.fileTypes)
-                    // this.readFiles(this.files)
-
-                    // this.fileNames = this.fileNamesArray.join(', ')
                 }
             },
             readFiles(files){
@@ -306,7 +385,6 @@ import PostButton from './PostButton'
                     }.bind(this),false)
                     
                     reader.readAsDataURL(files[i])
-                    
                 }
             }
         },
@@ -324,6 +402,7 @@ $border-color-main : rgba(22, 233, 205, 1);
             align-items: center;
             border: 1px solid $border-color-main;
             background-color: white;
+            position: relative;
             
             .input-text{
                 // min-width: 80%;
@@ -349,6 +428,23 @@ $border-color-main : rgba(22, 233, 205, 1);
                 color: rgba(22, 233, 205, 1);
                 padding: 5px 10px 5px 5px;
                 cursor: pointer;
+            }
+
+            .file-capture{
+                position: absolute;
+                display: inline-flex;
+                justify-content: space-around;
+                align-items: center;
+                width: 100px;
+                top: 120%;
+                border-radius: 10px;
+                padding: 10px;
+                background: inherit;
+
+                .capture{
+                    padding: 5px;
+                    cursor: pointer;
+                }
             }
 
             .disable{
@@ -383,7 +479,7 @@ $border-color-main : rgba(22, 233, 205, 1);
             background-color: rgba(105, 105, 105, 0.085);
 
             .preview-wrapper{
-                width: 90%;
+                width: 95%;
                 margin: 5px auto;
                 background-color: rgba(105, 105, 105, 0.3);
                 display: flex;
@@ -393,7 +489,7 @@ $border-color-main : rgba(22, 233, 205, 1);
                 padding: 5px;
 
                 .preview-file{
-                    width: 30%;
+                    width: 45%;
                     min-height: 20px;
                     height: auto;
                     background-color: rgba(105, 105, 105, 0.3);

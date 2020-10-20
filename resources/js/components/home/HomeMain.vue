@@ -1,5 +1,19 @@
 <template>
     <div class="home-main-wrapper">
+        <div class="extras-section">
+            <post-button buttonText="discussion" 
+                @click="clickedShowDiscussion"
+                titleText="have something to discuss?"></post-button>
+        </div>
+        <div class="loading" v-if="discussionLoading">
+            <pulse-loader :loading="discussionLoading" :size="'10px'"></pulse-loader>
+        </div>
+        <div class="alert" 
+            v-if="alertMessage.length"
+            :class="{success:alertSuccess, danger:alertDanger}"
+        >
+            {{alertMessage}}
+        </div>
         <post-create v-if="computedPostCreate"></post-create>
         <div 
             v-else-if="!loading && !computedPostCreate"
@@ -20,33 +34,57 @@
             <template 
                 v-if="computedPosts"
             >
-                <post-show
-                    :key="post.id"
+                <template
                     v-for="post in computedPosts"
-                    :post="post"
-                    @askLoginRegister="askLoginRegister"
-                    @clickedMedia="clickedMedia"
-                    @clickedShowPostComments="clickedShowPostComments"
-                    @clickedShowPostPreview="clickedShowPostPreview"
-                ></post-show>
+                >
+                    <post-show
+                        :key="`post.${post.id}`"
+                        v-if="post.isPost"
+                        :post="post"
+                        @askLoginRegister="askLoginRegister"
+                        @clickedMedia="clickedMedia"
+                        @clickedShowPostComments="clickedShowPostComments"
+                        @clickedShowPostPreview="clickedShowPostPreview"
+                    ></post-show>
+                    <discussion-single
+                        v-if="post.isDiscussion"
+                        :key="`discussion.${post.id}`"
+                        :discussion="post"
+                        @askLoginRegister="askLoginRegister"
+                    ></discussion-single>
+                </template>
             </template>
         </template>
+
+        <!-- create discussion -->
+        <create-discussion
+            v-if="showCreateDiscussion"
+            :show="showCreateDiscussion"
+            @createDiscussionDisappear="clickedCloseDiscussion"
+            @clickedCreate="clickedCreateDiscussion"
+        ></create-discussion>
     </div>
 </template>
 
 <script>
 import PostCreate from '../PostCreate'
 import PostCreateAlt from '../PostCreateAlt'
+import PostButton from '../PostButton'
+import CreateDiscussion from '../forms/CreateDiscussion'
 import PostShow from '../PostShow'
+import DiscussionSingle from '../DiscussionSingle'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 import { mapGetters, mapActions } from 'vuex'
 import InfiniteLoading from 'vue-infinite-loading'
 
     export default {
         components: {
+            CreateDiscussion,
+            PostButton,
             PostCreate,
-            PostCreate,
+            PostCreateAlt,
             PulseLoader,
+            DiscussionSingle,
             PostShow,
             InfiniteLoading,
         },
@@ -70,6 +108,11 @@ import InfiniteLoading from 'vue-infinite-loading'
             return {
                 showLoginRegister: false,
                 posts: [],
+                showCreateDiscussion: false,
+                discussionLoading: false,
+                alertDanger: false,
+                alertSuccess: false,
+                alertMessage: ''
             }
         },
         computed: {
@@ -209,6 +252,58 @@ import InfiniteLoading from 'vue-infinite-loading'
             },
         },
         methods: {
+            ...mapActions(['profile/createDiscussion']),
+            clickedShowDiscussion(){
+                this.showCreateDiscussion = true
+            },
+            clickedCloseDiscussion(){
+                this.showCreateDiscussion = false
+            },
+            clearAlert(){
+                setTimeout(() => {
+                    this.alertDanger = false
+                    this.alertSuccess = false
+                    this.alertMessage = ''
+                }, 3000);
+            },
+            async clickedCreateDiscussion(data){
+                let response,
+                    formData = new FormData
+
+                this.discussionLoading = true
+
+                formData.append('account', data.account)
+                formData.append('accountId', data.accountId)
+                formData.append('title', data.title)
+                formData.append('type', data.type)
+                formData.append('allowed', data.allowed)
+                formData.append('restricted', JSON.stringify(data.restricted))
+                formData.append('preamble', data.preamble)
+                data.files.forEach(file=>{
+                    formData.append('file[]', file)
+                })
+                if (data.postAttachments.length) {
+                    formData.append('attachments', JSON.stringify(data.postAttachments.map(attachment=>{
+                        return {
+                            attachable: attachment.type.slice(0,attachment.type.length - 1),
+                            attachableId: attachment.data.id
+                        }
+                    })))
+                }
+
+                response = await this['profile/createDiscussion'](formData)
+
+                this.discussionLoading = false
+                if (response.status) {
+                    this.alertSuccess = true
+                    this.alertMessage = 'discussion created successfully'
+                } else {
+                    console.log('response :>> ', response);
+                    this.alertDanger = true
+                    this.alertMessage = 'discussion creation failed'
+                }
+                this.clearAlert()
+            },
             clickedShowPostComments(data){
                 this.$emit('clickedShowPostComments',data)
             },
@@ -228,10 +323,32 @@ import InfiniteLoading from 'vue-infinite-loading'
 <style lang="scss" scoped>
 
     .home-main-wrapper{
+        
+        .extras-section{
+            width: 100%;
+            display: inline-flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            align-items: center;
+        }
 
-        .loading{
+        .loading,
+        .alert{
             text-align: center;
             width: 100%;
+            font-size: 14px;
+        }
+
+        .alert{
+            color: white;
+        }
+
+        .success{
+            background-color: green;
+        }
+
+        .danger{
+            background-color: red;
         }
 
         .create{

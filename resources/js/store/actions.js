@@ -67,35 +67,55 @@ const actions = {
             commit('FOLLOWINGS_FAILURE')
         }
     },
-    async userFollowRequests({},data){
-        let response = await UserService.userFollowRequests(data)
+    async userRequests({},data){
+        let response = await UserService.getUserRequests(data)
 
         if (response.data.data) {
-            return response.data
+            return {
+                status: true,
+                data: response.data.data,
+                next: response.data.links.next
+            }
         } else{
-            return 'unsuccessful'
+            return {status: false, response}
         }
     },
-    async userFollowNotifications(){
-        let response = await UserService.userFollowNotifications()
+    async userNotifications({},data){
+        let response = await UserService.userNotifications(data)
 
         if (response.data.data) {
-            return response.data
+            return {
+                status: true,
+                data: response.data.data,
+                next: response.data.links.next
+            }
         } else{
-            return 'unsuccessful'
+            return {status: false, response}
         }
     },
-    async markFollowNotifications(){
-        let response = await UserService.markFollowNotifications()
+    async markNotifications(){
+        let response = await UserService.markNotifications()
 
-        if (response.data.data) {
-            return response.data
+        if (response.data.message === 'successful') {
+            return {status: true}
         } else{
-            return 'unsuccessful'
+            return {status: false, response}
+        }
+    },
+    async markOtherNotifications({},data){
+        let response = await UserService.markOtherNotifications(data)
+
+        if (response.data.message === 'successful') {
+            return {status: true}
+        } else{
+            return {status: false, response}
         }
     },
     updateUserFollows({commit},data){
         commit('UPDATE_USER_FOLLOWS',data)
+    },
+    addUserFollower({commit},data){
+        commit('ADD_USER_FOLLOWER',data)
     },
 
     ////////////////////////////// profiles

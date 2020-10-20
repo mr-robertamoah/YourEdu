@@ -17,11 +17,12 @@ class ProfileResource extends JsonResource
         $array = [];
         $array = [
             'id' => $this->id,
-            'user_id' => $this->user_id,
-            'user_full_name' => $this->profileable->user->full_name,
-            'owner' => $this->profileable,
+            'user_id' => $this->user_id ? $this->user_id : $this->owner_id,
+            'user_full_name' => $this->profileable->user ? $this->profileable->user->full_name :
+                $this->profileable->owner->full_name,
             'owner_name' => $this->profileable->name,
-            'username' => $this->profileable->user->username,
+            'username' => $this->profileable->user ? $this->profileable->user->username :
+                $this->profileable->owner->full_name,
             'followings' => $this->profileable->followings()->whereNotNull('user_id')->count(),
             'socials' => $this->socials,
             'videos' => $this->when(
@@ -31,15 +32,13 @@ class ProfileResource extends JsonResource
             'images' => $this->when(
                 $this->images()->exists(),
                 ImageResource::collection($this->images()->where('state','PUBLIC')
-                ->where('thumbnail', 0)->latest()->take(4)->get())
+                    ->where('thumbnail', 0)->latest()->take(4)->get())
             ),
             'audios' => $this->when(
                 $this->audios()->exists(),
                 AudioResource::collection($this->audios()->where('state','PUBLIC')->latest()->take(4)->get())
             ),
-            'gender' => $this->when(
-                $this->profileable->user->gender,$this->profileable->user->gender
-            ),
+            'gender' => $this->profileable->user ? $this->profileable->user->gender : null,
             'flags' => FlagResource::collection($this->profileable->flags),
             'name' => $this->name,
             'about' => $this->about,

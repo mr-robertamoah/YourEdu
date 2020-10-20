@@ -14,9 +14,9 @@ class Flag extends Model
         'user_id', 'admin_id', 'status', 'reason'
     ];
 
-    protected $touches = [
-        'flaggable'
-    ];
+    // protected $touches = [
+    //     'flaggable'
+    // ];
 
     public function flaggedby()
     {

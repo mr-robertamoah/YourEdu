@@ -26,7 +26,14 @@
                         :buttonText="followButtonText"
                         @click="clickedFollow"
                         v-if="computedFollowButton"
-                    ></special-button>
+                    >
+                        <template slot="loader" v-if="followLoading">
+                            <pulse-loader 
+                                :loading="followLoading"
+                                :size="'9px'"
+                            ></pulse-loader>
+                        </template>
+                    </special-button>
                     <div class="following"
                         v-if="followSuccessMessage.length"
                     >
@@ -144,6 +151,7 @@ import FadeUp from '../transitions/FadeUp'
 import PostButton from '../PostButton'
 import ProfilePicture from './ProfilePicture'
 import FilePreview from '../FilePreview'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
 import {dates} from '../../services/helpers'
 import NumberOf from '../NumberOf'
 import { mapGetters, mapActions } from 'vuex'
@@ -160,6 +168,7 @@ import { mapGetters, mapActions } from 'vuex'
             FadeUp,
             ProfileBar,
             SpecialButton,
+            PulseLoader,
             FilePreview,
             PostButton,
             ProfilePicture,
@@ -187,6 +196,7 @@ import { mapGetters, mapActions } from 'vuex'
                 showPreview: false,
                 file: null,
                 showPreviousPic: false,
+                followLoading: false,
                 imageType: 'image/apng,image/bmp,image/gif,image/x-icon,image/jpeg,image/png,image/svg+xml,image/webp',
             }
         },
@@ -390,6 +400,7 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showProfiles = false
 
                 if (!this.computedFollowing) {
+                    this.followLoading = true
                     let data = {
                         account: who.account, //the account about to follow
                         accountId: who.accountId,
@@ -399,6 +410,7 @@ import { mapGetters, mapActions } from 'vuex'
 
                     let response =  await this['profile/follow'](data)
 
+                    this.followLoading = false
                     if (response.status) {
                         // this.follows += 1
                         this.followButtonText = 'unfollow'
@@ -415,6 +427,7 @@ import { mapGetters, mapActions } from 'vuex'
                 }
             },
             async clickedUnfollow(){
+                this.followLoading = true
                 let data = {
                     followId: this.myFollowId, //id of the follow model
                 }
@@ -422,6 +435,7 @@ import { mapGetters, mapActions } from 'vuex'
 
                 let response =  await this['profile/unfollow'](data)
 
+                this.followLoading = false
                 if (response === 'successful') {
                     // this.follows -= 1
                     this.followButtonText = 'follow'

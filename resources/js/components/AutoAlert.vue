@@ -70,11 +70,12 @@ $shadow-color: aliceblue;
 
     .alert-wrapper{
         padding: 10px;
-        width: 80%;
+        width: 90%;
         margin: 10px auto;
         position: absolute;
         top: 30px;
-        font-size: 18px;
+        right: 5%;
+        font-size: 14px;
         color: white;
         box-shadow: 0 0 2px lighten($color: $shadow-color, $amount: 50);
         display: flex;
@@ -93,12 +94,6 @@ $shadow-color: aliceblue;
     }
 
 @media screen and (max-width: 800px) {
-    
-    .alert-wrapper{
-        width: 50%;
-        margin: 10px 10px 10px auto;
-        font-size: 16px;
-    }
 
 }
 </style>

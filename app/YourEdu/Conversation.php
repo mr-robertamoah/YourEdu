@@ -19,6 +19,11 @@ class Conversation extends Model
         return $this->hasMany(Message::class);
     }
 
+    public function questions()
+    {
+        return $this->morphMany(Question::class,'questionable');
+    }
+
     public function learners()
     {
         return $this->morphedByMany(Learner::class,'accountable','conversationables');
