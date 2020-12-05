@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Professional extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, AccountTrait;
 
     protected $fillable = [
         'user_id','name', 'description', 'role'
@@ -52,9 +53,7 @@ class Professional extends Model
 
     public function schools()
     {
-        return $this->belongsToMany(School::class)
-                ->withPivot('relationship','relationship_description')
-                ->withTimestamps();
+        return $this->morphToMany(School::class,'schoolable','schoolables');
     }
 
     public function follows(){
@@ -78,9 +77,28 @@ class Professional extends Model
         return $this->morphMany(Grade::class,'addedby');
     }
 
+    public function bans()
+    {
+       return $this->morphMany(Ban::class,'bannable');
+    }
+
+    public function grades(){
+        return $this->morphToMany(Grade::class,'gradeable','gradeables');
+    }
+
     public function aliasesAdded()
     {
         return $this->morphMany(Alias::class,'addedby');
+    }
+
+    public function commissions()
+    {
+        return $this->morphMany(Commission::class,'ownedby');
+    }
+
+    public function employed()
+    {
+        return $this->morphMany(Employment::class,'employee');
     }
 
     public function uniqueSubjectsAdded()
@@ -157,7 +175,7 @@ class Professional extends Model
 
     public function curricula()
     {
-        return $this->morphMany(Curriculum::class,'curriculable');
+        return $this->morphMany(Curriculum::class,'curriculumable','curriculumables');
     }
 
     public function addedExtracurriculums()
@@ -189,6 +207,11 @@ class Professional extends Model
     {
         return $this->morphMany(Course::class,'addedby');
     }
+
+    public function programs()
+    {
+        return $this->morphToMany(Program::class,'programmable','programmables');
+    }
     
     public function works()
     {
@@ -208,6 +231,12 @@ class Professional extends Model
     public function marks()
     {
         return $this->morphMany(Mark::class,'markedby');
+    }
+
+    public function courses()
+    {
+        return $this->morphToMany(Course::class,'coursable','coursables')
+            ->withPivot(['activity']);
     }
 
     public function assessments()

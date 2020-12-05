@@ -14,9 +14,17 @@ class NotificationController extends Controller
             $notifications = [];
             if ($request->others) {
                 $notifications = auth()->user()->unreadNotifications()
-                    ->where('type','App\Notifications\DiscussionInvitationNotification')
-                    ->orWhere('type','App\Notifications\RemoveDiscussionParticipantNotification')
-                    ->orWhere('type','App\Notifications\UpdateParticipantStateNotification')
+                    ->where(function($query){
+                        $query
+                        ->where('type','App\Notifications\DiscussionInvitationNotification')
+                        ->orWhere('type','App\Notifications\DiscussionInvitationResponseNotification')
+                        ->orWhere('type','App\Notifications\RemoveDiscussionParticipantNotification')
+                        ->orWhere('type','App\Notifications\UpdateParticipantStateNotification')
+                        ->orWhere('type','App\Notifications\AdminResponseNotification')
+                        ->orWhere('type','App\Notifications\FacilitatorResponseNotification')
+                        ->orWhere('type','App\Notifications\SchoolResponseNotification')
+                        ->orWhere('type','App\Notifications\RequestMessageNotification');
+                    })
                     ->get();
             } else {
                 $notifications = auth()->user()->unreadNotifications()
@@ -40,10 +48,17 @@ class NotificationController extends Controller
     {
         try {
             $notifications = auth()->user()->notifications()
-            ->where('type','App\Notifications\DiscussionInvitationNotification')
-            ->orWhere('type','App\Notifications\DiscussionInvitationResponseNotification')
-            ->orWhere('type','App\Notifications\RemoveDiscussionParticipantNotification')
-            ->orWhere('type','App\Notifications\UpdateParticipantStateNotification')
+            ->where(function($query){
+                $query
+                ->where('type','App\Notifications\DiscussionInvitationNotification')
+                ->orWhere('type','App\Notifications\DiscussionInvitationResponseNotification')
+                ->orWhere('type','App\Notifications\RemoveDiscussionParticipantNotification')
+                ->orWhere('type','App\Notifications\UpdateParticipantStateNotification')
+                ->orWhere('type','App\Notifications\RequestMessageNotification')
+                ->orWhere('type','App\Notifications\AdminResponseNotification')
+                ->orWhere('type','App\Notifications\FacilitatorResponseNotification')
+                ->orWhere('type','App\Notifications\SchoolResponseNotification');
+            })
             ->latest()->get();
             return NotificationResource::collection(paginate($notifications,10));
         } catch (\Throwable $th) {

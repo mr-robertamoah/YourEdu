@@ -19,7 +19,7 @@ class AttachmentController extends Controller
             
             $attachment = (new AttachmentService())->attachmentCreate($request->account,
                 $request->accountId,$request->item,$request->itemId,$request->attachable,
-                $request->attachableId, $request->note);
+                $request->attachableId, $request->note, $request->adminId);
 
             DB::commit();
             AttachmentCreatedJob::dispatch($attachment,$request->item,$request->itemId);
@@ -36,11 +36,11 @@ class AttachmentController extends Controller
         }        
     }
 
-    public function attachmentDelete($attachment)
+    public function attachmentDelete($attachment,Request $request)
     {
         try {
             $attachmentInfo = (new AttachmentService())->attachmentDelete($attachment,
-                auth()->id());
+                auth()->id(), $request->adminId);
 
             AttachmentRemovedJob::dispatch($attachment,$attachmentInfo['item'],
                 $attachmentInfo['itemId']);

@@ -3,7 +3,7 @@
         <template slot="transition" 
                 v-if="show">
             <div class="alert-wrapper" 
-                :class="{success:success, danger:danger}"
+                :class="{success, danger, sticky}"
             >
                 {{message}}
             </div>
@@ -28,6 +28,10 @@ import { mapActions } from 'vuex'
                 type: Boolean,
                 default: false
             },
+            sticky: {
+                type: Boolean,
+                default: false
+            },
         },
         components: {
             FadeRight,
@@ -38,23 +42,15 @@ import { mapActions } from 'vuex'
             }
         },
         watch: {
-            message: {
-                immediate: true,
-                handler(newValue){
-                    if (newValue != '') {
-                        this.show = true
-                        setTimeout(() => {
-                            this.show = false
-                            this.$emit('hideAlert', this.message)
-                            this['profile/clearMsg']()
-                        }, 3000);
-                    }
+            message(newValue) {
+                if (newValue && newValue.length) {
+                    this.show = true
+                    setTimeout(() => {
+                        this.show = false
+                        this.$emit('hideAlert', newValue)
+                        this['profile/clearMsg']()
+                    }, 3000);
                 }
-            }
-        },
-        computed: {
-            computedMessage() {
-                return this.message != '' || this.message != null ? true : false
             }
         },
         methods: {
@@ -91,6 +87,10 @@ $shadow-color: aliceblue;
 
     .success{
         background-color: $success-color;
+    }
+
+    .alert-wrapper.sticky{
+        position: sticky;
     }
 
 @media screen and (max-width: 800px) {

@@ -1,90 +1,100 @@
 <template> 
-    <main-modal v-if="showForm" 
-        @mainModalDisappear='closeModal'
-        @clearAlert='clearModalAlert'
-        :loading="computedLoading"
-        heading="edit user information"
-        :alertMessage="modalAlertMessage"
-        :alertError="modalAlertError"
-        :alertSuccess="modalAlertSuccess"
-    >   
-        <template slot="loading">
-            <sync-loader :loading="computedLoading"></sync-loader>
-        </template>
-        <template slot="main" >
-            <welcome-form>
-                <template slot="input">
-                    <div class="form-edit">
-                        <text-input type="text" 
-                            placeholder="first name" 
-                            :bottomBorder="true"
-                            v-model="inputFirstName"></text-input>
-                    </div>
-                    <div class="form-edit">
-                        <text-input type="text" 
-                            placeholder="last name"  
-                            :bottomBorder="true"
-                            v-model="inputLastName"></text-input>
-                    </div>
-                    <div class="form-edit">
-                        <text-input type="text" 
-                            placeholder="other names"  
-                            :bottomBorder="true"
-                            v-model="inputOtherNames"></text-input>
-                    </div>
-                    <div class="form-edit">
-                        <text-input type="text" 
-                            placeholder="email"  
-                            :bottomBorder="true"
-                            v-model="inputEmail"></text-input>
-                    </div>
-
-                    <div class="form-edit">
-                        <date-picker 
-                            :flatPickrConfig="flatPickrConfig"
-                            :placeHolder="computedDob"
-                            @datePicked="dobPicked"
-                            :bottomBorder="true"
-                        ></date-picker>
-                    </div>
-
-                    <main-list @listItemSelected='selectGender'
-                        :multiple='false'
-                        :selectedItem="inputGender"
-                        select='choose your gender'
-                        :itemList="['male','female']"
-                    ></main-list>
-
-                    <main-list @listItemSelected='selectSecret'
-                        v-if="computedShowSecret"
-                        :multiple='false'
-                        :loading='loading'
-                        select='choose a secret question to answer'
-                        :itemList="secretQuestions"
-                    ></main-list>
-
-                    <div class="form-edit" v-if="showAnswerText">
-                        <text-input type="text" 
-                            placeholder="your answer"  
-                            :bottomBorder="true"
-                            v-model="inputAnswer"></text-input>
-                    </div>
-
-                    <main-list @listItemSelected='selectAnswer'
-                        :multiple='false'
-                        v-if="showAnswerList"
-                        select='choose your answer'
-                        :itemList="possibleAnswers"
-                    ></main-list>
+    <just-fade>
+        <template slot="transition" v-if="showForm">
+            <main-modal :show="showForm" 
+                @mainModalDisappear='closeModal'
+                @clearAlert='clearModalAlert'
+                :loading="computedLoading"
+                heading="edit user information"
+                :alertMessage="modalAlertMessage"
+                :requests="false"
+                :mainOther="false"
+                :alertError="modalAlertError"
+                :alertSuccess="modalAlertSuccess"
+            >   
+                <template slot="loading">
+                    <sync-loader :loading="computedLoading"></sync-loader>
                 </template>
-                <template slot="buttons">
-                    <post-button buttonText='save' buttonStyle='success'
-                        @click="clickedCreate"
-                    ></post-button>
+                <template slot="main" >
+                    <welcome-form>
+                        <template slot="input">
+                            <div class="form-edit">
+                                <text-input type="text" 
+                                    placeholder="first name" 
+                                    :bottomBorder="true"
+                                    v-model="inputFirstName"></text-input>
+                            </div>
+                            <div class="form-edit">
+                                <text-input type="text" 
+                                    placeholder="last name"  
+                                    :bottomBorder="true"
+                                    v-model="inputLastName"></text-input>
+                            </div>
+                            <div class="form-edit">
+                                <text-input type="text" 
+                                    placeholder="other names"  
+                                    :bottomBorder="true"
+                                    v-model="inputOtherNames"></text-input>
+                            </div>
+                            <div class="form-edit">
+                                <text-input type="text" 
+                                    placeholder="email"  
+                                    :bottomBorder="true"
+                                    v-model="inputEmail"></text-input>
+                            </div>
+
+                            <div class="form-edit">
+                                <date-picker 
+                                    :flatPickrConfig="{
+                                                maxDate: 'today',
+                                                dateFormat: 'F j, Y',
+                                                altFormat: 'F j, Y',
+                                            }"
+                                    :placeHolder="computedDob"
+                                    @datePicked="dobPicked"
+                                    :bottomBorder="true"
+                                ></date-picker>
+                            </div>
+
+                            <main-list @listItemSelected='selectGender'
+                                :multiple='false'
+                                :value="inputGender"
+                                select='choose your gender'
+                                :itemList="['male','female']"
+                            ></main-list>
+
+                            <main-list @listItemSelected='selectSecret'
+                                v-if="computedShowSecret"
+                                :multiple='false'
+                                :loading='loading'
+                                select='choose a secret question to answer'
+                                :itemList="secretQuestions"
+                            ></main-list>
+
+                            <div class="form-edit" v-if="showAnswerText">
+                                <text-input type="text" 
+                                    placeholder="your answer"  
+                                    :bottomBorder="true"
+                                    v-model="inputAnswer"></text-input>
+                            </div>
+
+                            <main-list @listItemSelected='selectAnswer'
+                                :multiple='false'
+                                v-if="showAnswerList"
+                                select='choose your answer'
+                                :itemList="possibleAnswers"
+                            ></main-list>
+                        </template>
+                        <template slot="buttons">
+                            <post-button buttonText='save' buttonStyle='success'
+                                @click="clickedCreate"
+                            ></post-button>
+                        </template>
+                    </welcome-form>
                 </template>
-            </welcome-form>
+            </main-modal>
         </template>
-    </main-modal>
+    </just-fade>
 </template>
 
 <script>
@@ -121,11 +131,6 @@ import { dates } from '../../services/helpers'
                 showAnswerText: false,
                 secretQuestionId: null,
                 possibleAnswers: [],
-                flatPickrConfig: {
-                    maxDate: 'today',
-                    dateFormat: 'F j, Y',
-                    altFormat: "F j, Y",
-                },
                 modalAlertMessage: '',
                 modalAlertError: false,
                 modalAlertSuccess: false,

@@ -16,9 +16,11 @@ class CreateAcademicYearsTable extends Migration
         Schema::create('academic_years', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('school_id');
+            $table->nullableMorphs('addedby');
             $table->timestamp('start_date')->default(now());
-            $table->timestamp('finish_date')->default(now()->add('year',1));
+            $table->timestamp('end_date')->default(now()->add('year',1));
             $table->string('description')->nullable();
+            $table->enum('state',['PENDING','ACCEPTED','DECLINED'])->nullable();
             $table->softDeletes();
             $table->timestamps();
 

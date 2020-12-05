@@ -11,13 +11,18 @@
                 <div class="numbers" v-if="!hasSelect">
                     {{`${attachmentsNumber} attachments`}}
                 </div>
-                <div class="buttons-section" ref="buttonsection">
-                    <div class="button"
-                        :key="key"
-                        v-for="(btn,key) in btns"
-                        :class="{active: searchItem === btn}"
-                        @click="buttonClicked(btn)"
-                    >{{btn}}</div>
+                <div class="buttons-section" 
+                    ref="buttonsection"
+                    v-if="!mainSearchItem.length"
+                >
+                    <template>
+                        <div class="button"
+                            :key="key"
+                            v-for="(btn,key) in btns"
+                            :class="{active: searchItem === btn}"
+                            @click="buttonClicked(btn)"
+                        >{{btn}}</div>
+                    </template>
                 </div>
                 <div class="search-section" v-if="showLowerSection">
                     <search-input
@@ -67,19 +72,27 @@
                         </div>
                     </div>
                 </div>
-                <div class="selection" v-if="hasSelect && items.length">
+                <div class="loading">
+                    <pulse-loader
+                        :loading="loading"
+                        size="10px"
+                    ></pulse-loader>
+                </div>
+                <div class="selection" v-if="hasSelect && items.length && !loading">
                     <select-input
                         :show="hasSelect"
-                        placeholder="select an attachment"
+                        :placeholder="computedPlaceholder"
                         :items="items"
+                        @getMore="infiniteHandler"
+                        :next="searchNextPage"
                         :special="true"
                         @clickedSelection="clickedAttachmentSelection"
                     ></select-input>
                 </div>
-                <div class="no-attachments" v-if="showNoAttachments">
+                <div class="no-attachments" v-if="showNoAttachments && !loading">
                     there are no {{searchItem}}
                 </div>
-                <div class="creation" v-if="computedSearchItem.length">
+                <div class="creation" v-if="computedSearchItem.length && !loading">
                     <div class="info">
                         {{`can't find the ${computedSearchItem} you are looking for?`}}
                     </div>
@@ -133,10 +146,20 @@ import FadeDown from './transitions/FadeDown';
 import CreateGrade from './forms/CreateGrade';
 import CreateSubject from './forms/CreateSubject';
 import CreateAttachment from './forms/CreateAttachment';
-import _ from 'lodash';
+import PulseLoader from 'vue-spinner/src/PulseLoader';
 import { mapActions } from 'vuex';
 
     export default {
+        components: {
+            PulseLoader,
+            CreateAttachment,
+            CreateSubject,
+            CreateGrade,
+            FadeDown,
+            TextTextarea,
+            SelectInput,
+            SearchInput,
+        },
         props: {
             btns: {
                 type: Array,
@@ -175,15 +198,10 @@ import { mapActions } from 'vuex';
                 type: Boolean,
                 default: false,
             },
-        },
-        components: {
-            CreateAttachment,
-            CreateSubject,
-            CreateGrade,
-            FadeDown,
-            TextTextarea,
-            SelectInput,
-            SearchInput,
+            mainSearchItem: {
+                type: String,
+                default: '',
+            },
         },
         data() {
             return {
@@ -195,14 +213,19 @@ import { mapActions } from 'vuex';
                 showNoAttachments: false,
                 showNote: false,
                 searchText: '',
+                searchNextPage: 1,
                 inputNote: '',
-                itemClass: null //to help set class of clicked item
+                itemClass: null, //to help set class of clicked item
+                loading: false,
             }
         },
         watch: {
             searchItem(newValue) {
                 if (newValue.length) {
                     this.showLowerSection = true
+                    this.searchText = ''
+                    this.items = []
+                    this.debouncedSearch()
                 } else {
                     this.showLowerSection = false
                 }
@@ -217,6 +240,14 @@ import { mapActions } from 'vuex';
                     this.inputNote = ''
                 }
             },
+            mainSearchItem:{
+                immediate: true,
+                handler(newValue){
+                    if (newValue.length) {
+                        this.searchItem = newValue
+                    }
+                }
+            }
         },
         computed: {
             computedSearchItem() {
@@ -225,6 +256,10 @@ import { mapActions } from 'vuex';
             computedCreateAttachment(){
                 return (this.searchItem !== 'grades' || this.searchItem !== 'subjects') 
                         && this.createAttachment
+            },
+            computedPlaceholder(){
+                return this.mainSearchItem.length ? `select ${this.mainSearchItem}` : 
+                    'select an attachment'
             },
         },
         methods: {
@@ -277,9 +312,6 @@ import { mapActions } from 'vuex';
                 }
                 this.searchItem = data
                 this.showNote = false
-                this.searchText = ''
-                this.items = []
-                this.debouncedSearch()
             },
             searchInput(data){
                 this.searchText = data
@@ -288,54 +320,95 @@ import { mapActions } from 'vuex';
             debouncedSearch: _.debounce(function(){
                 this.showNote = false
                 this.search()
-            },100),
+            },200),
             async search(){
                 this.showNoAttachments = false
-                let response = null
+                this.loading = true
+
+                let response = await this.getResponse()
+                
+                this.loading = false
+
+                if (response.status) {
+                    if (response.next) {
+                        this.searchNextPage += 1
+                    } else {
+                        this.searchNextPage = null
+                    }
+                }
+            },
+            //create infinite scroll for searches when data grows
+            async infiniteHandler(){
+                
+                let response = await this.getResponse()
+
+                if (response.status) {
+                    if (response.next) {
+                        this.searchNextPage += 1
+                    } else {
+                        this.searchNextPage = null
+                    }
+                }
+            },
+            async getResponse(){
+                let response
+                
                 if (this.searchItem === 'subjects') {
                     if (this.searchText.trim().length) {
                         
-                        response = await this['profile/searchSubjects'](this.searchText)
+                        response = await this['profile/searchSubjects']({
+                            searchText: this.searchText,
+                            searchNextPage: this.searchNextPage
+                        })
                     } else {
                         
-                        response = await this['profile/getSubjects']()
+                        response = await this['profile/getSubjects'](this.searchNextPage)
                     }
                 } else if (this.searchItem === 'grades') {
                     if (this.searchText.trim().length) {
                         
-                        response = await this['profile/searchGrades'](this.searchText)
+                        response = await this['profile/searchGrades']({
+                            searchText: this.searchText,
+                            searchNextPage: this.searchNextPage
+                        })
                     } else {
                         
-                        response = await this['profile/getGrades']()
+                        response = await this['profile/getGrades'](this.searchNextPage)
                     }
                 } else if (this.searchItem === 'programs') {
                     if (this.searchText.trim().length) {
                         
-                        response = await this['profile/searchPrograms'](this.searchText)
+                        response = await this['profile/searchPrograms']({
+                            searchText: this.searchText,
+                            searchNextPage: this.searchNextPage
+                        })
                     } else {
                         
-                        response = await this['profile/getPrograms']()
+                        response = await this['profile/getPrograms'](this.searchNextPage)
                     }
                 } else if (this.searchItem === 'courses') {
                     if (this.searchText.trim().length) {
                         
-                        response = await this['profile/searchCourses'](this.searchText)
+                        response = await this['profile/searchCourses']({
+                            searchText: this.searchText,
+                            searchNextPage: this.searchNextPage
+                        })
                     } else {
                         
-                        response = await this['profile/getCourses']()
+                        response = await this['profile/getCourses'](this.searchNextPage)
                     }
                 }
 
                 if (response.status) {
-                    this.items = this.searchItem === 'subjects' ? response.data.subjects :
-                        this.searchItem === 'grades' ? response.data.grades : 
-                        this.searchItem === 'programs' ? response.data.programs : 
-                        this.searchItem === 'courses' ? response.data.courses : []
-
+                    this.items.push(...response.data)
                     if (!this.items.length) this.showNoAttachments = true
+                    
+                    return {status: true,next: response.next}
+                } else {
+                    console.log('response :>> ', response);
+                    return {status: false}
                 }
             },
-            //create infinite scroll for searches when data grows
         },
     }
 </script>

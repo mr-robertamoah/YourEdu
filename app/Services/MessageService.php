@@ -11,17 +11,14 @@ class MessageService
 
 {
     public function createMessage($what,$whatId,$account,$accountId,$userId,$message,
-        $state,$file,
-        $chattingAccount = null,$chattingAccountId = null,$chattingUserId = null)
+        $state,$file = null,$chattingAccount = null,$chattingAccountId = null,$chattingUserId = null)
     {
-        $toWhatMessageBelongs = getAccountObject($what,$whatId); //conversation discussion
+        $toWhatMessageBelongs = getAccountObject($what,$whatId); //request discussion conversation
         if (is_null($toWhatMessageBelongs)) {
-            throw new AccountNotFoundException("{$what} does not exist");
+            throw new AccountNotFoundException("{$what} was not found with id {$whatId}");
         }
         $fromable = getAccountObject($account,$accountId);
-        if (is_null($fromable)) {
-            throw new AccountNotFoundException("{$account} does not exist");
-        }
+
         $toable = getAccountObject($chattingAccount,$chattingAccountId);
         if ($what === 'conversation' && is_null($toable)) {
             throw new AccountNotFoundException("{$chattingAccount} does not exist");
@@ -55,7 +52,10 @@ class MessageService
             }
         }
 
-        return $message->load('images','videos','audios','files','flags','fromable.profile');
+        return [
+            'belongsTo' => $toWhatMessageBelongs,
+            'message' => $message->load('images','videos','audios','files','flags','fromable.profile')
+        ];
     }
 
     private function accountCreateFile($file, $account, $item)
@@ -67,7 +67,7 @@ class MessageService
         $uploadedFile->save();
     }
 
-    public function deleteMessage($userId, $messageId, $action)
+    public function deleteMessage($userId, $messageId, $action,$auth = true)
     {
         $message = getAccountObject('message', $messageId);
 
@@ -85,7 +85,7 @@ class MessageService
             $message->save();
             return $message->load('images','videos','audios','files','flags','fromable.profile');
         } else if ($action === 'delete') {
-            if ($message->from_user_id !== $userId) {
+            if ($auth && $message->from_user_id !== $userId) {
                 throw new MessageException("you are not authorized to delete this message");
             }
 

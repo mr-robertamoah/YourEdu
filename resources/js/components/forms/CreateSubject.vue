@@ -4,21 +4,27 @@
             <main-modal
                 :show="show"
                 @mainModalDisappear='closeModal'
-                :alertMessage="alertMessage"
-                :alertError="alertError"
-                :alertSuccess="alertSuccess"
-                @clearAlert="clearAlert"
-                :loading="loading"
+                :requests="false"
+                :mainOther="false"
             >
-                <template slot="loading" v-if="loading">
-                    <pulse-loader :loading="loading"></pulse-loader>
-                </template>
                 <template slot="main">
                     <welcome-form
                         :title="title"
                         class="create-subject-wrapper"
                     >
                         <template slot="input">
+                            <auto-alert
+                                :message="alertMessage"
+                                :success="alertSuccess"
+                                :danger="alertDanger"
+                                :sticky="true"
+                                @hideAlert="clearAlert"
+                            ></auto-alert>
+                            
+                            <div class="loading" v-if="loading">
+                                <pulse-loader :loading="loading"></pulse-loader>
+                            </div>
+
                             <div class="form-section">
 
                                 <text-input
@@ -50,7 +56,7 @@
                             </slide-up-group>
                             <p class="search-section-message"
                                 v-if="computedShowSubject"
-                            >click a sbject to add as an alias</p>
+                            >click a sbject to which you want to add an alias</p>
                             <div class="add-subject"
                                 @click="clickedAddSubject"
                                 v-if="actionType === 'alias'"
@@ -367,7 +373,14 @@ import { mapActions, mapGetters } from 'vuex';
 
 <style lang="scss" scoped>
 
-    .create-subject-wrapper{
+    .create-subject-wrapper{       
+
+        .loading{
+            position: sticky;
+            width: 100%;
+            text-align: center;
+            top: 10px;
+        }
 
         .form-section{
             margin-bottom: 10px;

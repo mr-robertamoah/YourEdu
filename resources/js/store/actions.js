@@ -80,6 +80,23 @@ const actions = {
             return {status: false, response}
         }
     },
+    addProfile({commit},data){
+        commit('ADD_PROFILE',data)
+    },
+    async schoolRequestResponse({commit},data){
+        let response = await UserService.schoolRequestResponse(data)
+
+        if (response.data.message === 'successful') {
+            if (data.from === 'school' && data.type === 'admin') {
+                commit('ADD_PROFILE',response.data.data)
+            }
+            return {
+                status: true,
+            }
+        } else{
+            return {status: false, response}
+        }
+    },
     async userNotifications({},data){
         let response = await UserService.userNotifications(data)
 
@@ -123,12 +140,30 @@ const actions = {
     async createAccount({commit}, data){
         let response = await UserService.accountCreate(data)
 
-        if (response.data.status) {
-            commit('ACCOUNT_CREATE_SUCCESS', response.data)
+        if (response.data.message === 'successful') {
+            if (data.creator === 'user') {                
+                commit('ACCOUNT_CREATE_SUCCESS',{
+                    profile: response.data.profile
+                })
+                return {status:true}
+            } else {
+                if (data.creator === 'school') {
+                    commit('dashboard/SCHOOL_ADD_ACCOUNTS',{
+                        accountOne: response.data.accountOne,
+                        accountTwo: response.data.accountTwo,
+                    },{root: true})
+                }
+                return {
+                    status:true,
+                    userOne: response.data.userOne,
+                    accountOne: response.data.accountOne,
+                    userTwo: response.data.userTwo,
+                    accountTwo: response.data.accountTwo,
+                }
+            }
         } else {
-
+            return {status:false, response}
         }
-        return response.data
     },
 
     async profileGet({commit},{account, accountId}){
@@ -155,6 +190,7 @@ const actions = {
             }else{
                 commit('profile/GET_PROFILE_SUCCESS',response.data)
             }
+            return {status: true}
         } else {
             router.push({
                 name: '404',
@@ -168,6 +204,20 @@ const actions = {
     },
 
     /////////////////////////////////////////////////////////////////// user
+
+    async findUser({commit}, data){
+        let response = await UserService.findUser(data)
+
+        if (response.data.data) {
+            return {
+                status: true,
+                next: response.data.links.next,
+                users: response.data.data
+            }
+        } else {
+            return {status: false}
+        }
+    },
 
     async getUserSaved({commit}, data){
         let response = await UserService.userSavedGet(data)
@@ -283,10 +333,15 @@ const actions = {
         }
     },
 
-    logout({commit}){
-        UserService.logout()
-        commit('LOGOUT')
-        router.push('/login')
+    async logout({commit}){
+        let response = await UserService.logout()
+
+        if (response.data.message === 'successful') {
+            commit('LOGOUT')
+            router.push('/login')
+        } else {
+            console.log(response);
+        }
     },
 
     refreshToken({commit, state}){

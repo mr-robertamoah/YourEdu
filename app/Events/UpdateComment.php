@@ -22,25 +22,31 @@ class UpdateComment implements ShouldBroadcastNow
      *
      * @return void
      */
-    public function __construct($commentArray)
+    public function __construct($comment,$mainComment)
     {
-        Debugbar::info($commentArray);
-        $this->commentArray['item'] = getAccountString($commentArray['mainComment']->commentable_type);
-        $this->commentArray['itemId'] = $commentArray['mainComment']->commentable_id;
+        Debugbar::info($mainComment);
+        $this->commentArray['item'] = getAccountString($mainComment->commentable_type);
+        $this->commentArray['itemId'] = $mainComment->commentable_id;
         if ($this->commentArray['item'] === 'post') {
-            $this->commentArray['account'] = getAccountString(get_class($commentArray['mainComment']->commentable->postedby));
-            $this->commentArray['accountId'] = $commentArray['mainComment']->commentable->postedby->id;
+            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->postedby));
+            $this->commentArray['accountId'] = $mainComment->commentable->postedby->id;
         } else if ($this->commentArray['item'] === 'book' || 
             $this->commentArray['item'] === 'poem' || 
             $this->commentArray['item'] === 'activity') {
-            $this->commentArray['account'] = getAccountString(get_class($commentArray['mainComment']->commentable->post->postedby));
-            $this->commentArray['accountId'] = $commentArray['mainComment']->commentable->post->postedby->id;
+            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->post->postedby));
+            $this->commentArray['accountId'] = $mainComment->commentable->post->postedby->id;
         } else if ($this->commentArray['item'] === 'comment' ||
             $this->commentArray['item'] === 'answer') {
             $this->commentArray['account'] = null;
             $this->commentArray['accountId'] = null;
+        } else if ($this->commentArray['item'] === 'discussion') {
+            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->raisedby));
+            $this->commentArray['accountId'] = $mainComment->commentable->raisedby->id;
+        } else if ($this->commentArray['item'] === 'class') {
+            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->ownedby));
+            $this->commentArray['accountId'] = $mainComment->commentable->ownedby->id;
         }
-        $this->commentArray['comment'] = $commentArray['comment'];
+        $this->commentArray['comment'] = $comment;
     }
 
     /**
@@ -50,11 +56,16 @@ class UpdateComment implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return [
+        $broadcastOn = [
             new Channel('youredu.home'),
             new Channel("youredu.{$this->commentArray['account']}.{$this->commentArray['accountId']}"),
-            new Channel("youredu.{$this->commentArray['item']}.{$this->commentArray['itemId']}"),
         ];
+        if ($this->commentArray['item'] === 'class') {
+            $broadcastOn[] = new PrivateChannel("youredu.{$this->commentArray['item']}.{$this->commentArray['itemId']}");
+        } else {
+            $broadcastOn[] = new Channel("youredu.{$this->commentArray['item']}.{$this->commentArray['itemId']}");
+        }
+        return $broadcastOn;
     }
     
     public function broadcastAs()

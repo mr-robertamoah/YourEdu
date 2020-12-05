@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ParentModel extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, AccountTrait;
 
     protected $fillable = [
         'user_id','name',
@@ -41,6 +42,17 @@ class ParentModel extends Model
     public function participants()
     {
         return $this->morphMany(Participant::class,'accountable');
+    }
+
+    public function courses()
+    {
+        return $this->morphToMany(Course::class,'coursable','coursables')
+            ->withPivot(['activity']);
+    }
+
+    public function bans()
+    {
+       return $this->morphMany(Ban::class,'bannable');
     }
 
     public function activitiesAdded()
@@ -78,10 +90,15 @@ class ParentModel extends Model
         return $this->morphMany(Alias::class,'addedby');
     }
 
-    public function learners(){
+    public function wards(){
         return $this->
             belongsToMany(Learner::class,'learner_parent','parent_id','learner_id')
             ->withPivot(['level','role'])->withTimestamps();
+    }
+
+    public function schools()
+    {
+        return $this->morphToMany(School::class,'schoolable','schoolables');
     }
     
     public function answers()

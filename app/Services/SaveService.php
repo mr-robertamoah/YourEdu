@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class SaveService
 {
-    public function saveCreate($account,$accountId,$item, $itemId,$id)
+    public function saveCreate($account,$accountId,$item, $itemId,$id,$adminId)
     {
         $mainAccount = getAccountObject($account,$accountId);
         if (is_null($mainAccount)) {
@@ -31,11 +31,20 @@ class SaveService
 
         $save->saveable()->associate($mainItem);
         $save->save();
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $save,$save->savedby,$admin,__METHOD__
+                );
+            }
+        }
 
         return $save;
     }
 
-    public function saveDelete($saveId,$id)
+    public function saveDelete($saveId,$id,$adminId)
     {        
         $save = getAccountObject('save',$saveId);
         if (is_null($save)) {
@@ -43,6 +52,15 @@ class SaveService
         }
         if ($save->user_id !== $id) {
             throw new SaveException('you cannot unsave a save you do not own.');
+        }
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $save,$save->savedby,$admin, __METHOD__
+                );
+            }
         }
 
         $save->delete();

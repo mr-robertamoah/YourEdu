@@ -10,6 +10,10 @@ class Price extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'amount','description',
+    ];
+
     public function paymentFor()
     {
         return $this->morphMany(Payment::class,'paidfor');

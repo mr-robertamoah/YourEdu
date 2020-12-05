@@ -156,7 +156,7 @@ class DiscussionService
                 ->first();
         }
 
-        $message = (new MessageService())->createMessage('discussion',$discussionId,
+        $messageData = (new MessageService())->createMessage('discussion',$discussionId,
             $account,$accountId,auth()->id(),$message,$state,$file);
 
         $request = null;
@@ -164,12 +164,12 @@ class DiscussionService
             $request = new Request();
             $request->state = 'PENDING';
             $request->requestto()->associate($discussion->raisedby);
-            $request->requestable()->associate($message);
+            $request->requestable()->associate($messageData['message']);
             $request->requestfrom()->associate($participant->accountable);
             $request->save();
         }
         return [
-            'message' => $message,
+            'message' => $messageData['message'],
             'request' => $request,
             'users' => $discussion->raisedby->user,
             'discussionRestriction' => $discussion->restricted

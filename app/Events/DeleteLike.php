@@ -34,7 +34,7 @@ class DeleteLike implements ShouldBroadcastNow
     public function broadcastOn()
     {
         return [
-            new Channel('youredu.home'),
+            // new Channel('youredu.home'),
             new Channel("youredu.{$this->likeInfo['item']}.{$this->likeInfo['itemId']}"),
             new Channel("youredu.{$this->likeInfo['itemBelongsTo']}.{$this->likeInfo['itemBelongsToId']}")
         ];

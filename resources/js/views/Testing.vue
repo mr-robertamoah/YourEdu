@@ -1,13 +1,11 @@
 <template>
-    <div class="testing" @click="clickedTesting">
-        <create-discussion
-            :show="show"
-        ></create-discussion>
-    </div>
+    <dashboard-item-badge
+        :show="true"
+    ></dashboard-item-badge>
 </template>
 
 <script>
-import CreateDiscussion from '../components/forms/CreateDiscussion'
+import DashboardItemBadge from '../components/dashboard/DashboardItemBadge'
 
     export default {
         data() {
@@ -17,7 +15,7 @@ import CreateDiscussion from '../components/forms/CreateDiscussion'
             }
         },
         components: {
-            CreateDiscussion,
+            DashboardItemBadge,
         },
         methods: {
             clickedTesting(){

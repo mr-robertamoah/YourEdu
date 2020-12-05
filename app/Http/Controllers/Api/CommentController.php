@@ -13,6 +13,7 @@ use App\Services\CommentService;
 use App\YourEdu\Comment;
 use Illuminate\Support\Facades\DB;
 use \Debugbar;
+use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
@@ -25,7 +26,7 @@ class CommentController extends Controller
             
             $commentData = (new CommentService())->commentCreate($request->body,
                 $request->file('file'),$request->account,$request->accountId,
-                auth()->id(),$item,$itemId);
+                auth()->id(),$item,$itemId,$request->adminId);
             broadcast(new NewComment([
                 'comment' => new CommentResource($commentData['comment']),
                 'item' => $item,
@@ -33,7 +34,7 @@ class CommentController extends Controller
                 'commentable_owner' => $commentData['commentableOwner']
             ]))->toOthers();
             DB::commit();
-            Debugbar::info($commentData['commentableOwner']);
+            
             return response()->json([
                 'message' => "successful",
                 'comment' => new CommentResource($commentData['comment']),
@@ -52,14 +53,14 @@ class CommentController extends Controller
        try {
             DB::beginTransaction();
 
-            $commentData['comment'] = (new CommentService())->commentEdit($request->account,
-                $request->accountId,auth()->id(),$comment,$request->body);
+            $commentData = (new CommentService())->commentEdit($request->account,
+                $request->accountId,auth()->id(),$comment,$request->body,$request->adminId);
 
             DB::commit();
-            broadcast(new UpdateComment([
-                'comment' => new CommentResource($commentData['comment']),
-                'mainComment' => $commentData['comment'],
-            ]))->toOthers();
+            broadcast(new UpdateComment(
+                new CommentResource($commentData['comment']),
+                $commentData['comment']
+            ))->toOthers();
             return response()->json([
                 'message' => "successful",
                 'comment' => new CommentResource($commentData['comment']),
@@ -74,12 +75,11 @@ class CommentController extends Controller
         }
     }
 
-    public function commentDelete($comment)
+    public function commentDelete($comment,Request $request)
     {
-        
         try {
             DB::beginTransaction();
-            $commentData = (new CommentService())->commentDelete($comment);
+            $commentData = (new CommentService())->commentDelete($comment,$request->adminId);
             broadcast(new DeleteComment([
                 'commentId' => $comment,
                 'item' => $commentData['item'],

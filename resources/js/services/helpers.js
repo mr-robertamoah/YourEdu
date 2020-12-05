@@ -50,7 +50,16 @@ const dates = {
     toDate(date){
         return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
     },
-    
+    age(date){
+        let main = new Date(date)
+        let now = new Date()
+
+        let age = now.getFullYear() - main.getFullYear()
+        let birthDate = new Date(now.getFullYear(),main.getMonth(),main.getDate())
+
+        age = now > birthDate ? age-- : age
+        return age
+    },
     dateDiff(date1, date2){
         return Math.abs(Math.floor((date1 - date2)/_MS_PER_DAY))
     },

@@ -46,7 +46,7 @@ const routes =  [
         path: '/welcome',
         component: Welcome,
         meta:{
-            requiresLogin:false  //change to true
+            requiresLogin:true
         }
     },
     {

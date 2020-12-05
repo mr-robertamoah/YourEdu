@@ -18,7 +18,7 @@ class ParentModelResource extends JsonResource
             'user_id' => $this->user_id,
             'name' => $this->name,
             'created_at' => $this->created_at,
-            'learners_number' => $this->learners()->count(),
+            'learners_number' => $this->wards()->count(),
             'phoneNumbers' => $this->when(
                 $this->phoneNumbers()->exists()&& 
                 $this->phoneNumbers()->count() > 3,
@@ -27,9 +27,9 @@ class ParentModelResource extends JsonResource
             ),
             'verification' => $this->verification,
             'learners' => $this->when(
-                $this->learners()->exists() && 
-                $this->learners()->count() > 3,
-                $this->learners()->take(3),
+                $this->wards()->exists() && 
+                $this->wards()->count() > 3,
+                $this->wards()->take(3),
                 $this->learners
             ),
             'groups' => $this->when(

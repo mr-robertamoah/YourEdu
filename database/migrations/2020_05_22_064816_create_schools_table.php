@@ -17,6 +17,7 @@ class CreateSchoolsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('owner_id');
             $table->string('company_name')->unique();
+            $table->string('class_structure')->nullable();
             $table->enum('role',['TRADITIONAL','VIRTUAL'])->default('VIRTUAL');
             $table->softDeletes();
             $table->timestamps();

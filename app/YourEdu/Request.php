@@ -11,7 +11,7 @@ class Request extends Model
     //
     use SoftDeletes;
 
-    protected $fillable = ['state'];
+    protected $fillable = ['state','data'];
 
     public function price()
     {
@@ -21,6 +21,11 @@ class Request extends Model
     public function requestable()
     {
         return $this->morphTo();
+    }
+
+    public function messages()
+    {
+        return $this->morphMany(Message::class,'messageable');
     }
 
     public function requestfrom()
@@ -36,5 +41,29 @@ class Request extends Model
     public function comments()
     {
         return $this->morphMany(Comment::class,'commentable');
+    }
+
+    public function files()
+    {
+        return $this->morphToMany(File::class,'fileable')
+        ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function audios()
+    {
+        return $this->morphToMany(Audio::class,'audioable')
+        ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function videos()
+    {
+        return $this->morphToMany(Video::class,'videoable')
+        ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function images()
+    {
+        return $this->morphToMany(Image::class,'imageable')
+        ->withPivot(['state'])->withTimestamps();
     }
 }

@@ -37,11 +37,16 @@ class NewComment implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return [
+        $broadcastOn = [
             new Channel('youredu.home'),
             new Channel("youredu.{$this->newArray['account']}.{$this->newArray['accountId']}"),
-            new Channel("youredu.{$this->newArray['item']}.{$this->newArray['itemId']}"),
         ];
+        if ($this->newArray['item'] === 'class') {
+            $broadcastOn[] = new PrivateChannel("youredu.{$this->newArray['item']}.{$this->newArray['itemId']}");
+        } else {
+            $broadcastOn[] = new Channel("youredu.{$this->newArray['item']}.{$this->newArray['itemId']}");
+        }
+        return $broadcastOn;
     }
     
     public function broadcastAs()

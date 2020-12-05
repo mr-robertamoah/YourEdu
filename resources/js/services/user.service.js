@@ -112,6 +112,15 @@ const UserService = {
             return error.response
         }
     },
+    async schoolRequestResponse(data){
+        try {
+            let response = await ApiService.post(`/api/user/request/response`,data)
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
     async userNotifications(data){
 
         try {
@@ -167,6 +176,17 @@ const UserService = {
         }
     },
 
+    async findUser(main){
+        let {search,nextPage} = main
+        try {
+            let response = await ApiService.get(`/api/user/search?page=${nextPage}`,{search})
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+
     async editUser(mainData){
         let {user_id, data} = mainData
         
@@ -180,7 +200,7 @@ const UserService = {
             return error.response
         }
     },
-
+    
     async getSecretQuestions(){
         try {
             let response = await ApiService.get('/api/secret')
@@ -245,12 +265,21 @@ const UserService = {
         
     },
 
-    logout(){
-        TokenService.removeToken()
-        // TokenService.removeUser()
-        ApiService.removeHeaderAuth()
+    async logout(){
+        try {
 
-        ApiService.unmount401Interceptor()
+            let response = await ApiService.post('api/logout')
+            
+            TokenService.removeToken()
+            // TokenService.removeUser()
+            ApiService.removeHeaderAuth()
+
+            ApiService.unmount401Interceptor()
+
+            return response
+        } catch (error) {
+            
+        }
 
         return true
     }

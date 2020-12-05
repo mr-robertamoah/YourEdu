@@ -14,9 +14,14 @@ class CreateExtraTable extends Migration
     public function up()
     {
         Schema::create('extra', function (Blueprint $table) {
+            $table->id(); 
             $table->unsignedBigInteger('extracurriculum_id');
-            $table->morphs('extracurriculumable'); // school class group
+            $table->nullableMorphs('extracurriculumable'); // school class group
+            $table->nullableMorphs('ownedby'); // school class group
             $table->timestamps();
+
+
+            $table->foreign('extracurriculum_id')->references('id')->on('extracurriculums')->cascadeOnDelete();
         });
     }
 

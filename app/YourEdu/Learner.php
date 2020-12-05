@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +11,7 @@ class Learner extends Model
 {
     //
 
-    use SoftDeletes;
+    use SoftDeletes, AccountTrait;
 
     protected $fillable = [
         'user_id','name'
@@ -75,6 +76,11 @@ class Learner extends Model
         return $this->morphMany(Payment::class,'for');
     }
 
+    public function bans()
+    {
+       return $this->morphMany(Ban::class,'bannable');
+    }
+
     public function phoneNumbers()
     {
         return $this->morphMany(PhoneNumber::class,'phoneable');
@@ -89,16 +95,9 @@ class Learner extends Model
         return $this->morphMany(Keyword::class,'keywordable');
     }
 
-    public function classes()
-    {
-        return $this->belongsToMany(ClassModel::class,'class_learner','learner_id','class_id')
-                ->withPivot('type')->withTimestamps();
-    }
-
     public function schools()
     {
-        return $this->belongsToMany(School::class,'learner_school')
-                ->withPivot('type')->withTimestamps();
+        return $this->morphToMany(School::class,'schoolable','schoolables');
     }
     
     public function works()
@@ -144,6 +143,32 @@ class Learner extends Model
     public function aliasesAdded()
     {
         return $this->morphMany(Alias::class,'addedby');
+    }
+
+    public function programs()
+    {
+        return $this->morphToMany(Program::class,'programmable','programmables');
+    }
+
+    public function curricula()
+    {
+        return $this->morphToMany(Curriculum::class,'curriculumable','curriculumables');
+    }
+
+    public function classes(){
+        return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id');
+    }
+
+    public function courses()
+    {
+        return $this->morphToMany(Course::class,'coursable','coursables')
+            ->withPivot(['activity']);
+    }
+
+    public function subjects()
+    {
+        return $this->morphToMany(subject::class,'subjectable','subjectables')
+            ->withPivot(['activity']);
     }
 
     public function admissions()

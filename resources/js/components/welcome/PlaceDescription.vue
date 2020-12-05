@@ -67,6 +67,11 @@
 
         .button{
             margin: 10px;
+            position: relative;
+
+            .profiles{
+                position: absolute;
+            }
         }
     }
 

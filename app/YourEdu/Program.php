@@ -13,11 +13,6 @@ class Program extends Model
     protected $fillable = [
         'name','description','rationale'
     ];
-
-    public function facilitators()
-    {
-        return $this->belongsToMany(Facilitator::class)->withTimestamps();
-    }
     
     public function aliases()
     {
@@ -37,5 +32,25 @@ class Program extends Model
     public function discussions()
     {
         return $this->morphMany(Discussion::class,'discussionon');
+    }
+
+    public function learners()
+    {
+        return $this->morphedByMany(Learner::class,'programmable','programmables');
+    }
+
+    public function schools()
+    {
+        return $this->morphedByMany(School::class,'programmable','programmables');
+    }
+
+    public function facilitators()
+    {
+        return $this->morphedByMany(facilitator::class,'programmable','programmables');
+    }
+
+    public function professionals()
+    {
+        return $this->morphedByMany(Professional::class,'programmable','programmables');
     }
 }

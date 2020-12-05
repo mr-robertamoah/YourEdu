@@ -10,23 +10,22 @@ class Fee extends Model
     //
     use SoftDeletes;
 
-    public function paymentFor()
+    protected $fillable = [
+        'class_id', 'amount'
+    ];
+
+    public function feeable()
     {
-        return $this->morphMany(Payment::class,'paidfor');
+        return $this->morphTo();
     }
 
-    public function school()
+    public function addedby()
     {
-        return $this->belongsTo(School::class);
+        return $this->morphTo();
     }
 
     public function class()
     {
         return $this->belongsTo(ClassModel::class,'class_id');
-    }
-
-    public function academicYearSection()
-    {
-        return $this->belongsTo(AcademicYearSection::class,'academic_term_id');
     }
 }

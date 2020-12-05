@@ -57,7 +57,7 @@
                     @clickedUnattach="clickedUnattach"
                 ></post-attachment>
             </div>
-            <div class="first">
+            <div class="first" v-if="messageSectionState !=='max'">
                 <div class="creator-info">
                     <div class="started">started by</div>
                     <profile-picture
@@ -93,7 +93,7 @@
                     <div class="title">{{computedTitle}}</div>
                 </div>
             </div>
-            <div class="second">
+            <div class="second" v-if="messageSectionState !=='max'">
                 <div class="attachments-section">
                     <attachment-badge 
                         v-for="(attachment,index) in postAttachments"
@@ -144,11 +144,24 @@
                 </div>
                 <div class="preamble" 
                     v-if="computedPreamble.length"
-                    @click="clickedDiscussionInfo('view')"
+                    @click.self="clickedDiscussionInfo('view')"
                 >
                     {{computedPreamble}}
+                    <div class="toggle" 
+                        @click="clickedMessageSectionToggle"
+                        v-if="messages.length > 2"
+                    >
+                        <font-awesome-icon :icon="['fa','chevron-down']"
+                            v-if="messageSectionState === 'max'"
+                        ></font-awesome-icon>
+                        <font-awesome-icon :icon="['fa','chevron-up']"
+                            v-if="messageSectionState === 'min'"
+                        ></font-awesome-icon>
+                    </div>
                 </div>
-                <div class="discussion-section">
+                <div class="discussion-section"
+                    :class="{'discussion-section-max':messageSectionState === 'max'}"
+                >
                     <div class="main-area" ref="mainarea">
                         <div class="unseen-messages"
                             v-if="unseenMessagesNumber && showUnseenMessages"
@@ -836,6 +849,7 @@ import { strings } from '../services/helpers';
                 otherUserAccountLoading: false,
                 showParticipantsButton: 'participants',
                 requestType: '',
+                messageSectionState: 'min',
                 adminButtonText: 'all',
                 participants: [],
                 fileType: '',
@@ -1431,6 +1445,10 @@ import { strings } from '../services/helpers';
             },
             clickedSearchType(data){
                 this.searchType = data
+            },
+            clickedMessageSectionToggle(){
+                this.messageSectionState = this.messageSectionState === 'max' ?
+                    'min' : 'max'
             },
             clickedParticpantAction(data){
                 if (data.action === 'invite') {
@@ -2782,6 +2800,15 @@ import { strings } from '../services/helpers';
                     background-color: mintcream;
                     cursor: pointer;
                     @include text-overflow();
+                    position: relative;
+
+                    .toggle{ 
+                        font-size: 16px;
+                        color: gray;
+                        z-index: 1;
+                        float: right;
+                        margin-right: 5px;
+                    }
                 }
 
                 .discussion-section{
@@ -2825,6 +2852,13 @@ import { strings } from '../services/helpers';
 
                     .text-area{
                         min-height: 75px;
+                    }
+                }
+
+                .discussion-section-max{
+
+                    .main-area{
+                        height: 650px;
                     }
                 }
             }

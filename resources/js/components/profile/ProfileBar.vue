@@ -1,9 +1,10 @@
 <template>
     <div class="profile-bar"
         @click.self="goToRoute"
-        :class="{small:smallType,max:maxType}"
+        :class="{small:smallType,max:maxType,'just-name':justName}"
     >
         <div class="profile"
+            v-if="!justName"
             @click="goToRoute">
             <profile-picture
                 v-if="src.length > 0"
@@ -18,10 +19,12 @@
             {{name}}
         </div>
         <div class="type"
-            @click="goToRoute">
+            @click="goToRoute"
+            v-if="!justName"
+        >
             {{type}}
         </div>
-        <div class="actions" v-if="actions">
+        <div class="actions" v-if="actions || !justName">
             <div class="loading" v-if="loading">
                 <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
             </div>
@@ -56,6 +59,10 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                 default: null
             },
             smallType: {
+                type: Boolean,
+                default: false
+            },
+            justName: {
                 type: Boolean,
                 default: false
             },
@@ -179,6 +186,14 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
 
         .actions{
             width: 0;
+        }
+    }
+
+    .profile-bar.just-name{
+
+        .name{
+            width: 100%;
+            max-width: unset;
         }
     }
 

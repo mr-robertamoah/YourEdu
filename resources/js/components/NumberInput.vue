@@ -3,8 +3,8 @@
         :title="title"
     >
         <div class="main-section"
-            :class="{error:error,bottomborder:bottomBorder,
-            noborder:noBorder,sm:sm}"
+            :class="{error,bottomBorder,
+            noBorder,sm}"
         >
             <input type="number" 
                 :placeholder="placeholder"
@@ -35,6 +35,10 @@
             noBorder: {
                 type: Boolean,
                 default: false
+            },
+            hasMax: {
+                type: Boolean,
+                default: true
             },
             sm: {
                 type: Boolean,
@@ -73,6 +77,7 @@
         watch: {
             inputNumber(newValue){
                 this.$emit('numberinput', newValue)
+                this.$emit('input', newValue)
             },
             value:{
                 immediate: true,
@@ -86,7 +91,7 @@
                 if (event.target.value < this.inputMin) {
                     // event.target.value = this.inputMin
                     this.$emit('numberinput',`${event.target.value}`)
-                } else if (event.target.value > this.inputMax) {
+                } else if (this.hasMax && event.target.value > this.inputMax) {
                     event.target.value = this.inputMax
                     this.$emit('numberinput',`${event.target.value}`)
                 }
@@ -133,8 +138,8 @@ $buttonColor : rgba(2, 104, 90, .6);
             }
         }
 
-        .bottomborder,
-        .noborder{
+        .bottomBorder,
+        .noBorder{
             $border-radius: 0;
 
             border: none;
@@ -147,7 +152,7 @@ $buttonColor : rgba(2, 104, 90, .6);
             }
         }
 
-        .noborder{
+        .noBorder{
             border: none;
         }
 

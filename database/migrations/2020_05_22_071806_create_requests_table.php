@@ -19,6 +19,7 @@ class CreateRequestsTable extends Migration
             $table->nullableMorphs('requestfrom'); // professional school group facilitator
             $table->nullableMorphs('requestto'); // parent school professional facilitator learner
             $table->enum('state',['PENDING','ACCEPTED','DECLINED'])->default('PENDING');
+            $table->mediumText('data')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

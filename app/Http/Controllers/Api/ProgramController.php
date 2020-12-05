@@ -62,10 +62,7 @@ class ProgramController extends Controller
 
     public function programsGet()
     {
-        return [
-            'message' => 'successful',
-            'programs' => ProgramResource::collection(Program::all())
-        ];
+        return ProgramResource::collection(Program::paginate(2));
     }
 
     public function programsSearch($search)

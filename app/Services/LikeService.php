@@ -7,7 +7,7 @@ use App\Exceptions\LikeException;
 
 class LikeService
 {
-    public function likeCreate($account,$accountId,$item,$itemId,$id)
+    public function likeCreate($account,$accountId,$item,$itemId,$id,$adminId)
     {
         $mainAccount = getAccountObject($account,$accountId);
         if (is_null($mainAccount)) {
@@ -24,6 +24,15 @@ class LikeService
         ]);
         $like->likeable()->associate($mainItem);
         $like->save();
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $like,$like->likedby,$admin,__METHOD__
+                );
+            }
+        }
 
         $itemInfo = $this->getItemInfo($mainItem, $item);
         return [
@@ -51,7 +60,7 @@ class LikeService
         ];
     }
 
-    public function likeDelete($likeId,$id)
+    public function likeDelete($likeId,$id,$adminId)
     {
         $like = getAccountObject('like',$likeId);
         if (is_null($like)) {
@@ -65,7 +74,15 @@ class LikeService
         $itemId = $like->likeable_id;
 
         $itemInfo = $this->getItemInfo($like->likeable, $item);
-
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $like,$like->likedby,$admin,__METHOD__
+                );
+            }
+        }
         $like->delete();
 
         return [

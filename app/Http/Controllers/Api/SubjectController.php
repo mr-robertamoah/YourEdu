@@ -64,10 +64,7 @@ class SubjectController extends Controller
 
     public function subjectsGet()
     {
-        return [
-            'message' => 'successful',
-            'subjects' => SubjectResource::collection(Subject::all())
-        ];
+        return SubjectResource::collection(Subject::paginate(2));
     }
 
     public function subjectsSearch($search)

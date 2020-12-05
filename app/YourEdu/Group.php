@@ -24,6 +24,11 @@ class Group extends Model
     {
         return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra');
     }
+
+    public function activityTrack()
+    {
+       return $this->morphOne(ActivityTrack::class,'for');
+    }
     
     public function works()
     {

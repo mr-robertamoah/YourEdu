@@ -126,6 +126,7 @@ import FadeRight from "../components/transitions/FadeRight";
 import FadeUp from "../components/transitions/FadeUp";
 import MainAlert from "../components/transitions/MainAlert";
 import RequestModal from "../components/RequestModal";
+import {TokenService} from "../services/token.service";
 import { mapActions, mapGetters } from "vuex";
 import { strings } from '../services/helpers';
 
@@ -201,7 +202,8 @@ import { strings } from '../services/helpers';
         },
         methods: {
             ...mapActions(['logout', 'userNotifications', 'markNotifications',
-                'addUserFollower','markOtherNotifications']),
+                'addUserFollower','markOtherNotifications','dashboard/addAccountDetails',
+                'addProfile']),
             requestsModalDisappear(){
                 this.showRequestModal = false
             }, //generalize requestNotifications
@@ -268,16 +270,11 @@ import { strings } from '../services/helpers';
             },
             clearAlert(id){
                 setTimeout((id) => {
-                    let index = this.alerts.findIndex(a=>{
-                        return a.id === id
-                    })
-                    if (index > -1) {
-                        this.alerts.splice(index,1)
-                    }
+                    this.clickedRemoveAlert(id)
                 }, 5000);
             },
             listen(){
-                if (this.getUser) {
+                if (this.getUser && TokenService.getToken()) {
                     
                     Echo.private(`youredu.user.${this.getUser.id}`)
                         .notification((notification) => {
@@ -308,8 +305,51 @@ import { strings } from '../services/helpers';
                                 this.clearAlert(alert.id)
                             } else if (notification.type === 'App\\Notifications\\DiscussionInvitationResponseNotification' ||
                                 notification.type === 'App\\Notifications\\UpdateParticipantStateNotification' ||
+                                notification.type === 'App\\Notifications\\UpdateParticipantStateNotification' ||
+                                notification.type === 'App\\Notifications\\AdminResponseNotification' ||
+                                notification.type === 'App\\Notifications\\FacilitatorResponseNotification' ||
+                                notification.type === 'App\\Notifications\\SchoolResponseNotification' ||
                                 notification.type === 'App\\Notifications\\RemoveDiscussionParticipantNotification') {
                                 this.otherNotifications.push(notification)
+                                
+                                let alert = {
+                                    isMessage: true,
+                                    account: notification.account,
+                                    text: notification.message
+                                }
+                                alert.id = Math.floor(Math.random() * 100)
+                                this.alerts.unshift(alert)
+                                this.clearAlert(alert.id)
+                                if (notification.admin && this.$route.name === 'dashboard') {                                    
+                                    this['dashboard/addAccountDetails']({
+                                        account: notification.accountData.account,
+                                        accountId: notification.accountData.accountId,
+                                        what: 'admin',
+                                        data: notification.admin
+                                    })
+                                } else if (notification.facilitator && this.$route.name === 'dashboard') {                                    
+                                    this['dashboard/addAccountDetails']({
+                                        account: notification.accountData.account,
+                                        accountId: notification.accountData.accountId,
+                                        what: 'facilitator',
+                                        data: notification.facilitator
+                                    })
+                                } else if (notification.school && 
+                                    this.$route.name === 'dashboard' &&
+                                    notification.accountData.account !== 'admin') {                                    
+                                    this['dashboard/addAccountDetails']({
+                                        account: notification.accountData.account,
+                                        accountId: notification.accountData.accountId,
+                                        what: 'school',
+                                        data: notification.school
+                                    })
+                                } else if (notification.school && 
+                                    this.$route.name === 'dashboard' &&
+                                    notification.accountData.account === 'admin') {                                    
+                                    this.addProfile(notification.school)
+                                }
+                            }  else if (notification.type === 'App\\Notifications\\RequestMessageNotification') {
+                                
                                 let alert = {
                                     isMessage: true,
                                     account: notification.account,
@@ -362,7 +402,9 @@ import { strings } from '../services/helpers';
             },
         },
         mounted () {
-            this.listen()
+            setTimeout(() => {
+                this.listen()                
+            }, 2000);
         },
     }
 </script>

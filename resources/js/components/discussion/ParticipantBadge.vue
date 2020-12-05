@@ -1,19 +1,17 @@
 <template>
     <div class="account-badge-wrapper"
-        v-if="account"
         @click.self="goToProfile(account)"
         :class="{request,notification}"
     >
         <div class="top">
-            <div class="profile-picture"
+            <profile-picture class="profile-picture"
                 @click="goToProfile(account)"
+                v-if="account"
             >
-                <profile-picture>
-                    <template slot="image">
-                        <img :src="account.url" >
-                    </template>
-                </profile-picture>
-            </div>
+                <template slot="image">
+                    <img :src="account.url" >
+                </template>
+            </profile-picture>
             <div class="name" v-if="!message.length">
                 {{account.name}}
             </div>

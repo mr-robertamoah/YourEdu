@@ -107,7 +107,6 @@ import TextInput from '../components/TextInput'
                 sectionButtonText:'next',
                 dob:'',
                 errorMessage:'',
-                passwordTitle:'show password',
                 config:{},
                 passwordTitle: 'show password',
                 passwordConfirmationTitle: 'show password',

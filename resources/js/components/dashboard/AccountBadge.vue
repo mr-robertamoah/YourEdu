@@ -58,7 +58,10 @@
                     </div>
                 </div>
             </div>
-            <div class="bottom" v-if="computedActionAccept">
+            <div class="dashboard" v-if="dashboard">
+                {{`added this ${what}`}}
+            </div>
+            <div class="bottom" v-if="!dashboard && computedActionAccept">
                 <action-button
                     @click="clickedAccept"
                     :green="true"
@@ -77,7 +80,7 @@
                 ></action-button>
             </div>
         </div>
-        <div class="action-button-special" v-if="computedActionFlag">
+        <div class="action-button-special" v-if="!dashboard && computedActionFlag">
             <action-button
                 @click="clickedFlag"
                 text="unflag"
@@ -108,6 +111,14 @@ import { mapActions, mapGetters } from 'vuex'
             request: {
                 type: Boolean,
                 default: false
+            },
+            dashboard: {
+                type: Boolean,
+                default: false
+            },
+            what: {
+                type: String,
+                default: ''
             },
             alert: {
                 type: Boolean,
@@ -198,7 +209,7 @@ import { mapActions, mapGetters } from 'vuex'
                     this.account.hasOwnProperty('account') ? this.account.accountId : ''
             },
             computedActionFollow(){
-                return this.alert ? false : this.computedProfiles.length && 
+                return this.dashboard || this.alert ? false : this.computedProfiles.length && 
                     !this.computedOwner &&
                     !this.flag && !this.request && this.action ? true : false
             },
@@ -407,6 +418,11 @@ import { mapActions, mapGetters } from 'vuex'
                     font-style: italic;
                 }
             }
+        }
+
+        .dashboard{
+            color: gray;
+            font-size: 12px;
         }
 
         .bottom{

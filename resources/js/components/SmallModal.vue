@@ -17,12 +17,20 @@
             <div class="close" @click="disappear">
                 <font-awesome-icon :icon="['fas','times']"></font-awesome-icon>
             </div>
-            <div class="main-section" v-if="!loading && !alerting">
+            <div class="main-section" v-if="!main && !loading && !alerting">
                 <div class="title">
                     {{title}}
                 </div>
                 <div class="buttons">
                     <slot name="actions"></slot>
+                </div>
+                <div class="other">
+                    <slot name="other"></slot>
+                </div>
+            </div> 
+            <div class="main" v-if="main">
+                <div class="title">
+                    {{title}}
                 </div>
                 <div class="other">
                     <slot name="other"></slot>
@@ -66,6 +74,10 @@ import AutoAlert from './AutoAlert'
             message: {
                 type: String,
                 default: '',
+            },
+            main: {
+                type: Boolean,
+                default: false,
             },
         },
         components: {
@@ -130,12 +142,9 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 position: relative;
                 margin: 20px 0 0;
             }
-            
-            .main-section{
-                position: absolute;
-                top: 20%;
-                width: 100%;
-                margin: 20px auto;
+
+            .main-section,
+            .main{
 
                 .title{
                     font-size: 16px;
@@ -143,6 +152,13 @@ $modal-margin-height: (100vh - $modal-height)/2;
                     text-align: center;
                     margin: 10px;
                 }
+            }
+            
+            .main-section{
+                position: absolute;
+                top: 20%;
+                width: 100%;
+                margin: 20px auto;
 
                 .buttons{
                     display: flex;
@@ -171,6 +187,25 @@ $modal-margin-height: (100vh - $modal-height)/2;
                             transition: all 1s ease-in-out;
                             box-shadow: 0 0 3px gray;
                         }
+                    }
+                }
+            }
+
+            .main{
+                padding: 30px 10px 10px;
+
+                .other{
+                    text-align: center;
+                    
+                    .item{
+                        width: fit-content;
+                        padding: 5px;
+                        margin: 5px auto;
+                        box-shadow: 0 0 2px grey;
+                        border-radius: 10px;
+                        font-size: 14px;
+                        background: azure;
+                        cursor: pointer;
                     }
                 }
             }

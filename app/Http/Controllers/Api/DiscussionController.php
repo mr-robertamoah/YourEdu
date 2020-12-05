@@ -14,6 +14,7 @@ use App\Events\RemoveDiscussionPendingParticipant;
 use App\Events\UpdatedDiscussionParticipant;
 use App\Events\UpdateDisucssion;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MessageRequest;
 use App\Http\Resources\DiscussionMessageResource;
 use App\Http\Resources\DiscussionParticipantResource;
 use App\Http\Resources\DiscussionPendingParticipantsResource;
@@ -121,12 +122,8 @@ class DiscussionController extends Controller
         }
     }
     
-    public function sendMessage(Request $request, $discussionId)
+    public function sendMessage(MessageRequest $request, $discussionId)
     {
-        $request->validate([
-            'state' => 'required|string',
-            'message' => 'nullable|string',
-        ]);
         try {
             DB::beginTransaction();
 
@@ -135,18 +132,18 @@ class DiscussionController extends Controller
                 $request->state,$request->file('file'));
 
             DB::commit();
-            $messageResource = new DiscussionMessageResource($messageInfo['message']);
             if ($messageInfo['discussionRestriction']) {
                 Notification::sendNow($messageInfo['users'],
                     new NewDiscussionMessageNotification($messageInfo['request']->id));
             }
-            broadcast(new NewDiscussionMessage($messageResource,$discussionId))->toOthers();
+            broadcast(new NewDiscussionMessage(
+                new DiscussionMessageResource($messageInfo['message']),$discussionId))->toOthers();
             return response()->json([
                 'message' => 'successful',
-                'discussionMessage' => $messageResource
+                'discussionMessage' =>  new DiscussionMessageResource($messageInfo['message'])
             ]);
         } catch (\Throwable $th) {
-            DB::commit();
+            DB::rollback();
             throw $th;
             return response()->json([
                 'message' => 'unsuccessful, something happened.'

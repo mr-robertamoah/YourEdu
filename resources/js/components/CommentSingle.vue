@@ -2,7 +2,7 @@
     <div class="comment-wrapper" 
         v-if="showCommentSingle"
         @dblclick.self="clickedViewComments"
-        :class="{simple}"
+        :class="{simple: simple || dashboard}"
     >
         <div class="loading" v-if="loading">
             <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
@@ -162,12 +162,14 @@
                     what="comment"
                     :id="comment.id"
                     :onPostModal="!showCommentNumber"
+                    :schoolAdmin="schoolAdmin"
                     :showAddComment="showAddComment"
                     @hideAddComment="showAddComment = false"
                     @postAddComplete="postAddComplete"
                     @postModalCommentCreated="postModalCommentCreated"
                     @postModalCommentEdited="postModalCommentEdited"
                     :editableData="comment"
+                    :account="account"
                     :edit="editComment"
                 ></add-comment>
             </div>
@@ -249,6 +251,42 @@ import { mapGetters, mapActions } from 'vuex'
             PostButton,
             FlagReason,
         },
+        props: {
+            comment: {
+                type: Object,
+                default(){
+                    return {}
+                },
+            },
+            account: {
+                type: Object,
+                default(){
+                    return null
+                },
+            },
+            schoolAdmin: {
+                type: Object,
+                default(){
+                    return null
+                },
+            },
+            showCommentNumber: { //when false, comment is in comment modal
+                typpe: Boolean,
+                default: true
+            },
+            onPostModal: { 
+                typpe: Boolean,
+                default: false
+            },
+            simple: { 
+                typpe: Boolean,
+                default: false
+            },
+            dashboard: { 
+                typpe: Boolean,
+                default: false
+            },
+        },
         data() {
             return {
                 id: null,
@@ -294,26 +332,6 @@ import { mapGetters, mapActions } from 'vuex'
                 mySave: null,
                 saves: 0,
             }
-        },
-        props: {
-            comment: {
-                type: Object,
-                default(){
-                    return {}
-                },
-            },
-            showCommentNumber: { //when false, comment is in comment modal
-                typpe: Boolean,
-                default: true
-            },
-            onPostModal: { 
-                typpe: Boolean,
-                default: false
-            },
-            simple: { 
-                typpe: Boolean,
-                default: false
-            },
         },
         watch: {
             showOptions(newValue, oldValue) {
@@ -367,6 +385,9 @@ import { mapGetters, mapActions } from 'vuex'
                     this.isSaved = false
                 }
             },
+        },
+        mounted () {
+            this.listen();
         },
         computed: {
             ...mapGetters(['getUser','getProfiles','profile/getMsg']),
@@ -479,9 +500,14 @@ import { mapGetters, mapActions } from 'vuex'
             },
         },
         methods: {
-            ...mapActions(['profile/deleteComment','profile/createLike','profile/createFlag'
-                ,'profile/deleteLike','profile/deleteFlag','profile/deleteSave',
-                'profile/createSave']),
+            ...mapActions(['profile/deleteComment','profile/createLike','profile/createFlag',
+                'profile/deleteLike','profile/deleteFlag','profile/deleteSave',
+                'profile/createSave','home/newLike','profile/newLike',
+                'dashboard/newLike','home/removeLike','profile/removeLike',
+                'dashboard/removeLike','home/newAttachment','profile/newAttachment',
+                'dashboard/newAttachment','home/removeAttachment','profile/removeAttachment',
+                'dashboard/removeAttachment','home/newComment','profile/newComment',
+                'dashboard/newComment']),
             clickedMedia(url,mediaType){
                 this.$emit('clickedMedia',{url,mediaType})
             },
@@ -506,6 +532,41 @@ import { mapGetters, mapActions } from 'vuex'
             viewModalCommentEditedMain(comment){
                 //now in comment single
                 this.$emit('viewModalCommentEditedMain',comment) //emit to the viewcomment this came from
+            },
+            listen(){
+                Echo.channel(`youredu.comment.${this.comment.id}`)
+                    .listen('.updateComment', commentData=>{
+                        console.log(commentData)
+                        this[`${this.$route.name}/replaceComment`](commentData)
+                    })
+                    .listen('.deleteComment', commentInfo=>{
+                        console.log(commentInfo)
+                        this[`${this.$route.name}/removeComment`](commentInfo)
+                    })
+                    .listen('.newComment', comment=>{ // for replies
+                        console.log(comment)
+                        this[`${this.$route.name}/newComment`](comment)
+                    })
+                    .listen('.newLike', data=>{
+                        console.log('data :>> ', data);
+                        this[`${this.$route.name}/newLike`](data)
+                    })
+                    .listen('.deleteLike', data=>{
+                        console.log('data :>> ', data);
+                        this[`${this.$route.name}/removeLike`](data)
+                    })
+                    .listen('.newAttachment', (attachmentData)=>{
+                        console.log(attachmentData)
+                        this[`${this.$route.name}/newAttachment`](attachmentData)
+                    })
+                    .listen('.deleteAttachment', attachmentInfo=>{
+                        console.log(attachmentInfo)
+                        this[`${this.$route.name}/removeAttachment`](attachmentInfo)
+                    })
+                    .listen('.newFlag', (flag)=>{
+                        console.log(flag)
+                        this[`${this.$route.name}/newFlag`](flag)
+                    })
             },
             clickedProfilePicture(){
                 if (this.$route.name !== 'profile' &&
@@ -565,6 +626,10 @@ import { mapGetters, mapActions } from 'vuex'
                 // this.smallModalAlerting = false
             },
             profilesAppear(){
+                if (this.account) {
+                    this.clickedProfile(this.account)
+                    return
+                }
                 this.showProfiles = true
                 setTimeout(() => {
                     this.showProfiles = false
@@ -615,6 +680,10 @@ import { mapGetters, mapActions } from 'vuex'
                 data.commentable_id = this.comment.commentable_id
                 data.itemId = this.comment.id
                 data.where = this.$route.name
+                if (this.schoolAdmin) {
+                    data.adminId = this.schoolAdmin.id
+                }
+                
                 let response = null
                 if (who) {
                     data.account = who.account
@@ -677,6 +746,9 @@ import { mapGetters, mapActions } from 'vuex'
                     }
 
                     data.where = this.$route.name
+                    if (this.schoolAdmin) {
+                        data.adminId = this.schoolAdmin.id
+                    }
                     let response = await this['profile/createLike'](data)
 
                     if (response === 'unsuccessful') {
@@ -723,6 +795,9 @@ import { mapGetters, mapActions } from 'vuex'
                     state = ''
 
                 data.where = this.$route.name
+                if (this.schoolAdmin) {
+                    data.adminId = this.schoolAdmin.id
+                }
                 if (who) {
                     data.account = who.account
                     data.accountId = who.accountId
@@ -790,6 +865,9 @@ import { mapGetters, mapActions } from 'vuex'
                             }
 
                             newData.where = this.$route.name
+                            if (this.schoolAdmin) {
+                                newData.adminId = this.schoolAdmin.id
+                            }
                             let response = await this['profile/deleteLike'](newData)
                             if (response === 'unsuccessful') {
                                 this.isLiked = true
@@ -802,7 +880,7 @@ import { mapGetters, mapActions } from 'vuex'
                             this.isLiked = true
                         }
                     } else {
-                        this.profilesAppear()
+                        this.profilesAppear() //here
                     }
                 }
             },
@@ -834,6 +912,11 @@ import { mapGetters, mapActions } from 'vuex'
                     ownerId: this.comment.commentable_id,
                     account: this.profile.params.account,
                     accountId: this.profile.params.accountId,
+                    where: this.$route.name
+                }
+
+                if (this.schoolAdmin) {
+                    data.adminId = this.schoolAdmin.id
                 }
                 let response = await this['profile/deleteComment'](data)
                 
@@ -870,7 +953,7 @@ import { mapGetters, mapActions } from 'vuex'
                     }
                     this.showProfilesText = 'save as'
                     this.showProfilesAction = 'save'
-                    this.profilesAppear()
+                    this.profilesAppear() //
                 } else if (data === 'delete') {
                     this.smallModalTitle = 'are you sure you want to delete this'
                     this.smallModalDelete = true

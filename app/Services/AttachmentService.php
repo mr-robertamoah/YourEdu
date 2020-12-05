@@ -12,7 +12,8 @@ class AttachmentService
 {
     //attach an attachment from request
 
-    public function attachmentCreate($account,$accountId,$item,$itemId,$attachable,$attachableId,$note)
+    public function attachmentCreate($account,$accountId,$item,$itemId,$attachable,
+        $attachableId,$note,$adminId)
     {
         $mainAccount = getAccountObject($account,$accountId); 
         if (is_null($mainAccount)) {
@@ -34,11 +35,20 @@ class AttachmentService
         if (is_null($attachment)) {
             throw new AttachmentException('attachment creation failed');
         }
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $attachment,$attachment->attachedby,$admin,__METHOD__
+                );
+            }
+        }
 
         return $attachment;        
     }
     //delete an attachment from request
-    public function attachmentDelete($attachmentId,$id)
+    public function attachmentDelete($attachmentId,$id,$adminId)
     {
         $mainAttachment = getAccountObject('postattachment',$attachmentId);
         if (is_null($mainAttachment)) {
@@ -51,8 +61,19 @@ class AttachmentService
         if (($mainAttachment->attachedby->user_id && 
             $mainAttachment->attachedby->user_id !== $id) ||
             ($mainAttachment->attachedby->owner_id && 
-            $mainAttachment->attachedby->owner_id !== $id)) {
+            $mainAttachment->attachedby->owner_id !== $id) ||
+            (getAccountString($mainAttachment->attachedby) === 'school' && 
+            !in_array($id,getAdminIds($mainAttachment->attachedby)))) {
             throw new AttachmentException('you cannot delete attachment you did not create');
+        }
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $mainAttachment,$mainAttachment->attachedby,$admin,__METHOD__
+                );
+            }
         }
 
         $mainAttachment->delete();

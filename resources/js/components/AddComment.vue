@@ -110,6 +110,7 @@ import JustFade from './transitions/JustFade'
 import FadeLeftFast from './transitions/FadeLeftFast'
 import ProfileBar from './profile/ProfileBar'
 import { mapGetters, mapActions } from 'vuex'
+import { strings } from '../services/helpers'
 
     export default {
         components: {
@@ -140,6 +141,18 @@ import { mapGetters, mapActions } from 'vuex'
                 type: Object,
                 default(){
                     return {}
+                }
+            },
+            account: {
+                type: Object,
+                default(){
+                    return {}
+                }
+            },
+            schoolAdmin: {
+                type: Object,
+                default(){
+                    return null
                 }
             },
             id: {
@@ -210,7 +223,8 @@ import { mapGetters, mapActions } from 'vuex'
                     true : false
             },
             computedProfileUrl(){
-                return this['profile/getActiveProfile'] ? 
+                return this.account && this.account.url ? this.account.url :
+                    this['profile/getActiveProfile'] ? 
                     this['profile/getActiveProfile'].url : 
                     this['getActiveProfile'] ?
                     this['getActiveProfile'].url : ''
@@ -285,31 +299,31 @@ import { mapGetters, mapActions } from 'vuex'
             addComment() {
                 if (this.edit) {
                     let who = {}
-                    if (this.editableData.commentedby_type.toLocaleLowerCase().includes('parent')) {
-                        who['account'] = 'parent'
-                    } else if (this.editableData.commentedby_type.toLocaleLowerCase().includes('learner')) {
-                        who['account'] = 'learner'
-                    } else if (this.editableData.commentedby_type.toLocaleLowerCase().includes('professional')) {
-                        who['account'] = 'professional'
-                    } else if (this.editableData.commentedby_type.toLocaleLowerCase().includes('facilitator')) {
-                        who['account'] = 'facilitator'
-                    }
+                    who['account'] = strings.getAccount(this.editableData.commentedby_type)
                     who['accountId'] = this.editableData.commentedby_id
+                    if (who.account === 'school') {                        
+                        who['admin'] = this.schoolAdmin
+                    }
 
                     this.clickedProfile(who)
                 } else {
                     if (this.commentText.length) {
-                        this.showProfiles = true
+                        if (this.account.account) {
+                            this.clickedProfile(this.account)
+                        } else {
+                            this.showProfiles = true
 
-                        setTimeout(() => {
-                            this.showProfiles = false
-                        }, 4000);
+                            setTimeout(() => {
+                                this.showProfiles = false
+                            }, 4000);
+                        }
                     }
                 }
             },
             async clickedProfile(who){
                 this.showProfiles = false
-                let formData = new FormData
+                let formData = new FormData,
+                    data = {}
 
                 if (this.file) {
                     formData.append('file', this.file)
@@ -320,24 +334,29 @@ import { mapGetters, mapActions } from 'vuex'
                 }
 
                 formData.append('account', who.account)
-                formData.append('accountId', who.accountId)                
+                formData.append('accountId', who.accountId) 
+                if (this.schoolAdmin || who.admin) {
+                    formData.append('adminId', this.schoolAdmin ? 
+                        this.schoolAdmin.id : who.admin.id) 
+                }              
                 
                 let response = null
                 if (this.edit) {
-                    let data = {
+                    data = {
                         itemId: this.editableData.id,
+                        where: this.$route.name,
                     }
                     response = await this['profile/updateComment']({data,formData})
                 } else {
-                    let data = {
+                    data = {
                         onPostModal: this.onPostModal,
                         item: this.what,
                         itemId: this.id,
+                        where: this.$route.name,
                     }
 
                     response = await this['profile/createComment']({data,formData})
                 }
-                
                 
                 if (response !== 'unsuccessful') {
                     this.file = null
@@ -345,7 +364,9 @@ import { mapGetters, mapActions } from 'vuex'
                     this.alertDanger = false
                     // this.alertMessage = this['profile/getMsg']
                     this.commentText = ''
-                    if (!this.edit) {
+                    if (data.where === "dashboard") {
+                        this.$emit('dashboardCommentCreated', response.comment)
+                    } else if (!this.edit) {
                         this.$emit('postAddComplete','successful')
                         if (this.onPostModal) {
                             this.$emit('postModalCommentCreated',response.comment)

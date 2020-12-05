@@ -50,6 +50,13 @@
                                     @clickedAction="clickedRequestAction"
                                     class="request-badge"
                                 ></discussion-badge>
+                                <other-request-badge
+                                    v-if="request.isAdminRequest"
+                                    :key="`request.${request.id}`"
+                                    :request="request"
+                                    @clickedAction="clickedRequestAction"
+                                    @updateRequest="updateRequest"
+                                ></other-request-badge>
                             </template>
                         </template>
                         <template slot="transition" v-if="notifications.length">
@@ -59,7 +66,7 @@
                                 <participant-badge
                                     :key="notification.id"
                                     @clickedAction="clickedParticipantAction"
-                                    :account="notification.data.account"
+                                    :account="getNotificationAccount(notification.data)"
                                     :message="notification.data.message"
                                     :createdAt="notification.data.created_at"
                                     :notification="true"
@@ -87,6 +94,7 @@ import MainModal from './MainModal';
 import AccountBadge from "./dashboard/AccountBadge";
 import ParticipantBadge from "./discussion/ParticipantBadge";
 import DiscussionBadge from "./DiscussionBadge";
+import OtherRequestBadge from "./OtherRequestBadge";
 import PulseLoader from "vue-spinner/src/PulseLoader";
 import { mapActions, mapGetters } from 'vuex';
     export default {
@@ -95,6 +103,7 @@ import { mapActions, mapGetters } from 'vuex';
             SlideRightGroup,
             JustFade,
             PulseLoader,
+            OtherRequestBadge,
             DiscussionBadge,
             ParticipantBadge,
             AccountBadge,
@@ -145,27 +154,42 @@ import { mapActions, mapGetters } from 'vuex';
         methods: {
             ...mapActions(['acceptFollowRequest','declineFollowRequest','userRequests',
                 'profile/discusionContributionResponse','profile/joinDiscussionResponse',
-                'userNotifications','profile/invitationDiscussionResponse']),
+                'userNotifications','profile/invitationDiscussionResponse',
+                'schoolRequestResponse']),
             removeRequest(id, type ="message"){ //remove request on success
                 let requestIndex = this.requests.findIndex(request=>{
                     return request.id === id && 
                         (type === 'message' && request.isMessage || 
                         type === 'account' && request.isAccount || 
-                        type === 'participant' && request.isParticipant)
+                        type === 'participant' && request.isParticipant ||
+                        request.isAdminRequest)
                 })
                 if (requestIndex > -1) {
                     this.requests.splice(requestIndex,1)
                 }
             },
+            updateRequest(data){
+                let index = this.requests.findIndex(request=>{
+                    return request.id == data.requestId
+                })
+                if (index > -1) {
+                    this.requests[index].state = data.state
+                }
+            },
+            getNotificationAccount(data){
+                return data.account ? data.account : data.facilitator ? data.facilitator :
+                    data.school ? data.school : null
+            },
             requestsModalDisappear(){
                 this.$emit('requestsModalDisappear')
             },
             clickedRequestAction(data){
-                console.log('accountData :>> ', data);
                 if (data.hasOwnProperty('message')) {
                     this.acceptOrRejectMessage(data)
                 } else if (data.hasOwnProperty('account')) {
                     this.acceptOrDeclineAccount(data)
+                } else if (data.hasOwnProperty('schoolRequest')) {
+                    this.acceptOrDeclineSchoolRequest(data)
                 }
             },
             clickedParticipantAction(participantData){
@@ -173,6 +197,24 @@ import { mapActions, mapGetters } from 'vuex';
                     this.invitationDiscussionResponse(participantData)
                 } else {
                     this.joinDiscussionResponse(participantData)
+                }
+            },
+            async acceptOrDeclineSchoolRequest(requestData){
+                let response,
+                    data = {
+                        requestId: requestData.schoolRequest.id,
+                        action: requestData.action,
+                        other: 'school', 
+                        mine: requestData.schoolRequest.myAccount === 'user' ? 'admin' :
+                            requestData.schoolRequest.myAccount
+                    }
+
+                response = await this.schoolRequestResponse(data)
+
+                if (response.status) {
+                    this.removeRequest(data.requestId)
+                } else {
+                    console.log('response :>> ', response);
                 }
             },
             async invitationDiscussionResponse(participantData){

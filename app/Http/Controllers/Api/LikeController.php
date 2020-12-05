@@ -18,7 +18,8 @@ class LikeController extends Controller
     {
         try {
             DB::beginTransaction();
-            $likeData =(new LikeService())->likeDelete($like,auth()->id());
+            $likeData =(new LikeService())->likeDelete($like,auth()->id(),
+            $request->adminId);
 
             broadcast(new DeleteLike([
                 'likeId' => $like,
@@ -46,7 +47,7 @@ class LikeController extends Controller
         try {
             DB::beginTransaction();
             $likeData = (new LikeService())->likeCreate($request->account,$request->accountId,
-            $item,$itemId, auth()->id());
+            $item,$itemId, auth()->id(),$request->adminId);
 
             DB::commit();
             broadcast(new NewLike([

@@ -213,7 +213,8 @@
                     @dblclick.self="clickedShowPostComments">
                     <template v-if="!postMediaFull && computedComments">
                         <comment-single
-                            :key="comment.id" v-for="comment in computedComments"
+                            :key="comment.id" 
+                            v-for="comment in computedComments"
                             :comment="comment"
                             :simple="true"
                             @askLoginRegister="askLoginRegister"

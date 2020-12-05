@@ -28,9 +28,50 @@ class Course extends Model
         return $this->morphMany(Like::class,'likeable');
     }
 
+    public function lessons()
+    {
+        return $this->morphMany(Lesson::class,'lessonable');
+    }
+
     public function price()
     {
         return $this->morphOne(Price::class,'priceable');
+    }
+
+    public function learners()
+    {
+        return $this->morphedByMany(Learner::class,'coursable','coursables')
+            ->withPivot(['activity','ownedby_id','ownedby_type']);
+    }
+
+    public function parents()
+    {
+        return $this->morphedByMany(ParentModel::class,'coursable','coursables')
+            ->withPivot(['activity','ownedby_id','ownedby_type']);
+    }
+
+    public function facilitators()
+    {
+        return $this->morphedByMany(Facilitator::class,'coursable','coursables')
+            ->withPivot(['activity','ownedby_id','ownedby_type']);
+    }
+
+    public function professionals()
+    {
+        return $this->morphedByMany(Professional::class,'coursable','coursables')
+            ->withPivot(['activity','ownedby_id','ownedby_type']);
+    }
+
+    public function schools()
+    {
+        return $this->morphedByMany(School::class,'ownedby','coursables')
+            ->withPivot(['activity','ownedby_id','ownedby_type']);
+    }
+
+    public function collaborations()
+    {
+        return $this->morphedByMany(Collaboration::class,'ownedby','coursables')
+            ->withPivot(['activity','ownedby_id','ownedby_type']);
     }
 
     public function objectives()
@@ -41,11 +82,6 @@ class Course extends Model
     public function summary()
     {
         return $this->morphOne(Summary::class,'summariable');
-    }
-
-    public function collaboration()
-    {
-        return $this->morphOne(Collaboration::class,'collaborationable');
     }
 
     public function grades(){
@@ -75,16 +111,6 @@ class Course extends Model
     public function aliases()
     {
         return $this->morphMany(Alias::class,'aliasable');
-    }
-
-    public function professionals()
-    {
-        return $this->belongsToMany(Professional::class)->withTimestamps();
-    }
-
-    public function facilitators()
-    {
-        return $this->belongsToMany(Facilitator::class)->withTimestamps();
     }
     
     public function discussions()

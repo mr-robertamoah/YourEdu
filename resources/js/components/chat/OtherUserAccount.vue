@@ -2,12 +2,13 @@
     <div class="other-user-account" 
         v-if="account.name"
         @click="clickedOtherUserAccount"
-        :title="online ? 'user is online' : 'user is offline'"
+        :title="computedTitle"
     >
         <div class="user-account-section">
             <div class="online-alert" v-if="online"></div>
             <profile-picture
                 class="profile-picture"
+                v-if="computedUrl.length"
             >
                 <template slot="image">
                     <img :src="computedUrl">
@@ -18,7 +19,7 @@
                     <div class="name">{{computedName}}</div>
                     <div class="account">{{computedAccount}}</div>
                 </div>
-                <div class="bottom" v-if="!friend">
+                <div class="bottom" v-if="computedBottom">
                     <div class="type">{{account.type === 'follower' ? 'follows' :'followed by'}}</div>
                     <div class="account-details">
                         <div class="name">{{computedMyName}}</div>
@@ -81,6 +82,10 @@ import { mapGetters } from 'vuex';
                 type: Boolean,
                 default: false
             },
+            chat: {
+                type: Boolean,
+                default: true
+            },
             participant: {
                 type: Boolean,
                 default: false
@@ -98,6 +103,10 @@ import { mapGetters } from 'vuex';
                 default: false
             },
             loading: {
+                type: Boolean,
+                default: false
+            },
+            request: {
                 type: Boolean,
                 default: false
             },
@@ -171,12 +180,21 @@ import { mapGetters } from 'vuex';
         computed: {
             ...mapGetters(['getUser']),
             computedName() {
-                return this.account.name ? this.account.name : ''
+                return this.account.name ? this.account.name : 
+                    this.account.profile_name ? this.account.profile_name : ''
+            },
+            computedTitle(){
+                return this.chat && this.online ? 'user is online' : 
+                    this.chat ? 'user is offline' : ''
+            },
+            computedBottom(){
+                return !this.chat ? false : !this.friend
             },
             computedAccount() {
                 return this.account.account ? this.account.account : 
                     this.account.followedby_type ? 
-                    strings.getAccount(this.account.followedby_type) : ''
+                    strings.getAccount(this.account.followedby_type) : 
+                    this.account.username ? this.account.username : ''
             },
             computedMyName() {
                 return this.account.myName ? this.account.myName : 

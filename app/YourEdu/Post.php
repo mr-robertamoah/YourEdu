@@ -73,6 +73,11 @@ class Post extends Model
         return $this->morphMany(Riddle::class,'riddleable');
     }
 
+    public function activityTrack()
+    {
+       return $this->morphOne(ActivityTrack::class,'what');
+    }
+
     public function flags()
     {
         return $this->morphMany(Flag::class,'flaggable');

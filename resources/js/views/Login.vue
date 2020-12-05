@@ -97,6 +97,7 @@ import { mapActions, mapGetters } from "vuex";
             },
         },
         methods:{
+            ...mapActions(['login','getFollowings','getFollowers']),
             clearErrorMessage(){
                 this.errorMessage = ''
             },
@@ -113,7 +114,7 @@ import { mapActions, mapGetters } from "vuex";
                 this.signinWith = 'username'
                 this.clearCredentials()
             },
-            sendLoginDetails(){
+            async sendLoginDetails(){
                 
                 if (this.signinWith ==='username' && this.username === '') {
                     this.errorMessage = 'Please enter your username in the field.'
@@ -148,11 +149,17 @@ import { mapActions, mapGetters } from "vuex";
                         }
                     }
                     
-                    this.login(loginCredentials)
+                    await this.login(loginCredentials)
+
+                    this.followersAndFollowings()
                 }
-                
             },
-            ...mapActions(['login']),
+            followersAndFollowings(){
+                this.getFollowers()
+                setTimeout(() => {
+                    this.getFollowings()
+                }, 2000);
+            },
             passwordIconChange(){
                 if (this.passwordIcon[1] === 'eye') {
                     this.passwordIcon[1] = 'eye-slash'

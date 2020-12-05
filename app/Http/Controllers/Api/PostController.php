@@ -276,7 +276,7 @@ class PostController extends Controller
                 'images','videos','audios','files','comments','flags','attachments',
                 'beenSaved','messages','raisedby.profile','requests.requestfrom'])
                 ->get());
-            // return PostResource::collection($posts);            
+            Debugbar::info($items);            
             return DiscussionPostResource::collection(paginate($items->sortByDesc('updated_at'), 5));            
         } catch (\Throwable $th) {
             // return response()->json([

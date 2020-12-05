@@ -65,6 +65,9 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
         font-size: 14px;
         cursor: pointer;
         border-radius: 10px;
+        width: fit-content;
+        min-width: 40px;
+        text-align: center;
 
         &:hover{
             transition: all 1s ease;

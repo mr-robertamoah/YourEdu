@@ -12,7 +12,7 @@
         <optional-actions
             :hasEdit="false"
             :hasDelete="computedOwner"
-            :hasExtra="true"
+            :hasExtra="simple ? false : true"
             extraText="delete for me"
             :hasAttachment="false"
             :hasSave="false"
@@ -37,6 +37,7 @@
             message.message.length && !computedDeletedForMe">
             <profile-picture
                 class="profile-picture"
+                v-if="computedAccountUrl.length"
             >
                 <template slot="image">
                     <img :src="computedAccountUrl">
@@ -122,6 +123,10 @@ import { dates, strings } from '../services/helpers'
                 type: Boolean,
                 default: false
             },
+            simple: {
+                type: Boolean,
+                default: false
+            },
             adminText: {
                 type: String,
                 default: 'all'
@@ -160,16 +165,18 @@ import { dates, strings } from '../services/helpers'
                     this.message.userDeletes.includes(this.getUser.id)
             },
             computedButtons(){
-                return this.alert ? false : this.request || 
+                return this.simple ? false : this.alert ? false : this.request || 
                     (this.admin && this.adminText !== 'all') ||
                     this.message.state !== "ACCEPTED"
             },
             computedButtonAccept(){
-                return this.request ? true : !this.alert && (this.adminText === 'pending' || 
+                return this.simple ? false : 
+                    this.request ? true : !this.alert && (this.adminText === 'pending' || 
                     this.adminText === 'rejected')
             },
             computedButtonReject(){
-                return this.request ? true : !this.alert && (this.adminText === 'pending' || 
+                return this.simple ? false : 
+                    this.request ? true : !this.alert && (this.adminText === 'pending' || 
                     this.adminText === 'accepted')
             },
             computedResources(){
@@ -205,13 +212,13 @@ import { dates, strings } from '../services/helpers'
                 return resources
             },
             computedAccount() {
-                return strings.getAccount(this.message.fromable_type) 
+                return this.simple ? '' : strings.getAccount(this.message.fromable_type) 
             },
             computedCreatedAt() {
                 return dates.createdAt(this.message.created_at)
             },
             computedAdminAction(){
-                return this.alert && this.message.state !== 'PENDING' ? 
+                return this.simple ? '' : this.alert && this.message.state !== 'PENDING' ? 
                     `admin ${this.message.state.toLowerCase()} your message created at ${this.computedCreatedAt}` 
                     : ''
             },

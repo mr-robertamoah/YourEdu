@@ -19,6 +19,9 @@ class CreateAdminsTable extends Migration
             $table->string('name')->nullable();
             $table->enum('role',['SUPERADMIN', 'SUPERVISOR', 'SCHOOLADMIN', 'CLASSADMIN' ,'GROUPADMIN', 'OTHERS']);
             $table->tinyInteger('level')->default(1);
+            $table->string('title')->nullable();
+            $table->enum('state',['ACTIVE','SUSPENDED'])->nullable();
+            $table->string('description')->nullable();
             $table->softDeletes();
             $table->timestamps();
 

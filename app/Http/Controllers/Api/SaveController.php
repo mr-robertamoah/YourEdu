@@ -13,10 +13,11 @@ class SaveController extends Controller
 {
     //
 
-    public function saveDelete($save)
+    public function saveDelete($save,Request $request)
     {   
         try {
-            $saveInfo = (new SaveService())->saveDelete($save,auth()->id());
+            $saveInfo = (new SaveService())->saveDelete($save,auth()->id(),
+            $request->adminId);
             return response()->json([
                 'message' => $saveInfo
             ]);
@@ -34,7 +35,7 @@ class SaveController extends Controller
             DB::beginTransaction();
 
             $save = (new SaveService())->saveCreate($request->account,$request->accountId,
-                $item,$itemId,auth()->id());
+                $item,$itemId,auth()->id(),$request->adminId);
 
             DB::commit();
             return response()->json([

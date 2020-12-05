@@ -66,10 +66,7 @@ class GradeController extends Controller
 
     public function gradesGet()
     {
-        return [
-            'message' => 'successful',
-            'grades' => GradeResource::collection(Grade::all())
-        ];
+        return GradeResource::collection(Grade::paginate(2));
     }
 
     public function gradesSearch($search)

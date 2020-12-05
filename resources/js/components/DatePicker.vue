@@ -3,7 +3,6 @@
             :class="{bottomborder:bottomBorder}">
         <flat-pickr class="form-control"
             v-model="datePicked"
-            :value="value"
             :config="flatPickrConfig"
             :placeholder="placeHolder"
         >
@@ -16,11 +15,18 @@ import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 
     export default {
+        components: {
+            flatPickr,
+        },
         props: {
             flatPickrConfig: {
                 type: Object,
                 default (){
-                    return {}
+                    return {
+                        maxDate: 'today',
+                        dateFormat: 'F j, Y',
+                        altFormat: 'F j, Y',
+                    }
                 }
             },
             bottomBorder: {
@@ -48,14 +54,19 @@ import 'flatpickr/dist/flatpickr.css';
             value:{
                 immediate: true,
                 handler(newValue){
-                    if (newValue.length) {
-                        this.datePicked = newValue
-                    }
+                    this.datePicked = newValue
                 }
             },
-        },
-        components: {
-            flatPickr,
+            placeHolder:{
+                immediate: true,
+                handler(newValue){
+                    if (new Date(newValue).toString() != 'Invalid Date') {
+                        this.datePicked = newValue
+                    } else {
+                        this.datePicked = ''
+                    }                    
+                }
+            },
         },
     }
 </script>

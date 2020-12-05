@@ -233,16 +233,17 @@ class ConversationController extends Controller
     {
         try {
             DB::beginTransaction();
-            $message = (new MessageService())->createMessage('conversation',$conversationId,
+            $messageData = (new MessageService())->createMessage('conversation',$conversationId,
                 $request->account,$request->accountId,auth()->id(),$request->message,'sent',
                 $request->file('file'),$request->chattingAccount,
                 $request->chattingAccountId,$request->chattingUserId);
-            $messageResource = new MessageResource($message);
-            broadcast(new NewChatMessage($messageResource));
+
+            broadcast(new NewChatMessage(
+                new MessageResource($messageData['message'])));
             DB::commit();
             return response()->json([
                 'message' => 'successful',
-                'chatMessage' => $messageResource
+                'chatMessage' => new MessageResource($messageData['message'])
             ]);
         } catch (\Throwable $th) {
             DB::commit();

@@ -48,7 +48,7 @@ class DiscussionPostResource extends JsonResource
         $data['comments'] = CommentResource::collection($this->comments()
             ->orderby('updated_at','desc')->take(1)->get());
 
-        if (!is_null($this->postedby_id)) {
+        if ($this->postedby) {
             $type = null;
             $typeName = null;
             if ($this->books()->exists()) {
@@ -98,7 +98,6 @@ class DiscussionPostResource extends JsonResource
             $data['messages'] = DiscussionMessageResource::collection($this->messages()
                 ->where('state','ACCEPTED')
                 ->orderby('updated_at','desc')->take(2)->get());
-            Debugbar::info($this->participants);
         }
 
         return $data;

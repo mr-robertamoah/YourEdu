@@ -28,14 +28,14 @@
             >
                 <div class="emoji" 
                     @click="clickedEmoji"
-                    v-if="!typingState"
+                    v-if="!typingState && !request"
                     title="add an emoji to your text"
                 >
                     <font-awesome-icon :icon="['fa','grin']"></font-awesome-icon>
                 </div>
                 <div class="attachment"
                     @click="clickedAttachments"
-                    v-if="!typingState"
+                    v-if="!typingState && !request"
                     title="add a file"
                 >
                     <font-awesome-icon :icon="['fa','paperclip']"></font-awesome-icon>
@@ -143,7 +143,7 @@
         
         <!-- media capture -->
         <media-capture
-            v-if="!blocked && showMediaCapture"
+            v-if="!request && !blocked && showMediaCapture"
             :show="showMediaCapture"
             :type="mediaCaptureType"
             @closeMediaCapture="closeMediaCapture"
@@ -168,11 +168,22 @@ import { files } from '../services/helpers';
                 type: Boolean,
                 default: false
             },
+            request: {
+                type: Boolean,
+                default: false
+            },
         },
         watch: {
+            request: {
+                immediate: true,
+                handler(newValue){
+                    if (newValue) {
+                        this.placeholder = 'have a message?'
+                    }
+                }
+            },
             textareaValue(newValue){
                 if (newValue.length && !this.typignState) {
-                    
                     this.typingState = true
                     if (this.typingClock) {
                         clearTimeout()

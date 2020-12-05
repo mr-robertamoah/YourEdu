@@ -12,7 +12,7 @@ class Admin extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id','name','role'
+        'user_id','name','role','level','title','description'
     ];
 
     public function verifications()
@@ -28,6 +28,11 @@ class Admin extends Model
     public function secretQuestions()
     {
         return $this->hasMany(SecretQuestion::class);
+    }
+
+    public function activityTracks()
+    {
+       return $this->morphMany(ActivityTrack::class,'who');
     }
 
     public function savesMade()
@@ -55,6 +60,11 @@ class Admin extends Model
     public function uniqueGradesAdded()
     {
         return $this->morphMany(Grade::class,'addedby');
+    }
+
+    public function addedClasses()
+    {
+        return $this->morphMany(ClassModel::class,'addedby');
     }
 
     public function attachments()

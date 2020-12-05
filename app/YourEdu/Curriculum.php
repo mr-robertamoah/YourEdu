@@ -10,10 +10,6 @@ class Curriculum extends Model
     //
     use SoftDeletes;
 
-    public function classes(){
-        return $this->hasMany(ClassModel::class);
-    }
-
     public function curriculable(){
         return $this->morphTo();
     }
@@ -28,18 +24,29 @@ class Curriculum extends Model
         return $this->hasMany(CurriculumDetail::class);
     }
 
-    public function subjects()
-    {
-        return $this->belongsToMany(Subject::class,'curriculum_subject','curriculum_id','subject_id')
-            ->using(CurriculumSubject::class)
-            ->withPivot(['note','attachedby_type','attachedby_id'])
-            ->withTimestamps();
-    }
-
     public function schools()
     {
-        return $this->belongsToMany(School::class,'curriculum_school','curriculum_id','school_id')
-                ->withTimestamps();
+        return $this->morphedByMany(School::class,'curriculumable','curriculumables');
+    }
+
+    public function classes()
+    {
+        return $this->morphedByMany(ClassModel::class,'curriculumable','curriculumables');
+    }
+
+    public function learners()
+    {
+        return $this->morphedByMany(Learner::class,'curriculumable','curriculumables');
+    }
+
+    public function facilitators()
+    {
+        return $this->morphedByMany(Facilitator::class,'curriculumable','curriculumables');
+    }
+
+    public function programs()
+    {
+        return $this->morphedByMany(Program::class,'curriculumable','curriculumables');
     }
 
     public function grades(){

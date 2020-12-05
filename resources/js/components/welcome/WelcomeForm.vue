@@ -71,8 +71,7 @@ $input-color: rgba(22, 233, 205, 1);
 
             .form-input{
                 border: none;
-                border-bottom: 1px solid $input-color;
-
+                border-bottom: 2px solid $input-color;
 
                 &:active,
                 &:focus{

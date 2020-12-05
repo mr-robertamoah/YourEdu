@@ -5,10 +5,11 @@ namespace App\Services;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\CommentException;
 use Illuminate\Support\Facades\Storage;
+use \Debugbar;
 
 class CommentService
 {
-    public function commentCreate($body,$file,$account,$accountId,$id,$item,$itemId)
+    public function commentCreate($body,$file,$account,$accountId,$id,$item,$itemId,$adminId)
     {
         if(is_null($body) && is_null($file)){
             throw new CommentException('unsuccessful. there is nothing to add as comment.');
@@ -19,14 +20,19 @@ class CommentService
             throw new AccountNotFoundException("unsuccessful. there is no such {$account}.");
         }
 
-        $this->checkAccountOwnership($mainAccount,$id);        
+        $this->checkAccountOwnership($mainAccount,$id,$account);        
 
         $commentable = getAccountObject($item,$itemId);
         if (is_null($commentable)) {
-            throw new AccountNotFoundException("unsuccessful. there is no such {$account}.");
+            throw new AccountNotFoundException("unsuccessful. there is no such {$item}.");
         }
 
-        $comment = $mainAccount->comments()->create([
+        $method = 'comments';
+        if ($account === 'school') {
+            $method = 'commentsMade';
+        }
+
+        $comment = $mainAccount->$method()->create([
             'body' => $body
         ]);
         
@@ -48,32 +54,49 @@ class CommentService
             }
             throw new CommentException("unsuccessful. {$item} does not exist or comment was not created");
         }
-
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $comment,$mainAccount,$admin,__METHOD__
+                );
+            }
+        }
+        
         return $commentData;
     }
 
-    private function checkAccountOwnership($account,$id)
+    private function checkAccountOwnership($account,$id,$accountType)
     {
-        if ($account->user_id && $account->user_id !== $id) {
+        if ($accountType === 'school') {
+            if (!in_array($id,getAdminIds($account))) {                
+                throw new CommentException("unsuccessful. you are not authorised to perform this action.");
+            }
+        } else if ($account->user_id && $account->user_id !== $id) {
             throw new CommentException("unsuccessful. you do not own this account.");
         } else if ($account->owner_id && $account->owner_id !== $id) {
             throw new CommentException("unsuccessful. you do not own this account.");
         }
     }
     
-    public function commentEdit($account,$accountId,$id,$commentId,$body)
+    public function commentEdit($account,$accountId,$id,$commentId,$body,$adminId)
     {
         // for now, body must be required, on a later date, it wont be. but we will 
         //check to ensure that the update doesnt lead to an empty comment (without body and file)
-
+        Debugbar::info('edit');
         $mainAccount = getAccountObject($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("unsuccessful. there is no such {$account}.");
         }
 
-        $this->checkAccountOwnership($mainAccount,$id);
+        $this->checkAccountOwnership($mainAccount,$id,$account);
 
-        $comment = $mainAccount->comments()->where('id', $commentId)->first();
+        $method = 'comments';
+        if ($account === 'school') {
+            $method = 'commentsMade';
+        }
+        $comment = $mainAccount->$method()->where('id', $commentId)->first();
             
         if (is_null($comment)) {
             throw new CommentException("unsuccessful. there is no such comment for this accout user.");
@@ -82,14 +105,24 @@ class CommentService
         $comment->update([
             'body' => $body
         ]);
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $comment,$mainAccount,$admin,__METHOD__
+                );
+            }
+        }
 
         return [
             'comment' => $comment,
         ];
     }
     
-    public function commentDelete($commentId)
+    public function commentDelete($commentId,$adminId)
     {
+        Debugbar::info('delete');
         $comment = getAccountObject('comment',$commentId);
         if (is_null($comment)) {
             throw new AccountNotFoundException("comment not found with id {$commentId}.");
@@ -108,7 +141,23 @@ class CommentService
         } else if ($item === 'discussion') {
             $account = getAccountString(get_class($comment->commentable->raisedby));
             $accountId = $comment->commentable->raisedby->id;
+        } else if ($item === 'class') {
+            $account = getAccountString(get_class($comment->commentable->ownedby));
+            $accountId = $comment->commentable->ownedby->id;
+        } else if ($item === 'comment') {
+            $account = getAccountString(get_class($comment->commentable->commentedby));
+            $accountId = $comment->commentable->commentedby->id;
         }
+        
+        if ($adminId) {
+            $admin = getAccountObject('admin',$adminId);
+            if (!is_null($admin)) {
+                (new ActivityTrackService())->createActivityTrack(
+                    $comment,$comment->commentedby,$admin,__METHOD__
+                );
+            }
+        }
+
         $comment->delete();
 
         return [
@@ -148,10 +197,8 @@ class CommentService
         } else if ($item === 'poem') {
             $commentableOwner = $commentable->post->postedby;
         } else if ($item === 'comment') {
-
+            $commentableOwner = $commentable->commentedby;
         } else if ($item === 'lesson') {
-
-        } else if ($item === 'class') {
 
         } else if ($item === 'request') {
 
@@ -173,6 +220,8 @@ class CommentService
 
         } else if ($item === 'school') {
 
+        } else if ($item === 'class') {
+            $commentableOwner = $commentable->ownedby;
         }
 
         if ($comment && $commentable) {

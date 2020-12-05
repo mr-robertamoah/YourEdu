@@ -170,20 +170,24 @@ const mutations = {
     ///////////////////////////////////////////////////////// accounts
 
     ACCOUNT_CREATE_SUCCESS(state,data){
-        if (data.owned_profile.account_type === 'learner') {
-            state.user.learner = data.learner
-        } else if (data.owned_profile.account_type === 'parent') {
-            state.user.parent = data.parent
-        } else if (data.owned_profile.account_type === 'facilitator') {
-            state.user.facilitator = data.facilitator
-        } else if (data.owned_profile.account_type === 'professional') {
-            state.user.professionals.push(data.professional)
-        } else if (data.owned_profile.account_type === 'school') {
-            state.user.schools.push(data.school)
-        } else if (data.owned_profile.account_type === ' ') {
-            state.user.groups.push(data.group)
-        }
-        state.user.owned_profiles.push(data.owned_profile)
+        // if (data.profile.account_type === 'learner') {
+        //     state.user.is_learner = true
+        // } else if (data.profile.account_type === 'parent') {
+        //     state.user.is_parent = true
+        // } else if (data.profile.account_type === 'facilitator') {
+        //     state.user.is_facilitator = true
+        // } else if (data.profile.account_type === 'professional') {
+        //     state.user.is_professional = true
+        // } else if (data.profile.account_type === 'school') {
+        //     state.user.schools.push(data.school)
+        // }
+        //  else if (data.profile.account_type === ' ') {
+        //     state.user.groups.push(data.group)
+        // }
+        state.user.profiles.push(data.profile)
+    },
+    ADD_PROFILE(state,profile){
+        state.user.profiles.push(profile)
     },
 }
 

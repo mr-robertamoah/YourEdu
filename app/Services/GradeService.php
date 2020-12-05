@@ -61,4 +61,14 @@ class GradeService
 
         return 'successful';
     }
+
+    public static function gradeAttachItem($gradeId,$item)
+    {
+        if (is_null(
+            $item->grades->where('id',$gradeId)->first()
+        )) {
+            $item->grades()->attach($gradeId);
+            $item->save();
+        }
+    }
 }

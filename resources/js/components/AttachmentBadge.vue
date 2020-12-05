@@ -1,8 +1,9 @@
 <template>
     <div class="attachment-item-wrapper"
         :class="{borderRadius:!hasClose}"
+        @click="clickedBadge"
     >
-        {{attachment.name}}
+        {{attachment.name ? attachment.name : file.name}}
         <div class="close" 
             @click="clickedClose"
             v-if="hasClose"
@@ -21,6 +22,10 @@
                     return {}
                 }
             },
+            file: {
+                type: File,
+                default: null
+            },
             type: {
                 type: String,
                 default: ''
@@ -34,8 +39,11 @@
             clickedClose() {
                 this.$emit('removeAttachment',{
                     type: this.type,
-                    data: this.attachment
+                    data: this.attachment.name ? this.attachment : this.file
                 })
+            },
+            clickedBadge(){
+                this.$emit('click')
             }
         },
     }

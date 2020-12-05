@@ -17,6 +17,7 @@ class CreateCoursesTable extends Migration
             $table->id();
             $table->nullableMorphs('addedby'); // facilitator school admin professional
             $table->string('name');
+            $table->nullableMorphs('ownedby');
             $table->text('description')->nullable();
             $table->text('rationale')->nullable();
             $table->softDeletes();

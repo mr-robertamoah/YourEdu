@@ -38,17 +38,23 @@
                 type: Boolean,
                 default: false
             },
-            mainActive: {
-                type: Boolean,
-                default: false
-            },
+            // mainActive: {
+            //     type: Boolean,
+            //     default: false
+            // },
         },
         watch: {
             postButtonClass(newValue) {
                 if (newValue === 'red') {
                     this.colorRed = true
                 }
-            }
+            },
+            active:{
+                immediate:true,
+                handler(newValue){
+                    this.makeActive = newValue
+                }
+            },
         },
         data() {
             return {
@@ -67,9 +73,7 @@
         methods: {
             clicked() {
                 this.$emit('click', this.buttonText)
-                if (this.active) {
-                    this.makeActive = this.mainActive ? false : !this.makeActive
-                }
+                
             }
         },
     }
@@ -103,6 +107,7 @@
     }
     
     .active{
+        background: lightgreen;
         box-shadow: 1px 1px 1px $special-button-border, -1px -1px 1px $special-button-border;
     }
     

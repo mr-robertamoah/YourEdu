@@ -1,3 +1,5 @@
+const { default: profile } = require("./modules/profile")
+
 const getters = {
     authenticating(state){
         return state.authenticating
@@ -47,44 +49,8 @@ const getters = {
         return state.user ? state.user.id : null
     },
     
-    isSuperadmin(state){
-        return state.user ? state.user.is_superadmin : false
-    },
-    
     getLoading(state){
         return state.loading
-    },
-    
-    isGroupadmin(state){
-        return state.user ? state.user.is_groupadmin : false
-    },
-    
-    isClassadmin(state){
-        return state.user ? state.user.is_classadmin : false
-    },
-    
-    isSchooladmin(state){
-        return state.user ? state.user.is_schooladmin : false
-    },
-    
-    isLearner(state){
-        return state.user ? state.user.is_learner : false
-    },
-    
-    isParent(state){
-        return state.user ? state.user.is_parent : false
-    },
-    
-    isFacilitator(state){
-        return state.user ? state.user.is_facilitator : false
-    },
-    
-    hasProfessionals(state){
-        return state.user ? state.user.has_professionals : false
-    },
-    
-    hasSchools(state){
-        return state.user ? state.user.has_schools : false
     },
     
     getUserFollowRequest(state){
@@ -97,14 +63,14 @@ const getters = {
         let computedArray = []
 
         if (state.user) {
-            profilesArray = state.user.owned_profiles
+            profilesArray = state.user.profiles
         } else {
             return null
         }
 
         if (profilesArray) {
             computedArray = profilesArray.map(el=>{
-                return {
+                let profile =  {
                     name: el.profile_name ? el.profile_name : 'no name',
                     url: el.profile_url ? el.profile_url: '',
                     profile: el.profile ? el.profile : '',
@@ -113,6 +79,12 @@ const getters = {
                         accountId: el.account_id,
                     }
                 }
+
+                if (profile.params.account === 'school') {
+                    profile.admin = el.admin
+                }
+
+                return profile
             })
 
             return computedArray
@@ -128,29 +100,35 @@ const getters = {
     getLoggedin(state){
         return state.loggedin
     },
-    // getParent(state){
-    //     return state.user ? state.user.parent: null
-    // },
+    isParent(state){
+        return state.user.profiles.findIndex(profile=>{
+            return profile.account_type === 'parent'
+        }) > -1 
+    },
 
-    // getLearner(state){
-    //     return state.user ? state.user.learner : null
-    // },
+    isLearner(state){
+        return state.user.profiles.findIndex(profile=>{
+            return profile.account_type === 'learner'
+        }) > -1 
+    },
 
-    // getSchools(state){
-    //     return state.user ? state.user.schools : null
-    // },
+    isFacilitator(state){
+        return state.user.profiles.findIndex(profile=>{
+            return profile.account_type === 'facilitator'
+        }) > -1 
+    },
 
-    // getAdmins(state){
-    //     return state.user ? state.user.admins : null
-    // },
+    professionalsCount(state){
+        return state.user.profiles.filter(profile=>{
+            return profile.account_type === 'professional'
+        }).length
+    },
 
-    // getFacilitator(state){
-    //     return state.user ? state.user.facilitator : null
-    // },
-
-    // getProfessionals(state){
-    //     return state.user ? state.user.professionals : null
-    // },
+    schoolsCount(state){
+        return state.user.profiles.filter(profile=>{
+            return profile.account_type === 'school' && profile.userId === state.user.id
+        }).length
+    },
 }
 
 export default getters

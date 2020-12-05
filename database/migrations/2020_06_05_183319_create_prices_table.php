@@ -20,6 +20,7 @@ class CreatePricesTable extends Migration
             $table->float('amount');
             $table->string('description')->nullable();
             $table->boolean('postponed')->default(false);
+            $table->enum('for',['ALL','LEARNERS','PARENTS','FACILITATORS','PROFESSIONALS','SCHOOLS'])->default(false);
             $table->softDeletes();
             $table->timestamps();
         });

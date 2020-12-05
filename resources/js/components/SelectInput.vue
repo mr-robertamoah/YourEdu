@@ -18,6 +18,7 @@
                         <div class="selection" ref="selection" 
                             v-if="showSelection"
                             :class="{special: special}"
+                            infinite-wrapper
                         >
                             <template
                                 v-if="!special"
@@ -48,6 +49,11 @@
                                         item.description.length"
                                     >{{`description: ${item.description}`}}</div>
                                 </div>
+                                <infinite-loader
+                                    v-if="next !== 1"
+                                    @infinite="infiniteHandler"
+                                    force-use-infinite-wrapper
+                                ></infinite-loader>
                             </template>
                         </div>
                     </template>
@@ -59,8 +65,13 @@
 
 <script>
 import FadeLeft from './transitions/FadeLeft';
+import InfiniteLoader from 'vue-infinite-loading';
 
     export default {
+        components: {
+            FadeLeft,
+            InfiniteLoader,
+        },
         props: {
             items: {
                 type: Array,
@@ -92,18 +103,20 @@ import FadeLeft from './transitions/FadeLeft';
                 type: Boolean,
                 default: false
             },
+            next: {
+                type: Number,
+                default: 1
+            },
             bottomBorder: {
                 type: Boolean,
                 default: false
             },
         },
-        components: {
-            FadeLeft,
-        },
         data() {
             return {
                 selection: '',
                 showSelection: false,
+                last: 0,
             }
         },
         watch: {
@@ -111,7 +124,15 @@ import FadeLeft from './transitions/FadeLeft';
                 if (!newValue) {
                     this.selection = ''
                 }
-            }
+            },
+            value: {
+                immediate: true,
+                handler(newValue){
+                    if (!newValue) {
+                        this.selection = ''
+                    }
+                }
+            },
         },
         methods: {
             clickedSelect(){
@@ -121,7 +142,20 @@ import FadeLeft from './transitions/FadeLeft';
                 this.selection = item.name
                 this.showSelection = false
                 this.$emit('clickedSelection',item)
-            }
+            },
+            async infiniteHandler($state){
+                console.log(this.next);
+                if (!this.next) {
+                    $state.complete()
+                    // return
+                } else if (this.next === this.last) {
+                    // return
+                } else {
+                    $state.loaded()
+                    this.last = this.next
+                    this.$emit('getMore')
+                }
+            },
         },
     }
 </script>

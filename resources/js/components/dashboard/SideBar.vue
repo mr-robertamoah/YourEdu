@@ -3,51 +3,183 @@
         <div class="icon" @click="switchIcon" :title="iconTitle">
             <font-awesome-icon :icon="icons"></font-awesome-icon>
         </div>
+        <div class="username" 
+            v-if="computedUserName.length"
+            @click="clickedUsername($event)"
+        >
+            {{`@${computedUserName}`}}</div>
+        <div class="main-item">
+            <div class="main-text">Profile</div>
+            <div class="main-icon">
+                <font-awesome-icon :icon="['fas','users']"></font-awesome-icon>
+            </div>
+        </div>
         <div class="main">
             <div class="item">
                 <div class="item-text">
-                    item 1
+                    learner
                 </div>
                 <div class="item-icon">
-                    <font-awesome-icon :icon="['fas','eye']"></font-awesome-icon>
+                    (L)
                 </div>
                 <div class="item-sub">
-                    <div class="sub-item">
+                    <!-- <div class="sub-item">
                         <div class="sub-text">
                             sub 1
                         </div>
                         <div class="sub-icon">
                             icon
                         </div>
+                    </div> -->
+                    <div class="no-item" v-if="!isLearner">
+                        <div class="info">no learner account</div>
+                        <div class="button"
+                            @click="clickedCreate('learner')"
+                        >create</div>
                     </div>
-                    <div class="sub-item">
-                        <div class="sub-text">
-                            sub 2
-                        </div>
-                        <div class="sub-icon">
-                            icon
-                        </div>
-                    </div>
+                    <profile-bar
+                        v-else
+                        :name="computedLearner.name"
+                        :type="computedLearner.params.account"
+                        :smallType="true"
+                        :justName="true"
+                        :routeParams="computedLearner.params"
+                        :navigate="false"
+                        @clickedProfile="clickedProfile"
+                    ></profile-bar>
                 </div>
             </div>
             <div class="item">
                 <div class="item-text">
-                    item 2
+                    facilitator
+                </div>
+                <div class="item-icon">
+                    (F)
                 </div>
                 <div class="item-sub">
-                    <div class="sub-item">
-                        <div class="sub-text">
-                            sub 1
-                        </div>
-                        <div class="sub-icon">
-                            icon
-                        </div>
+                    <div class="no-item" v-if="!isFacilitator">
+                        <div class="info">no facilitator account</div>
+                        <div class="button"
+                            @click="clickedCreate('facilitator')"
+                        >create</div>
                     </div>
+                    <profile-bar
+                        v-else
+                        :name="computedFacilitator.name"
+                        :type="computedFacilitator.params.account"
+                        :smallType="true"
+                        :justName="true"
+                        :routeParams="computedFacilitator.params"
+                        :navigate="false"
+                        @clickedProfile="clickedProfile"
+                    ></profile-bar>
                 </div>
             </div>
             <div class="item">
                 <div class="item-text">
-                    item 3
+                    Parent
+                </div>
+                <div class="item-icon">
+                    (P)
+                </div>
+                <div class="item-sub">
+                    <div class="no-item" v-if="!isParent">
+                        <div class="info">no parent account</div>
+                        <div class="button"
+                            @click="clickedCreate('parent')"
+                        >create</div>
+                    </div>
+                    <profile-bar
+                        v-else
+                        :name="computedParent.name"
+                        :type="computedParent.params.account"
+                        :smallType="true"
+                        :justName="true"
+                        :routeParams="computedParent.params"
+                        :navigate="false"
+                        @clickedProfile="clickedProfile"
+                    ></profile-bar>
+                </div>
+            </div>
+            <div class="item">
+                <div class="item-text">
+                    Professionals
+                </div>
+                <div class="item-icon">
+                    (Pros)
+                </div>
+                <div class="item-sub">
+                    <div class="no-item" v-if="computedProfessionals.length < 3">
+                        <div class="info">
+                            {{computedProfessionals.length ? `own another professional account` : 'no professional accounts'}}
+                        </div>
+                        <div class="button"
+                            @click="clickedCreate('professional')"
+                        >create</div>
+                    </div>
+                    <template v-if="computedProfessionals.length">
+                        <profile-bar
+                            v-for="professional in computedProfessionals"                            
+                            :key="professional.params.accountId"
+                            :name="professional.name"
+                            :type="professional.params.account"
+                            :smallType="true"
+                            :justName="true"
+                            :routeParams="professional.params"
+                            :navigate="false"
+                            @clickedProfile="clickedProfile"
+                        ></profile-bar>
+                    </template>
+                </div>
+            </div>
+            <div class="item">
+                <div class="item-text">
+                    Schools
+                </div>
+                <div class="item-icon">
+                    (S)
+                </div>
+                <div class="item-sub">
+                    <div class="no-item" v-if="computedSchools.length < 3">
+                        <div class="info">
+                            {{computedSchools.length ? `own another school` : 'no owned schools'}}
+                        </div>
+                        <div class="button"
+                            @click="clickedCreate('school')"
+                        >create</div>
+                    </div>
+                    <template v-if="computedSchools.length">
+                        <profile-bar
+                            v-for="school in computedSchools"                            
+                            :key="school.params.accountId"
+                            :name="school.name"
+                            :type="school.params.account"
+                            :smallType="true"
+                            :justName="true"
+                            :routeParams="school.params"
+                            :navigate="false"
+                            @clickedProfile="clickedProfile"
+                        ></profile-bar>
+                    </template>
+                </div>
+            </div>
+            <div class="item" v-if="computedAdmin">
+                <div class="item-text">
+                    Admins
+                </div>
+                <div class="item-icon">
+                    (A)
+                </div>
+                <div class="item-sub">
+                    <profile-bar      
+                        :name="computedAdmin.name"
+                        :type="'admin'"
+                        :smallType="true"
+                        :justName="true"
+                        :routeParams="{account: 'admin', accountId: computedAdmin.id}"
+                        :navigate="false"
+                        @clickedProfile="clickedProfile"
+                    ></profile-bar>
                 </div>
             </div>
         </div>
@@ -55,13 +187,87 @@
 </template>
 
 <script>
+import ProfileBar from '../profile/ProfileBar'
+import { mapGetters } from 'vuex'
     export default {
+        components: {
+            ProfileBar,
+        },
+        props: {
+            minWidth: {
+                type: Boolean,
+                default: false
+            },
+        },
         data() {
             return {
                 icons: ['fas','bars'],
                 barSmall: true,
                 iconTitle: 'click to expand'
             }
+        },
+        watch: {
+            barSmall(newValue) {
+                this.$emit('barSmall',newValue)
+            },
+            minWidth(newValue) {
+                if (newValue) {
+                    this.switchIcon()
+                }
+            },
+        },
+        computed: {
+            ...mapGetters(['getUser','getProfiles','isLearner','isFacilitator','isParent',
+                'professionalsCount','schoolsCount']),
+            computedUserName() {
+                return this.getUser ? this.getUser.username : '' 
+            },
+            computedLearner(){
+                if (this.getProfiles) {
+                    return this.getProfiles.filter(profile=>{
+                        return profile.params.account === 'learner'
+                    })[0]
+                }
+                return null
+            },
+            computedParent(){
+                if (this.getProfiles) {
+                    return this.getProfiles.filter(profile=>{
+                        return profile.params.account === 'parent'
+                    })[0]
+                }
+                return null
+            },
+            computedFacilitator(){
+                if (this.getProfiles) {
+                    return this.getProfiles.filter(profile=>{
+                        return profile.params.account === 'facilitator'
+                    })[0]
+                }
+                return null
+            },
+            computedProfessionals(){
+                if (this.getProfiles) {
+                    return this.getProfiles.filter(profile=>{
+                        return profile.params.account === 'professional'
+                    })
+                }
+                return null
+            },
+            computedSchools(){
+                if (this.getProfiles) {
+                    return this.getProfiles.filter(profile=>{
+                        return profile.params.account === 'school'
+                    })
+                }
+                return null
+            },
+            computedAdmin(){
+                if (this.getUser && this.getUser.admin) {
+                    return this.getUser.admin
+                }
+                return null
+            },
         },
         methods: {
             switchIcon() {
@@ -74,21 +280,44 @@
                     this.iconTitle = 'click to expand'
                     this.barSmall = true
                 }
+            },
+            clickedProfile(data){
+                if (document.getElementsByClassName('active').length) {                    
+                    document.getElementsByClassName('active')[0].classList.remove('active')
+                }
+                this.$emit('sidebarSelection',{type:'account',account:data})
+            },
+            clickedUsername(event){
+                if (!event.target.classList.contains('active')) {
+                    event.target.classList.add('active')
+                }
+                this.$emit('sidebarSelection',{type:'user'})
+            },
+            clickedCreate(data){
+                this.$emit('clickedCreate',data)
             }
         },
     }
 </script>
 
 <style lang="scss" scoped>
+
+@mixin text-overflow(){
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 100%;
+    white-space: nowrap;
+}
     .side-bar-wrapper{
-        position: absolute;
-        width: 150px;
+        position: fixed;
+        width: 200px;
         background-color: rgba(22, 233, 205, 0.65);
         height: 100vh;
         z-index: 100;
         transition: width 1s ease-in-out;
         top: 0;
         left: 0;
+        color: gray;
 
         .icon{
             padding: 10px;
@@ -106,8 +335,49 @@
             }
         }
 
+        .username{
+            @include text-overflow();
+            font-size: 12px;
+            text-transform: lowercase;
+            padding: 5px;
+            cursor: pointer;
+            text-align: center;
+            margin: 20px 0 10px;
+            padding: 5px;
+        }
+
+        .active{
+            color: whitesmoke;
+            background: rgba(22, 233, 205, 1);
+        }
+
+        .main-item{
+            display: inline-flex;
+            padding: 5px;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            color: whitesmoke;
+            font-weight: 600;
+            font-size: 18px;
+            cursor: pointer;
+            
+            .main-text{
+                @include text-overflow();
+                display: block;
+                visibility: visible;
+                text-align: center;
+            }
+
+            .main-icon{
+                display: none;
+                visibility: hidden;
+                transition: all 1s ease-in-out;
+            }
+        }
+
         .main{
-            padding: 20px  10px 10px 10px;
+            padding: 10px;
             font-size: 16px;
             font-weight: 500;
 
@@ -124,8 +394,7 @@
                 &:hover{
                     background-color: rgba(22, 233, 205, 0.9);
                     box-shadow: 0 0 2px rgba(105, 105, 105, .8);
-                    transition: all .5s ease-in-out;
-                    
+                    transition: all .5s ease-in-out;                    
 
                     .item-sub{
                         min-width: 150px;
@@ -155,18 +424,38 @@
                     visibility: hidden;
                     background-color: transparent;
 
+                    .no-item{
+                        font-size: 14px;
+
+                        .info{
+                            background: azure;
+                            text-align: center;
+                            width: fit-content;
+                            padding: 5px;
+                        }
+
+                        .button{
+                            background: azure;
+                            width: fit-content;
+                            margin: 10px auto;
+                            padding: 5px;
+                            border-radius: 10px;
+                            box-shadow: 0 0 2px grey;
+                        }
+                    }
+
                     .sub-item{
                         width: auto;
                         display: flex;
                         justify-content: space-around;
                         align-items: center;
                         padding: 10px;
-                        margin: 0 0 0 15px;
-                        background-color: rgba(22, 233, 205, 0.5);
+                        background-color: rgba(22, 233, 205, 1);
+                        margin: 0 0 5px 5px;
+                        border-radius: 10px;
 
                         &:hover{
-                            box-shadow: 0 0 1px rgba(105, 105, 105, .6);
-                            background-color: rgba(22, 233, 205, 0.65);
+                            box-shadow: 0 0 2px rgba(105, 105, 105, .6);
                         }
                     }
                 }
@@ -177,10 +466,24 @@
     .bar-small{
         width: 50px;
         transition: all 1s ease-in-out;
-        position: relative;
+        position: fixed;
+
+        .main-item{
+            justify-content: center;   
+
+            .main-text{
+                display: none;
+                visibility: hidden;
+            }         
+
+            .main-icon{
+                display: block;
+                visibility: visible;
+            }
+        }
 
         .main{
-            padding: 20px  5px 5px 5px;
+            padding: 5px;
 
             .item{
 
@@ -188,27 +491,29 @@
                     display: none;
                     visibility: hidden;
                 }
+
+                .item-sub{
+                    min-height: 80px;
+                }
             }
             
         }
     }
 
 
-@media screen and (min-width:800px) and (max-width:1100px){
-    
-}
-
-
 @media screen and (max-width:800px){
     
-    .bar-wrapper{
+    .side-bar-wrapper{
+
+        .main-item{
+            font-size: 16px;
+        }
 
         .main{
             font-size: 14px;
 
             .item{
                 display: flex;
-
 
                 &:hover{     
                     box-shadow: none;               
@@ -222,7 +527,6 @@
                     }
 
                     .item-sub{
-                        min-height: 30px;
                         transition: height 1s ease-in-out;
                         padding: 10px;
                         width: 100%;
@@ -271,7 +575,6 @@
             .item{
                 display: flex;
 
-
                 &:hover{ 
                     background-color: rgba(22, 233, 205, 0.9);
                     box-shadow: 0 0 2px rgba(105, 105, 105, .8);
@@ -298,14 +601,6 @@
                             justify-content: space-around;
                             align-items: center;
                             padding: 10px;
-                            margin: 0 0 0 15px;
-                            background-color: rgba(22, 233, 205, 0.5);
-                            margin: 0 0 0 5px;
-
-                            &:hover{
-                                box-shadow: 0 0 1px rgba(105, 105, 105, .6);
-                                background-color: rgba(22, 233, 205, 0.65);
-                            }
                         }
                         
                     }

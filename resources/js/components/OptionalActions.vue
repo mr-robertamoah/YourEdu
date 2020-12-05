@@ -2,30 +2,43 @@
     <just-fade>
         <template slot="transition" v-if="show">
             <div class="options-wrapper">
-                <div class="option" v-if="hasSave">
+                <div class="option" v-if="hasSave && !hasOthers">
                     <font-awesome-icon :icon="['fa','bookmark']"></font-awesome-icon>
                     <span @click="clickedOption('save')">
                         {{isSaved ? 'unsave' : 'save'}}
                     </span>
                 </div>
-                <div class="option" v-if="hasAttachment">
+                <div class="option" v-if="hasAttachment && !hasOthers">
                     <font-awesome-icon :icon="['fa','paperclip']"></font-awesome-icon>
                     <span @click="clickedOption('attach')">
                         attach
                     </span>
                 </div>
-                <div class="option" v-if="hasEdit && showEdit">
+                <div class="option" v-if="hasEdit && showEdit && !hasOthers">
                     <font-awesome-icon :icon="['fa','pen']"></font-awesome-icon>
                     <span @click="clickedOption('edit')">edit</span>
                 </div>
-                <div class="option" v-if="hasDelete">
+                <div class="option" v-if="hasDelete && !hasOthers">
                     <font-awesome-icon :icon="['fa','trash']"></font-awesome-icon>
                     <span @click="clickedOption('delete')">delete</span>
                 </div>
-                <div class="option" v-if="hasExtra">
+                <div class="option" v-if="hasExtra && !hasOthers">
                     <slot name="extraicon"></slot>
                     <span @click="clickedOption(extraText)">{{extraText}}</span>
                 </div>
+                <template v-if="hasOthers">
+                    <div class="option"
+                        v-for="(other,index) in others"
+                        :key="index"
+                    >
+                        <font-awesome-icon
+                            v-if="other.icon"
+                            :icon="other.icon"></font-awesome-icon>
+                        <span @click="clickedOption(other)">
+                            {{other.nanme ? other.name : other}}
+                        </span>
+                    </div>
+                </template>
             </div>
         </template>
     </just-fade>
@@ -57,6 +70,16 @@
             hasDelete: {
                 type: Boolean,
                 default: true
+            },
+            hasOthers: {
+                type: Boolean,
+                default: false
+            },
+            others: {
+                type: Array,
+                default(){
+                    return []
+                }
             },
             hasExtra: {
                 type: Boolean,
@@ -93,6 +116,7 @@
         position: absolute;
         right: 0;
         top: 15px;
+        z-index: 1;
 
         .option{
             cursor: pointer;

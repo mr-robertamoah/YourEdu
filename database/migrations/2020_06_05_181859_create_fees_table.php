@@ -15,16 +15,15 @@ class CreateFeesTable extends Migration
     {
         Schema::create('fees', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('school_id');
             $table->unsignedBigInteger('class_id')->nullable();
-            $table->unsignedBigInteger('academic_term_id')->nullable();
+            $table->nullableMorphs('feeable'); //academic year or section
+            $table->nullableMorphs('addedby'); //admin school facilitator
+            $table->integer('amount')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
 
-            $table->foreign('school_id')->references('id')->on('schools')->cascadeOnDelete();
             $table->foreign('class_id')->references('id')->on('class_models')->cascadeOnDelete();
-            // $table->foreign('academic_term_id')->references('id')->on('academic_year_sections')->cascadeOnDelete();
         });
     }
 

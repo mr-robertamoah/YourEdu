@@ -18,7 +18,7 @@ class CreateUsersTable extends Migration
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             $table->string('other_names')->nullable();
-            $table->enum('gender',['MALE','FEMALE']);
+            $table->enum('gender',['MALE','FEMALE'])->nullable();
             $table->string('username')->unique();
             $table->timestamp('dob')->nullable();
             $table->unsignedBigInteger('referrer_id')->nullable();

@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,10 +11,10 @@ class School extends Model
 {
     //
 
-    use SoftDeletes;
+    use SoftDeletes, AccountTrait;
 
     protected $fillable = [
-        'owner_id','company_name', 'role'
+        'owner_id','company_name', 'role', 'class_structure'
     ];
 
     protected static function booted()
@@ -81,18 +82,9 @@ class School extends Model
         return $this->morphMany(Payment::class,'for');
     }
 
-    public function facilitators()
+    public function bans()
     {
-        return $this->belongsToMany(Facilitator::class)
-                ->withPivot('relationship','relationship_description')
-                ->withTimestamps();
-    }
-
-    public function professionals()
-    {
-        return $this->belongsToMany(Professional::class)
-                ->withPivot('relationship','relationship_description')
-                ->withTimestamps();
+       return $this->morphMany(Ban::class,'bannable');
     }
     
     public function answers()
@@ -119,9 +111,9 @@ class School extends Model
         return $this->morphMany(Email::class,'emailable');
     }
 
-    public function classes()
+    public function ownedClasses()
     {
-        return $this->morphMany(ClassModel::class,'classable');
+        return $this->morphMany(ClassModel::class,'ownedby');
     }
 
     public function prices()
@@ -144,27 +136,56 @@ class School extends Model
         return $this->morphMany(Collaboration::class,'collaborationable');
     }
 
+    public function activityTrack()
+    {
+       return $this->morphOne(ActivityTrack::class,'for');
+    }
+
+    public function addedClasses()
+    {
+        return $this->morphMany(ClassModel::class,'addedby');
+    }
+
     public function academicYears()
     {
         return $this->hasMany(AcademicYear::class);
     }
 
-    public function learners()
+    public function academicYearSections()
     {
-        return $this->belongsToMany(Learner::class,'learner_school')
-                ->withPivot('type')->withTimestamps();
+        return $this->hasMany(AcademicYearSection::class);
     }
 
-    public function curricula()
+    public function learners()
+    {
+        return $this->morphedByMany(Learner::class,'schoolable','schoolables');
+    }
+
+    public function parents()
+    {
+        return $this->morphedByMany(ParentModel::class,'schoolable','schoolables');
+    }
+
+    public function facilitators()
+    {
+        return $this->morphedByMany(Facilitator::class,'schoolable','schoolables');
+    }
+
+    public function professionals()
+    {
+        return $this->morphedByMany(Professional::class,'schoolable','schoolables');
+    }
+
+    public function addedCurricula()
     {
         return $this->morphMany(Curriculum::class,'curriculable');
     }
 
-    public function curriculaInUse()
-    {
-        return $this->belongsToMany(Curriculum::class,'curriculum_school','school_id','curriculum_id')
-                ->withTimestamps();
-    }
+    // public function curriculaInUse()
+    // {
+    //     return $this->morphToMany(Curriculum::class,'curriculumable','curriculumables')
+    //             ->withTimestamps();
+    // }
 
     public function groupsOwned()
     {
@@ -206,13 +227,39 @@ class School extends Model
         return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra');
     }
 
+    public function programs()
+    {
+        return $this->morphToMany(Program::class,'programmable','programmables');
+    }
+
+    // public function classes(){
+    //     return $this->morphToMany(ClassModel::class,'classable','classables');
+    // }
+
+    public function curricula()
+    {
+        return $this->morphToMany(Curriculum::class,'curriculumable','curriculumables');
+    }
+
+    public function courses()
+    {
+        return $this->morphToMany(Course::class,'coursable','coursables')
+            ->withPivot(['activity']);
+    }
+
+    public function subjects()
+    {
+        return $this->morphToMany(subject::class,'subjectable','subjectables')
+            ->withPivot(['activity']);
+    }
+
     public function fees()
     {
         return $this->hasMany(Fee::class);
     }
 
-    public function uniqueGrades(){
-        return $this->morphMany(Grade::class,'gradable');
+    public function grades(){
+        return $this->morphToMany(Grade::class,'gradeable','gradeables');
     }
 
     public function gradingSystems()
@@ -425,6 +472,11 @@ class School extends Model
         return $this->morphMany(ConversationAccount::class,'accountable');
     }
 
+    public function employments()
+    {
+        return $this->morphMany(Employment::class,'employer');
+    }
+
     public function messagesSent()
     {
         return $this->morphMany(Message::class,'fromable');
@@ -433,6 +485,15 @@ class School extends Model
     public function messagesReceived()
     {
         return $this->morphMany(Message::class,'toable');
+    }
+
+    public function scopeHasMyAdmin($query,$id)
+    {
+        return $query->whereHas('admins',function($query) use ($id){
+            $query->where('user_id',$id);
+        })->with(['admins'=> function($query) use ($id){
+            $query->where('user_id',$id);
+        }]);
     }
 
     

@@ -34,7 +34,7 @@ class NewLike implements ShouldBroadcastNow
     public function broadcastOn()
     {
         return [
-            new Channel('youredu.home'),
+            // new Channel('youredu.home'),
             new Channel("youredu.{$this->likeArray['item']}.{$this->likeArray['itemId']}"),
             new Channel("youredu.{$this->likeArray['itemBelongsTo']}.{$this->likeArray['itemBelongsToId']}")
         ];

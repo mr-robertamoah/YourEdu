@@ -16,10 +16,10 @@ class CreateBansTable extends Migration
         Schema::create('bans', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('admin_id');
-            $table->morphs('issuedfor'); // flag complaint
-            $table->enum('state',['PENDING','RESOLVED','SERVED'])->default('PENDING');
+            $table->nullableMorphs('issuedfor'); // flag complaint
+            $table->enum('state',['PENDING','RESOLVED','SERVED','UNSERVED'])->default('PENDING');
             $table->enum('type',['OVERALL','POST','UPLOAD','COMMENT']);
-            $table->morphs('bannable'); // learner parent school facilitator professional
+            $table->nullableMorphs('bannable'); // learner parent school facilitator professional
             $table->timestamp('due_date')->nullable();
             $table->softDeletes();
             $table->timestamps();

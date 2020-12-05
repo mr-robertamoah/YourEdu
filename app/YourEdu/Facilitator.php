@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Facilitator extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, AccountTrait;
 
     protected $fillable = [
         'user_id','name'
@@ -81,13 +82,20 @@ class Facilitator extends Model
         return $this->morphMany(Payment::class,'for');
     }
 
+    public function bans()
+    {
+       return $this->morphMany(Ban::class,'bannable');
+    }
+
+    public function employed()
+    {
+        return $this->morphMany(Employment::class,'employee');
+    }
+
     public function schools()
     {
-        return $this->belongsToMany(School::class)
-                ->withPivot('relationship','relationship_description')
-                ->withTimestamps();
+        return $this->morphToMany(School::class,'schoolable','schoolables');
     }
-    
 
     public function phoneNumbers(){
         return $this->morphMany(PhoneNumber::class,'phoneable');
@@ -97,19 +105,19 @@ class Facilitator extends Model
         return $this->morphMany(Email::class,'emailable');
     }
 
-    public function classes()
+    public function ownedClasses()
     {
-        return $this->morphMany(ClassModel::class,'classable');
+        return $this->morphMany(ClassModel::class,'ownedby');
+    }
+
+    public function addedClasses()
+    {
+        return $this->morphMany(ClassModel::class,'addedby');
     }
 
     public function keywords()
     {
         return $this->morphMany(Keyword::class,'keywordable');
-    }
-
-    public function subjects()
-    {
-        return $this->belongsToMany(Subject::class)->withTimestamps();
     }
 
     public function prices()
@@ -153,9 +161,14 @@ class Facilitator extends Model
         return $this->morphMany(Collaboration::class,'collaborationable');
     }
 
-    public function curricula()
+    public function commissions()
     {
-        return $this->morphMany(Curriculum::class,'curriculable');
+        return $this->morphMany(Commission::class,'ownedby');
+    }
+
+    public function addedCurricula()
+    {
+        return $this->morphMany(Curriculum::class,'curriculumable','curriculumables');
     }
 
     public function uniqueSubjectsAdded()
@@ -179,7 +192,7 @@ class Facilitator extends Model
     }
 
     public function grades(){
-        return $this->belongsToMany(Grade::class)->withTimestamps();
+        return $this->morphToMany(Grade::class,'gradeable','gradeables');
     }
     
     public function uniqueGradesAdded()
@@ -195,6 +208,32 @@ class Facilitator extends Model
     public function uniqueProgramsAdded()
     {
         return $this->morphMany(Program::class,'addedby');
+    }
+
+    public function programs()
+    {
+        return $this->morphToMany(Program::class,'programmable','programmables');
+    }
+
+    public function curricula()
+    {
+        return $this->morphToMany(Curriculum::class,'curriculumable','curriculumables');
+    }
+
+    public function classes(){
+        return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id');
+    }
+
+    public function courses()
+    {
+        return $this->morphToMany(Course::class,'coursable','coursables')
+            ->withPivot(['activity']);
+    }
+
+    public function subjects()
+    {
+        return $this->morphToMany(subject::class,'subjectable','subjectables')
+            ->withPivot(['activity']);
     }
 
     public function uniqueCoursesAdded()

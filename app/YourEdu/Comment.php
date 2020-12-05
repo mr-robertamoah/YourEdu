@@ -66,4 +66,9 @@ class Comment extends Model
     {
        return $this->morphMany(Save::class,'saveable');
     }
+
+    public function activityTrack()
+    {
+       return $this->morphOne(ActivityTrack::class,'what');
+    }
 }

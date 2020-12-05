@@ -15,6 +15,11 @@ class Ban extends Model
         return $this->belongsTo(Admin::class);
     }
 
+    public function bannable()
+    {
+        return $this->morphTo();
+    }
+
     public function issuedfor()
     {
         return $this->morphTo();

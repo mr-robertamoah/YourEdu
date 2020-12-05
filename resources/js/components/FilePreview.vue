@@ -9,7 +9,7 @@
                 text='remove'
                 v-if="showEdit"
             ></black-white-badge>
-            </div>
+        </div>
         <div class="inner-wrapper" 
             ref="preview" 
             v-if="type === 'normal'"
@@ -135,6 +135,11 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                             el.style.width = '75%'
                             this.$refs.preview.appendChild(el)
                             el.src = fileReader.result
+                        } else if (newValue.type.includes('application')) {
+                            let el = document.createElement('div')
+                            el.className = 'application'
+                            el.innerText = newValue.name
+                            this.$refs.preview.appendChild(el)
                         } else {
                             this.message = `${newValue.name} is not acceptable`
                         }
@@ -185,6 +190,16 @@ $input-color: rgba(22, 233, 205, 1);
 
             .audio{
                 width: 100%;
+            }
+
+            .application{
+                font-size: 12px;
+                height: 50px;
+                background: gray;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
         }
 

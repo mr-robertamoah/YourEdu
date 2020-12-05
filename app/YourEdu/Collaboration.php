@@ -30,6 +30,17 @@ class Collaboration extends Model
         return $this->morphTo();
     }
 
+    public function commissions()
+    {
+        return $this->morphMany(Commission::class,'for');
+    }
+
+    public function courses()
+    {
+        return $this->morphToMany(Course::class,'ownedby','coursables')
+            ->withPivot(['activity','ownedby_id','ownedby_type']);
+    }
+
     public function facilitators()
     {
         return $this->morphedByMany(Facilitator::class,'collaborationable','collabo');

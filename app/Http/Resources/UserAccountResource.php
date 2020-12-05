@@ -17,8 +17,8 @@ class UserAccountResource extends JsonResource
         return [
             'accountId' => $this->id,
             'userId' => $this->user_id ? $this->user_id : $this->owner_id,
-            'name' => $this->profile->name,
-            'url' => $this->profile->url,
+            'name' => $this->profile ? $this->profile->name : $this->name,
+            'url' => $this->profile ? $this->profile->url : '',
             'account' => getAccountString(get_class($this->resource)),
         ];
     }

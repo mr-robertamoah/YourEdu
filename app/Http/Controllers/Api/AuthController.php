@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
 use App\Http\Resources\SecretQuestionResource;
+use App\Http\Resources\UserResource;
 use App\User;
 use App\YourEdu\Admin;
 use App\YourEdu\School;
@@ -12,17 +14,30 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
     //
 
-    public function getUser(Request $request)
+    public function getUser()
     {
         return response()->json([
-            'user'=> $request->user()
+            'user'=> new UserResource(auth()->user())
         ]);
+    }
+
+    public function searchUser(Request $request)
+    {
+        $users = User::where('username','like',"%$request->search%")
+            ->orWhere('first_name',"%$request->search%")
+            ->orWhere('other_names',"%$request->search%")
+            ->orWhere('last_name',"%$request->search%")
+            ->oldest()
+            ->paginate(10);
+
+        return UserResource::collection($users);
     }
 
     public function editUser(Request $request, User $user)
@@ -59,20 +74,10 @@ class AuthController extends Controller
                         $user->secret_answer: $request->answer;
                 }
             }
-                    
-            // return $input;
 
             try {
                 DB::beginTransaction();
 
-                // $user->first_name = $input['first_name'];
-                // $user->last_name = $input['last_name'];
-                // $user->other_names = $input['other_names'];
-                // $user->email = $input['email'];
-                // $user->gender = $input['gender'];
-                // $user->secret_question_id = $input['secret_question_id'];
-                // $user->secret_answer = $input['secret_answer'];
-                // $user->save();
                 $user->update([
                     $input
                 ]);
@@ -186,67 +191,8 @@ class AuthController extends Controller
         ]);
     }
 
-    public function test(Request $request)
-    {
-        // return response()->json(School::find(3));
-        $filePaths = [];
-        
-        return response()->json([
-            'files' => $request->hasFile('files'),
-            'vidoes' => $request->hasFile('videos'),
-            'audio' => $request->hasFile('audio'),
-            'images' => $request->hasFile('images'),
-        ]);
-
-        if ($request->hasFile('files')) {
-            $request->validate(
-                [
-                    'files.*' => 'file|mimes:pdf,pdt,txt,doc,docx,xls,xlsx,'
-                ]
-            );
-            $filePaths['files'] = uploadYourEduFiles($request->file('files'));
-
-            return $request;
-        }
-        
-        if ($request->hasFile('images')) {
-            $request->validate(
-                [
-                    'images.*' => 'image|mimes:jpg,jpeg,bmp,png,gif,webp'
-                ]
-            );
-            $filePaths['images'] = uploadYourEduFiles($request->file('images'));
-        }
-        
-        if ($request->hasFile('audio')) {
-            $request->validate(
-                [
-                    'audio.*' => 'file|mimes:mp3'
-                ]
-            );
-            $filePaths['audio'] = uploadYourEduFiles($request->file('audio'));
-        }
-        
-        if ($request->hasFile('videos')) {
-            $request->validate(
-                [
-                    'vidoes.*' => 'file|mimes:mp4'
-                ]
-            );
-            $filePaths['videos'] = uploadYourEduFiles($request->file('videos'));
-        }
-
-        return response()->json(
-            [
-                'id'=> 1,
-                'filePath' => $filePaths
-            ]
-            );
-    }
-
     public function register (Request $request)
-    {
-        
+    {        
         $input = $request->all();
         $input['dob'] = Carbon::parse($input['dob'])->toDateTimeString();
         $validator = Validator::make($input, [
@@ -274,7 +220,7 @@ class AuthController extends Controller
                 $token = $user->createToken('YourEdu')->accessToken;
                 return response()->json([
                     'status' => (bool) $user,
-                    'user'=>$user,
+                    'user'=> new UserResource($user),
                     'token' => $token,
                     ]);
             } else {
@@ -288,48 +234,60 @@ class AuthController extends Controller
         }
     }
 
-    public function login (Request $request)
+    public function login (LoginRequest $request)
     {
-        if ($request->has('username')) {
-            $validator = Validator::make($request->all(), [
-                'username'=> 'required|alpha_dash|min:8|max:100',
-                'password' => 'required',
-            ]);
-        } else {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required|email',
-                'password' => 'required',
-            ]);
-        }
-
-        if ($validator->fails()) {
-            return response()->json(['errors'=> $validator->errors()]);
-        }
-        
         try {
-            if (Auth::attempt(['username'=>$request->username, 'password'=>$request->password]) ||
-                Auth::attempt(['email'=>$request->email, 'password'=>$request->password])) {
-                
-                    // return response()->json(['user'=> Auth::user()]);
-                $user = Auth::user();
-                $user->logins()->create();
-                $token = $user->createToken('YourEdu')->accessToken;
-                // return $token;
+            $userQuery = User::query();
+            if ($request->has('username')) {
+                $userQuery->where('username',$request->username);
+            } else if ($request->has('email')) {
+                $userQuery->where('email',$request->email);
+            }
+            
+            $user = $userQuery->first();
+
+            if (is_null($user)) {
                 return response()->json([
-                    'success'=> (bool) $user,
-                    'user'=> $user,
-                    'token'=>$token
-                ]);
+                    'error'=>'oops...not sure you are user. Please click register to register for a user account.'
+                ], 401);
+            }
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'error'=>'Please check username/email and/or password combinations.'
+                ], 401);
             }
 
+            $user->logins()->create();
+            $token = $user->createToken('YourEdu')->accessToken;
+            // return $token;
             return response()->json([
-                'error'=>'Unauthorised'
-            ], 401);
+                'success'=> (bool) $user,
+                'user'=> new UserResource($user),
+                'token'=>$token
+            ]);
+
+            // return response()->json([
+            //     'error'=>'Unauthorised'
+            // ], 401);
         } catch (\Throwable $th) {
             throw $th;
         }
             
     }
+
+    public function logout()
+    {
+        try {
+            auth()->logout();
+    
+            return response()->json([
+                'message' => 'successful'
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+    
 
     
 }

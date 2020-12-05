@@ -63,10 +63,7 @@ class CourseController extends Controller
 
     public function coursesGet()
     {
-        return [
-            'message' => 'successful',
-            'courses' => CourseResource::collection(Course::all())
-        ];
+        return CourseResource::collection(Course::paginate(2));
     }
 
     public function coursesSearch($search)

@@ -32,12 +32,17 @@ class DeleteComment implements ShouldBroadcastNow
      * @return \Illuminate\Broadcasting\Channel|array
      */
     public function broadcastOn()
-    {
-        return [
+    {        
+        $broadcastOn = [
             new Channel('youredu.home'),
             new Channel("youredu.{$this->commentInfo['account']}.{$this->commentInfo['accountId']}"),
-            new Channel("youredu.{$this->commentInfo['item']}.{$this->commentInfo['itemId']}")
         ];
+        if ($this->commentInfo['item'] === 'class') {
+            $broadcastOn[] = new PrivateChannel("youredu.{$this->commentInfo['item']}.{$this->commentInfo['itemId']}");
+        } else {
+            $broadcastOn[] = new Channel("youredu.{$this->commentInfo['item']}.{$this->commentInfo['itemId']}");
+        }
+        return $broadcastOn;
     }
     
     public function broadcastAs()

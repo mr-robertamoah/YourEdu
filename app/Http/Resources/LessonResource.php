@@ -33,8 +33,6 @@ class LessonResource extends JsonResource
             $files = FileResource::collection($this->files);
         }
 
-        Debugbar::info($this->audios);
-        Debugbar::info($audios);
         return [
             'id' => $this->id,
             'title' => $this->title,

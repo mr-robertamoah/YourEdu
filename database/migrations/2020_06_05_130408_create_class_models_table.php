@@ -17,19 +17,13 @@ class CreateClassModelsTable extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->morphs('classable'); //facilitator school
-            $table->unsignedBigInteger('curriculum_id')->nullable();
-            $table->unsignedBigInteger('grade_id')->nullable();
-            $table->unsignedBigInteger('grade_system_id')->nullable();
-            $table->unsignedBigInteger('academic_year_id')->nullable();
+            $table->nullableMorphs('addedby'); //facilitator admin
+            $table->nullableMorphs('ownedby'); //facilitator school
+            $table->smallInteger('max_learners')->nullable();
+            $table->string('structure')->nullable();
+            $table->enum('state',['PENDING','DECLINED','ACCEPTED'])->nullable();
             $table->softDeletes();
             $table->timestamps();
-
-            
-            $table->foreign('curriculum_id')->references('id')->on('curricula')->cascadeOnDelete();
-            // $table->foreign('grade_id')->references('id')->on('grades')->cascadeOnDelete();
-            // $table->foreign('academic_year_id')->references('id')->on('academic_year')->cascadeOnDelete();
-            // $table->foreign('grade_system_id')->references('id')->on('grade_systems')->cascadeOnDelete();
         });
     }
 

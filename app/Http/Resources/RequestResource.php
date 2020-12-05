@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use \Debugbar;
+use Illuminate\Support\Arr;
 
 class RequestResource extends JsonResource
 {
@@ -17,7 +18,6 @@ class RequestResource extends JsonResource
     {
         $data = [];
         $data['id'] = $this->id;
-        $data['userId'] = $this->requestfrom->user_id;
         if ($this->requestable_type === 'App\YourEdu\Follow') {
             $data['account_type'] = getAccountString($this->requestfrom_type);
             $data['account_id'] = $this->requestfrom_id;
@@ -27,6 +27,7 @@ class RequestResource extends JsonResource
             $data['name'] = $this->requestfrom->profile->name;
             $data['url'] = $this->requestfrom->profile->url;
             $data['isAccount'] = true;
+            $data['userId'] = $this->requestfrom->user_id;
         } else if ($this->requestable_type === 'App\YourEdu\Message') {
             
             $images = null;
@@ -34,6 +35,7 @@ class RequestResource extends JsonResource
             $audios = null;
             $files = null;
 
+            $data['userId'] = $this->requestfrom->user_id;
             if ($this->requestable->images()->exists()) {
                 $images = ImageResource::collection($this->requestable->images);
             } 
@@ -62,6 +64,7 @@ class RequestResource extends JsonResource
             $array = $this->requestable->participants->pluck('user_id');
             $array[] = $this->requestable->raisedby->user_id;
             
+            $data['userId'] = $this->requestfrom->user_id;
             $data['isAdmin'] = array_search($data['userId'],$array->toArray());
             $data['isParticipant'] = true;
             $data['title'] = $this->requestable->title;
@@ -71,6 +74,29 @@ class RequestResource extends JsonResource
             $data['account'] = getAccountString($this->requestfrom_type);
             $data['accountId'] = $this->requestfrom_id;
             $data['discussionId'] = $this->requestable->id;
+        }  else if ($this->data) {
+            $requestData = unserialize($this->data);
+            Debugbar::info($requestData);
+            $files = [];
+            if (Arr::has($requestData,'file')) {                
+                foreach ($requestData['file'] as $file) {
+                    $files[] = getAccountObject($file['type'],$file['id']);
+                }
+                $data['file'] = ImageResource::collection($files);
+            }
+            $data['isAdminRequest'] = true;
+            
+            $data['adminDetails'] = Arr::has($requestData,'adminDetails') ? 
+                $requestData['adminDetails'] : null;
+            if (Arr::has($requestData,'salary')) {
+                $data['salary'] = $requestData['salary'];
+            }
+            $data['name'] = $this->requestfrom->profile->name;
+            $data['url'] = $this->requestfrom->profile->url;
+            $data['account'] = getAccountString($this->requestfrom_type);
+            $data['accountId'] = $this->requestfrom_id;
+            $data['myAccount'] = getAccountString($this->requestto_type);
+            $data['myAccountId'] = $this->requestto_id;
         }
         return $data;
     }

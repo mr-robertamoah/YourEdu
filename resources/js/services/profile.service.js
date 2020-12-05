@@ -26,10 +26,10 @@ const ProfileService = {
             return error.response
         }
     },
-    async gradesGet(){
+    async gradesGet(nextPage){
         try {
 
-            let response = await ApiService.get(`/api/grades`)
+            let response = await ApiService.get(`/api/grades?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -38,9 +38,10 @@ const ProfileService = {
         }
     },
     async gradesSearch(data){
+        let {nextPage,searchText} = data
         try {
 
-            let response = await ApiService.get(`/api/grades/${data}`)
+            let response = await ApiService.get(`/api/grades/${searchText}?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -73,10 +74,10 @@ const ProfileService = {
             return error.response
         }
     },
-    async programsGet(){
+    async programsGet(nextPage){
         try {
 
-            let response = await ApiService.get(`/api/programs`)
+            let response = await ApiService.get(`/api/programs?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -85,9 +86,10 @@ const ProfileService = {
         }
     },
     async programsSearch(data){
+        let {nextPage,searchText} = data
         try {
 
-            let response = await ApiService.get(`/api/programs/${data}`)
+            let response = await ApiService.get(`/api/programs/${searchText}?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -120,10 +122,10 @@ const ProfileService = {
             return error.response
         }
     },
-    async coursesGet(){
+    async coursesGet(nextPage){
         try {
 
-            let response = await ApiService.get(`/api/courses`)
+            let response = await ApiService.get(`/api/courses?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -132,9 +134,10 @@ const ProfileService = {
         }
     },
     async coursesSearch(data){
+        let {nextPage,searchText} = data
         try {
 
-            let response = await ApiService.get(`/api/courses/${data}`)
+            let response = await ApiService.get(`/api/courses/${searchText}?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -167,10 +170,10 @@ const ProfileService = {
             return error.response
         }
     },
-    async subjectsGet(data){
+    async subjectsGet(nextPage){
         try {
 
-            let response = await ApiService.get(`/api/subjects`)
+            let response = await ApiService.get(`/api/subjects?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -179,9 +182,10 @@ const ProfileService = {
         }
     },
     async subjectsSearch(data){
+        let {nextPage,searchText} = data
         try {
 
-            let response = await ApiService.get(`/api/subjects/${data}`)
+            let response = await ApiService.get(`/api/subjects/${searchText}?page=${nextPage}`)
     
             return response
         } catch (error) {
@@ -227,8 +231,9 @@ const ProfileService = {
         }
     },
     async attachmentDelete(data){
+        let {attachmentId, adminId} = data
         try {
-            let response = await ApiService.delete(`/api/attachment/${data.attachmentId}`)
+            let response = await ApiService.delete(`/api/attachment/${attachmentId}`,{adminId})
     
             return response
         } catch (error) {
@@ -251,8 +256,9 @@ const ProfileService = {
         }
     },
     async likeDelete(data){
+        let {likeId, adminId} = data
         try {
-            let response = await ApiService.delete(`/api/like/${data.likeId}`)
+            let response = await ApiService.post(`/api/like/${likeId}`,{adminId})
     
             return response
         } catch (error) {
@@ -446,8 +452,9 @@ const ProfileService = {
         }
     },
     async saveDelete(data){
+        let {saveId, adminId} = data
         try {
-            let response = await ApiService.delete(`/api/save/${data.saveId}`)
+            let response = await ApiService.post(`/api/save/${saveId}`,{adminId})
     
             return response
         } catch (error) {
@@ -470,8 +477,9 @@ const ProfileService = {
         }
     },
     async flagDelete(data){
+        let {flagId, adminId} = data
         try {
-            let response = await ApiService.delete(`/api/flag/${data.flagId}`)
+            let response = await ApiService.post(`/api/flag/${flagId}`,{adminId})
     
             return response
         } catch (error) {
@@ -519,9 +527,9 @@ const ProfileService = {
         }
     },
     async answerDelete(data){
-        let {answerId} = data
+        let {answerId,adminId} = data
         try {
-            let response = await ApiService.delete(`/api/answer/${answerId}`)
+            let response = await ApiService.delete(`/api/answer/${answerId}/delete`,{adminId})
     
             return response
         } catch (error) {
@@ -579,17 +587,16 @@ const ProfileService = {
         }
     },
     async commentDelete(data){
-        let {commentId} = data
+        let {commentId,adminId} = data
         try {
-            let response = await ApiService.delete(`/api/comment/${commentId}`)
+            let response = await ApiService.post(`/api/comment/${commentId}/delete`,{adminId})
     
             return response
         } catch (error) {
             return error.response
         }
     },
-    async commentCreate(main){
-        
+    async commentCreate(main){        
         try {
             let {data, formData} = main
             let response = await ApiService.post(`/api/${data.item}/${data.itemId}/comment`,

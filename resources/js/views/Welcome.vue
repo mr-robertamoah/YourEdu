@@ -31,7 +31,7 @@
                         </div>
                         we hope you do enjoy this new experience of social education
                         <div class="special">
-                            Note: Everything on this page deals the creation of your personal accounts. If you want more power
+                            Note: Everything on this page deals with the creation of your personal accounts. If you want more power
                             to do other things, then visit the dashboard
                         </div>
                     </div>
@@ -68,6 +68,11 @@
                                             <span class="caption">educational professionals</span>
                                         </div> will socially interact, "educationally..."
                                     </div>
+                                    <div slot="button">
+                                        <post-button buttonText='home'
+                                            @click="clickedPostButton"
+                                        ></post-button>
+                                    </div>
                                 </place-description>
                             </template>
                         </fade-in-out>
@@ -85,7 +90,9 @@
                                         </div>
                                     </div>
                                     <div slot="button">
-                                        <post-button buttonText='my profile'></post-button>
+                                        <post-button buttonText='dashboard'
+                                            @click="clickedPostButton"
+                                        ></post-button>
                                     </div>
                                 </place-description>
                             </template>
@@ -108,7 +115,24 @@
                                         </div>
                                     </div>
                                     <div slot="button">
-                                        <post-button buttonText='my dashboard'></post-button>
+                                        <post-button buttonText='profiles'
+                                            @click="clickedPostButton"
+                                        ></post-button>
+                                        <div class="profiles" v-if="showProfiles">
+                                            <div class="no-profile"
+                                                v-if="!computedOwnedProfiles.length"
+                                            >no profiles</div>
+                                            <profile-bar
+                                                v-for="(profile,index) in computedOwnedProfiles"
+                                                :key="index"
+                                                :name="profile.name"
+                                                :type="profile.params.account"
+                                                :smallType="true"
+                                                :routeParams="profile.params"
+                                                :navigate="false"
+                                                @clickedProfile="clickedProfile"
+                                            ></profile-bar>
+                                        </div>
                                     </div>
                                     <template slot="info">
                                         
@@ -125,7 +149,7 @@
                     </div>
                     <div class="welcome-who">
                         <div class="who-heading">
-                            your role in this new community
+                            additional roles you can play in YourEdu community
                         </div>
                         <div class="create-section" v-if="computedCreationSection">
                             <div class="title">
@@ -147,85 +171,50 @@
                                         </div>
                                     </template>
                                     <div slot="button">
-                                        <post-button :buttonText="become" @click="becomeClicked"></post-button>
+                                        <post-button 
+                                            :buttonText="become" 
+                                            @click="becomeClicked"
+                                        ></post-button>
                                     </div>
                                 </place-description>
                         </div>
                         <div class="users">
                             <welcome-button 
                                 v-if="!isLearner"
-                                @welcomeButtonClicked="learner = !learner" :activeClass="learner" buttonText='learner'>
+                                @welcomeButtonClicked="formType = 'learner'" 
+                                :activeClass="formType === 'learner'" buttonText='learner'>
                             </welcome-button>
                             <welcome-button 
                                 v-if="!isParent"
-                                @welcomeButtonClicked="parent = !parent" :activeClass="parent" buttonText='parent'>
+                                @welcomeButtonClicked="formType = 'parent'" 
+                                :activeClass="formType === 'parent'" buttonText='parent'>
                             </welcome-button>
                             <welcome-button
                                 v-if="!isFacilitator"
-                                @welcomeButtonClicked="facilitator = !facilitator" :activeClass="facilitator" buttonText='facilitator'>
-                            </welcome-button>
-                            <welcome-button @welcomeButtonClicked="school = !school" :activeClass="school" buttonText='school'>
+                                @welcomeButtonClicked="formType = 'facilitator'" 
+                                :activeClass="formType === 'facilitator'" buttonText='facilitator'>
                             </welcome-button>
                             <welcome-button 
-                                @welcomeButtonClicked="professional = !professional" :activeClass="professional" buttonText='professional'>
+                                v-if="schoolsCount < 3"
+                                @welcomeButtonClicked="formType = 'school'" 
+                                :activeClass="formType === 'school'" buttonText='school'>
+                            </welcome-button>
+                            <welcome-button 
+                                v-if="professionalsCount < 3"
+                                @welcomeButtonClicked="formType = 'professional'" 
+                                :activeClass="formType === 'professional'" buttonText='professional'>
                             </welcome-button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <fade-up>
-            <template slot="transition">
-                <main-modal :show='showModal' 
-                    @mainModalAppear='modalAppear'
-                    @mainModalDisappear='modalDisappear'
-                    :loading="modalLoading"
-                    :alertMessage="modalAlertMessage"
-                    :alertError="true"
-                    :showAlert="showModalAlert"
-                    @clearAlert="clearModalAlert"
-                >
-                    <template slot='loading'>
-                        <sync-loader :loading="modalLoading"></sync-loader>
-                    </template>
-                    <template slot="main">
-                        <auto-alert
-                            :message="alertMessage"
-                            :success="alertSuccess"
-                            :danger="alertDanger"
-                            @hideAlert="hideAlert"
-                        ></auto-alert>
-                        <welcome-form :title="title" v-if="!alertMessage.length">
-                            <template slot="input">
-                                <input type="text" class="form-control form-input" placeholder="name*" 
-                                v-model="inputName">
 
-                                <textarea class="form-control form-input" placeholder="description" 
-                                    v-if="description" v-model="inputDescription"></textarea>
-
-                                <main-list v-if="list" @listItemSelected='selection'
-                                    :multiple='multiple'
-                                    :itemList='itemList'
-                                    :select="computedSelectList"
-                                ></main-list>
-
-                                <input type="text" class="form-control form-input" placeholder="other" 
-                                    v-if="other" v-model="inputOther">
-                            </template>
-                            <template slot="buttons">
-                                <post-button buttonText='create' buttonStyle='success'
-                                    @click="clickedCreate"
-                                ></post-button>
-                            </template>
-                        </welcome-form >
-
-                        <!-- <welcome-form>
-
-                        </welcome-form> -->
-                    </template>
-                </main-modal>
-            </template>
-        </fade-up>
+        <create-account
+            :type="formType"
+            :show="showModal"
+            @closeCreateAccount='showModal = false'
+        ></create-account>
 
         <edit-user
             :fireAction='editUserForm'
@@ -241,19 +230,18 @@ import FadeInOut from '../components/transitions/FadeInOut'
 import FadeUp from '../components/transitions/FadeUp'
 import FadeLeft from '../components/transitions/FadeLeft'
 import WelcomeButton from '../components/welcome/WelcomeButton'
-import AutoAlert from '../components/AutoAlert'
 import PostButton from '../components/PostButton'
 import EditUser from '../components/forms/EditUser'
-import MainList from '../components/MainList'
+import CreateAccount from '../components/forms/CreateAccount'
 import BlackWhiteBadge from '../components/BlackWhiteBadge'
 import SyncLoader from 'vue-spinner/src/SyncLoader'
 import { mapGetters, mapActions } from 'vuex'
 import { dates } from "../services/helpers";
+import RelationVue from '../../../vendor/mtolhuys/laravel-schematics/resources/js/components/Modal/Relation.vue'
 
     export default {
         components: {
-            AutoAlert,
-            WelcomeButton,
+            CreateAccount,
             EditUser,
             FadeUp,
             FadeInOut,
@@ -262,253 +250,76 @@ import { dates } from "../services/helpers";
             PostButton,
             SyncLoader,
             BlackWhiteBadge,
-            MainList,
+            WelcomeButton,
         },
         data() {
             return {
-                professionalRole: [
-                    {name:'nanny',title:''},
-                    {name:'trainer',title:''},
-                    {name:'counselor',title:''},
-                    {name:'other',title:''}
-                ],
-                schoolRole: [
-                    {name:'traditional',title:''},
-                    {name:'virtual',title:''}
-                ],
-                itemList: [],
                 info: '',
                 showModal: false,
                 home: false,
                 dashboard: false,
                 profile: false,
-                learner: false,
-                professional: false,
-                school: false,
-                facilitator: false,
-                parent: false,
-                inputName: '',
-                inputOther: '',
-                inputRole: '',
-                inputDescription: '',
+                showProfiles: false,
                 who: '',
                 what: '',
-                title: '',
                 formType: '',
                 formError: '',
-                description: false,
-                list: false,
-                multiple: false,
                 editUserForm: false,
-                other: false,
                 become: 'become learner',
                 showEditBadge: false,
-                modalLoading: false, // for modal loading effect
-                //////for alert
-                alertMessage: '',
-                alertSuccess: false,
-                alertDanger: false,
-                modalAlertMessage: '',
-                showModalAlert: false,
             }
         },
         watch: {
-            learner(newValue, oldValue) {
+            showProfiles(newValue){
                 if (newValue) {
-                    this.parent = false
-                    this.facilitator = false
-                    this.school = false
-                    this.professional = false
+                    // setTimeout(() => {
+                    //     this.showProfiles = false
+                    // }, 4000);
+                }
+            },
+            formType(newValue) {
+                if (newValue === 'learner') {
                     this.who = 'learner'
                     this.what = 'learner'
                     this.become = 'become learner'
                     this.info = ''
-                }
-            },
-            parent(newValue, oldValue) {
-                 if (newValue) {
-                    this.learner = false
-                    this.facilitator = false
-                    this.school = false
-                    this.professional = false
+                } else if (newValue === 'parent') {
                     this.what = 'parent'
                     this.who = 'parent'
                     this.become = 'become a parent'
                     this.info = ''
-                }
-            },
-            facilitator(newValue, oldValue) {
-                 if (newValue) {
-                    this.parent = false
-                    this.learner = false
-                    this.school = false
-                    this.professional = false
+                } else if (newValue === 'facilitator') {
+                    this.info = ''
                     this.what = 'facilitator'
                     this.who = 'facilitator'
                     this.become = 'become a facilitator'
-                    this.info = ''
-                }
-            },
-            school(newValue, oldValue) {
-                 if (newValue) {
-                    this.itemList = this.schoolRole
-                    this.list = true
-                    this.parent = false
-                    this.facilitator = false
-                    this.learner = false
-                    this.professional = false
+                } else if (newValue === 'professional') {                        
+                    this.what = 'professional'
+                    this.become = this.hasProfessionals ? 'create another professional': 'become a professional'
+                    this.info = this.hasProfessionals ? 'You already have professional account(s). Note: You can only own a majority of three': ''
+                } else if (newValue === 'school') {
                     this.what = 'school'
                     this.who = 'school'
                     this.become = this.hasSchools ? 'create another school': 'own school'
                     this.info = this.hasSchools ? 'You already own school account(s). Note: You can only own a majority of three': ''
                 }
             },
-            professional(newValue, oldValue) {
-                 if (newValue) {
-                    this.itemList = this.professionalRole
-                    this.list = true
-                    this.description = true
-                    this.parent = false
-                    this.facilitator = false
-                    this.school = false
-                    this.learner = false
-                    this.what = 'professional'
-                    this.become = this.hasProfessionals ? 'create another professional': 'become a professional'
-                    this.info = this.hasProfessionals ? 'You already have professional account(s). Note: You can only own a majority of three': ''
-                }
-            },
         },
         created () {
             // this.learner = true
         },
-        methods: {
-            ...mapActions(['createAccount']),
-            clearModalAlert(){
-                this.modalAlertMessage = ''
-                this.showModalAlert = false
-            },
-            hideAlert(data){
-                if (this.alertDanger) {
-                    
-                } else {
-                    this.modalDisappear()
-                }
-                this.alertMessage = ''
-            },
-            editUser(){
-                this.editUserForm = true
-            },
-            async clickedCreate(){
-                let data = {
-                    creator: 'user'
-                }
-                if (this.formType === 'learner') {
-                    if (this.inputName === '') {
-                        this.modalAlertMessage = 'Please enter name of learner'
-                    } else {
-                        data['create'] = 'learner'
-                        data['name'] = this.inputName ? this.inputName.trim() : ''
-                    }
-                } else if (this.formType === 'facilitator') {
-                    if (this.inputName === '') {
-                        this.modalAlertMessage = 'Please enter name of facilitator'
-                    } else {
-                        data['create'] = 'facilitator'
-                        data['name'] = this.inputName ? this.inputName.trim() : ''
-                    }
-                } else if (this.formType === 'parent') {
-                    if (this.inputName === '') {
-                        this.modalAlertMessage = 'Please enter name of parent'
-                    } else {
-                        data['create'] = 'parent'
-                        data['name'] = this.inputName ? this.inputName.trim() : ''
-                    }
-                    data['create'] = 'parent'
-                } else if (this.formType === 'professional') {
-                    if (this.inputName === '') {
-                        this.modalAlertMessage = 'Please enter name of professional'
-                    } else if (this.inputRole === '') {
-                        this.modalAlertMessage = 'Please select role of professional'
-                    } else {
-                        data['create'] = 'professional'
-                        data['name'] = this.inputName ? this.inputName.trim() : ''
-                        data['role'] = this.inputRole ? this.inputRole.trim() : ''
-                        if (this.other) {
-                            data['other_name'] = this.inputOther ? this.inputOther.trim() : ''
-                        }                    
-                        data['description'] = this.inputDescription ? this.inputDescription.trim() : ''
-                    }
-                } else if (this.formType === 'school') {
-                    if (this.inputName === '') {
-                        this.modalAlertMessage = 'Please enter name of school'
-                    } else if (this.inputRole === '') {
-                        this.modalAlertMessage = 'Please select role of school'
-                    } else {
-                        data['create'] = 'school'
-                        data['company_name'] = this.inputName ? this.inputName.trim() : ''
-                        data['role'] = this.inputRole ? this.inputRole.trim() : ''
-                    }
-                }
-
-                if (!this.modalAlertMessage.length) {
-                    this.modalLoading = true
-                    let response = await this.createAccount(data)
-                    this.modalLoading = false
-
-                    if (response.status) {
-                        this.alertSuccess = true
-                        this.alertDanger = false
-                        // this.showModal = false
-                        this.alertMessage = `successfully created ${this.formType}` 
-                    } else {
-                        this.alertSuccess = false
-                        this.alertDanger = true
-                        this.alertMessage = `${this.formType} creation was unsuccessful.` 
-                    }
-                }
-
-                
-            },
-            modalAppear(){
-                // this.showModal = true
-            },
-            modalDisappear(){
-                this.showModal=false
-                this.inputName = ''
-                this.inputOther = ''
-                this.inputRole = ''
-                this.other = false
-                this.inputDescription = ''
-                this.editUserForm = false
-                this.showModal = false
-            },
-            becomeClicked(buttonText){
-                if (this.learner) {
-                    this.formType = 'learner'
-                } else if (this.parent) {
-                    this.formType = 'parent'
-                } else if (this.facilitator) {
-                    this.formType = 'facilitator'
-                } else if (this.school) {
-                    this.formType = 'school'
-                } else if (this.professional) {
-                    this.formType = 'professional'
-                }
-                this.showModal = true
-            },
-            selection(data){
-                // console.log(data.name)
-                if (this.formType === 'professional' && data.name === 'other') {
-                    this.other = true
-                } else {
-                    this.inputRole = data.name
-                }
-            },
-        },
         computed: {
-            ...mapGetters(['getUserUsername', 'getUser', 'getUserAge','isSuperadmin','isGroupadmin','isClassadmin','isSchooladmin',
-                'isLearner', 'isParent', 'isFacilitator', 'hasProfessionals', 'hasSchools','authenticatingUser'
+            ...mapGetters(['getUserUsername', 'getUser', 'getUserAge',
+                'professionalsCount','schoolsCount', 'getProfiles',
+                'isFacilitator','isLearner','isParent','authenticatingUser'
             ]),
+            computedOwnedProfiles(){
+                if (this.getProfiles) {
+                    return this.getProfiles.filter(profile=>{
+                        return profile.userId === this.getUser.id
+                    })
+                } else return []
+            },
             newCreation(){
                 let today = new Date()
                 if (this.getUser) {
@@ -518,11 +329,39 @@ import { dates } from "../services/helpers";
                 return false
             },
             computedCreationSection(){
-                return this.learner || this.facilitator || this.parent || this.school 
-                    || this.professional ? true : false
+                return this.formType.length ? true : false
             },
-            computedSelectList(){
-                return `select role of ${this.formType}`
+        },
+        methods: {
+            clickedPostButton(data){
+                if (data === 'profiles') {
+                    this.showProfiles = true
+                } else if (data === 'dashboard') {
+                    this.$router.push({name:'dashboard'})
+                }  else if (data === 'home') {
+                    this.$router.push({name:'home'})
+                } 
+            },
+            clickedProfile(profile){
+                this.$router.push({
+                    name: 'profile',
+                    params:{
+                        account: profile.account,
+                        accountId: profile.accountId,
+                    }
+                })
+            },
+            editUser(){
+                this.editUserForm = true
+            },
+            modalAppear(){
+                // this.showModal = true
+            },
+            modalDisappear(){
+                this.showModal=false
+            },
+            becomeClicked(buttonText){                
+                this.showModal = true
             },
         },
     }

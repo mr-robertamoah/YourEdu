@@ -13,10 +13,10 @@
                 :max="inputMax"
                 :min="inputMin"
                 class="form-control"
-                :value="value"
-                v-model="inputValue"
+                :class="{prepend}"
                 :pattern="pattern"
                 :inputmode="inputmode"
+                ref="textinput"
             >
             <div class="form-control-append eye-control" :title="title"
                 v-if="prepend"
@@ -36,6 +36,7 @@
 
 <script>
     export default {
+        name: 'TextInput',
         props: {
             placeholder: {
                 type: String,
@@ -109,15 +110,19 @@
                 if (this.inputType === 'text' && this.hasMax) {
                     if (newValue.length > this.inputMax) {
                         this.inputValue = oldValue
+                        this.$refs.textinput.value = oldValue
+                    } else {
+                        this.$refs.textinput.value = newValue
                     }
-                }
+                } else {
+                    this.$refs.textinput.value = newValue
+                }               
             },
             value: {
                 immediate:true,
                 handler(newValue){
-                    if (newValue && newValue.length) {
-                        this.inputValue = newValue
-                    }
+                    this.inputValue = newValue
+                    if (this.$refs.textinput) this.$refs.textinput.value = newValue
                 }
             },
         },
@@ -132,8 +137,8 @@
                 }
             },
             change($event) {
-                let value = $event.target.value 
-                this.$emit('input',`${value}`)
+                this.inputValue = this.$refs.textinput.value
+                this.$emit('input', this.$refs.textinput.value)
             },
             iconChange() {
                 this.$emit('iconChange')
@@ -174,6 +179,10 @@ $buttonColor : rgba(2, 104, 90, .6);
             .form-control{
                 // min-width: 90%;
                 margin: 0 !important;
+            }
+
+            .form-control.prepend{
+                width: 90%;
             }
             
             .form-control-append{
@@ -232,6 +241,10 @@ $buttonColor : rgba(2, 104, 90, .6);
             input::placeholder{
                 font-size: 14px;
             }
+            
+            .form-control-append{
+                font-size: 14px;
+            }
         }
     }
 }
@@ -244,6 +257,10 @@ $buttonColor : rgba(2, 104, 90, .6);
 
             input,
             input::placeholder{
+                font-size: 12px;
+            }
+            
+            .form-control-append{
                 font-size: 12px;
             }
         }

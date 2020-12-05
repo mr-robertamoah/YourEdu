@@ -2,92 +2,183 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\DeleteRequestMessage;
+use App\Events\NewRequestMessage;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MessageRequest;
+use App\Http\Resources\DashboardSchoolRequestResource;
+use App\Http\Resources\OwnedProfileResource;
+use App\Http\Resources\RequestMessageResource;
 use App\Http\Resources\RequestResource;
-use App\User;
-use App\YourEdu\Facilitator;
-use App\YourEdu\Follow;
-use App\YourEdu\Learner;
-use App\YourEdu\Message;
-use App\YourEdu\ParentModel;
-use App\YourEdu\Professional;
-use App\YourEdu\Request as YourEduRequest;
-use App\YourEdu\School;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Http\Resources\UserAndProfileResource;
+use App\Services\MessageService;
+use App\Services\RequestService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use \Debugbar;
+use Illuminate\Support\Facades\DB;
 
 class RequestController extends Controller
 {
     //
 
+    public function searchAccounts(Request $request)
+    {
+        $data = (new RequestService())->searchAccounts($request->account,
+            $request->search,$request->type,$request->account2);
+        
+        return UserAndProfileResource::collection(paginate($data,10));
+    }
+
+    public function sendAccountsRequest(Request $request)
+    {
+        dd($request);
+        try {
+            DB::beginTransaction();
+            $accountsRequest = (new RequestService())->sendAccountRequest(
+                $request->from,$request->fromId,$request->to,$request->toId,$request->item,
+                $request->itemId,[
+                    'title' => $request->title,
+                    'ward' => $request->ward,
+                    'wardId' => $request->wardId,
+                    'adminId' => $request->adminId,
+                    'level' => $request->level,
+                    'salary' => $request->salary,
+                    'salaryPeriod' => $request->salaryPeriod,
+                    'currency' => $request->currency,
+                    'commission' => $request->commission,
+                    'description' => $request->description,
+                    'attachments' => json_decode($request->attachments),
+                ],$request->file('files') ?? [],$request->what
+            );
+
+            // DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                'request' => $accountsRequest
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+    
+    public function schoolRelatedResponse(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $requestFrom = (new RequestService())->schoolRelatedResponse(
+                $request->requestId,$request->action,
+                $request->other,auth()->id(),$request->mine);
+
+            DB::commit();
+            $data = null;
+            if ($request->mine === 'admin') {
+                if ($request->other === 'school') {
+                    $data = new OwnedProfileResource($requestFrom->profile);
+                }
+            } 
+            return response()->json([
+                'message' => 'successful',
+                'data' => $data,
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
     public function getUserRequests()
     {
         try {
-            $id = auth()->id();
-            $request = YourEduRequest::where('state','PENDING')
-                ->whereHasMorph('requestto','*',function(Builder $query, $type) use ($id){
-                    if ($type == 'App\YourEdu\School') {
-                        $query->where('owner_id',$id);
-                    } else{
-                        $query->where('user_id',$id);
-                    }
-                })
-                ->with(['requestfrom.profile'])
-                ->with(['requestable'=>function(MorphTo $query){
-                    $query->morphWith([
-                        Message::class =>['images','videos','audios','files',],
-                        Discussion::class =>['images','videos','audios','files','likes',
-                            'comments','beenSaved','raisedby.profile','attachments',
-                            'participants'],
-                    ]);
-                }])->get();
 
-            // return $request;
-            return RequestResource::collection(paginate($request->sortByDesc('updated_at'),10));
+            $request = (new RequestService())->getUserRequests(auth()->id());
+
+            return RequestResource::collection(paginate($request,10));
         } catch (\Throwable $th) {
             throw $th;
         }
         
     }
 
+    public function getAccountRequests(Request $request)
+    {
+        try {
+            $accountRequests = (new RequestService())->getAccountRequests($request->account,
+                $request->accountId);
+
+            return DashboardSchoolRequestResource::collection(paginate($accountRequests,2));
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
     public function declineRequest($requestId)
     {
-        $requestTo = null;
-        $mainRequest = YourEduRequest::find($requestId);
+        try {
+            (new RequestService())->declineRequest($requestId,auth()->id());
 
-        if ($mainRequest) {
-            $requestTo = getAccountObject(getAccountString($mainRequest->requestto_type),
-                $mainRequest->requestto_id);
-
-            if (!$requestTo) {
-                return response()->json([
-                    'message' => 'unsuccessful. request is to no account'
-                ],422);
-            }
-
-            if ($requestTo->user_id !== auth()->id()) {
-                return response()->json([
-                    'message' => 'unsuccessful. request is not to you'
-                ],422);
-            }
-        
-            try {
-                $mainRequest->update([
-                    'state' => 'DECLINED'
-                ]);
-                return response()->json([
-                    'message' => 'successful'
-                ]);
-            } catch (\Throwable $th) {
-                throw $th;
-            }
-
-        } else {
             return response()->json([
-                'message' => 'unsuccessful. request does not exist'
-            ],422);
+                'message' => 'successful'
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function getMessages(Request $request)
+    {
+        try {
+            $messages = (new RequestService())->getMessages($request->requestId);
+
+            return RequestMessageResource::collection($messages);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+    
+    public function sendMessage(MessageRequest $request, $requestId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $message = (new RequestService())->sendMessage($requestId,
+                $request->account,$request->accountId,auth()->id(),$request->message,
+                'sent',$request->file('file'));
+
+            DB::commit();
+            $messageResource =  new RequestMessageResource($message);
+            broadcast(new NewRequestMessage(
+               $messageResource,$requestId))->toOthers();
+            return response()->json([
+                'message' => 'successful',
+                'requestMessage' =>  $messageResource
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+            return response()->json([
+                'message' => 'unsuccessful, something happened.'
+            ], 422);
+        }
+    }
+    
+    public function deleteMessage(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $message = (new MessageService())
+                    ->deleteMessage(auth()->id(),$request->messageId,'delete',false);
+            
+            DB::commit();
+            broadcast(new DeleteRequestMessage($message['itemId'], 
+                $request->requestId))->toOthers();
+            return response()->json([
+                'message' => 'successful'
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
         }
     }
 }

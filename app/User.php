@@ -2,8 +2,10 @@
 
 namespace App;
 
+use App\Http\Resources\OwnedProfileResource;
 use App\YourEdu\Account;
 use App\YourEdu\Admin;
+use App\YourEdu\Ban;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Follow;
 use App\YourEdu\Learner;
@@ -62,16 +64,8 @@ class User extends Authenticatable
     // protected $with = ['learner','admins','parent','professionals','schools'];
 
     protected $appends = ['full_name','age','is_superadmin',
-        'is_supervisoradmin','is_groupadmin','is_classadmin',
-        'is_schooladmin','is_learner','is_parent','is_facilitator',
-        'has_professionals','has_schools', 'owned_profiles'
+        'is_supervisoradmin',
     ];
-
-    // public function getUnreadFollowNotifications()
-    // {
-    //     return $this->unreadNotifications()
-    //         ->where('type','App\Notifications\FollowRequest')->get();
-    // }
 
     public function receivesBroadcastNotificationsOn()
     {
@@ -86,75 +80,6 @@ class User extends Authenticatable
         return "{$this->first_name} {$this->other_names} {$this->last_name}" ;
     }
 
-    public function getOwnedProfilesAttribute()
-    {
-        $data = [];
-        $profiles = null;
-
-        $profiles = $this->profiles;
-
-        if (is_null($profiles)) {
-            return null;
-        }
-
-        $i = 0;
-        foreach ($profiles as $profile) {
-            // $data[$i] = $profile->profileable_type;
-            if ($profile->profileable_type === 'App\\YourEdu\\ParentModel') {
-                $data[$i] = [
-                    'account_id' => $profile->profileable_id,
-                    'account_type' => 'parent',
-                    'profile_name' => $profile->name,
-                    'profile_url' => $profile->url,
-                    'profile' => $profile->profileable_type,
-                ];
-            }
-            if ($profile->profileable_type === 'App\\YourEdu\\Facilitator') {
-                $data[$i] = [
-                    'account_id' => $profile->profileable_id,
-                    'account_type' => 'facilitator',
-                    'profile_name' => $profile->name,
-                    'profile_url' => $profile->url,
-                    'profile' => $profile->profileable_type,
-                ];
-            }
-            
-            if ($profile->profileable_type === 'App\\YourEdu\\Learner') {
-                $data[$i] = [
-                    'account_id' => $profile->profileable_id,
-                    'account_type' => 'learner',
-                    'profile_name' => $profile->name,
-                    'profile_url' => $profile->url,
-                    'profile' => $profile->profileable_type,
-                ];
-            }
-            
-            if ($profile->profileable_type === 'App\\YourEdu\\Professional') {
-                $data[$i] = [
-                    'account_id' => $profile->profileable_id,
-                    'account_type' => 'professional',
-                    'profile_name' => $profile->name,
-                    'profile_url' => $profile->url,
-                    'profile' => $profile->profileable_type,
-                ];
-            }
-            
-            if ($profile->profileable_type === 'App\\YourEdu\\School') {
-                $data[$i] = [
-                    'account_id' => $profile->profileable_id,
-                    'account_type' => 'school',
-                    'profile_name' => $profile->name,
-                    'profile_url' => $profile->url,
-                    'profile' => $profile->profileable_type,
-                ];
-            }
-
-
-            $i++;
-        }
-        return $data;
-    }
-
     public function getAgeAttribute()
     {
         if ($this->dob) {
@@ -165,65 +90,12 @@ class User extends Authenticatable
 
     public function getIsSuperadminAttribute()
     {
-        return count($this->whereHas('admins',function(Builder $query){
-            $query->where('role','SUPERADMIN');
-        })->get()) > 0 ? true : false;
+        return $this->admins()->where('role','SUPERADMIN')->count() > 0 ? true : false;
     }
 
     public function getIsSupervisoradminAttribute()
     {
-        return count($this->whereHas('admins',function(Builder $query){
-            $query->where('role','SUPERVISOR');
-        })->get()) > 0 ? true : false;
-    }
-
-    public function getIsSchooladminAttribute()
-    {
-        return count($this->whereHas('admins',function(Builder $query){
-            $query->where('role','SCHOOLADMIN');
-        })->get()) > 0 ? true : false;
-    }
-
-    public function getIsClassadminAttribute()
-    {
-        return count($this->whereHas('admins',function(Builder $query){
-            $query->where('role','CLASSADMIN');
-        })->get()) > 0 ? true : false;
-    }
-
-    public function getIsGroupadminAttribute()
-    {
-        return count($this->whereHas('admins',function(Builder $query){
-            $query->where('role','GROUPADMIN');
-        })->get()) > 0 ? true : false;
-    }
-
-    public function getIsLearnerAttribute()
-    {
-        return $this->learner()->exists();
-    }
-
-    public function getIsParentAttribute()
-    {
-        return $this->parent()->exists();
-    }
-
-    public function getIsFacilitatorAttribute()
-    {
-        return $this->facilitator()->exists();
-    }
-
-    public function getHasProfessionalsAttribute()
-    {
-        return $this->professionals()->exists();
-    }
-
-    public function getHasSchoolsAttribute()
-    {
-        return count($this->whereHas('schools.owner',function(Builder $query){
-            $query->where('id',$this->id);
-        })->get()) > 0 ? true : false;
-        return $this->schools()->exists();
+        return $this->admins()->where('role','SUPERVISOR')->count() > 0 ? true : false;
     }
 
     public function findForPassport($username)
@@ -234,6 +106,11 @@ class User extends Authenticatable
     public function account()
     {
        return $this->hasOne(Account::class);
+    }
+
+    public function bans()
+    {
+       return $this->morphMany(Ban::class,'bannable');
     }
 
     public function points()
@@ -299,6 +176,20 @@ class User extends Authenticatable
     public function messagesReceived()
     {
         return $this->hasMany(Message::class,'to_user_id');
+    }
+
+    public function scopeHasBan($query)
+    {
+        return $query->whereHas('bans',function($query){
+            $query->where(function($query){
+                $query->whereDate('due_date','>',now())
+                ->whereIn('state',['PENDING','SERVED']);
+            })
+            ->orWhere(function($query){
+                $query->whereNull('due_date')
+                ->whereIn('state',['PENDING','SERVED']);
+            });
+        });
     }
     
 }

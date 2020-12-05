@@ -15,16 +15,18 @@ class CreateAcademicYearSectionsTable extends Migration
     {
         Schema::create('academic_year_sections', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('academic_year_id');
-            $table->timestamp('start_date');
-            $table->timestamp('end_date');
-            $table->string('description')->nullable();
+            $table->unsignedBigInteger('school_id')->nullable();
+            $table->unsignedBigInteger('academic_year_id')->nullable();
+            $table->string('name')->nullable();
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
             $table->boolean('promotion')->default(false);
             $table->softDeletes();
             $table->timestamps();
 
 
             $table->foreign('academic_year_id')->references('id')->on('academic_years')->cascadeOnDelete();
+            $table->foreign('school_id')->references('id')->on('schools')->cascadeOnDelete();
         });
     }
 

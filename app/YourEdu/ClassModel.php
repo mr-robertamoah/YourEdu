@@ -8,36 +8,61 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ClassModel extends Model
 {
     //
-    // use SoftDeletes;
+    use SoftDeletes;
+
+    protected $fillable = [
+        'name','state','description','academic_id','max_learners','structure'
+    ];
 
     public function profile(){
         return $this->morphOne(Profile::class,'profileable');
     }
 
-    public function classable(){
+    public function ownedby(){
         return $this->morphTo();
     }
 
-    public function curriculum(){
-        return $this->belongsTo(Curriculum::class);
+    public function addedby(){
+        return $this->morphTo();
     }
 
-    public function grade(){
-        return $this->belongsTo(Grade::class);
+    public function commissions()
+    {
+        return $this->morphMany(Commission::class,'for');
+    }
+
+    public function activityTrack()
+    {
+       return $this->morphOne(ActivityTrack::class,'what');
+    }
+
+    public function curricula(){
+        return $this->morphToMany(Curriculum::class,'curriculumable','curriculumables');
+    }
+
+    public function grades(){
+        return $this->morphToMany(Grade::class,'gradeable','gradeables');
     }
 
     public function facilitators(){
-        return $this->belongsToMany(Facilitator::class,'class_facilitator','class_id','facilitator_id')
-                ->withTimestamps();
+        return $this->morphedByMany(Facilitator::class,'classable','classables','class_id');
+    }
+
+    public function learners(){
+        return $this->morphedByMany(Learner::class,'classable','classables','class_id');
+    }
+
+    public function schools(){
+        return $this->morphedByMany(School::class,'classable','classables','class_id');
     }
 
     public function sections(){
         return $this->hasMany(ClassSection::class,'class_id');
     }
 
-    public function price()
+    public function prices()
     {
-        return $this->morphOne(Price::class,'priceable');
+        return $this->morphMany(Price::class,'priceable');
     }
 
     public function collaboration()
@@ -45,26 +70,19 @@ class ClassModel extends Model
         return $this->morphOne(Collaboration::class,'collaborationable');
     }
 
-    public function academicSections()
+    public function academicYear()
     {
-        return $this->belongsToMany(AcademicYearSection::class,'academic_section_class','class_id','academic_year_section_id')
-                ->withTimestamps();
+        return $this->morphToMany(AcademicYear::class,'academicable','academicables',null,'academic_id');
     }
 
-    public function learners()
-    {
-        return $this->belongsToMany(Learner::class,'class_learner','class_id')
-                ->withPivot('type')->withTimestamps();
-    }
-
-    public function uniqueSubjects()
-    {
-        return $this->morphMany(Subject::class,'subjectable');
-    }
+    // public function uniqueSubjects()
+    // {
+    //     return $this->morphMany(Subject::class,'subjectable');
+    // }
 
     public function subjects()
     {
-        return $this->belongsToMany(Subject::class,'class_subject','class_id')
+        return $this->morphToMany(Subject::class,'subjectable','subjectables')
                 ->withTimestamps();
     }
 
@@ -75,11 +93,16 @@ class ClassModel extends Model
 
     public function fees()
     {
-        return $this->hasMany(Fee::class);
+        return $this->hasMany(Fee::class,'class_id');
     }
 
     public function gradingSystem(){
         return $this->belongsTo(GradingSystem::class,'grading_system_id');
+    }
+
+    public function lessons()
+    {
+        return $this->morphMany(Lesson::class,'lessonable');
     }
 
     public function reports()
@@ -109,6 +132,6 @@ class ClassModel extends Model
     
     public function discussions()
     {
-        return $this->morphMany(Discussion::class,'discussionable');
+        return $this->morphMany(Discussion::class,'discussionfor');
     }
 }
