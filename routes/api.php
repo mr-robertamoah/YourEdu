@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DiscussionController;
+use App\Http\Controllers\Api\ExtracurriculumController;
 use App\Http\Controllers\Api\FlagController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\GradeController;
@@ -40,6 +41,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class,'login']);
 Route::post('/logout', [AuthController::class,'logout']);
 Route::post('/register', [AuthController::class,'register']);
+Route::post('/authentication-failed', [AuthController::class,'authFailed'])->name('auth-failed');
 Route::get('/testing', [AuthController::class,'test']);
 
 Route::get('/profile/{account}/{accountId}', [ProfileController::class,'profileGet'])
@@ -48,7 +50,10 @@ Route::get('/profile/{account}/{accountId}', [ProfileController::class,'profileG
 Route::get('/posts', [PostController::class,'posts']);
 Route::get('/posts/{account}/{accountId}', [PostController::class,'postsGet'])
 ->middleware(['CheckAccount']);
-Route::get('/post/{post}', [PostController::class,'postGet']);
+// Route::get('/post/{post}', [PostController::class,'postGet']);
+Route::get('/{item}/{itemId}', [DashboardController::class,'itemGet'])
+    ->where('item','discussion|post|comment|answer|question|activity|poem|riddle|lesson')
+    ->where('itemId','[0-9]+');
 
 Route::get('/comment/{comment}', [CommentController::class,'commentGet']);
 Route::get('/{item}/{itemId}/comments/', [CommentController::class,'commentsGet'])
@@ -92,14 +97,27 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/class/create', [ClassController::class,'createClass']);
     Route::post('/class/delete', [ClassController::class,'deleteClass']);
     Route::post('/class/update', [ClassController::class,'updateClass']);
+    
+    Route::post('/extracurriculum/create', [ExtracurriculumController::class,'createClass']);
+    Route::post('/extracurriculum/delete', [ExtracurriculumController::class,'deleteClass']);
+    Route::post('/extracurriculum/update', [ExtracurriculumController::class,'updateClass']);
+    
+    Route::post('/course/create/main', [CourseController::class,'createCourse']);
+    Route::post('/course/delete/main', [CourseController::class,'deleteCourse']);
+    Route::post('/course/update/main', [CourseController::class,'updateCourse']);
 
+    Route::get('/dashboard/activities', [DashboardController::class,'getAccountActivities']);
+    Route::get('/dashboard/accounts', [DashboardController::class,'getAccounts']);
     Route::get('/dashboard/users', [DashboardController::class,'getUsers']);
     Route::get('/dashboard/admins', [DashboardController::class,'getAdmins']);
     Route::get('/dashboard/account', [DashboardController::class,'getAccountDetails']);
+    Route::get('/dashboard/account/item', [DashboardController::class,'getAccountSpecificItem']);
     Route::get('/dashboard/item/data', [DashboardController::class,'getSectionItemData']);
     Route::post('/dashboard/school/academicyear', [DashboardController::class,'createAcademicYear']);
     Route::post('/dashboard/school/academicyearsection', [DashboardController::class,'createAcademicYearSection']);
     Route::post('/dashboard/banning', [DashboardController::class,'banningUser']);
+    Route::post('/dashboard/account/attach', [DashboardController::class,'attachAccount']);
+    Route::post('/dashboard/account/unattach', [DashboardController::class,'unattachAccount']);
 
     Route::post('/discussion', [DiscussionController::class,'createDiscussion']);
     Route::delete('/discussion/{discussionId}', [DiscussionController::class,'deleteDiscussion']);

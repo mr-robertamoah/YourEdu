@@ -30,6 +30,10 @@
                 type: String,
                 default: ''
             },
+            inactive: {
+                type: Boolean,
+                default: false
+            },
         },
         data() {
             return {
@@ -38,7 +42,9 @@
         },
         methods: {
             clickedIcon() {
-                this.full =  !this.full
+                if (!this.inactive) {
+                    this.full =  !this.full
+                }
             }
         },
     }
@@ -69,6 +75,11 @@
             }
         }
 
+        .body{
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
         .bottom{
             margin-top: 10px;
         }
@@ -77,6 +88,8 @@
     .dashboard-sub-section-wrapper.full{
         min-height: 100px;
         background: mintcream;
+        max-height: 500px;
+        overflow-y: auto;
         
         .top{
             color: black;

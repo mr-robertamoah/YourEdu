@@ -22,7 +22,8 @@ class Group extends Model
 
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra');
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
+            ->withPivot(['resource','activity'])->withTimestamps();
     }
 
     public function activityTrack()

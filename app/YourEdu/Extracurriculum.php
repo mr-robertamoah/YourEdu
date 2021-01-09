@@ -2,13 +2,18 @@
 
 namespace App\YourEdu;
 
+use App\Traits\DashboardItemTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Extracurriculum extends Model
 {
-    //
-    use SoftDeletes;
+    
+    use SoftDeletes, DashboardItemTrait;
+
+    protected $fillable = [
+        'name', 'description', 'state'
+    ];
 
     public function likes(){
         return $this->morphMany(Like::class,'likeable');
@@ -66,6 +71,11 @@ class Extracurriculum extends Model
     
     public function discussion()
     {
-        return $this->morphOne(Discussion::class,'discussionon');
+        return $this->morphOne(Discussion::class,'discussionfor');
+    }
+    
+    public function payments()
+    {
+        return $this->morphMany(Payment::class,'what');
     }
 }

@@ -2,19 +2,26 @@
 
 namespace App\YourEdu;
 
+use App\Traits\DashboardItemTrait;
+use App\Traits\NotOwnedByTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Course extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, NotOwnedByTrait, DashboardItemTrait;
 
     protected $fillable = [
-        'name','description','rationale'
+        'name','description', 'state'
     ];
 
     public function addedby()
+    {
+        return $this->morphTo();
+    }
+
+    public function ownedby()
     {
         return $this->morphTo();
     }
@@ -33,45 +40,59 @@ class Course extends Model
         return $this->morphMany(Lesson::class,'lessonable');
     }
 
-    public function price()
+    public function subscriptions()
     {
-        return $this->morphOne(Price::class,'priceable');
+        return $this->morphMany(Subscription::class,'subscribable');
+    }
+
+    public function classes(){
+        return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id');
+    }
+
+    public function prices()
+    {
+        return $this->morphMany(Price::class,'priceable');
+    }
+
+    public function comments()
+    {
+        return $this->morphMany(Comment::class,'commentable');
     }
 
     public function learners()
     {
         return $this->morphedByMany(Learner::class,'coursable','coursables')
-            ->withPivot(['activity','ownedby_id','ownedby_type']);
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function parents()
     {
         return $this->morphedByMany(ParentModel::class,'coursable','coursables')
-            ->withPivot(['activity','ownedby_id','ownedby_type']);
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function facilitators()
     {
         return $this->morphedByMany(Facilitator::class,'coursable','coursables')
-            ->withPivot(['activity','ownedby_id','ownedby_type']);
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function professionals()
     {
         return $this->morphedByMany(Professional::class,'coursable','coursables')
-            ->withPivot(['activity','ownedby_id','ownedby_type']);
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function schools()
     {
-        return $this->morphedByMany(School::class,'ownedby','coursables')
-            ->withPivot(['activity','ownedby_id','ownedby_type']);
+        return $this->morphedByMany(School::class,'coursable','coursables')
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function collaborations()
     {
-        return $this->morphedByMany(Collaboration::class,'ownedby','coursables')
-            ->withPivot(['activity','ownedby_id','ownedby_type']);
+        return $this->morphedByMany(Collaboration::class,'coursable','coursables')
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function objectives()
@@ -85,7 +106,20 @@ class Course extends Model
     }
 
     public function grades(){
-        return $this->belongsToMany(Grade::class)->withTimestamps();
+        return $this->morphToMany(Grade::class,'gradeable','gradeables')
+            ->withTimestamps();
+    }
+
+    public function courses()
+    {
+        return $this->morphToMany(Course::class,'coursable','coursables')
+            ->withPivot(['activity'])->withTimestamps();
+    }
+
+    public function programs()
+    {
+        return $this->morphToMany(Program::class,'programmable','programmables')
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function topics()
@@ -103,11 +137,6 @@ class Course extends Model
         return $this->morphMany(Permission::class,'permissible');
     }
     
-    public function discussion()
-    {
-        return $this->morphOne(Discussion::class,'discussionable');
-    }
-    
     public function aliases()
     {
         return $this->morphMany(Alias::class,'aliasable');
@@ -115,7 +144,12 @@ class Course extends Model
     
     public function discussions()
     {
-        return $this->morphMany(Discussion::class,'discussionon');
+        return $this->morphMany(Discussion::class,'discussionfor');
+    }
+    
+    public function payments()
+    {
+        return $this->morphMany(Payment::class,'what');
     }
 
 

@@ -163,7 +163,7 @@
             </div>
         </div>
         <div class="middle-section" 
-            v-if="type === 'account' && !mainSection.length"
+            v-if="type === 'account' && account.account !== 'admin' && !mainSection.length"
             :class="{full}"
         >
             <div class="main-title">
@@ -176,6 +176,7 @@
                 <dashboard-item-badge
                     class="dashboard-badge"
                     :hasItems="true"
+                    :hasSearch="true"
                     heading="collaborations"
                     :items="computedCollaborations"
                     @clickedItem="clickedDashboardItem"
@@ -185,6 +186,7 @@
                 <dashboard-item-badge
                     class="dashboard-badge"
                     :hasItems="true"
+                    :hasSearch="true"
                     heading="schools"
                     :items="computedSchools"
                     @clickedItem="clickedDashboardItem"
@@ -197,48 +199,35 @@
                     heading="classes"
                     :items="computedClasses"
                     @clickedItem="clickedDashboardItem"
-                    v-if="account.account === 'facilitator' || account.account === 'school' ||
+                    v-if="account.account === 'facilitator' || account.account === 'professional' ||
                         account.account === 'learner'"
                 ></dashboard-item-badge>
                 <dashboard-item-badge
                     class="dashboard-badge"
                     :hasItems="true"
-                    heading="subjects"
-                    :items="computedSubjects"
-                    @clickedItem="clickedDashboardItem"
-                    v-if="account.account === 'learner' || account.account === 'school' || 
-                        account.account === 'facilitator'"
-                ></dashboard-item-badge>
-                <dashboard-item-badge
-                    class="dashboard-badge"
-                    :hasItems="true"
+                    :hasSearch="true"
                     heading="extracurriculum"
                     :items="computedExtracurriculums"
                     @clickedItem="clickedDashboardItem"
-                    v-if="account.account !== 'parent'"
+                    v-if="account.account === 'learner'"
                 ></dashboard-item-badge>
                 <dashboard-item-badge
                     class="dashboard-badge"
                     :hasItems="true"
-                    heading="curriculum"
-                    :items="computedCurriculums"
-                    @clickedItem="clickedDashboardItem"
-                    v-if="account.account !== 'parent' && account.account !== 'professional'"
-                ></dashboard-item-badge>
-                <dashboard-item-badge
-                    class="dashboard-badge"
-                    :hasItems="true"
+                    :hasSearch="true"
                     heading="courses"
                     :items="computedCourses"
                     @clickedItem="clickedDashboardItem"
+                    v-if="account.account !== 'school'"
                 ></dashboard-item-badge>
                 <dashboard-item-badge
                     class="dashboard-badge"
                     :hasItems="true"
+                    :hasSearch="true"
                     heading="programs"
                     :items="computedPrograms"
                     @clickedItem="clickedDashboardItem"
-                    v-if="account.account !== 'parent'"
+                    v-if="account.account === 'learner'"
                 ></dashboard-item-badge>
             </div>
         </div>
@@ -268,7 +257,8 @@
                     class="view-requests" 
                     text="send request"
                     @click="clickedAction"
-                    v-if="account && account.account !== 'school'"
+                    v-if="account && account.account !== 'school' && 
+                        account.account !== 'admin'"
                 >
                 </action-button>
                 <optional-actions
@@ -337,7 +327,7 @@
                 </div>
             </div>
             <div class="account-info" 
-                v-if="!loading && type === 'account' && activePostButton === 'info'"
+                v-if="!loading && type === 'account'"
             >
                 <div class="top">
                     <profile-picture
@@ -512,6 +502,7 @@
                                             :key="index"
                                             type="facilitator"
                                             :account="facilitator"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
@@ -539,6 +530,7 @@
                                             :key="index"
                                             type="professional"
                                             :account="professional"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
@@ -566,6 +558,7 @@
                                             :key="index"
                                             type="learner"
                                             :account="learner"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
@@ -593,6 +586,7 @@
                                             :key="index"
                                             type="parent"
                                             :account="parent"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
@@ -691,6 +685,231 @@
                                     </div>
                                 </template>
                             </dashboard-sub-section>
+                            <dashboard-sub-section
+                                subText="accounts"
+                                :inactive="!accountsLoading && accountsNextPage === 1"
+                                infinite-wrapper
+                            >
+                                <template slot="body">
+                                    <div class="sub-main long">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(account,index) in computedAccounts"
+                                            :key="index"
+                                            type="account"
+                                            :account="account"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedAccounts || !computedAccounts.length">
+                                            no accounts
+                                        </div>
+
+                                        <infinite-loader
+                                            v-if="accountsNextPage !== 1"
+                                            @infinite="accountsInfiniteLoader"
+                                            force-use-infinite-wrapper
+                                        ></infinite-loader>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
+                        </template>
+                        <template v-if="account.account === 'facilitator' ||
+                            account.account === 'professional'">
+                            <dashboard-sub-section
+                                subText="subjects"
+                                v-if="account.account === 'facilitator'"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(subject,index) in computedSubjects"
+                                            :key="index"
+                                            type="subject"
+                                            :account="subject"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedSubjects || !computedSubjects.length">
+                                            no subjects
+                                        </div>
+                                        <dashboard-action-button
+                                            class="add-another"
+                                            text="add subject"
+                                            icon="plus"
+                                            :data="null"
+                                            @click="clickedDashboardActionButton"
+                                        ></dashboard-action-button>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                subText="curricula"
+                                v-if="account.account === 'facilitator'"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(curriculum,index) in computedCurricula"
+                                            :key="index"
+                                            type="curriculum"
+                                            :account="curriculum"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedCurricula || !computedCurricula.length">
+                                            no curricula
+                                        </div>
+                                        <dashboard-action-button
+                                            class="add-another"
+                                            text="add curriculum"
+                                            icon="plus"
+                                            :data="null"
+                                            @click="clickedDashboardActionButton"
+                                        ></dashboard-action-button>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                subText="owned classes"
+                                v-if="account.account === 'facilitator'"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(ownedClass,index) in computedOwnedClasses"
+                                            :key="index"
+                                            type="owned classes"
+                                            :account="ownedClass"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedOwnedClasses || !computedOwnedClasses.length">
+                                            no classes
+                                        </div>
+                                        <dashboard-action-button
+                                            class="add-another"
+                                            text="add class"
+                                            icon="plus"
+                                            :data="null"
+                                            @click="clickedDashboardActionButton"
+                                        ></dashboard-action-button>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                subText="schedules"
+                                v-if="account.account === 'professional'"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(schedule,index) in computedSchedules"
+                                            :key="index"
+                                            type="schedule"
+                                            :account="schedule"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedSchedules || !computedSchedules.length">
+                                            no schedules
+                                        </div>
+                                        <dashboard-action-button
+                                            class="add-another"
+                                            text="add schedule"
+                                            icon="plus"
+                                            :data="null"
+                                            @click="clickedDashboardActionButton"
+                                        ></dashboard-action-button>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                subText="counselling sections"
+                                v-if="account.account === 'professional'"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(counselling,index) in computedCounselling"
+                                            :key="index"
+                                            type="counselling"
+                                            :account="counselling"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedCounselling || !computedCounselling.length">
+                                            no counselling sections
+                                        </div>
+                                        <dashboard-action-button
+                                            class="add-another"
+                                            text="add counselling"
+                                            icon="plus"
+                                            :data="null"
+                                            @click="clickedDashboardActionButton"
+                                        ></dashboard-action-button>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                subText="owned courses"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(course,index) in computedOwnedCourses"
+                                            :key="index"
+                                            type="owned course"
+                                            :account="course"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedOwnedCourses || !computedOwnedCourses.length">
+                                            no courses
+                                        </div>
+                                        <dashboard-action-button
+                                            class="add-another"
+                                            text="add course"
+                                            icon="plus"
+                                            :data="null"
+                                            @click="clickedDashboardActionButton"
+                                        ></dashboard-action-button>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                subText="owned extracurriculums"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(extracurriculum,index) in computedOwnedExtracurriculums"
+                                            :key="index"
+                                            type="owned extracurriculum"
+                                            :account="extracurriculum"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedOwnedExtracurriculums || !computedOwnedExtracurriculums.length">
+                                            no extracurriculums
+                                        </div>
+                                        <dashboard-action-button
+                                            class="add-another"
+                                            text="add extracurriculum"
+                                            icon="plus"
+                                            :data="null"
+                                            @click="clickedDashboardActionButton"
+                                        ></dashboard-action-button>
+                                    </div>
+                                </template>
+                            </dashboard-sub-section>
                         </template>
                         <fade-right>
                             <template slot="transition" v-if="showSelection">                                
@@ -715,15 +934,21 @@
             <div class="loading" v-if="mainSectionLoading">
                 <pulse-loader :loading="mainSectionLoading"></pulse-loader>
             </div>
-            <div class="section">
+            <div class="section" v-if="!mainSectionLoading">
                 <div class="back" @click="clickedMainSectionBack">
                     <font-awesome-icon :icon="['fa','long-arrow-alt-left']"></font-awesome-icon>
                 </div>
                 <dashboard-main-section
                     :type="mainSection"
                     :account="computedAccount"
+                    :learner="computedMainLearner"
+                    :facilitator="computedMainFacilitator"
+                    :parent="computedMainParent"
+                    :professional="computedMainProfessional"
+                    :admin="computedMainAdmin"
                     :mainSectionData="mainSectionData"
                     @clickedEditClass="clickedEditClass"
+                    @clickedDashboardActionButton="clickedDashboardActionButton"
                 ></dashboard-main-section>
                 <dashboard-sub-section
                     subText="comments"
@@ -784,16 +1009,60 @@
             @requestsModalDisappear="showRequests = false"
         ></dashboard-request-modal>
 
+        <!-- for attaching subjects, grades etc -->
+        <attachment-modal
+            v-if="showAttachmentModal"
+            :show="showAttachmentModal"
+            :type="attachmentType"
+            :accountDetails="computedAccountDetails"
+            @attachmentSuccess="attachmentSuccess"
+            @attachmentModalDisappear="closeModal('attachment')"
+        ></attachment-modal>
+
         <create-class
-            v-if="showEditClass"
             :show="showEditClass"
             @closeCreateClass="showEditClass = false"
-            :editableClass="mainSectionData"
+            :editable="mainSectionData"
             :schoolAdmin="computedSchoolAdmin"
             :edit="true"
             @classSuccessfullyEdited="classSuccessfullyEdited"
         ></create-class>
+        
+        <create-lesson
+            :show="showEditLesson"
+            @createLessonDisappear="showEditLesson = false"
+            :editable="mainSectionData"
+            :schoolAdmin="computedSchoolAdmin"
+            :edit="true"
+            @classSuccessfullyEdited="lessonSuccessfullyEdited"
+        ></create-lesson>
+        
+        <create-extracurriculum
+            :show="showEditExtracurriculum"
+            @closeCreateExtracurriculum="showEditExtracurriculum = false"
+            :editable="mainSectionData"
+            :schoolAdmin="computedSchoolAdmin"
+            :edit="true"
+            @extracurriculumSuccessfullyEdited="extracurriculumSuccessfullyEdited"
+        ></create-extracurriculum>
+        
+        <create-course
+            :show="showEditCourse"
+            @closeCreateCourse="showEditCourse = false"
+            :editable="mainSectionData"
+            :schoolAdmin="computedSchoolAdmin"
+            :edit="true"
+            @courseSuccessfullyEdited="courseSuccessfullyEdited"
+        ></create-course>
 
+        <activity-modal
+            v-if="showActivityModal"
+            :show="showActivityModal"
+            :account="activitiesAccount"
+            :admin="computedAccountDetails"
+            @activityModalDisappear="closeModal('activity')"
+            @viewItem="viewItem"
+        ></activity-modal>
         <invitation-modal
             v-if="showInvitationModal"
             :show="showInvitationModal"
@@ -805,6 +1074,27 @@
         ></invitation-modal>
         <edit-profile></edit-profile>
 
+        <view-comments
+            v-if="itemType === 'comment' || itemType === 'answer'"
+            :show="true"
+            :itemData="itemData"
+            @viewModalDisappear="closeItemViewModals"
+        ></view-comments>
+        <post-modal
+            v-if="itemType.length && itemType === 'post' || 
+                itemType === 'question' || itemType === 'activity' || itemType === 'poem' ||
+                itemType === 'riddle' || itemType === 'book'"
+            :show="true"
+            :type="itemType"
+            :itemData="itemData"
+            @mainModalDisappear="closeItemViewModals"
+        ></post-modal>
+        <modal-switcher
+            v-if="itemType === 'discussion' || itemType === 'class' || 
+                itemType === 'course' || itemType === 'lesson'"
+            :show="true"
+            :itemData="itemData"
+        ></modal-switcher>
         <fade-up>
             <template slot="transition" v-if="showSmallModal">
                 <small-modal
@@ -813,6 +1103,7 @@
                     class="small-modal"
                     :title="smallModalTitle"
                     :main="smallModalMain"
+                    :loading="smallModalLoading"
                 >
                     <template slot="actions" v-if="!smallModalMain">
                         <post-button
@@ -826,29 +1117,59 @@
                             @click="clickedSmallModalButton"
                         ></post-button>
                     </template>
-                    <template slot="other" v-if="smallModalMain">
+                    <template slot="other" 
+                        v-if="smallModalMain && !smallModalLoading"
+                    >
                         <div class="item"
                             @click="banTypeSelection('overall')"
-                            v-if="!isLearner"
+                            :class="{selected: banType === 'overall'}"
+                            v-if="smallModalData.type === 'ban'"
                         >overall</div>
                         <div class="item"
                             @click="banTypeSelection('post')"
-                            v-if="!isParent"
+                            :class="{selected: banType === 'post'}"
+                            v-if="smallModalData.type === 'ban'"
                         >post</div>
                         <div class="item"
                             @click="banTypeSelection('comment')"
-                            v-if="!isFacilitator"
+                            :class="{selected: banType === 'comment'}"
+                            v-if="smallModalData.type === 'ban'"
                         >comment</div>
                         <div class="item"
-                            v-if="professionalsCount < 3"
                             @click="banTypeSelection('answer')"
+                            :class="{selected: banType === 'answer'}"
+                            v-if="smallModalData.type === 'ban'"
                         >answer</div>
+                        <template
+                            v-if="smallModalData.type === 'unban'"
+                        >
+                            <div class="item"
+                                v-for="(itemBan,index) in smallModalData.data.bans"
+                                :key="index"
+                                @click="banSelection(itemBan)"
+                                :class="{selected: ban && ban.id === itemBan.id}"                                
+                            >
+                                <div class="main">
+                                    {{`ban created at: ${getReadableDate(itemBan.createdAt)}`}}
+                                </div>
+                                <div class="due" v-if="itemBan.dueDate">
+                                    {{`will be due on: ${getReadableDate(itemBan.dueDate)}`}}
+                                </div>
+                                <div class="info">
+                                    {{`state: ${itemBan.state}, type: ${itemBan.type}`}}
+                                </div>
+                            </div>
+                        </template>
                         <post-button
                             buttonText="ok"
                             buttonStyle="success"
                             class="post-button"
                             @click="clickedSmallModalButton"
                         ></post-button>
+                    </template>
+                    <template slot="other" 
+                        v-if="smallModalMain && smallModalData.type === 'unban'"
+                    >
                     </template>
                 </small-modal>
             </template>
@@ -865,6 +1186,9 @@ import FadeRight from '../transitions/FadeRight'
 import EditProfile from '../forms/EditProfile'
 import ActionButton from '../ActionButton'
 import CreateClass from '../forms/CreateClass'
+import CreateCourse from '../forms/CreateCourse'
+import CreateExtracurriculum from '../forms/CreateExtracurriculum'
+import CreateLesson from '../forms/CreateLesson'
 import InfiniteLoader from 'vue-infinite-loading'
 import CommentSingle from '../CommentSingle'
 import AddComment from '../AddComment'
@@ -872,26 +1196,37 @@ import FadeUp from '../transitions/FadeUp'
 import AccountBadge from '../dashboard/AccountBadge'
 import OptionalActions from '../OptionalActions'
 import DashboardRequestModal from './DashboardRequestModal'
+import ActivityModal from './ActivityModal'
 import InvitationModal from '../InvitationModal'
 import MainSelect from '../MainSelect'
 import DashboardSubSection from './DashboardSubSection'
 import DashboardSectionAccount from './DashboardSectionAccount'
 import DashboardMainSection from './DashboardMainSection'
 import DashboardActionButton from './DashboardActionButton'
+import ViewComments from '../ViewComments'
+import PostModal from '../PostModal'
+import ModalSwitcher from '../ModalSwitcher'
+import AttachmentModal from '../AttachmentModal'
 import WardModal from './WardModal'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 import { mapActions, mapGetters } from 'vuex'
 import { dates } from '../../services/helpers'
+import {bus} from '../../app';
     export default {
         components: {
             PulseLoader,
             WardModal,
+            AttachmentModal,
+            ModalSwitcher,
+            PostModal,
+            ViewComments,
             DashboardActionButton,
             DashboardMainSection,
             DashboardSectionAccount,
             DashboardSubSection,
             MainSelect,
             InvitationModal,
+            ActivityModal,
             DashboardRequestModal,
             OptionalActions,
             AccountBadge,
@@ -900,6 +1235,9 @@ import { dates } from '../../services/helpers'
             CommentSingle,
             InfiniteLoader,
             CreateClass,
+            CreateLesson,
+            CreateExtracurriculum,
+            CreateCourse,
             ActionButton,
             EditProfile,
             FadeRight,
@@ -946,6 +1284,9 @@ import { dates } from '../../services/helpers'
                 mainSectionLoading: false,
                 commentsNextPage: 1,
                 showEditClass: false,
+                showEditCourse: false,
+                showEditLesson: false,
+                showEditExtracurriculum: false,
                 //requests
                 showRequests: false,
                 actionRequests: '',
@@ -958,14 +1299,29 @@ import { dates } from '../../services/helpers'
                 showWardModal: false,
                 //youredu users
                 usersNextPage: 1,
+                usersLoading: false,
+                //youredu accounts
+                accountsNextPage: 1,
+                accountsLoading: false,
                 //youredu admins
                 adminsNextPage: 1,
+                adminsLoading: false,
+                activitiesAccount: null,
                 banType: '',
+                ban: null,
                 //small modal
+                showActivityModal: false,
                 showSmallModal: false,
                 smallModalMain: false,
+                smallModalLoading: false,
                 smallModalTitle: '',
                 smallModalData: null,
+                //items
+                itemType: '',
+                itemData: null,
+                //attachment
+                showAttachmentModal: false,
+                attachmentType: '',
             }
         },
         watch: {
@@ -978,6 +1334,7 @@ import { dates } from '../../services/helpers'
             },
             account(newValue,oldValue) {
                 if (newValue && newValue.account) {
+                    this.mainSection = ''
                     this.getAccountDetails(newValue)
                     if (newValue.account === 'school') {
                         this.schoolListen(newValue.accountId)
@@ -999,10 +1356,20 @@ import { dates } from '../../services/helpers'
             mainSectionData: {
                 deep: true,
                 handler(newValue,oldValue){
-                    if (newValue.type === 'class') {
+                    if (newValue && newValue.type === 'class') {
                         this.classListen(newValue.id)
-                    } else if (oldValue.type === 'class') {
-                        this.classUnlisten(newValue.id)
+                    } else if (oldValue && oldValue.type === 'class') {
+                        this.classUnlisten(oldValue.id)
+                    }
+                    if (newValue && newValue.type === 'school') {
+                        this.schoolListen(newValue.id)
+                    } else if (oldValue && oldValue.type === 'school') {
+                        this.schoolUnlisten(oldValue.id)
+                    }
+                    if (newValue && newValue.type === 'course') {
+                        this.courseListen(newValue.id)
+                    } else if (oldValue && oldValue.type === 'course') {
+                        this.courseUnlisten(oldValue.id)
                     }
                 }
             },
@@ -1010,7 +1377,7 @@ import { dates } from '../../services/helpers'
         computed: {
             ...mapGetters(['getUser','getProfiles','dashboard/getCurrentAccount',
                 'dashboard/getAccountDetails',"dashboard/getMainSectionComments",
-                'dashboard/getUsers','dashboard/getAdmins']),
+                'dashboard/getAdmins','dashboard/getAccounts']),
             computedUserName() {
                 return this.getUser ? this.getUser.username : '' 
             },
@@ -1104,33 +1471,40 @@ import { dates } from '../../services/helpers'
                 
             },
             computedSchools(){
-                
-            },
-            computedGrades(){
-                
-            },
-            computedClasses(){
-                if (this.computedAccountDetails && this.computedAccountDetails.account === 'school') {
-                    return this.computedAccountDetails.ownedClasses.map(item=>{
-                        let msg = ''
-                        if (item.maxLearners) {
-                            msg = `max learners: ${item.maxLearners}`
-                        }
-                        if (item.description.length) {
-                            msg = `description: ${item.description}`
-                        }
+                if (this.computedAccountDetails && 
+                    this.computedAccountDetails.account !== 'school') {
+                    return this.computedAccountDetails.schools.map(item=>{
                         return {
-                            sectionOne: item.name,
-                            sectionTwo: item.state,
-                            sectionThree: msg,
+                            sectionOne: item.company_name,
+                            sectionTwo: item.role,
+                            sectionThree: item.about ? item.about : '',
                             id: item.id,
                         }
                     })
                 }
                 return []
             },
-            computedSubjects(){
+            computedGrades(){
                 
+            },
+            computedClasses(){
+                let classes = []
+                if (this.computedAccountDetails && 
+                    this.computedAccountDetails.account === 'school') {
+                    classes = this.computedAccountDetails.ownedClasses
+                } else if (this.computedAccountDetails && 
+                    this.computedAccountDetails.account !== 'school' && 
+                    this.computedAccountDetails.account !== 'facilitator') {
+                    classes = this.computedAccountDetails.classes
+                } else if (this.computedAccountDetails && 
+                    this.computedAccountDetails.account === 'facilitator') {
+                    classes = this.computedAccountDetails.ownedClasses
+                    classes.push(...this.computedAccountDetails.classes)
+                }
+                return this.getDashboardItemBadgeClasses(classes)
+            },
+            computedSubjects(){
+                return this.computedAccountDetails.subjects
             },
             computedExtracurriculums(){
                 
@@ -1139,30 +1513,111 @@ import { dates } from '../../services/helpers'
                 
             },
             computedCourses(){
-                
+                if (this.computedAccountDetails && 
+                    this.computedAccountDetails.courses) {
+                    return this.computedAccountDetails.courses.map(item=>{
+                        return {
+                            sectionOne: item.name,
+                            sectionTwo: `lessons: ${item.lessons}`,
+                            sectionThree: item.description ? item.description : '',
+                            id: item.id,
+                        }
+                    })
+                }
+                return []
             },
             computedPrograms(){
 
+            },
+            //facilitator and professional
+            computedOwnedExtracurriculums(){
+                if (this.computedCurrentAccount.account === 'facilitator' ||
+                    this.computedCurrentAccount.account === 'professional') {
+                    return this.computedAccountDetails.extracurriculums
+                }
+                return null
+            },
+            computedOwnedClasses(){
+                if (this.computedCurrentAccount.account === 'facilitator' ||
+                    this.computedCurrentAccount.account === 'professional') {
+                    return this.computedAccountDetails.ownedClasses
+                }
+                return null
+            },
+            computedCurricula(){
+                if (this.computedAccountDetails.curriculum) this.computedAccountDetails.curriculum
+                return null
+            },
+            computedOwnedCourses(){
+                if (this.computedCurrentAccount.account === 'facilitator' ||
+                    this.computedCurrentAccount.account === 'professional') {
+                    return this.computedAccountDetails.ownedCourses
+                }
+                return null
+            },
+            computedCounselling(){
+                if (this.computedAccountDetails.counselling) this.computedAccountDetails.counselling
+                return null
+            },
+            computedSchedules(){
+                if (this.computedAccountDetails.schedules) this.computedAccountDetails.schedules
+                return null
             },
             //main section
             computedIdMainSection(){
                 return this.mainSectionData ? this.mainSectionData.id : null
             },
-            computedClassOwner(){
-                return this.mainSectionData && this.mainSectionData.ownedby ? 
-                    this.mainSectionData.ownedby : null
-            },
-            computedClassAdmin(){ //school admins and class owner (facilitator)
+            computedMainAdmin(){ //for course ...school admins and class owner (facilitator)
                 if (this.computedAccountDetails.account === 'facilitator') {
-                    return this.computedClassOwner
+                    return this.computedMainOwner
                 }
-                if (this.computedClassOwner) {
+                if (!this.computedMainOwner) {
                     return this.computedSchoolAdmin
                 }
                 return null
             },
-            computedClassFacilitator(){
-                if (this.computedClassOwner) {
+            computedMainProfessional(){
+                if (this.computedMainOwner && this.mainSectionData && 
+                    this.mainSectionData.professionals) {
+                    let index = this.mainSectionData.professionals.findIndex(professional=>{
+                        return professional.userId === this.getUser.id
+                    })
+                    if (index > -1) {
+                        return this.mainSectionData.professionals[index]
+                    }
+                }
+                return null
+            },
+            computedMainParent(){
+                if (this.computedMainOwner && this.mainSectionData && 
+                    this.mainSectionData.parents) {
+                    let index = this.mainSectionData.parents.findIndex(parent=>{
+                        return parent.userId === this.getUser.id
+                    })
+                    if (index > -1) {
+                        return this.mainSectionData.parents[index]
+                    }
+                }
+                return null
+            },
+            computedMainOwner(){ //for classes
+                return this.mainSectionData && this.mainSectionData && 
+                    this.mainSectionData.ownedby ? 
+                    this.mainSectionData.ownedby : this.computedCurrentAccount.owner ?
+                    this.computedCurrentAccount : null
+            },
+            computedMainAdmin(){ //school admins and class owner (facilitator)
+                if (this.computedAccountDetails.account === 'facilitator') {
+                    return this.computedMainOwner
+                }
+                if (this.computedMainOwner) {
+                    return this.computedSchoolAdmin
+                }
+                return null
+            },
+            computedMainFacilitator(){
+                if (this.computedMainOwner && this.mainSectionData && 
+                    this.mainSectionData.facilitators) {
                     let index = this.mainSectionData.facilitators.findIndex(facilitator=>{
                         return facilitator.userId === this.getUser.id
                     })
@@ -1172,8 +1627,9 @@ import { dates } from '../../services/helpers'
                 }
                 return null
             },
-            computedClassLearner(){
-                if (this.computedClassOwner) {
+            computedMainLearner(){
+                if (this.computedMainOwner && this.mainSectionData && 
+                    this.mainSectionData.learners) {
                     let index = this.mainSectionData.learners.findIndex(learner=>{
                         return learner.userId === this.getUser.id
                     })
@@ -1183,27 +1639,49 @@ import { dates } from '../../services/helpers'
                 }
                 return null
             },
-            computedMainSectionComments(){
-                return this['dashboard/getMainSectionComments']
+            computedSchoolAuthority() {
+                return this.computedCurrentMainAccount.hasOwnProperty('owner') ||
+                    this.computedCurrentMainAccount.hasOwnProperty('admin')
             },
-            computedCurrentClassAccount(){
-                return this.computedClassOwner ? {owner: true, account: this.computedClassOwner} :
-                    this.computedClassAdmin ? {admin: true, account: this.computedClassAdmin} :
-                    this.computedClassFacilitator ? {facilitator: true, account: this.computedClassFacilitator} :
-                    this.computedClassLearner ? {learner: true, account: this.computedClassLearner} : null
+            computedCurrentMainAccount(){
+                return this.computedMainOwner ? {owner: true, account: this.computedMainOwner} :
+                    this.computedMainAdmin ? {admin: true, account: this.computedMainAdmin} :
+                    this.computedMainFacilitator ? {facilitator: true, account: this.computedMainFacilitator} :
+                    this.computedMainProfessional ? {professional: true, account: this.computedMainProfessional} :
+                    this.computedMainLearner ? {learner: true, account: this.computedMainLearner} :
+                    this.computedMainParent ? {parent: true, account: this.computedMainParent} : null
             },
+            // computedCurrentSchoolAccount(){
+            //     return this.computedMainFacilitator ? {facilitator: true, account: this.computedMainFacilitator} :
+            //         this.computedMainFacilitator ? {facilitator: true, account: this.computedMainFacilitator} :
+            //         this.computedMainFacilitator ? {facilitator: true, account: this.computedMainFacilitator} :
+            //         this.computedMainLearner ? {learner: true, account: this.computedMainLearner} : 
+            //         this.computedMainProfessional ? {professional: true, account: this.computedMainProfessional} : null
+            // },
             computedAccount(){ //use this for dashboard main section
-                if (this.mainSection === 'class') {
-                    return this.computedCurrentClassAccount
+                if (this.mainSection === 'class' || this.mainSection === 'course' ||
+                    this.mainSection === 'extracurriculum' || this.mainSection === 'school') {
+                    return this.computedCurrentMainAccount
                 }
+                // else if (this.mainSection === 'school') {
+                //     return this.computedCurrentSchoolAccount
+                // }
                 return null
             },
             computedCurrentSectionAccount(){ // use this for comments, likes, etc
-                if (this.mainSection === 'class') {
-                    return this.computedCurrentClassAccount ?
-                        this.computedCurrentClassAccount.account : null
-                }
+                if (this.mainSection === 'class' || this.mainSection === 'course' ||
+                    this.mainSection === 'school' || this.mainSection === 'extracurriculum') {
+                    return this.computedCurrentMainAccount ?
+                        this.computedCurrentMainAccount.account : null
+                } 
+                // else if (this.mainSection === 'school') {
+                //     return this.computedCurrentSchoolAccount ?
+                //         this.computedCurrentSchoolAccount.account : null
+                // }
                 return null
+            },
+            computedMainSectionComments(){
+                return this['dashboard/getMainSectionComments']
             },
             //for youredu admin
             computedUsers(){
@@ -1212,6 +1690,9 @@ import { dates } from '../../services/helpers'
             computedAdmins(){
                 return this['dashboard/getAdmins']
             },
+            computedAccounts(){
+                return this['dashboard/getAccounts']
+            },
         },
         methods: {
             ...mapActions(['dashboard/getDashboardAccountDetails',
@@ -1219,10 +1700,39 @@ import { dates } from '../../services/helpers'
                 "dashboard/getSectionItemComments",'dashboard/newComment',
                 'dashboard/removeComment','dashboard/updateComment',
                 'dashboard/addClass','dashboard/updateClass','dashboard/removeClass',
-                'dashboard/fetchUsers','dashboard/fetchAdmins',
-                "dashboard/banUser"]),
+                'dashboard/fetchUsers','dashboard/fetchAdmins',"dashboard/fetchAccounts",
+                "dashboard/banUser",'dashboard/deleteAccountAttachments',
+                'dashboard/addAccountAttachments','dashboard/addCourse',
+                'dashboard/updateCourse','dashboard/removeCourse',
+                'dashboard/deleteClass','dashboard/deleteCourse',
+                ]),
             clickedHeaderDropdown() {
                 this.showHeaderDropdown = !this.showHeaderDropdown
+            },
+            getDashboardItemBadgeClasses(classes) {
+                let msg = ''
+                return classes.map(item=>{
+                    if (item.maxLearners) {
+                        msg = `max learners: ${item.maxLearners}`
+                    }
+                    if (item.description.length) {
+                        msg = `description: ${item.description}`
+                    }
+                    return {
+                        sectionOne: item.name,
+                        sectionTwo: item.state,
+                        sectionThree: msg,
+                        id: item.id,
+                    }
+                })
+            },
+            viewItem(data){
+                this.itemData = data
+                this.itemType = data.item
+            },
+            closeItemViewModals(){
+                this.itemType = ''
+                this.itemData = null
             },
             clickedDashboardActionButton(data){
                 console.log(data);
@@ -1230,41 +1740,152 @@ import { dates } from '../../services/helpers'
                     this.invitationType = data.text
                     this.showInvitationModal = true
                 } else if (data.buttonData) {
-                    if (data.buttonData.icon === 'pencil-alt') {
-                        this.$emit('accountModal',{
-                            account: data.buttonData.data,
-                            action: 'edit'
-                        })
-                    } else if (data.buttonData.icon === 'ban') {
+                    if (data.buttonData.text === 'ban') {
                         let name = data.buttonData.data.username ? 
                             data.buttonData.data.full_name : data.buttonData.data.name
                         this.smallModalTitle = `are you sure you want to ban ${name}?`
                         this.smallModalData = {type: 'ban' , data: data.buttonData.data}
                         this.showSmallModal = true
+                    } else if (data.buttonData.text === 'unban') {
+                        let name = data.buttonData.data.username ? 
+                            data.buttonData.data.full_name : data.buttonData.data.name
+                        this.smallModalTitle = `are you sure you want to unban ${name}?`
+                        this.smallModalData = {type: 'unban' , data: data.buttonData.data}
+                        this.showSmallModal = true
+                    }  else if (data.buttonData.text === 'activities') {
+                        this.activitiesAccount = data.buttonData.data
+                        this.showActivityModal = true
+                    } else if (data.type === 'grade'|| data.type === 'subject' ||
+                        data.type === 'course' || data.type === 'program') {
+                        this.smallModalTitle = `are you sure you want to unattach ${data.buttonData.data.data.name}?`
+                        this.smallModalData = {type: 'unattach' , data: data.buttonData.data}
+                        this.showSmallModal = true
+                    } else if (data.type === 'owned course') {
+                        if (data.buttonData.text === 'delete') {
+                            this.smallModalTitle = `are you sure you want to delete course with name: ${data.buttonData.data.name}?`
+                            this.smallModalData = {type: 'course' , data: data.buttonData.data, action: 'delete'}
+                            this.showSmallModal = true
+                        } else if (data.buttonData.text === 'undo delete') {
+                            this.smallModalTitle = `are you sure you want to undo deletion of course with name: ${data.buttonData.data.name}?`
+                            this.smallModalData = {type: 'course' , data: data.buttonData.data, action: 'undo'}
+                            this.showSmallModal = true
+                        } else if (data.buttonData.text === 'edit') {
+                            this.showEditCourse = true
+                            bus.$emit('editCourse', data.buttonData.data)
+                        } else if (data.buttonData.text === 'view') {
+                            this.mainSection = 'course'
+                            this.getMainSectionData(data.buttonData.data)
+                        }
+                    } else if (data.type === 'owned class') {
+                        if (data.buttonData.text === 'delete') {
+                            this.smallModalTitle = `are you sure you want to delete class with name: ${data.buttonData.data.name}?`
+                            this.smallModalData = {type: 'class' , data: data.buttonData.data, action: 'delete'}
+                            this.showSmallModal = true
+                        } else if (data.buttonData.text === 'undo delete') {
+                            this.smallModalTitle = `are you sure you want to undo deletion of class with name: ${data.buttonData.data.name}?`
+                            this.smallModalData = {type: 'class' , data: data.buttonData.data, action: 'undo'}
+                            this.showSmallModal = true
+                        } else if (data.buttonData.text === 'edit') {
+                            this.showEditClass = true
+                            bus.$emit('editClass', data.buttonData.data)
+                        } else if (data.buttonData.text === 'view') {
+                            this.mainSection = 'class'
+                            this.getMainSectionData(data.buttonData.data)
+                        }
+                    } else if (data.buttonData.icon === 'pencil-alt') {
+                        this.$emit('accountModal',{
+                            account: data.buttonData.data,
+                            action: 'edit'
+                        })
+                    } else if (data.buttonData.text === 'profile') {
+                        this.$router.push({
+                            name: 'profile', 
+                            params: {
+                                account: data.buttonData.data.account,
+                                accountId: data.buttonData.data.accountId
+                            }
+                        })
+                    } else if (data.buttonData.text === 'remove facilitator' ||
+                        data.buttonData.text === 'remove learner' || 
+                        data.buttonData.text === 'remove parent' ||
+                        data.buttonData.text === 'remove professional') {
+                        this.deleteAccountAttachments(data.buttonData.data)
                     }
+                } else if (data.text === 'add subject') {
+                    this.attachmentType = data.text.slice(4)
+                    this.showAttachmentModal = true
+                } else if (data.text === 'add class') {
+                    this.$emit('clickedPostButton',{type: this.type, data: 'create class'})
+                    bus.$emit('classOwnership')
+                } else if (data.text === 'add course') {
+                    this.$emit('clickedPostButton',{type: this.type, data: 'create course'})
+                    bus.$emit('courseOwnership') ///to set the ownership of the course
+                } else if (data.text === 'add lesson') {
+                    this.$emit('clickedPostButton',{type: this.type, data: 'create lesson'})
+                    bus.$emit('lessonOwnership')
+                } else if (data.text === 'add extracurriculum') {
+                    this.$emit('clickedPostButton',{type: this.type, data: 'create extracurriculum'})
+                    bus.$emit('extracurriculumOwnership')
+                }
+            },
+            attachmentSuccess(data){
+                console.log('data :>> ', data);
+                
+                this['dashboard/addAccountAttachments'](data)
+            },
+            closeModal(data){
+                if (data === 'activity') {
+                    this.showActivityModal = false
+                    this.activitiesAccount = null
+                } else if (data === 'attachment') {
+                    this.attachmentType = ''
+                    this.showAttachmentModal = false
                 }
             },
             //small modal
-            async clickedSmallModalButton(data){
+            clickedSmallModalButton(data){
                 console.log('data :>> ', data);
                 if (data === 'yes') {
                     if (this.smallModalData.type === 'ban') {
-                        this.smallModalMain = true
                         this.smallModalTitle = 'please select type of ban'
+                        this.smallModalMain = true
+                    } else if (this.smallModalData.type === 'unban') {
+                        this.smallModalTitle = 'please select the ban'
+                        this.smallModalMain = true
+                    } else if (this.smallModalData.type === 'unattach') {
+                        this.smallModalContinueProcess()
+                    } else if (this.smallModalData.type === 'class' || 
+                        this.smallModalData.type === 'course') {
+                        this.smallModalContinueProcess()
                     }
                 } else if (data === 'ok') {
-                    if (this.smallModalData.type === 'ban') {
-                        await this.banUser()
-                    }
+                    this.smallModalContinueProcess()
                 } else if (data === 'no') {
                     this.hideSmallModal()
                 }
+            },
+            async smallModalContinueProcess(){
+                this.smallModalTitle = ''
+                this.smallModalLoading = true
+                if (this.smallModalData.type === 'ban' ||
+                    this.smallModalData.type === 'unban') {
+                    await this.banUser()
+                } else if (this.smallModalData.type === 'unattach') {
+                    await this.deleteAccountAttachments()
+                } else if (this.smallModalData.type === 'class' || 
+                    this.smallModalData.type === 'course') {
+                    await this.deleteAccountItem(this.smallModalData)
+                }
+                this.smallModalLoading = false
+                this.hideSmallModal()
             },
             hideSmallModal(){
                 this.smallModalMain = false
                 this.smallModalData = null
                 this.showSmallModal = false
                 this.smallModalTitle = ''
+                this.ban = null
+                this.banType = ''
             },
             getReadableDate(date){
                 return dates.dateReadable(date)
@@ -1282,8 +1903,7 @@ import { dates } from '../../services/helpers'
                     })
                     .listen('.newClass',data=>{
                         console.log('data :>> ', data);
-                        let owner = this.computedCurrentAccount.account === data.class.ownedby &&
-                            this.computedCurrentAccount.accountId === data.class.ownedbyId
+                        let owner = this.checkOwnership(data.class)
                         this['dashboard/addClass']({
                             class: data.class,
                             owner
@@ -1291,10 +1911,9 @@ import { dates } from '../../services/helpers'
                     })
                     .listen('.updateClass',data=>{
                         console.log('data :>> ', data);
-                        let owner = this.computedCurrentAccount.account === data.class.ownedby &&
-                            this.computedCurrentAccount.accountId === data.class.ownedbyId
+                        let owner = this.checkOwnership(data.class)
                         if (this.mainSection === 'class' &&
-                            this.data.class.id === this.mainSectionData.id) {
+                            data.class.id === this.mainSectionData.id) {
                             this.mainSectionData = data.classResource
                         }
                         this['dashboard/updateClass']({
@@ -1304,10 +1923,9 @@ import { dates } from '../../services/helpers'
                     })
                     .listen('.deleteClass',data=>{
                         console.log('data :>> ', data);
-                        let owner = this.computedCurrentAccount.account === data.class.ownedby &&
-                            this.computedCurrentAccount.accountId === data.class.ownedbyId
+                        let owner = this.checkOwnership(data.class)
                         if (this.mainSection === 'class' &&
-                            this.data.class.id === this.mainSectionData.id) {
+                            data.class.id === this.mainSectionData.id) {
                             this.mainSection = ''
                             this.mainSectionData = null
                         }
@@ -1316,10 +1934,62 @@ import { dates } from '../../services/helpers'
                             owner
                         })
                     })
+                    .listen('.newCourse',data=>{
+                        console.log('data :>> ', data);
+                        let owner = this.checkOwnership(data.course)
+                        if (this.mainSection === 'school' && 
+                            data.course.ownedby.accountId === this.mainSectionData.id) {
+                            this.mainSectionData.courses.push(data.course)
+                        }
+                        this['dashboard/addCourse']({
+                            course: data.course,
+                            owner
+                        })
+                    })
+                    .listen('.updateCourse',data=>{
+                        console.log('data :>> ', data);
+                        let owner = this.checkOwnership(data.course)
+                        if (this.mainSection === 'school' && 
+                            data.course.ownedby.accountId === this.mainSectionData.id) {
+                            let index = this.mainSectionData.courses.findIndex(course=>{
+                                return course.id === data.course.id
+                            })
+                            if (index > -1) {
+                                this.mainSectionData.courses.splice(index,1,data.course)
+                            }
+                        }
+                        this['dashboard/updateCourse']({
+                            course: data.course,
+                            owner
+                        })
+                    })
+                    .listen('.deleteCourse',data=>{
+                        console.log('data :>> ', data);
+                        //todo
+                        let owner = this.checkOwnership(data.course)
+                        if (this.mainSection === 'school' && 
+                            data.course.ownedby.accountId === this.mainSectionData.id) {
+                            let index = this.mainSectionData.courses.findIndex(course=>{
+                                return course.id == data.courseId
+                            })
+                            if (index > -1) {
+                                this.mainSectionData.courses.splice(index,1)
+                            }
+                        }
+                        this['dashboard/removeCourse']({
+                            course: data.courseId,
+                            owner
+                        })
+                    })
+            },
+            checkOwnership(data) {    //data is class or course              
+                return this.computedCurrentAccount.account === data.ownedby &&
+                    this.computedCurrentAccount.accountId === data.ownedbyId
             },
             schoolUnlisten(schoolId){
                 Echo.leaveChannel(`youredu.school.${schoolId}`)
             },
+            //listen to a class
             classListen(classId){
                 Echo.private(`youredu.class.${classId}`)
                     .listen('.newComment',comment=>{
@@ -1351,15 +2021,116 @@ import { dates } from '../../services/helpers'
                             owner: false
                         })
                     })
+                    .listen('.newCourse',data=>{
+                        console.log('data :>> ', data);
+                        if (this.mainSection === 'class') {
+                            this.mainSectionData.courses.push(data.course)
+                        }
+                    })
+                    .listen('.updateCourse',data=>{
+                        console.log('data :>> ', data);
+                        if (this.mainSection === 'class') {
+                            let index = this.mainSectionData.courses.findIndex(course=>{
+                                return course.id === data.course.id
+                            })
+                            if (index > -1) {
+                                this.mainSectionData.courses.splice(index,1,data.course)
+                            }
+                        }
+                    })
+                    .listen('.deleteCourse',data=>{
+                        console.log('data :>> ', data);
+                        if (this.mainSection === 'class') {
+                            let index = this.mainSectionData.courses.findIndex(course=>{
+                                return course.id === data.courseId
+                            })
+                            if (index > -1) {
+                                this.mainSectionData.courses.splice(index,1)
+                            }
+                        }
+                    })
             },
             classUnlisten(classId){
                 Echo.leaveChannel(`youredu.class.${classId}`)
+            },
+            //listen to a course
+            courseListen(courseId){
+                Echo.private(`youredu.course.${courseId}`)
+                    .listen('.newComment',comment=>{
+                        console.log('comment :>> ', comment);
+                        this['dashboard/newComment'](comment)
+                    })
+                    .listen('.deleteComment',comment=>{
+                        console.log('comment :>> ', comment);
+                        this['dashboard/removeComment'](comment)
+                    })
+                    .listen('.updateComment',comment=>{
+                        console.log('comment :>> ', comment);
+                        this['dashboard/updateComment'](comment)
+                    })
+                    .listen('.updateCourse',data=>{
+                        console.log('data :>> ', data);
+                        //todo
+                    })
+                    .listen('.deleteCourse',data=>{
+                        console.log('data :>> ', data);
+                        //todo
+                    })
+            },
+            courseUnlisten(courseId){
+                Echo.leaveChannel(`youredu.course.${courseId}`)
+            },
+            async deleteAccountItem(item) {
+                console.log('item :>> ', item);
+                let response,
+                    data = {action: item.action}
+
+                if (this.computedSchoolAdmin) {
+                    data.adminId = this.computedSchoolAdmin.id
+                }
+                if (item.type === 'class') {
+                    data.classId = item.data.id
+                    response = await this['dashboard/deleteClass'](data)
+                } else if (item.type === 'course') {
+                    data.courseId = item.data.id
+                    response = await this['dashboard/deleteCourse'](data)
+                } else if (item.type === 'extracurriculum') {
+                    data.extracurriculumId = item.data.id
+                    response = await this['dashboard/deleteExtracurriculum'](data)
+                } else if (item.type === 'lesson') {
+                    data.lessonId = item.data.id
+                    response = await this['dashboard/deleteLesson'](data)
+                }
+
+                if (response.status) {
+                    
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            async unattachAccount(account) {
+                let response,
+                    data = {
+                        account: account.account,
+                        accountId: account.accountId
+                    }
+
+                response = await this['dashboard/unattachAccount'](data)
+                if (response.status) {
+                    
+                } else {
+                    console.log('response :>> ', response);
+                }
             },
             clickedDashboardItem(data){
                 if (data.heading === 'classes') {
                     this.mainSection = 'class'
                 } else if (data.heading === 'learners') {
-                    
+                    this.mainSection = 'learner'
+                } else if (data.heading === 'schools') {
+                    this.mainSection = 'school'
+                } else if (data.heading === 'courses') {
+                    this.mainSection = 'course'
                 }
                 this.getMainSectionData(data.data)
             },
@@ -1382,8 +2153,47 @@ import { dates } from '../../services/helpers'
             classSuccessfullyEdited(classResource){
                 this.mainSectionData = classResource
             },
+            courseSuccessfullyEdited(courseResource){
+                this.mainSectionData = courseResource
+            },
+            lessonSuccessfullyEdited(lessonResource){
+                this.mainSectionData = lessonResource
+            },
+            extracurriculumSuccessfullyEdited(extracurriculumResource){
+                this.mainSectionData = extracurriculumResource
+            },
             clickedEditClass(){
                 this.showEditClass = true
+            },
+            async deleteAccountAttachments(item) { //for removing attachments like grade, subject
+                let response,
+                    data = {
+                        account: this.mainSectionData ? this.mainSection :
+                            this.computedCurrentAccount.account,
+                        accountId: this.mainSectionData ? this.mainSectionData.id :
+                            this.computedCurrentAccount.accountId,
+                        item: item ? item.account : this.smallModalData.data.type
+                            .slice(0,this.smallModalData.data.type.length - 1),
+                        itemId: item ? item.accountId : this.smallModalData.data.data.id,
+                        mainSection: this.mainSectionData ? true : false
+                    }
+
+                response = await this['dashboard/deleteAccountAttachments'](data)
+
+                if (response.status) {
+                    if (data.mainSection) {
+                        let index = this.mainSectionData[this.smallModalData.data.type].findIndex(item=>{
+                            if (item.data) {                                
+                                return item.data.id === this.smallModalData.data.data.id
+                            }
+                        })
+                        if (index > -1) {
+                            this.mainSectionData[this.smallModalData.data.type].splice(index,1)
+                        }
+                    }
+                } else {
+                    console.log('response :>> ', response);
+                }
             },
             //main section
             async getMainSectionData(item){
@@ -1511,9 +2321,54 @@ import { dates } from '../../services/helpers'
                     this.usersNextPage += 1
                 }
             },
-            //users for superadmin and supervisoradmin
+            //accounts for superadmin and supervisoradmin
+            async getAccountsForAdmin(){
+                let data = await this.getAccounts()
+
+                if (data.hasOwnProperty('next') && !data.next) {
+                    this.accountsNextPage = null
+                } else if (data.hasOwnProperty('next')) {
+                    this.accountsNextPage += 1
+                }
+            },
+            async getAccounts(){
+                let response,
+                    data = {
+                        account: this.account.account,
+                        accountId: this.account.accountId,
+                        nextPage: this.accountsNextPage
+                    }
+                this.usersLoading = true
+
+                response = await this["dashboard/fetchAccounts"](data)
+
+                this.usersLoading = false
+                if (response.status) {
+                    return {next: response.next}
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
+            async accountsInfiniteLoader($state){
+                if (this.accountsNextPage === null) {
+                    $state.complete()
+                    return
+                }
+
+                let data = await this.getAccounts()
+
+                if (data.hasOwnProperty('next') && !data.next) {
+                    this.accountsNextPage = null
+                } else if (data.hasOwnProperty('next')) {
+                    this.accountsNextPage += 1
+                }
+            },
+            //admins for superadmin
             banTypeSelection(data){
                 this.banType = data
+            },
+            banSelection(data){
+                this.ban = data
             },
             async getAdminsForAdmin(){
                 let data = await this.getAdmins()
@@ -1531,9 +2386,11 @@ import { dates } from '../../services/helpers'
                         accountId: this.account.accountId,
                         nextPage: this.adminsNextPage
                     }
+                this.adminsLoading = true
 
                 response = await this["dashboard/fetchAdmins"](data)
 
+                this.adminsLoading = false
                 if (response.status) {
                     return {next: response.next}
                 } else {
@@ -1555,20 +2412,30 @@ import { dates } from '../../services/helpers'
                 }
             },
             async banUser(){
-                if (!this.banType.length) {
+                if (this.smallModalData.type === 'ban' && !this.banType.length) {
                     this.smallModalTitle = 'please select a type before continuing'
+                    return
+                } else if (this.smallModalData.type === 'unban' && !this.ban) {
+                    this.smallModalTitle = 'please select a ban before continuing'
                     return
                 }
                 let response,
                     data = {
                         action: this.smallModalData.type,
+                        adminId: this.computedCurrentAccount.accountId,
                         account: this.smallModalData.data.username ? 'user' : 
                             this.smallModalData.data.account,
-                        accountId: this.smallModalData.data.id,
-                        adminId: this.computedCurrentAccount.accountId,
-                        state: 'served',
-                        type: this.banType,
+                        accountId: this.smallModalData.data.username ? 
+                            this.smallModalData.data.id : 
+                            this.smallModalData.data.accountId,
                     }
+
+                if (this.smallModalData.type === 'ban') {
+                    data.state = 'served'
+                    data.type = this.banType
+                } else if (this.smallModalData.type === 'unban') {
+                    data.banId = this.ban.id
+                }
 
                 response = await this["dashboard/banUser"](data)
 
@@ -1636,10 +2503,9 @@ import { dates } from '../../services/helpers'
                     if (this.account.account === 'admin') {
                         this.getUsersForAdmin()
                         if (this.computedAccountDetails.role === 'SUPERADMIN') {
-                            setTimeout(() => {                                
-                                this.getAdminsForAdmin()
-                            }, 1000);
+                            this.getAdminsForAdmin()
                         }
+                        this.getAccountsForAdmin()
                     }
                 } else {
                     console.log('response :>> ', response);
@@ -1653,24 +2519,25 @@ import { dates } from '../../services/helpers'
 </script>
 
 <style lang="scss" scoped>
-$color-main: rgba(127,255,212,1.0);
-$background-color-main: whitesmoke;
-$background-color-other: rgb(99,236,218);
+$background-main: whitesmoke;
 $background-color-section: white;
-
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    width: 100%;
-    white-space: nowrap;
-}
 
     .dashboard-section{
         width: 100%;
         height: 100vh;
         padding: 0 0 0 50px;
         transition: all 1s ease-in-out;
-        background: $background-color-main;
+        background: $background-main;
+
+        .no-ward{
+            width: 100%;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            color: gray;
+        }
 
         .small-modal{
 
@@ -1695,7 +2562,7 @@ $background-color-section: white;
             position: sticky;
             top: 0;
             z-index: 1;
-            background: $background-color-other;
+            background: $background-color-main;
 
             .youredu{
 
@@ -1902,12 +2769,15 @@ $background-color-section: white;
             }
 
             .account-info{
-                padding: 5px;
+                padding: 5px 0 50px;
 
                 .top{
-                    display: inline-flex;
+                    display: flex;
                     align-items: flex-start;
                     width: 100%;
+                    padding: 10px;
+                    max-width: 600px;
+                    margin: 0 auto;
 
                     .profile-picture{
                         max-width: 60px;
@@ -1981,16 +2851,6 @@ $background-color-section: white;
                                 }
                             }
 
-                            .no-ward{
-                                width: 100%;
-                                height: 100px;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                font-size: 12px;
-                                color: gray;
-                            }
-
                             .dashboard-section-account{
                                 margin: 0 0 10px;
                             }
@@ -2037,7 +2897,9 @@ $background-color-section: white;
                     color: gray;
                     cursor: pointer;
                     position: absolute;
-                    right: 20px;
+                    right: 10px;
+                    z-index: 1;
+                    padding: 0 10px 10px;
                 }
 
                 .comments-section{
@@ -2062,7 +2924,7 @@ $background-color-section: white;
             bottom: 0;
             padding: 10px;
             width: 100%;
-            background: $background-color-other;
+            background: $background-color-main;
         }
     }
 

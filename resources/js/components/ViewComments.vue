@@ -4,12 +4,18 @@
             <view-modal
                 @mainModalDisappear="viewModalDisappear"
                 @mainModalAppear="viewModalAppear"
-                infinite-wrapper
+                class="view-modal"
             >
                 <template slot="main">
-                    <div class="main-comment" v-if="comment">
+                    <div class="main-comment" v-if="computedComment && !dataLoading">
+                        <answer-single
+                            v-if="item && item.type === 'answer'"
+                            :answer="item"
+                            :disabled="item ? true : false"
+                        ></answer-single>
                         <comment-single
-                            :comment="comment"
+                            :comment="computedComment"
+                            :disabled="item ? true : false"
                             :showCommentNumber="false"
                             @commentDeleteSuccess="commentViewDeleteSuccess"
                             @postModalCommentEdited="postModalCommentEdited"
@@ -19,15 +25,16 @@
                             @commentSaveSuccessful="commentSaveSuccessful"
                         ></comment-single>
                     </div>
-                    <div class="main-comment" v-if="!comment">
-                        waiting...
+                    <div class="main-comment" v-else>
+                        <pulse-loader :loading="dataLoading"></pulse-loader>
                     </div>
                     <div class="view-comments">
-                        <template v-if="computedComments">
+                        <template v-if="computedComments" infinite-wrapper>
                             <div class="comment">
                                 <comment-single
                                     :key="key" v-for="(comment, key) in comments"
                                     :comment="comment"
+                                    :disabled="item ? true : false"
                                     @postModalCommentEdited="postModalCommentEdited"
                                     @viewModalCommentEditedMain="viewModalCommentEditedMain"
                                     @commentDeleteSuccess="commentViewDeleteSuccess"
@@ -43,6 +50,11 @@
                                 ></comment-single>
                             </div>
                         </template>
+                        <infinite-loader
+                            @infinite="infiniteHandler"
+                            v-if="nextPage === null || nextPage > 0"
+                            force-use-infinite-wrapper
+                        ></infinite-loader>
                     </div>
                     <fade-up>
                         <template slot="transition" v-if="showLoginRegister">
@@ -58,11 +70,6 @@
                             </small-modal>
                         </template>
                     </fade-up>
-                    <infinite-loader
-                        @infinite="infiniteHandler"
-                        v-if="computedComments"
-                        force-use-infinite-wrapper
-                    ></infinite-loader>
                 </template>
             </view-modal>
         </template>
@@ -72,11 +79,15 @@
 <script>
 import ViewModal from '../components/ViewModal';
 import InfiniteLoader from 'vue-infinite-loading';
+import PulseLoader from 'vue-spinner/src/PulseLoader';
 import FadeUp from '../components/transitions/FadeUp';
+import AnswerSingle from '../components/AnswerSingle';
 import { mapGetters, mapActions } from 'vuex';
     export default {
         components: {
+            AnswerSingle,
             FadeUp,
+            PulseLoader,
             InfiniteLoader,
             ViewModal,
         },
@@ -89,14 +100,20 @@ import { mapGetters, mapActions } from 'vuex';
             },
             show: {
                 type: Boolean,
-                default: false
+                default: true
+            },
+            itemData: {
+                type: Object,
+                default: null,
             },
         },
         data() {
             return {
-                nextPage: 1,
+                nextPage: 0,
                 comments: [],
                 showLoginRegister: false,
+                item: null,
+                dataLoading: false,
             }
         },
         watch: {
@@ -109,23 +126,80 @@ import { mapGetters, mapActions } from 'vuex';
             show: {
                 immediate: true,
                 handler(newValue){
-
+                    if (this.itemData) {
+                        this.getComment()
+                    } else {
+                        this.dataLoading = true
+                    }
                 },
-            }
+            },
+            item: {
+                immediate: true,
+                handler(newValue){
+                    if (newValue !==  null) {
+                        this.listen()
+                        this.getComments()
+                    }
+                }
+            },
+        },
+        beforeRouteEnter(to, from, next) {
+            next(vm => {
+                console.log(to);
+                if (to.name === 'comment') {
+                    vm.getComment()
+                } else if (to.name === 'answer') {
+                    vm.getComment()
+                }
+            });
         },
         computed: {
-            ...mapGetters(['profile/getStateComments','profile/getCommentNextPage']),
+            ...mapGetters(['profile/getStateComments','profile/getCommentNextPage','getUser']),
             computedComments() {
                 if (this['profile/getStateComments']) {
                     // this.comments.push(...this['profile/getStateComments'])
                 }
                 return true
-
-            }
+            },
+            computedComment(){
+                return this.comment.body ? this.comment : this.item ? this.item : null
+            },
         },
         methods: {
             ...mapActions(['profile/getComments','profile/clearComments',
-                'profile/getCommentsDone','profile/getComment']),
+                'profile/getCommentsDone','profile/getComment','dashboard/fetchItem',]),
+            listen(){
+
+            },
+            async getComment(){ //also for answer
+                let item,
+                    itemId,
+                    response
+                if (!this.itemData) {
+                    item = this.$route.name
+                    itemId = this.$route.params.itemId
+                } else {
+                    item = this.itemData.item
+                    itemId = this.itemData.itemId
+                }
+
+                this.dataLoading = true
+                if (!this.getUser) {
+                    setTimeout(() => {
+                        this.getComment()
+                    }, 1000);
+                    return
+                }
+
+                response = await this['dashboard/fetchItem']({item,itemId})
+
+                this.dataLoading = false
+                if (response.status) {
+                    this.item = response.item
+                } else {
+                    console.log('response :>> ', response);
+                }
+            },
             viewModalDisappear(){
                 this.$emit('viewModalDisappear')
             },
@@ -261,7 +335,9 @@ import { mapGetters, mapActions } from 'vuex';
             viewModalAppear(){
                 this.comments = []
                 this['profile/clearComments']()
-                this.getComments()
+                if (this.comment.id) {
+                    this.getComments()
+                }
             },
             askLoginRegister(){
                 this.showLoginRegister = true
@@ -270,13 +346,16 @@ import { mapGetters, mapActions } from 'vuex';
                 }, 4000);
             }, 
             async getComments(){
-                // console.log('get comments',this.nextPage)
+                console.log('get comments')
                 this['profile/clearComments']()
                 let data = {
-                    item : 'comment',
-                    itemId : this.comment.id,
+                    item : this.item ? this.item.type : 'comment',
+                    itemId : this.comment.id ? this.comment.id : 
+                        this.item ? this.item.id : null,
                     nextPage: this.nextPage
                 }
+                
+                if (!data.itemId) return
                 let response = await this['profile/getComments'](data)
 
                 // console.log('get comments',response)
@@ -284,16 +363,19 @@ import { mapGetters, mapActions } from 'vuex';
                 if (response.status !== null) {
                     this.nextPage += 1
                 } else {
-                    this.nextPage = 0
+                    this.nextPage = null
                 }
             },
             async infiniteHandler($state) {
                 if (this.nextPage) {
                     let data = {
                         item : 'comment',
-                        itemId : this.comment.id,
+                        itemId : this.comment.id ? this.comment.id : 
+                            this.item ? this.item.id : null,
                         nextPage: this.nextPage
                     }
+                    
+                    if (!data.itemId) return
                     let response = await this['profile/getComments'](data)
                     if (response.currentPage !== 1) {
                         this.comments.push(...response.data.data)
@@ -302,7 +384,7 @@ import { mapGetters, mapActions } from 'vuex';
                         this.nextPage += 1
                         $state.loaded()
                     } else {
-                        this.nextPage = 0
+                        this.nextPage = null
                         $state.complete()
                     }
                 }  else {
@@ -315,6 +397,10 @@ import { mapGetters, mapActions } from 'vuex';
 
 <style lang="scss" scoped>
 
+    .view-modal{
+        overflow: hidden;
+    }
+
     .main-comment{
         width: 100%;
         margin: 0 auto 10px;
@@ -323,8 +409,11 @@ import { mapGetters, mapActions } from 'vuex';
     }
 
     .view-comments{
-        width: 80%;
+        width: 90%;
         margin: 0 auto 10px;
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 5px 10px 20px;
 
         .comment{
             width: 100%;
@@ -337,9 +426,13 @@ import { mapGetters, mapActions } from 'vuex';
     
     .main-comment{
         margin: 10px auto 10px;
+        text-align: center;
+        width: 100%;
     }
 
     .view-comments{
+        overflow-y: auto;
+        height: 370px;
 
         .comment{
             margin-top: 0;

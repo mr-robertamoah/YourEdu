@@ -278,6 +278,10 @@ import { mapGetters, mapActions } from 'vuex'
                 typpe: Boolean,
                 default: false
             },
+            disabled: { 
+                typpe: Boolean,
+                default: false
+            },
             simple: { 
                 typpe: Boolean,
                 default: false
@@ -431,13 +435,16 @@ import { mapGetters, mapActions } from 'vuex'
                 return this.comment ? dates.createdAt(this.comment.created_at) : '' 
             },
             computedImageUrl() {
-                return this.comment && this.comment.images ? this.comment.images[0].url : ''
+                return this.comment && this.comment.images && this.comment.images.length ? 
+                    this.comment.images[0].url : ''
             },
             computedAudioUrl() {
-                return this.comment && this.comment.audios ? this.comment.audios[0].url : ''
+                return this.comment && this.comment.audios && this.comment.audios.length ? 
+                    this.comment.audios[0].url : ''
             },
             computedVideoUrl() {
-                return this.comment && this.comment.videos ? this.comment.videos[0].url : ''
+                return this.comment && this.comment.videos && this.comment.videos.length ? 
+                    this.comment.videos[0].url : ''
             },
             computedBody() {
                 return this.comment && this.comment.hasOwnProperty('body') ? 
@@ -650,6 +657,9 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showFlagReason = false
             },      
             clickedFlag(){
+                if (this.disabled) {
+                    return
+                }
                 if (this.isFlagged) {
                     this.flag(null)
                     return
@@ -776,6 +786,9 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showViewComments = false
             },
             clickedShowOptions(){
+                if (this.disabled) {
+                    return
+                }
                 this.showAddComment = false
                 this.showOptions = !this.showOptions
             },
@@ -838,6 +851,9 @@ import { mapGetters, mapActions } from 'vuex'
                 }, 3000);
             },
             async clickedLike(){
+                if (this.disabled) {
+                    return
+                }
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','commentSingle')
                 } else if (!this.getProfiles.length) {
@@ -885,6 +901,9 @@ import { mapGetters, mapActions } from 'vuex'
                 }
             },
             clickedAddComment(){
+                if (this.disabled) {
+                    return
+                }
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','commentSingle')
                 } else if (!this.getProfiles.length) {
@@ -972,12 +991,6 @@ import { mapGetters, mapActions } from 'vuex'
 $profile-picture-width: 40px;
 $comment-font-size: 13px;
 
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
     .loading{
         width: 100%;
         text-align: center;
@@ -1036,6 +1049,7 @@ $comment-font-size: 13px;
                 max-width: 40%;
                 color: rgba(128, 128, 128, 0.9);
                 font-size: 11px;
+                text-align: end;
             }
         }
 

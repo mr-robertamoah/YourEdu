@@ -15,10 +15,11 @@ class CreateExtracurriculumsTable extends Migration
     {
         Schema::create('extracurriculums', function (Blueprint $table) {
             $table->id();
+            $table->morphs('addedby'); // facilitator school professional
+            $table->morphs('ownedby'); // facilitator school professional
             $table->string('name');
             $table->string('description')->nullable();
-            $table->morphs('addedby'); // facilitator school professional
-            $table->morphs('extrable'); // facilitator collaboration professional
+            $table->enum('state',['PENDING','DECLINED','ACCEPTED','DELETED'])->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

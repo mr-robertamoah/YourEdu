@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\ProgramException;
+use Illuminate\Support\Str;
 
 class ProgramService
 {
@@ -59,5 +60,25 @@ class ProgramService
         $program->delete();
 
         return 'successful';
+    }
+
+    public static function programAttachItem($programId,$item,$activity)
+    {
+        if (is_null(
+            $item->programs->where('id',$programId)->first()
+        )) {
+            $item->programs()->attach($programId,['activity' => Str::upper($activity)]);
+            $item->save();
+        }
+    }
+
+    public static function programUnattachItem($programId,$item)
+    {
+        if (!is_null(
+            $item->programs->where('id',$programId)->first()
+        )) {
+            $item->programs()->detach($programId);
+            $item->save();
+        }
     }
 }

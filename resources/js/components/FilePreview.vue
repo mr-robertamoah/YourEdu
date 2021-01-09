@@ -169,7 +169,6 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
 </script>
 
 <style lang="scss" scoped>
-$input-color: rgba(22, 233, 205, 1);
 
     .file-preview-wrapper{
         width: 100%;
@@ -216,7 +215,7 @@ $input-color: rgba(22, 233, 205, 1);
             justify-content: center;
             align-items: center;
             margin-left: auto;
-            background-color: $input-color;
+            background-color: $background-color-main;
 
             .inner-circle{
                 width: 130px;

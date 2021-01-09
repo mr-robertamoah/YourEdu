@@ -17,6 +17,8 @@ class CreateProgrammablesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('program_id');
             $table->nullableMorphs('programmable'); //learner facilitator professional school
+            $table->boolean('resource')->default(false);
+            $table->enum('activity',['FACILITATE','TAKE','OFFER','FOR'])->nullable(); //for means courses are for that program
             $table->timestamps();
 
 

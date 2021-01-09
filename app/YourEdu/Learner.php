@@ -58,7 +58,7 @@ class Learner extends Model
     }
 
     public function likings(){
-        return $this->morphOne(Like::class,'likedby');
+        return $this->morphMany(Like::class,'likedby');
     }
 
     public function user(){
@@ -110,6 +110,11 @@ class Learner extends Model
         return $this->morphMany(Answer::class,'answeredby');
     }
 
+    public function grades(){
+        return $this->morphToMany(Grade::class,'gradeable','gradeables')
+            ->withTimestamps();
+    }
+
     public function savesMade()
     {
        return $this->morphMany(Save::class,'savedby');
@@ -140,6 +145,12 @@ class Learner extends Model
         return $this->morphMany(PostAttachment::class,'attachedby');
     }
 
+    public function extracurriculums()
+    {
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
+            ->withPivot(['resource','activity'])->withTimestamps();
+    }
+
     public function aliasesAdded()
     {
         return $this->morphMany(Alias::class,'addedby');
@@ -147,7 +158,8 @@ class Learner extends Model
 
     public function programs()
     {
-        return $this->morphToMany(Program::class,'programmable','programmables');
+        return $this->morphToMany(Program::class,'programmable','programmables')
+            ->withTimestamps();
     }
 
     public function curricula()
@@ -162,13 +174,13 @@ class Learner extends Model
     public function courses()
     {
         return $this->morphToMany(Course::class,'coursable','coursables')
-            ->withPivot(['activity']);
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function subjects()
     {
         return $this->morphToMany(subject::class,'subjectable','subjectables')
-            ->withPivot(['activity']);
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function admissions()

@@ -1166,14 +1166,6 @@ import { dates } from '../../services/helpers'
 </script>
 
 <style lang="scss" scoped>
-$background-color-main: rgb(22,233,205);
-
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-    width: 100%;
-}
 
     .welcome-form{
         position: relative;

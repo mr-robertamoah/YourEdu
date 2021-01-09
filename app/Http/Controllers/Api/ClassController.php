@@ -16,12 +16,26 @@ class ClassController extends Controller
     {
         try {
             DB::beginTransaction();
-            $class = (new ClassService())->createCLass($request->account,$request->accountId,
-                auth()->id(),$request->owner,$request->ownerId,
-                $request->name,$request->description,$request->gradeId,
-                json_decode($request->facilitate),json_decode($request->maxLearners),
-                $request->type,json_decode($request->paymentData),
-                $request->feeable,$request->feeableId,$request->structure);
+            $class = (new ClassService())->createCLass(
+                $request->account,
+                $request->accountId,
+                auth()->id(),
+                [
+                    'owner' => $request->owner,
+                    'ownerId' => $request->ownerId,
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'gradeId' => $request->gradeId,
+                    'facilitate' => json_decode($request->facilitate),
+                    'maxLearners' => json_decode($request->maxLearners),
+                    'type' => $request->type,
+                    'paymentData' => json_decode($request->paymentData),
+                    'discussionData' => json_decode($request->discussionData),
+                    'discussionFiles' => $request->file('discussionFile'),
+                    'feeable' => $request->feeable,
+                    'feeableId' => $request->feeableId,
+                    'structure' => $request->structure,
+                ]);
 
             DB::commit();
             return response()->json([
@@ -44,14 +58,17 @@ class ClassController extends Controller
         try {
             DB::beginTransaction();
             $class = (new ClassService())->updateCLass(
+                $request->account,
+                $request->accountId,
                 $request->classId,
                 auth()->id(),
-                $request->name,
-                $request->description,
-                $request->state,
-                $request->maxLearners, //adminId,gradeId
+                [
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'state' => $request->state,
+                    'maxLearners' => $request->maxLearners, 
+                ],
                 $request->gradeId,
-                $request->adminId,
             );
 
             DB::commit();
@@ -73,7 +90,8 @@ class ClassController extends Controller
             (new ClassService())->deleteCLass(
                 $request->classId,
                 auth()->id(),
-                $request->adminId
+                $request->adminId,
+                $request->action,
             );
 
             DB::commit();

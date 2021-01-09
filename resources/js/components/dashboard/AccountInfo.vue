@@ -58,13 +58,6 @@ import ProfilePicture from '../profile/ProfilePicture';
 
 <style lang="scss" scoped>
 
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    width: 100%;
-    white-space: nowrap;
-}
-
     .account-info-wrapper{
         display: inline-flex;
         width: 100%;

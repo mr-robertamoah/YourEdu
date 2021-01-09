@@ -117,7 +117,6 @@ $modal-margin-height: (100vh - $modal-height)/2;
         height: 100vh;
         padding: auto;
         z-index: 10000;
-        // overflow: scroll;
 
         .main-modal{
             background-color: $modal-background;
@@ -130,9 +129,11 @@ $modal-margin-height: (100vh - $modal-height)/2;
             box-shadow: 1px 1px 1px rgba(105, 105, 105,.6), 
                 -1px -1px 1px rgba(105, 105, 105,.6);
             position: relative;
+            overflow: auto;
 
             .loading{
-                margin: 20px 0 0;
+                position: sticky;
+                top: 10px;
                 width: 100%;
                 text-align: center;
             }
@@ -192,7 +193,7 @@ $modal-margin-height: (100vh - $modal-height)/2;
             }
 
             .main{
-                padding: 30px 10px 10px;
+                padding: 0px 10px 10px;
 
                 .other{
                     text-align: center;
@@ -206,6 +207,24 @@ $modal-margin-height: (100vh - $modal-height)/2;
                         font-size: 14px;
                         background: azure;
                         cursor: pointer;
+
+                        .main{
+
+                        }
+                        
+                        .due{
+                            
+                        }
+                        
+                        .info{
+                            font-size: 12px;
+                            text-transform: lowercase;
+                            color: gray;
+                        }
+                    }
+
+                    .item.selected{
+                        background: aquamarine;
                     }
                 }
             }

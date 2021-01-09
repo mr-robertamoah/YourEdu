@@ -14,6 +14,22 @@ class DashboardCourseResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'state' => $this->state,
+            'programs' => DashboardAttachmentResource::collection($this->programs),
+            'courses' => DashboardAttachmentResource::collection($this->courses),
+            'grades' => DashboardAttachmentResource::collection($this->grades),
+            'description' => $this->description,
+            'prices' => PaymentTypeResource::collection($this->prices),
+            'subscriptions' => PaymentTypeResource::collection($this->subscriptions),
+            'ownedby' => new UserAccountResource($this->ownedby),
+            'addedby' => new UserAccountResource($this->addedby),
+            'facilitators' => UserAccountResource::collection($this->facilitators),
+            'professionals' => UserAccountResource::collection($this->professionals),
+            'learners' => UserAccountResource::collection($this->learners),
+            'lessons' => $this->lessons->count(),
+        ];
     }
 }

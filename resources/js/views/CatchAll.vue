@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="message">
-            {{message}}
+            {{computedMessage}}
         </div>
     </div>
 </template>
@@ -15,9 +15,17 @@
         },
         beforeRouteEnter(to, from, next) {
             next(vm => {
-                vm.message = to.params.message
-                // console.log('catchall', to)
+                if (to.params.message) {
+                    
+                    vm.message = to.params.message
+                }
             });
+        },
+        computed: {
+            computedMessage() {
+                return this.message.length ? this.message : this.$route.name === 'item'
+                    ? `${this.$route.params.item} does not exist` : ''
+            }
         },
     }
 </script>

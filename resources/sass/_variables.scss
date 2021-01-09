@@ -19,6 +19,30 @@ $teal: #4dc0b5;
 $cyan: #6cb2eb;
 
 
-///for login and registration
-$sectionOtherBackground: rgba(22, 233, 205, 0.233);
-$sectionMainBackground: rgba(22, 233, 205, 0.65);
+//colors
+$background-color-other: rgba(22, 233, 205, 0.233);
+$background-color-main-light: rgba(22, 233, 205, 0.65);
+$background-color-main: rgb(22,233,205);
+$dashboard-section-second-background-color:whitesmoke;
+
+//mixinx
+@mixin text-overflow() {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 100%;
+    white-space: nowrap;
+}
+
+@mixin sticky-loader() {
+    position: sticky;
+    width: 100%;
+    text-align: center;
+    top: 10px;
+    z-index: 1;
+}
+
+@mixin form-section() {
+    font-size: 12px;
+    font-weight: 500;
+    border-bottom: 1px solid gray;
+}

@@ -7,41 +7,47 @@
                 :requests="false"
                 @mainModalDisappear="mainModalDisappear"
                 class="modal-wrapper"
-                :alertMessage="alertMessage"
-                :showAlert="alertMessage.length"
                 :scrollUp="scrollUp"
             >
                 <template slot="main-other">
-                    <h5>Create a Discussion</h5>
-                    <welcome-form class="welcome-form">
+                    <welcome-form 
+                        class="welcome-form"
+                        :title="title"
+                    >
                         <template slot="input">
+                            <auto-alert
+                                :message="alertMessage"
+                                :danger="alertDanger"
+                                :sticky="true"
+                                @hideAlert="clearAlert"
+                            ></auto-alert>
                             <div class="section">Discussion Info</div>
                             <div class="form-edit">
                                 <text-input
                                     placeholder="discussion title"  
                                     :bottomBorder="true"
                                     :error="errorTitle"
-                                    v-model="title"></text-input>
+                                    v-model="discussionData.title"></text-input>
                             </div>
                             <div class="form-edit">
                                 <text-textarea type="text" 
                                     placeholder="discussion preamble (an introduction to the discussion)"
                                     :bottomBorder="true"
-                                    v-model="preamble"></text-textarea>
+                                    v-model="discussionData.preamble"></text-textarea>
                             </div>
-                            <div class="form-edit">
+                            <div class="form-edit" v-if="!auto">
                                 <div class="main-section">
                                     <div class="label">type:</div>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('public')"
-                                        :active="type === 'public'"
+                                        :active="discussionData.type === 'public'"
                                         text="public"
                                     ></grey-button>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('private')"
-                                        :active="type === 'private'"
+                                        :active="discussionData.type === 'private'"
                                         text="private"
                                     ></grey-button>
                                 </div>
@@ -51,77 +57,81 @@
                                         'this means you will have to send out requests to accounts'}}
                                 </div>
                             </div>
-                            <div class="form-edit">
+                            <div class="form-edit" v-if="!auto">
                                 <div class="main-section">
                                     <div class="label">restricted:</div>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('yes')"
-                                        :active="restricted"
+                                        :active="discussionData.restricted"
                                         text="yes"
                                     ></grey-button>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('no')"
-                                        :active="!restricted"
+                                        :active="!discussionData.restricted"
                                         text="no"
                                     ></grey-button>
                                 </div>
                                 <div class="info-section">
-                                    {{restricted ? 
+                                    {{discussionData.restricted ? 
                                         'restricted mode means all messages sent must be accepted by you before anyone can see them' : 
                                         'no means messages sent by participants will be seen by all'}}
                                 </div>
                             </div>
-                            <div class="form-edit">
+                            <div class="form-edit" v-if="!auto">
                                 <div class="main-section">
                                     <div class="label">allowed:</div>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('all')"
-                                        :active="allowed === 'all'"
+                                        :active="discussionData.allowed === 'all'"
                                         text="all"
                                     ></grey-button>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('learners')"
-                                        :active="allowed === 'learners'"
+                                        :active="discussionData.allowed === 'learners'"
                                         text="learners"
                                     ></grey-button>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('parents')"
-                                        :active="allowed === 'parents'"
+                                        :active="discussionData.allowed === 'parents'"
                                         text="parents"
                                     ></grey-button>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('facilitators')"
-                                        :active="allowed === 'facilitators'"
+                                        :active="discussionData.allowed === 'facilitators'"
                                         text="facilitators"
                                     ></grey-button>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('professionals')"
-                                        :active="allowed === 'professionals'"
+                                        :active="discussionData.allowed === 'professionals'"
                                         text="professionals"
                                     ></grey-button>
                                     <grey-button
                                         class="grey-button"
                                         @clickedAction="clickedActionButton('schools')"
-                                        :active="allowed === 'schools'"
+                                        :active="discussionData.allowed === 'schools'"
                                         text="schools"
                                     ></grey-button>
                                 </div>
                                 <div class="info-section">
-                                    {{allowed === 'all' ? 'all account types can join discussion' : 
-                                        `only ${allowed} can join this discussion`}}
+                                    {{discussionData.allowed === 'all' ? 'all account types can join discussion' : 
+                                        `only ${discussionData.allowed} can join this discussion`}}
                                 </div>
                             </div>
-                            <div class="section">Discussion Attachments</div>
-                            <div class="attachments-section">
+                            <div class="section"
+                                v-if="!auto"
+                            >Discussion Attachments</div>
+                            <div class="attachments-section"
+                                v-if="!auto"
+                            >
                                 <attachment-badge
-                                    v-for="(attachment,index) in postAttachments"
+                                    v-for="(attachment,index) in discussionData.postAttachments"
                                     :key="index"
                                     :hasClose="true"
                                     :attachment="attachment.data"
@@ -133,12 +143,13 @@
                                 :show="true"
                                 :hasSelect="true"
                                 :hasClose="false"
+                                v-if="!auto"
                                 @clickedAttachmentSelection="attachmentSelected"
                                 class="post-attachment"
                             ></post-attachment>
                             <div class="section">Discussion Resources</div>
                             <div class="info">you can upload up to three files</div>
-                            <div class="files" v-if="mediaFiles.length < 3">
+                            <div class="files" v-if="discussionData.mediaFiles.length < 3">
                                 <div class="file"
                                     @click="clickedFileType('video')"
                                     :class="{active: fileType === 'video'}"
@@ -152,7 +163,7 @@
                                     :class="{active: fileType === 'picture'}"
                                 >picture</div>
                             </div>
-                            <div class="actions" v-if="mediaFiles.length < 3">
+                            <div class="actions" v-if="discussionData.mediaFiles.length < 3">
                                 <div class="action"
                                     @click="clickedAction('upload')"
                                     v-if="fileType.length"
@@ -185,9 +196,9 @@
                             <div class="file-number-error" v-if="fileNumberError">
                                 you cannot upload more than three resources
                             </div>
-                            <div class="media-section" v-if="mediaFiles.length">
+                            <div class="media-section" v-if="discussionData.mediaFiles.length">
                                 <div class="media-item"
-                                    v-for="(mediaItem,index) in mediaFiles"
+                                    v-for="(mediaItem,index) in discussionData.mediaFiles"
                                     :key="index"
                                 >
                                     <div class="item-type" @click="clickedFile(mediaItem)">
@@ -241,7 +252,7 @@
                                 </div>
                             </div>
                             <post-button 
-                                :buttonText="'create'" 
+                                :buttonText="buttonText" 
                                 buttonStyle='success'
                                 @click="clickedCreate"
                             ></post-button>
@@ -278,20 +289,16 @@ import AttachmentBadge from '../AttachmentBadge';
 import FadeUp from '../transitions/FadeUp';
 import MediaCapture from '../MediaCapture';
 import ProfileBar from '../profile/ProfileBar';
+import AutoAlert from '../AutoAlert';
 import WelcomeForm from '.././welcome/WelcomeForm';
 import { mapGetters } from 'vuex';
     export default {
-        props: {
-            show: {
-                type: Boolean,
-                default: false
-            },
-        },
         components: {
             WelcomeForm,
             ProfileBar,
             MediaCapture,
             FadeUp,
+            AutoAlert,
             AttachmentBadge,
             PostAttachment,
             PostButton,
@@ -299,10 +306,31 @@ import { mapGetters } from 'vuex';
             TextTextarea,
             TextInput,
         },
+        props: {
+            show: {
+                type: Boolean,
+                default: false
+            },
+            auto: {
+                type: Boolean,
+                default: false
+            },
+            edit: {
+                type: Boolean,
+                default: false
+            },
+        },
         data() {
             return {
-                title: '',
-                mediaFiles: [],
+                discussionData: {
+                    title: '',
+                    allowed: 'all',
+                    type: 'public',
+                    preamble: '',
+                    restricted: false,
+                    postAttachments: [],
+                    mediaFiles: [],
+                },
                 activeFile: null,
                 fileType: '',
                 fileAccept: '',
@@ -315,11 +343,10 @@ import { mapGetters } from 'vuex';
                 showProfiles: false,
                 scrollUp: false,
                 alertMessage: '',
-                allowed: 'all',
-                type: 'public',
-                preamble: '',
-                restricted: false,
-                postAttachments: [],
+                // alertSuccess: false,
+                alertDanger: false,
+                title: 'Create a Discussion',
+                buttonText: 'create',
             }
         },
         computed: {
@@ -354,47 +381,59 @@ import { mapGetters } from 'vuex';
                     }, 3000);
                 }
             },
+            auto: {
+                immediate: true,
+                handler(newValue){
+                    this.buttonText = 'done'
+                    this.discussionData.type = 'private'
+                }
+            }
         },
         methods: {
             clickedRemoveAttachment(data){
-                let index = this.postAttachments.findIndex(attachment=>{
+                let index = this.discussionData.postAttachments.findIndex(attachment=>{
                     return attachment.type === data.type &&
                         attachment.data.id ===  data.data.id
                 })
                 if (index > -1) {
-                    this.postAttachments.splice(index,1)
+                    this.discussionData.postAttachments.splice(index,1)
                 }
             },
             attachmentSelected(data){
-                let index = this.postAttachments.findIndex(attachment=>{
+                let index = this.discussionData.postAttachments.findIndex(attachment=>{
                     return attachment.type === data.type &&
                         attachment.data.id ===  data.data.id
                 })
                 if (index === -1) {
-                    this.postAttachments.push(data)
+                    this.discussionData.postAttachments.push(data)
                 }
+            },
+            clearAlert(){
+                this.alertMessage = ''
+                this.alertDanger = false
+                this.alertSuccess = false
             },
             clickedActionButton(data){
                 if (data === 'all') {
-                    this.allowed = data
+                    this.discussionData.allowed = data
                 } else if (data === 'learners') {
-                    this.allowed = data
+                    this.discussionData.allowed = data
                 } else if (data === 'parents') {
-                    this.allowed = data
+                    this.discussionData.allowed = data
                 } else if (data === 'facilitators') {
-                    this.allowed = data
+                    this.discussionData.allowed = data
                 } else if (data === 'professionals') {
-                    this.allowed = data
+                    this.discussionData.allowed = data
                 } else if (data === 'schools') {
-                    this.allowed = data
+                    this.discussionData.allowed = data
                 } else if (data === 'private') {
-                    this.type = data
+                    this.discussionData.type = data
                 } else if (data === 'public') {
-                    this.type = data
+                    this.discussionData.type = data
                 } else if (data === 'yes') {
-                    this.restricted = true
+                    this.discussionData.restricted = true
                 } else if (data === 'no') {
-                    this.restricted = false
+                    this.discussionData.restricted = false
                 }
             },
             mainModalDisappear() {
@@ -406,11 +445,11 @@ import { mapGetters } from 'vuex';
             },
             clickedBan(data){
                 this.showFilePreview = false
-                let index = this.mediaFiles.findIndex(file=>{
+                let index = this.discussionData.mediaFiles.findIndex(file=>{
                     return file.name === data.name
                 })
                 if (index > -1) {
-                    this.mediaFiles.splice(index,1)
+                    this.discussionData.mediaFiles.splice(index,1)
                 }
             },
             clickedFile(data){
@@ -440,7 +479,7 @@ import { mapGetters } from 'vuex';
                         lastModified: new Date()
                     })
                 }
-                this.mediaFiles.push(this.activeFile)
+                this.discussionData.mediaFiles.push(this.activeFile)
                 this.showFilePreview = true
             },
             closeMediaCapture(){
@@ -450,23 +489,31 @@ import { mapGetters } from 'vuex';
                 if (!this.title.length) {
                     this.errorTitle = true
                     this.scrollUp = true
+                    this.alertDanger = true
                     this.alertMessage = 'the title of the discussion is needed'
                     return 
                 }
-                this.showProfiles = true
+                if (this.auto) {
+                    this.clickedProfile()
+                } else {
+                    this.showProfiles = true
+                }
             },
             clickedProfile(data){
+                console.log('clicked profile');
                 this.showProfiles = false
                 let discussion = []
-                discussion['account'] = data.account
-                discussion['accountId'] = data.accountId
-                discussion['title'] = this.title
-                discussion['type'] = this.type
-                discussion['allowed'] = this.allowed
-                discussion['preamble'] = this.preamble
-                discussion['restricted'] = this.restricted
-                discussion['files'] = this.mediaFiles
-                discussion['postAttachments'] = this.postAttachments
+                if (!this.auto) {                    
+                    discussion['account'] = data?.account
+                    discussion['accountId'] = data?.accountId
+                    discussion['postAttachments'] = this.discussionData.postAttachments
+                }
+                discussion['title'] = this.discussionData.title
+                discussion['type'] = this.discussionData.type
+                discussion['allowed'] = this.discussionData.allowed
+                discussion['preamble'] = this.discussionData.preamble
+                discussion['restricted'] = this.discussionData.restricted
+                discussion['files'] = this.discussionData.mediaFiles
                 this.$emit('clickedCreate',discussion)
                 this.mainModalDisappear()
             },
@@ -505,7 +552,7 @@ import { mapGetters } from 'vuex';
                 }
             },
             fileChange(){
-                if (this.$refs.inputfile.files.length + this.mediaFiles.length > 3) {
+                if (this.$refs.inputfile.files.length + this.discussionData.mediaFiles.length > 3) {
                     this.fileNumberError = true
                     setTimeout(() => {
                         this.fileNumberError = false
@@ -515,7 +562,7 @@ import { mapGetters } from 'vuex';
                 }
                 this.activeFile = this.$refs.inputfile.files[0]
                 for (let i = 0; i < this.$refs.inputfile.files.length; i++) {
-                    this.mediaFiles.push(this.$refs.inputfile.files[i])
+                    this.discussionData.mediaFiles.push(this.$refs.inputfile.files[i])
                 }
                 this.showFilePreview = true
             },

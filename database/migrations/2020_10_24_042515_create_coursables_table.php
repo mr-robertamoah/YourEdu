@@ -17,7 +17,9 @@ class CreateCoursablesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('course_id');
             $table->nullableMorphs('coursable');
-            $table->enum('activity',['FACILITATE','TAKE','OFFER'])->nullable();
+            $table->boolean('resource')->default(false);
+            $table->enum('activity',['FACILITATE','TAKE','OFFER','TYPE'])->nullable();
+            //type means course attached to course and resource means it is being usedby
             $table->timestamps();
 
             $table->foreign('course_id')->references('id')->on('courses')->cascadeOnDelete();

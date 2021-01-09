@@ -1,10 +1,10 @@
 <template>
     <div class="subscription-badge-wrapper" 
-        v-if="subscription.name"
+        v-if="data.name"
     >
-        <div class="name">{{subscription.name}}</div>
+        <div class="name">{{data.name}}</div>
         <div class="for">
-            {{subscription.for}}
+            {{data.for}}
         </div>
         <div class="close"
             v-if="hasClose"
@@ -19,24 +19,9 @@
 </template>
 
 <script>
+import paymentTypeMixin from '../mixins/PaymentType.mixin';
     export default {
-        props: {
-            subscription: {
-                type: Object,
-                default(){
-                    return {}
-                }
-            },
-            hasClose: {
-                type: Boolean,
-                default: true
-            }
-        },
-        computed: {
-            computedDetails() {
-                return `amount: ${this.subscription.amount} per ${this.subscription.period}` 
-            }
-        },
+        mixins: [paymentTypeMixin],
         methods: {
             clickedRemoveSubscription() {
                 this.$emit('clickedRemoveSubscription',this.subscription)
@@ -54,6 +39,10 @@
         max-width: 100px;
         padding: 5px;
         position: relative;
+        background: $dashboard-section-second-background-color;
+        border-radius: 5px;
+        margin: 0 10px 10px 0;
+        box-shadow: 0 0 1px grey;
 
         .name{
             width: 100px;
@@ -77,15 +66,16 @@
             position: absolute;
             top: 0;
             right: 0;
-            padding: 5px;
+            padding: 5px 5px 10px 10px;
             cursor: pointer;
         }
 
         .details{
-            font-size: 14px;
+            font-size: 12px;
             color: gray;
             width: 100%;
             text-align: center;
+            text-transform: lowercase;
         }
     }
 </style>

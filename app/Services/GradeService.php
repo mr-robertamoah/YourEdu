@@ -71,4 +71,14 @@ class GradeService
             $item->save();
         }
     }
+
+    public static function gradeUnattachItem($gradeId,$item)
+    {
+        if (!is_null(
+            $item->grades->where('id',$gradeId)->first()
+        )) {
+            $item->grades()->detach($gradeId);
+            $item->save();
+        }
+    }
 }

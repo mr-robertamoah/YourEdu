@@ -10,6 +10,14 @@ class Ban extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'type', 'state', 'due_date'
+    ];
+
+    protected $casts = [
+        'due_date' => 'datetime'
+    ];
+
     public function admin()
     {
         return $this->belongsTo(Admin::class);

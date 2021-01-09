@@ -3,6 +3,7 @@
 namespace App\YourEdu;
 
 use App\Traits\AccountTrait;
+use App\Traits\DashboardItemTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,10 +12,14 @@ class School extends Model
 {
     //
 
-    use SoftDeletes, AccountTrait;
+    use SoftDeletes, AccountTrait, DashboardItemTrait;
 
     protected $fillable = [
-        'owner_id','company_name', 'role', 'class_structure'
+        'owner_id','company_name', 'role', 'class_structure', 'types', 'about'
+    ];
+
+    protected $casts = [
+        'types' => 'array'
     ];
 
     protected static function booted()
@@ -146,9 +151,21 @@ class School extends Model
         return $this->morphMany(ClassModel::class,'addedby');
     }
 
+    public function addedCourses()
+    {
+        return $this->morphMany(Course::class,'addedby');
+    }
+
     public function academicYears()
     {
         return $this->hasMany(AcademicYear::class);
+    }
+
+    public function currentAcademicYears()
+    {
+        return $this->academicYears()
+            ->whereDate('start_date','<',now())
+            ->whereDate('end_date','>',now());
     }
 
     public function academicYearSections()
@@ -187,6 +204,11 @@ class School extends Model
     //             ->withTimestamps();
     // }
 
+    public function ownedPrograms()
+    {
+        return $this->morphMany(Program::class,'ownedby');
+    }
+
     public function groupsOwned()
     {
         return $this->morphMany(Group::class,'ownedby');
@@ -200,6 +222,11 @@ class School extends Model
     public function uniqueCoursesAdded()
     {
         return $this->morphMany(Course::class,'addedby');
+    }
+
+    public function ownedCourses()
+    {
+        return $this->morphMany(Course::class,'ownedby');
     }
 
     public function uniqueSubjectsAdded()
@@ -222,19 +249,27 @@ class School extends Model
         return $this->morphMany(Extracurriculum::class,'addedby');
     }
 
+    public function ownedExtracurriculums()
+    {
+        return $this->morphMany(Extracurriculum::class,'ownedby');
+    }
+
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra');
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
+            ->withPivot(['resource','activity'])->withTimestamps();
     }
 
     public function programs()
     {
-        return $this->morphToMany(Program::class,'programmable','programmables');
+        return $this->morphToMany(Program::class,'programmable','programmables')
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
-    // public function classes(){
-    //     return $this->morphToMany(ClassModel::class,'classable','classables');
-    // }
+    public function classes(){
+        return $this->morphToMany(ClassModel::class,'classable','classables')
+            ->withPivot(['resource'])->withTimestamps();
+    }
 
     public function curricula()
     {
@@ -244,13 +279,13 @@ class School extends Model
     public function courses()
     {
         return $this->morphToMany(Course::class,'coursable','coursables')
-            ->withPivot(['activity']);
+            ->withPivot(['activity','resource'])->withTimestamps();
     }
 
     public function subjects()
     {
         return $this->morphToMany(subject::class,'subjectable','subjectables')
-            ->withPivot(['activity']);
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function fees()
@@ -445,6 +480,11 @@ class School extends Model
     public function questionsOwned()
     {
         return $this->morphMany(Question::class,'owned');
+    }
+
+    public function questionsAdded()
+    {
+        return $this->morphMany(Question::class,'questionedby');
     }
 
     public function activitiesOwned()

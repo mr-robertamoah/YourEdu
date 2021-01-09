@@ -19,7 +19,7 @@
                 </fade-right>
             </div>
             <div class="edit"
-                @click="showOptions = !showOptions"
+                @click="clickedShowOptions"
                 v-if="computedEdit"
             >
                 <font-awesome-icon
@@ -322,6 +322,10 @@ import { dates, strings } from '../services/helpers'
                 type: Boolean,
                 default: false
             },
+            disabled: { //when being view by admin
+                type: Boolean,
+                default: false
+            },
             answer: {
                 type: Object,
                 default(){
@@ -454,7 +458,8 @@ import { dates, strings } from '../services/helpers'
         computed: {
             ...mapGetters(['getProfiles','getUser']),
             computedImageUrl() {
-                return this.answer && this.answer.images ? this.answer.images[0].url : ''
+                return this.answer && this.answer.images && this.answer.images.length ? 
+                    this.answer.images[0].url : ''
             },
             computedFlags(){ //check flagging
                 if (this.getUser) {
@@ -528,10 +533,12 @@ import { dates, strings } from '../services/helpers'
                 }
             },
             computedVideoUrl() {
-                return this.answer && this.answer.videos ? this.answer.videos[0].url : ''
+                return this.answer && this.answer.videos && this.answer.videos.length ? 
+                    this.answer.videos[0].url : ''
             },
             computedAudioUrl() {
-                return this.answer && this.answer.audios ? this.answer.audios[0].url : ''
+                return this.answer && this.answer.audios && this.answer.audios.length ? 
+                    this.answer.audios[0].url : ''
             },
             computedCreatedAt(){
                 return dates.createdAt(this.answer.created_at)
@@ -630,6 +637,12 @@ import { dates, strings } from '../services/helpers'
                 if (this.answer.marks.length) {
                     this.showRemarks = true
                 }
+            },
+            clickedShowOptions(){
+                if (this.disabled) {
+                    return
+                }
+                this.showOptions = !this.showOptions
             },
             clickedCloseRemark(){
                 this.showRemarks = false
@@ -756,6 +769,9 @@ import { dates, strings } from '../services/helpers'
                 this.possibleAnswerId = item.id
             },
             async clickedLike(){
+                if (this.disabled) {
+                    return
+                }
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
@@ -865,6 +881,9 @@ import { dates, strings } from '../services/helpers'
                 }
             },
             clickedAddComment(){
+                if (this.disabled) {
+                    return
+                }
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
@@ -874,6 +893,9 @@ import { dates, strings } from '../services/helpers'
                 }
             },
             clickedFlag(){
+                if (this.disabled) {
+                    return
+                }
                 if (this.isFlagged) {
                     this.flag(null)
                     return
@@ -927,6 +949,9 @@ import { dates, strings } from '../services/helpers'
                 this.smallModalAction = ''
             },
             markAnswer(data) {
+                if (this.disabled) {
+                    return
+                }
                 if (this.isMarked) {
                     return
                 }

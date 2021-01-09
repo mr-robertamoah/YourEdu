@@ -68,18 +68,18 @@
                     <price-badge
                         v-for="(price,index) in prices"
                         :key="index"
-                        :price="price"
+                        :data="price"
                         @clickedRemovePrice="clickedRemovePrice"
-                        class="badge"
+                        class="payment-badge"
                     ></price-badge>
                 </template>
                 <template v-if="computedSubscription">
                     <subscription-badge
                         v-for="(subscription,index) in subscriptions"
                         :key="index"
-                        :subscription="subscription"
+                        :data="subscription"
                         @clickedRemoveSubscription="clickedRemoveSubscription"
-                        class="badge"
+                        class="payment-badge"
                     ></subscription-badge>
                 </template>
             </div>
@@ -91,6 +91,13 @@
                 :hasMax="false"
                 :bottomBorder="true"
             ></number-input>
+            
+            <text-textarea
+                placeholder="description" 
+                v-model="price.description"
+                :bottomBorder="true"
+            ></text-textarea>
+
             <main-select
                 :items="['all','learners','facilitators','parents','professionals','schools',]"
                 :value="price.for"
@@ -124,6 +131,12 @@
                     placeholder="select a period*"
                 ></main-select>
             </div>
+            
+            <text-textarea
+                placeholder="description" 
+                v-model="subscription.description"
+                :bottomBorder="true"
+            ></text-textarea>
 
             <main-select
                 :items="['all','learners','facilitators','parents','professionals','scools',]"
@@ -144,6 +157,7 @@ import TextInput from './TextInput';
 import PriceBadge from './PriceBadge';
 import SubscriptionBadge from './SubscriptionBadge';
 import NumberInput from './NumberInput';
+import TextTextarea from './TextTextarea.vue';
     export default {
         components: {
             NumberInput,
@@ -152,6 +166,7 @@ import NumberInput from './NumberInput';
             TextInput,
             MainSelect,
             RadioInput,
+            TextTextarea,
         },
         props: {
             type: {
@@ -169,12 +184,14 @@ import NumberInput from './NumberInput';
                 fee: '',
                 price: {
                     amount: '',
+                    description: '',
                     for: '',
                 },
                 subscription: {
                     amount: '',
                     for: '',
                     name: '',
+                    description: '',
                     period: '',
                 },
                 prices: [],
@@ -204,13 +221,16 @@ import NumberInput from './NumberInput';
             payment(newValue){
                 if (newValue === 'free') {
                     this.$emit('paymentType',{type: this.payment,data: ''})
+                } else {
+                    this.$emit('paymentType',{type: this.payment,data: null})
                 }
                 this.cleanUp()
             },
             price: {
                 deep: true,
                 handler(newValue,oldValue){
-                    if (newValue.amount.length === 1 && newValue.for.length) {
+                    if ((newValue.amount.length === 1 || newValue.description.length === 1) 
+                        && newValue.for.length) {
                         this.price.for = ''
                     } else if (newValue.amount.length && newValue.for.length) {
                         this.updatePrices()
@@ -221,10 +241,11 @@ import NumberInput from './NumberInput';
                 deep: true,
                 handler(newValue){
                     if ((newValue.name.length === 1 || newValue.amount.length === 1 ||
-                        newValue.period.length === 1) 
+                        newValue.period.length === 1 || newValue.description.length === 1) 
                         && newValue.for.length) {
                         this.subscription.for = ''
-                    } else if (newValue.amount.length && newValue.for.length) {
+                    } else if (newValue.name.length && newValue.amount.length && 
+                        newValue.for.length) {
                         this.updateSubscriptions()
                     }
                 }
@@ -301,6 +322,7 @@ import NumberInput from './NumberInput';
                 }
                 this.prices.push({
                     amount: this.price.amount,
+                    description: this.price.description,
                     for: this.price.for,
                 })
                 this.clearPrice()
@@ -317,6 +339,7 @@ import NumberInput from './NumberInput';
                 }
                 this.subscriptions.push({
                     name: this.subscription.name,
+                    description: this.subscription.description,
                     for: this.subscription.for,
                     amount: this.subscription.amount,
                     period: this.subscription.period,
@@ -326,10 +349,12 @@ import NumberInput from './NumberInput';
             clearPrice(){
                 this.price.for = ''
                 this.price.amount = ''
+                this.price.description = ''
             },
             clearSubscription(){
                 this.subscription.name = ''
                 this.subscription.amount = ''
+                this.subscription.description = ''
                 this.subscription.for = ''
                 this.subscription.period = ''
             },
@@ -338,13 +363,14 @@ import NumberInput from './NumberInput';
                 this.clearSubscription()
                 this.commission = ''
                 this.fee = ''
+                this.prices = []
+                this.subscriptions = []
             },
         },
     }
 </script>
 
 <style lang="scss" scoped>
-$background-color-main: rgba(22, 233, 205, 1);
 
 @mixin description(){
     width: 90%;

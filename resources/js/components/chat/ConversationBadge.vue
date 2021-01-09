@@ -139,11 +139,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}
 
     .conversation-badge-wrapper{
         box-shadow: 0 0 2px grey;

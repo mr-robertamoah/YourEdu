@@ -1,11 +1,10 @@
 <template>
-    <dashboard-item-badge
-        :show="true"
-    ></dashboard-item-badge>
+    <video-audio-chat
+    ></video-audio-chat>
 </template>
 
 <script>
-import DashboardItemBadge from '../components/dashboard/DashboardItemBadge'
+import VideoAudioChat from '../components/chat/VideoAudioChat'
 
     export default {
         data() {
@@ -15,7 +14,7 @@ import DashboardItemBadge from '../components/dashboard/DashboardItemBadge'
             }
         },
         components: {
-            DashboardItemBadge,
+            VideoAudioChat,
         },
         methods: {
             clickedTesting(){

@@ -39,7 +39,10 @@ class YourEduController extends Controller
                     'role' => $request->role,
                     'classStructure' => $request->classStructure,
                     'description' => $request->description,
-                    'otherName' => $request->other_name]);
+                    'otherName' => $request->other_name,
+                    'about' => $request->about,
+                    'types' => $request->types,
+                ]);
 
                 DB::commit();
                 return response()->json([

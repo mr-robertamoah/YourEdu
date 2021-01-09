@@ -179,7 +179,6 @@ const actions = {
             let response = await ProfileService.profileGet({account,accountId})
             if (response.status != 200) {
 
-                commit('LOAD_PROFILE_COMPLETE')
                 router.push({
                     name: '404',
                     params: {
@@ -190,6 +189,7 @@ const actions = {
             }else{
                 commit('profile/GET_PROFILE_SUCCESS',response.data)
             }
+            commit('LOAD_PROFILE_COMPLETE')
             return {status: true}
         } else {
             router.push({
@@ -257,6 +257,7 @@ const actions = {
                 commit('CLEAR_VALIDATION_ERRORS')
                 if (data.token) {
                     router.push( router.history.current.query.redirectTo || '/')
+                    Echo.options.auth.headers.Authorization = `Bearer ${data.token}`
                 }
             } else {
                 commit('VALIDATION_ERRORS', data)
@@ -338,6 +339,7 @@ const actions = {
 
         if (response.data.message === 'successful') {
             commit('LOGOUT')
+            TokenService.removeToken()
             router.push('/login')
         } else {
             console.log(response);

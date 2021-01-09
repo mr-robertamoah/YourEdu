@@ -1696,11 +1696,6 @@ import InfiniteLoading from 'vue-infinite-loading'
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}   
 
     .chat-top-section{
         padding: 5px;

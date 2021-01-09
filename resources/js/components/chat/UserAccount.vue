@@ -82,11 +82,6 @@ import ActionButton from '../ActionButton';
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}
 
     .user-account-wrapper{
         display: inline-flex;

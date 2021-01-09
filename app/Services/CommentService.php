@@ -198,8 +198,6 @@ class CommentService
             $commentableOwner = $commentable->post->postedby;
         } else if ($item === 'comment') {
             $commentableOwner = $commentable->commentedby;
-        } else if ($item === 'lesson') {
-
         } else if ($item === 'request') {
 
         } else if ($item === 'admission') {
@@ -220,7 +218,8 @@ class CommentService
 
         } else if ($item === 'school') {
 
-        } else if ($item === 'class') {
+        } else if ($item === 'class' || $item === 'course' ||
+            $item === 'extracurriculum' || $item === 'lesson') {
             $commentableOwner = $commentable->ownedby;
         }
 

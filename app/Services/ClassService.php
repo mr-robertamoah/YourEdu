@@ -11,15 +11,16 @@ use App\Http\Resources\ClassResource;
 use App\Http\Resources\DashboardItemResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\ClassCreatedNotification;
+use App\Traits\ClassCourseTrait;
 use App\User;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 class ClassService
 {
-    public function createCLass($account,$accountId,$id,$owner,$ownerId,
-        $name,$description,$gradeId,$facilitate,$maxLearners,
-        $type,$paymentData,$feeable,$feeableId,$structure)
+    use ClassCourseTrait;
+    
+    public function createCLass($account,$accountId,$id,$classData)
     {
         $mainAccount = getAccountObject($account,$accountId);
         if (is_null($mainAccount)) {
@@ -31,24 +32,24 @@ class ClassService
         }
 
         $class = $mainAccount->addedClasses()->create([
-            'name' => $name,
-            'max_learners' => $maxLearners,
-            'state' => $owner === 'school' && 
+            'name' => $classData['name'],
+            'max_learners' => $classData['maxLearners'],
+            'state' => $classData['owner'] === 'school' && 
                 ($account !== 'admin' || $account !== 'school') 
                 ? 'PENDING' : 'ACCEPTED',
-            'description' => $description,
+            'description' => $classData['description'],
         ]);
 
         if (is_null($class)) {
             throw new ClassException("class creation failed");
         }
 
-        if ($account === $owner && $accountId === $ownerId) {
+        if ($account === $classData['owner'] && $accountId === $classData['ownerId']) {
             $mainOwner = $mainAccount;
         } else {
-            $mainOwner = getAccountObject($owner,$ownerId);
+            $mainOwner = getAccountObject($classData['owner'],$classData['ownerId']);
             if (is_null($mainOwner)) {
-                throw new AccountNotFoundException("{$owner} not found with id {$ownerId}");
+                throw new AccountNotFoundException("{$classData['owner']} not found with id {$classData['ownerId']}");
             }
         }        
 
@@ -56,9 +57,9 @@ class ClassService
 
         //check if ownedby school and already attached to grade
 
-        if ($owner === 'school') {
+        if ($classData['owner'] === 'school') {
             
-            GradeService::gradeAttachItem($gradeId,$mainOwner);
+            GradeService::gradeAttachItem($classData['gradeId'],$mainOwner);
     
             $academicYear = $mainOwner->academicYears()->whereDate('start_date','<=',now())
                 ->whereDate('end_date','>=',now())->latest()->first();
@@ -69,24 +70,54 @@ class ClassService
                 throw new ClassException("There is no current academic year. Please create one to be able to continue with this.");
             }
 
-            $class->structure = $class->ownedby->class_structure;
+            $class->structure = $class->ownedby->class_structure ?? $classData['structure'];
         } else {
-            $class->structure = $structure;
+            $class->structure = $classData['structure'];
         }
 
         $class->save();
 
-        $grade = getAccountObject('grade',$gradeId);
+        $grade = getAccountObject('grade',$classData['gradeId']);
         if (is_null($grade)) {
-            throw new AccountNotFoundException("grade not found with id {$gradeId}");
+            throw new AccountNotFoundException("grade not found with id {$classData['gradeId']}");
         }
 
-        if ($facilitate) {
+        if ($classData['facilitate']) {
             $mainAccount->classes()->attach($class);
             $mainAccount->save();
 
             //check if facilitator is already attached to grade
-            GradeService::gradeAttachItem($gradeId,$mainAccount);
+            GradeService::gradeAttachItem($classData['gradeId'],$mainAccount);
+        }
+
+        $this->setPayment(
+            item: $class,
+            addedby: $mainAccount,
+            paymentType: $classData['type'],
+            paymentData: $classData['paymentData'],
+            feeableData: [
+                'feeable' => $classData['feeable'],
+                'feeableId' => $classData['feeableId']
+            ]
+        );
+
+        //attach class to grade
+        GradeService::gradeAttachItem($classData['gradeId'],$class);
+
+        //create auto discussion 
+        $this->createAutoDiscussion(
+            item: $class,
+            account: $account,
+            accountId: $accountId,
+            discussionData: $classData['discussionData'],
+            files: $classData['discussionFiles'],
+        );
+
+        //track school activities
+        if ($account === 'admin') {
+            (new ActivityTrackService())->createActivityTrack(
+                $class,$mainOwner,$mainAccount,__METHOD__
+            );
         }
 
         if ($class->state === 'PENDING') {
@@ -99,24 +130,10 @@ class ClassService
             ));
         }
 
-        $this->setClassPayment($class,$mainAccount,$type,$paymentData,[
-            'feeable' => $feeable,
-            'feeableId' => $feeableId]);
-
-        //attach class to grade
-        GradeService::gradeAttachItem($gradeId,$class);
-
-        //track school activities
-        if ($account === 'admin') {
-            (new ActivityTrackService())->createActivityTrack(
-                $class,$mainOwner,$mainAccount,__METHOD__
-            );
-        }
-
-        if ($owner === 'school') {
+        if ($classData['owner'] === 'school' && $class->state !== 'PENDING') {
             broadcast(new NewClassEvent([
-                'account' => $owner,
-                'accountId' => $ownerId,
+                'account' => $classData['owner'],
+                'accountId' => $classData['ownerId'],
                 'class' => new ClassResource($class),
             ]))->toOthers();
         }
@@ -124,60 +141,39 @@ class ClassService
         return $class;
     }
 
-    private function checkClassAuthorization($class,$userId)
-    {
-        $account = getAccountString($class->ownedby);
-
-        if ($account === 'school') {
-            if (in_array($userId,getAdminIds($class->ownedby))) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            if ($class->ownedby->user_id === $userId) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-
-    private function setClassPayment($class,$addedby,$paymentType,$paymentData,$feeableData = [])
-    {
-        if ($paymentType == 'price') {
-            if (count($paymentData)) {
-                foreach ($paymentData as $priceData) {
-                    (new PriceService)->setPrice($class,$priceData,$addedby);
-                }
-            }
-        } else if ($paymentType == 'fee') {
-            (new FeeService)->setFee($class,$paymentData,$addedby,$feeableData);
-        }
-    }
-
     public function getClass()
     {
         
     }
 
-    public function updateClass($classId,$userId,$name,$description,$state,$maxLearners,
-        $gradeId,$adminId)
-    {
+    public function updateClass(
+        $account,
+        $accountId,
+        $classId,
+        $userId, 
+        $classData,
+        $gradeId,
+    ) {
+        //check account
+        $mainAccount = getAccountObject($account,$accountId);
+        if (is_null($mainAccount)) {
+            throw new AccountNotFoundException("$account not found with id {$classId}");
+        }
+
         $class = getAccountObject('class',$classId);
         if (is_null($class)) {
             throw new AccountNotFoundException("class not found with id {$classId}");
         }
 
-        if (!$this->checkClassAuthorization($class,$userId)) {
+        if (!$this->checkAuthorization($class,$userId)) {
             throw new ClassException("You are not authorized to edit the class with id {$classId}");
         }
 
         $class->update([
-            'name' => $name,
-            'max_learners' => $maxLearners,
-            'state' => ($state),
-            'description' => $description,
+            'name' => $classData['name'],
+            'max_learners' => $classData['maxLearners'],
+            'state' => Str::upper($classData['state']),
+            'description' => $classData['description'],
         ]);
 
         if ($gradeId) {
@@ -190,31 +186,25 @@ class ClassService
             GradeService::gradeAttachItem($gradeId,$class);
         }
 
-        if ($adminId) {
-            $admin = getAccountObject('admin',$adminId);
+        if ($account === 'admin') {
             (new ActivityTrackService())->createActivityTrack(
-                $class,$class->classOwner,$admin,__METHOD__
+                $class,$class->classOwner,$mainAccount,__METHOD__
             );
         }
         
-        broadcast(new UpdateClassEvent([
-            'account' => getAccountString($class->ownedby),
-            'accountId' => $class->ownedby->id,
-            'class' => new ClassResource($class),
-            'classResource' => new DashboardItemResource($class),
-        ]))->toOthers();
+        $this->broadcastUpdate($class->ownedby,[],$class);
 
         return $class;
     }
 
-    public function deleteClass($classId,$userId,$adminId)
+    public function deleteClass($classId,$userId,$adminId,$action)
     {
         $class = getAccountObject('class',$classId);
         if (is_null($class)) {
             throw new AccountNotFoundException("class not found with id {$classId}");
         }
 
-        if (!$this->checkClassAuthorization($class,$userId)) {
+        if (!$this->checkAuthorization($class,$userId)) {
             throw new ClassException("You are not authorized to edit the class with id {$classId}");
         }
 
@@ -225,12 +215,53 @@ class ClassService
             );
         }
         
-        $class->delete();
-        
-        broadcast(new DeleteClassEvent([
-            'account' => getAccountString($class->ownedby),
-            'accountId' => $class->ownedby->id,
-            'classId' => $classId,
+        $ownedby = $class->ownedby;
+        //change state if its being used by annother else delete
+        if ($action === 'undo') {
+            return $this->changeState($ownedby,null,$class,'accepted');
+        } else if($action === 'delete') {
+            if ($this->paymentMadeFor($class) || $this->usedByAnother($class)) {
+                return $this->changeState($ownedby,null,$class,'deleted');
+            } else {
+
+                $class->delete();
+                
+                broadcast(new DeleteClassEvent([
+                    'account' => getAccountString($ownedby),
+                    'accountId' => $ownedby->id,
+                    'classId' => $classId,
+                ]))->toOthers();
+            }
+        }
+    }
+
+    private function broadcastUpdate($ownedby,$classes,$class)
+    {
+        broadcast(new UpdateClassEvent([
+            'account' => getAccountString($ownedby),
+            'accountId' => $ownedby->id,
+            'class' => new ClassResource($class),
+            'classResource' => new DashboardItemResource($class),
         ]))->toOthers();
+    }
+
+    private function paymentMadeFor($class)
+    {
+        if ($class->whereHas('payments')->count()) {
+            return true;
+        }
+        return false;
+    }
+
+    private function usedByAnother($class)
+    {
+        if (
+            $class->schools()->wherePivot('resource','1')->count() ||
+            $class->classes->wherePivot('resource','1')->count()
+        ) 
+        {
+            return true;
+        }
+        return false;
     }
 }

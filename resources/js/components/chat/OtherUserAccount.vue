@@ -283,11 +283,6 @@ import { mapGetters } from 'vuex';
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}   
 
     .other-user-account{
         width: 100%;

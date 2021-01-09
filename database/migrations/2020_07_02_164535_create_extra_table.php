@@ -16,8 +16,9 @@ class CreateExtraTable extends Migration
         Schema::create('extra', function (Blueprint $table) {
             $table->id(); 
             $table->unsignedBigInteger('extracurriculum_id');
-            $table->nullableMorphs('extracurriculumable'); // school class group
-            $table->nullableMorphs('ownedby'); // school class group
+            $table->nullableMorphs('extracurriculumable'); // school class group learner facilitator professional collaboration
+            $table->boolean('resource')->default(false);
+            $table->enum('activity',['FACILITATE','TAKE','OFFER'])->nullable();
             $table->timestamps();
 
 

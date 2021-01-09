@@ -11,11 +11,17 @@ trait AccountTrait
     /**
      * this helps determine whether the account is currently having a ban
      */
-    public function scopeHasBan($query)
+    public function hasBan()
     {
-        return $query->whereHas('bans',function($query){
-            $query->whereDate('due_date','>',now())
-                ->orWhereIn('state',['PENDING','SERVED']);
+        return $this->bans()->where(function($query){
+            $query->where(function($query){
+                $query->whereDate('due_date','>',now())
+                    ->whereIn('state',['PENDING','SERVED']);
+            })
+            ->orWhere(function($query){
+                $query->whereNull('due_date')
+                    ->whereIn('state',['PENDING','SERVED']);
+            });
         });
     }
 }

@@ -67,24 +67,39 @@
 
         <create-account
             :type="accountType"
+            v-if="showCreateAccount"
             :show="showCreateAccount"
             :creator="computedCreator"
             @closeCreateAccount='closeCreateAccount'
         ></create-account>
         <create-academic-year
             :school="computedSchool"
-            :show="showCreateAcademicYear"
-            @closeCreateAcademicYear='closeCreateAcademicYear'
+            v-if="showCreateModal === 'academicYear'"
+            :show="showCreateModal === 'academicYear'"
+            @closeCreateAcademicYear="closeCreateSomething('academicYear')"
         ></create-academic-year>
         <edit-user
             :fireAction='editUserForm'
             :showForm="editUserForm"
+            v-if="editUserForm"
             @mainModalDisappear='closeEditUser'
         ></edit-user>
         <create-class
-            :show="showCreateClassModal"
-            @closeCreateClass="closeCreateClass"
+            :show="showCreateModal === 'class'"
+            @closeCreateClass="closeCreateSomething('class')"
         ></create-class>
+        <create-course
+            :show="showCreateModal === 'course'"
+            @closeCreateCourse="closeCreateSomething('course')"
+        ></create-course>
+        <create-lesson
+            :show="showCreateModal === 'lesson'"
+            @createLessonDisappear="closeCreateSomething('lesson')"
+        ></create-lesson>
+        <create-extracurriculum
+            :show="showCreateExtracurriculumModal"
+            @closeCreateExtracurriculum="closeCreateSomething('extracurriculum')"
+        ></create-extracurriculum>
         <account-modal
             :show="showAccountModal"
             v-if="showAccountModal"
@@ -103,16 +118,20 @@ import EditUser from '../components/forms/EditUser';
 import CreateAccount from '../components/forms/CreateAccount';
 import CreateAcademicYear from '../components/forms/CreateAcademicYear';
 import CreateClass from '../components/forms/CreateClass';
+import CreateCourse from '../components/forms/CreateCourse';
 import PulseLoader from 'vue-spinner/src/PulseLoader';
 import MainSection from '../components/dashboard/MainSection';
 import AccountModal from '../components/dashboard/AccountModal';
 import { mapGetters } from "vuex";
+import CreateExtracurriculum from '../components/forms/CreateExtracurriculum.vue';
+import CreateLesson from '../components/forms/CreateLesson.vue';
 
     export default {
         components: {
             AccountModal,
             MainSection,
             PulseLoader,
+            CreateCourse,
             CreateClass,
             CreateAcademicYear,
             CreateAccount,
@@ -120,18 +139,18 @@ import { mapGetters } from "vuex";
             FadeUp,
             PostButton,
             SideBar,
+            CreateExtracurriculum,
+            CreateLesson,
         },
         data() {
             return {
                 loading: false,
                 sideBarMinWidth: false,
                 showCreateAccount: false,
-                showCreateClassModal: false,
                 showSmallModal: false,
                 editUserForm: false,
                 barSmall: true,
                 smallModalMain: false,
-                showCreateAcademicYear: false,
                 smallModalData: '',
                 accountType: '',
                 dashboardType: '',
@@ -141,6 +160,8 @@ import { mapGetters } from "vuex";
                 //account modal
                 showAccountModal: false,
                 accountModalData: null,
+                showCreateExtracurriculumModal: false,
+                showCreateModal: '',
             }
         },
         watch: {
@@ -182,9 +203,6 @@ import { mapGetters } from "vuex";
                 }
                 this.showSmallModal = false
             },
-            closeCreateAcademicYear(){
-                this.showCreateAcademicYear = false
-            },
             clickedMainSection(){
                 this.sideBarMinWidth = true
             },
@@ -220,9 +238,15 @@ import { mapGetters } from "vuex";
                     this.dashboardAccount = null
                     this.dashboardType = data.type
                 } else if (data.data === 'create academic year') {
-                    this.showCreateAcademicYear = true
+                    this.showCreateModal = 'academicYear'
                 } else if (data.data === 'create class') {
-                    this.showCreateClassModal = true
+                    this.showCreateModal = 'class'
+                } else if (data.data === 'create course') {
+                    this.showCreateModal = 'course'
+                } else if (data.data === 'create lesson') {
+                    this.showCreateModal = 'lesson'
+                } else if (data.data === 'create extracurriculum') {
+                    this.showCreateExtracurriculumModal = true
                 }
                 
             },
@@ -234,12 +258,22 @@ import { mapGetters } from "vuex";
                     this.dashboardAccount = null
                 }
             },
-            closeCreateClass(){
-                this.showCreateClassModal = false
-                this.mainActiveButton = 'info'
+            closeCreateSomething(data){
+                if (data === 'class') {
+                    this.mainActiveButton = 'info'
+                } else if (data === 'course') {
+
+                } else if (data === 'academicYear') {
+                    
+                } else if (data === 'lesson') {
+                    
+                } else if (data === 'extracurriculum') {
+                    this.showCreateExtracurriculumModal = false
+                }
+                this.showCreateModal = ''
             },
             closeSmallModal(){
-                this.showCreateClassModal = false
+                this.showSmallModal = false
                 this.mainActiveButton = 'info'
             },
             closeEditUser(){
@@ -255,7 +289,6 @@ import { mapGetters } from "vuex";
 </script>
 
 <style lang="scss" scoped>
-$background-color-main: rgb(22,233,205);
 
     .dashboard-wrapper{
         overflow-x: hidden;
@@ -270,20 +303,20 @@ $background-color-main: rgb(22,233,205);
         }
     }
 
-    .small-modal{
+    // .small-modal{
 
-        .main{
+    //     .main{
 
-            .item{
-                width: fit-content;
-                padding: 5px;
-                margin: 5px auto;
-                box-shadow: 0 0 2px grey;
-                border-radius: 10px;
-                font-size: 14px;
-                background: azure;
-                cursor: pointer;
-            }
-        }
-    }
+    //         .item{
+    //             width: fit-content;
+    //             padding: 5px;
+    //             margin: 5px auto;
+    //             box-shadow: 0 0 2px grey;
+    //             border-radius: 10px;
+    //             font-size: 14px;
+    //             background: azure;
+    //             cursor: pointer;
+    //         }
+    //     }
+    // }
 </style>

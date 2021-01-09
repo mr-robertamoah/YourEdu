@@ -832,6 +832,10 @@ import { strings } from '../services/helpers';
                 type: Boolean,
                 default: false,
             },
+            disabled: { //when being viewed by admin as an activity
+                type: Boolean,
+                default: false
+            },
         },
         data() {
             return {
@@ -1816,6 +1820,9 @@ import { strings } from '../services/helpers';
                 this.unseenMessagesNumber = 0
             },
             clickedEditIcon(){
+                if (this.disabled) {
+                    return
+                }
                 if(this.computedBanned) return
                 this.showOptions = !this.showOptions
                 if (this.showOptions) {
@@ -2345,6 +2352,9 @@ import { strings } from '../services/helpers';
                 }
             },
             clickedAddComment(){
+                if (this.disabled) {
+                    return
+                }
                 if(this.computedBanned) return
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','discussionsingle')
@@ -2398,6 +2408,9 @@ import { strings } from '../services/helpers';
                 this.showFlagReason = false
             },
             clickedFlag(){
+                if (this.disabled) {
+                    return
+                }
                 if(this.computedBanned) return
                 if (this.isFlagged) {
                     this.flag(null)
@@ -2464,6 +2477,9 @@ import { strings } from '../services/helpers';
                 }, 3000);
             },
             async clickedLike(data){
+                if (this.disabled) {
+                    return
+                }
                 if(this.computedBanned) return
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','discussionsingle')
@@ -2538,11 +2554,6 @@ import { strings } from '../services/helpers';
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
 
 @mixin info(){
     text-align: center;

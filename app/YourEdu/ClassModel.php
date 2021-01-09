@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use App\Traits\DashboardItemTrait;
+use App\Traits\NotOwnedByTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassModel extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, NotOwnedByTrait, DashboardItemTrait;
 
     protected $fillable = [
         'name','state','description','academic_id','max_learners','structure'
@@ -45,15 +47,28 @@ class ClassModel extends Model
     }
 
     public function facilitators(){
-        return $this->morphedByMany(Facilitator::class,'classable','classables','class_id');
+        return $this->morphedByMany(Facilitator::class,'classable','classables','class_id')
+            ->withTimestamps();
     }
 
     public function learners(){
-        return $this->morphedByMany(Learner::class,'classable','classables','class_id');
+        return $this->morphedByMany(Learner::class,'classable','classables','class_id')
+            ->withTimestamps();
     }
 
     public function schools(){
-        return $this->morphedByMany(School::class,'classable','classables','class_id');
+        return $this->morphedByMany(School::class,'classable','classables','class_id')
+            ->withTimestamps();
+    }
+
+    public function classes(){
+        return $this->morphedByMany(ClassModel::class,'classable','classables','class_id')
+            ->withPivot(['resource'])->withTimestamps();
+    }
+
+    public function courses(){
+        return $this->morphedByMany(Course::class,'classable','classables','class_id')
+            ->withTimestamps();
     }
 
     public function sections(){
@@ -74,11 +89,11 @@ class ClassModel extends Model
     {
         return $this->morphToMany(AcademicYear::class,'academicable','academicables',null,'academic_id');
     }
-
-    // public function uniqueSubjects()
-    // {
-    //     return $this->morphMany(Subject::class,'subjectable');
-    // }
+    
+    public function payments()
+    {
+        return $this->morphMany(Payment::class,'what');
+    }
 
     public function subjects()
     {
@@ -88,7 +103,8 @@ class ClassModel extends Model
 
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra');
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
+            ->withPivot(['resource','activity'])->withTimestamps();
     }
 
     public function fees()

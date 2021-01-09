@@ -15,19 +15,21 @@ class CreatePaymentsTable extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('account_id');
-            $table->morphs('paidby'); //member facilitator professional school parent groupadmin
-            $table->morphs('paidto'); // facilitator professional school youredu
-            $table->morphs('paidfor'); //price fee
+            $table->nullableMorphs('paidby'); //member facilitator professional school parent groupadmin
+            $table->nullableMorphs('paidto'); // facilitator professional school youredu
+            $table->nullableMorphs('paidfor'); //price fee subscription commission
+            $table->nullableMorphs('what'); //course program class
             $table->nullableMorphs('for'); // learner group faciliator school parent professional
-            $table->float('actual_amount')->nullable();
-            $table->float('amount_paid');
+            $table->float('discount_id')->nullable();
+            $table->float('amount');
+            $table->enum('type',['CASH','CARD','MOMO','BANK']);
             $table->enum('state',['PENDING','COMPLETED','CANCELLED'])->nullable();
             $table->timestamp('postponement_date')->nullable();
+            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
 
 
-            $table->foreign('account_id')->references('id')->on('users')->cascadeOnDelete();
+            // $table->foreign('account_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

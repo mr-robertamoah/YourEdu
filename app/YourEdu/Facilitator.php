@@ -115,6 +115,11 @@ class Facilitator extends Model
         return $this->morphMany(ClassModel::class,'addedby');
     }
 
+    public function addedCourses()
+    {
+        return $this->morphMany(Course::class,'addedby');
+    }
+
     public function keywords()
     {
         return $this->morphMany(Keyword::class,'keywordable');
@@ -186,9 +191,15 @@ class Facilitator extends Model
         return $this->morphMany(Extracurriculum::class,'addedby');
     }
 
+    public function ownedExtracurriculums()
+    {
+        return $this->morphMany(Extracurriculum::class,'ownedby');
+    }
+
     public function extracurriculums()
     {
-        return $this->morphMany(Extracurriculum::class,'extrable');
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
+            ->withPivot(['resource','activity'])->withTimestamps();
     }
 
     public function grades(){
@@ -210,6 +221,11 @@ class Facilitator extends Model
         return $this->morphMany(Program::class,'addedby');
     }
 
+    public function ownedPrograms()
+    {
+        return $this->morphMany(Program::class,'ownedby');
+    }
+
     public function programs()
     {
         return $this->morphToMany(Program::class,'programmable','programmables');
@@ -227,18 +243,23 @@ class Facilitator extends Model
     public function courses()
     {
         return $this->morphToMany(Course::class,'coursable','coursables')
-            ->withPivot(['activity']);
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function subjects()
     {
         return $this->morphToMany(subject::class,'subjectable','subjectables')
-            ->withPivot(['activity']);
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function uniqueCoursesAdded()
     {
         return $this->morphMany(Course::class,'addedby');
+    }
+
+    public function ownedCourses()
+    {
+        return $this->morphMany(Course::class,'ownedby');
     }
     
     public function works()

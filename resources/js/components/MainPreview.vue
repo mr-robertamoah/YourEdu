@@ -107,11 +107,7 @@ import BlackWhiteBadge from './BlackWhiteBadge'
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-}
+
     .main-preview-wrapper{
         position: relative;
         width: 100%;

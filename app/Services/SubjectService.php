@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\SubjectException;
+use Illuminate\Support\Str;
 
 class SubjectService
 {
@@ -59,5 +60,25 @@ class SubjectService
         $subject->delete();
 
         return 'successful';
+    }
+
+    public static function subjectAttachItem($subjectId,$item,$activity)
+    {
+        if (is_null(
+            $item->subjects->where('id',$subjectId)->first()
+        )) {
+            $item->subjects()->attach($subjectId,['activity' => Str::upper($activity)]);
+            $item->save();
+        }
+    }
+
+    public static function subjectUnattachItem($subjectId,$item)
+    {
+        if (!is_null(
+            $item->subjects->where('id',$subjectId)->first()
+        )) {
+            $item->subjects()->detach($subjectId);
+            $item->save();
+        }
     }
 }

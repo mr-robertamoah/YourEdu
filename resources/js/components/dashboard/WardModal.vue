@@ -119,12 +119,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
 
 <style lang="scss" scoped>
 
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    width: 100%;
-    white-space: nowrap;
-}
     .dashboard-modal{
         padding: 20px 10px;
 

@@ -6,10 +6,11 @@
             <div class="close" @click="disappear">
                 <font-awesome-icon :icon="['fas','times']"></font-awesome-icon>
             </div>
-            <div class="main">
-                <div class="main-section">
-                    <slot name="main"></slot>
-                </div>
+            <div class="main" v-if="main">
+                <slot name="main"></slot>
+            </div>
+            <div class="normal" v-if="normal">
+                <slot name="normal"></slot>
             </div>
         </div>
     </div>
@@ -19,6 +20,14 @@
     export default {
         props: {
             show: {
+                type: Boolean,
+                default: false
+            },
+            main: {
+                type: Boolean,
+                default: true
+            },
+            normal: {
                 type: Boolean,
                 default: false
             },
@@ -92,9 +101,11 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 align-items: center;
                 min-height: 75%;
 
-                .main-section{
-                    
-                }
+            }
+
+            .normal{
+                padding: 10px;
+                margin-top: 20px;
             }
         }
     }

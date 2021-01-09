@@ -21,3 +21,7 @@ mix.js('resources/js/app.js', 'public/js')
 //       postCss: [ tailwindcss('tailwind.config.js') ],
 // })
    .sass('resources/sass/app.scss', 'public/css');
+
+mix.options({
+   globalVueStyles: 'resources/sass/_variables.scss'
+});

@@ -334,6 +334,10 @@ import { mapGetters, mapActions } from 'vuex'
                 type: Boolean,
                 default: false
             },
+            disabled: { //when being viewed by admin as an activity
+                type: Boolean,
+                default: false
+            },
         },
         data() {
             return {
@@ -601,6 +605,9 @@ import { mapGetters, mapActions } from 'vuex'
                 this.$emit('clickedShowPostPreview',data)
             },
             clickedEditIcon(){
+                if (this.disabled) {
+                    return
+                }
                 this.showOptions = !this.showOptions
                 this.showAttach = false
             },
@@ -648,6 +655,9 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showSmallModal = false
             },
             clickedAddComment(){
+                if (this.disabled) {
+                    return
+                }
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
@@ -692,6 +702,9 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showFlagReason = false
             },
             clickedFlag(){
+                if (this.disabled) {
+                    return
+                }
                 if (this.isFlagged) {
                     this.flag(null)
                     return
@@ -757,6 +770,9 @@ import { mapGetters, mapActions } from 'vuex'
                 }, 3000);
             },
             async clickedLike(){
+                if (this.disabled) {
+                    return
+                }
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','postShow')
                 } else if (!this.getProfiles.length) {
@@ -1085,11 +1101,6 @@ import { mapGetters, mapActions } from 'vuex'
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
 
     .loading,
     .alert{

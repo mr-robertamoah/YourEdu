@@ -17,6 +17,7 @@ class CreateClassablesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('class_id');
             $table->nullableMorphs('classable');
+            $table->boolean('resource')->default(false);
             $table->timestamps();
 
 

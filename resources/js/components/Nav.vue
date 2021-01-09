@@ -128,7 +128,7 @@ import MainAlert from "../components/transitions/MainAlert";
 import RequestModal from "../components/RequestModal";
 import {TokenService} from "../services/token.service";
 import { mapActions, mapGetters } from "vuex";
-import { strings } from '../services/helpers';
+import { dates, strings } from '../services/helpers';
 
     export default {
         props: {
@@ -274,6 +274,7 @@ import { strings } from '../services/helpers';
                 }, 5000);
             },
             listen(){
+
                 if (this.getUser && TokenService.getToken()) {
                     
                     Echo.private(`youredu.user.${this.getUser.id}`)
@@ -354,6 +355,33 @@ import { strings } from '../services/helpers';
                                     isMessage: true,
                                     account: notification.account,
                                     text: notification.message
+                                }
+                                alert.id = Math.floor(Math.random() * 100)
+                                this.alerts.unshift(alert)
+                                this.clearAlert(alert.id)
+                            }  else if (notification.type === 'App\\Notifications\\BanNotification') {
+                                let message,
+                                    action = notification.ban.type === 'overall' ? '' : 
+                                        `${notification.ban.type.toLowerCase()} `,
+                                    account = notification.ban.account === 'user' ? 'you' :
+                                        notification.ban.account
+                                if (notification.ban === 'SERVED' || notification.ban === 'PENDING') {
+                                    if (notifcation.ban.username) {
+                                        message = `you have been served ${action}ban which will last until ${dates.dateReadable(notification.ban.dueDate)}`
+                                    } else {
+                                        message = `your ${account} account has been served ${action}ban which will last until ${dates.dateReadable(notification.ban.dueDate)}`
+                                    }
+                                } else if (notification.ban === 'UNSERVED' || notification.ban === 'RESOLVED') {
+                                    if (notifcation.ban.username) {
+                                        message = `your ${action}ban with the due date of ${dates.dateReadable(notification.ban.dueDate)}, has been removed.`
+                                    } else {
+                                        message = `the ${action}ban served to ${account} account, with due date of ${dates.dateReadable(notification.ban.dueDate)}, has been removed.`
+                                    }
+                                }
+                                
+                                let alert = {
+                                    isMessage: true,
+                                    text: message
                                 }
                                 alert.id = Math.floor(Math.random() * 100)
                                 this.alerts.unshift(alert)

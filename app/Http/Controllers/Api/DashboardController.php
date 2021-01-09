@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AcademicYearResource;
 use App\Http\Resources\AcademicYearSectionResource;
+use App\Http\Resources\AccountActivitiesResource;
 use App\Http\Resources\DashboardAccountResource;
 use App\Http\Resources\DashboardAdminResource;
+use App\Http\Resources\DashboardAttachmentResource;
+use App\Http\Resources\DashboardItemMiniResource;
 use App\Http\Resources\DashboardItemResource;
+use App\Http\Resources\DashboardUserAccountResource;
 use App\Http\Resources\DashboardUserResource;
 use App\Http\Resources\UserAccountResource;
 use App\Http\Resources\UserResource;
@@ -30,6 +34,30 @@ class DashboardController extends Controller
             throw $th;
         }
     }
+    
+    public function getAccountActivities(Request $request)
+    {
+        try {
+            $activities = (new DashboardService())->getAccountActivities($request->account,
+                $request->accountId,$request->adminId,auth()->id());
+
+            return AccountActivitiesResource::collection($activities);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+    
+    public function getAccounts(Request $request)
+    {
+        try {
+            $accounts = (new DashboardService())->getUsersOrAdmins($request->account,
+                $request->accountId,auth()->id(),'accounts');
+
+            return DashboardUserAccountResource::collection($accounts);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
 
     public function getAdmins(Request $request)
     {
@@ -43,9 +71,10 @@ class DashboardController extends Controller
         }
     }
 
-    public function banninguser(Request $request)
+    public function banningUser(Request $request)
     {
         try {
+            DB::beginTransaction();
             $banArray = (new DashboardService())->banningAccount(
                 $request->action,
                 $request->account,
@@ -55,8 +84,10 @@ class DashboardController extends Controller
                 $request->banId,
                 $request->state,
                 $request->type,
+                $request->dueDate,
             );
 
+            DB::commit();
             return response()->json([
                 'message' => 'successful',
                 'account' => $request->account === 'user' ? 
@@ -64,6 +95,7 @@ class DashboardController extends Controller
                     new UserAccountResource($banArray['account']),
             ]);
         } catch (\Throwable $th) {
+            DB::rollback();
             throw $th;
         }
     }
@@ -133,6 +165,79 @@ class DashboardController extends Controller
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function itemGet($item,$itemId)
+    {
+        try {
+            $mainItem = (new DashboardService())->itemGet($item,$itemId);
+            
+            return response()->json([
+                'message' => 'successful',
+                'item' => new DashboardItemResource($mainItem)
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function attachAccount(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            (new DashboardService())->attachAccount(
+                $request->account,
+                $request->accountId,
+                json_decode($request->attachments)
+            );
+            
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                // 'attachment' => DashboardAttachmentResource::collection($attachments)
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function unattachAccount(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            (new DashboardService())->unattachAccount(
+                $request->account,
+                $request->accountId,
+                $request->item,
+                $request->itemId
+            );
+            
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                // 'attachment' => DashboardAttachmentResource::collection($attachments)
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function getAccountSpecificItem(Request $request)
+    {
+        try {
+            $items = (new DashboardService())->getAccountSpecificItem(
+                $request->account,
+                $request->accountId,
+                $request->item,
+                auth()->id()
+            );
+
+            return DashboardItemMiniResource::collection($items);
+        } catch (\Throwable $th) {
             throw $th;
         }
     }

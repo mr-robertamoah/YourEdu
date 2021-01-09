@@ -189,13 +189,6 @@ import OptionalActions from '../OptionalActions';
 
 <style lang="scss" scoped>
 
-@mixin text-overflow(){
-    overflow: hidden;
-    max-width: 65%;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 @mixin message(){
     background: cornsilk;
     text-align: center;

@@ -18,6 +18,8 @@ class CreateSchoolsTable extends Migration
             $table->unsignedBigInteger('owner_id');
             $table->string('company_name')->unique();
             $table->string('class_structure')->nullable();
+            $table->json('types')->nullable();
+            $table->mediumText('about')->nullable();
             $table->enum('role',['TRADITIONAL','VIRTUAL'])->default('VIRTUAL');
             $table->softDeletes();
             $table->timestamps();

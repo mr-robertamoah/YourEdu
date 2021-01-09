@@ -25,8 +25,9 @@
         </div>
         <div class="other" v-if="hasItems && showOther">
             <search-input
-                v-if="hasSearch && items.length"
+                v-if="hasSearch && items.length > 5"
                 @search="getSearchText"
+                :searchPlaceholder="computedSearchPlaceholder"
                 class="search-input"
             ></search-input>
             <template v-if="items.length">
@@ -110,7 +111,10 @@ export default {
                     item.sectionTwo && item.sectionTwo.toLowerCase().includes(this.searchText.toLowerCase()) || 
                     item.sectionThree && item.sectionThree.toLowerCase().includes(this.searchText.toLowerCase())
             }) : this.items
-        }
+        },
+        computedSearchPlaceholder(){
+            return this.heading.length ? `search through ${this.heading}` : 'search for item'
+        },
     },
     methods: {
         clickedMain() {
@@ -127,13 +131,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    width: 100%;
-    white-space: nowrap;
-}
 
     .dashboard-item-wrapper{
         width: fit-content;

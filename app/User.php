@@ -112,6 +112,19 @@ class User extends Authenticatable
     {
        return $this->morphMany(Ban::class,'bannable');
     }
+    public function hasBan()
+    {
+        return $this->bans()->where(function($query){
+                $query->where(function($query){
+                    $query->whereDate('due_date','>',now())
+                        ->whereIn('state',['PENDING','SERVED']);
+                })
+                ->orWhere(function($query){
+                    $query->whereNull('due_date')
+                        ->whereIn('state',['PENDING','SERVED']);
+                });
+            });
+    }
 
     public function points()
     {
@@ -176,20 +189,5 @@ class User extends Authenticatable
     public function messagesReceived()
     {
         return $this->hasMany(Message::class,'to_user_id');
-    }
-
-    public function scopeHasBan($query)
-    {
-        return $query->whereHas('bans',function($query){
-            $query->where(function($query){
-                $query->whereDate('due_date','>',now())
-                ->whereIn('state',['PENDING','SERVED']);
-            })
-            ->orWhere(function($query){
-                $query->whereNull('due_date')
-                ->whereIn('state',['PENDING','SERVED']);
-            });
-        });
-    }
-    
+    }    
 }

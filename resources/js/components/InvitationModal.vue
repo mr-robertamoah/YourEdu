@@ -637,14 +637,20 @@ import { mapActions, mapGetters } from 'vuex';
                 this.accounts = []
             },
             attachmentSelected(data){
-                this.data.attachments.push(data)
+                let index = this.findAttachmentIndex(data)
+                if (index === -1) {
+                    this.data.attachments.push(data)
+                }
             },
-            removeAttachment(data){
-                let index = this.data.attachments.findIndex(attachment=>{
+            findAttachmentIndex(data) {
+                return this.data.attachments.findIndex(attachment=>{
                     return attachment.data.name === data.data.name && 
                         attachment.data.description === data.data.description && 
                         attachment.data.id === data.data.id
                 })
+            },
+            removeAttachment(data){
+                let index = this.findAttachmentIndex(data)
                 if (index > -1) {
                     this.data.attachments.splice(index,1)
                 }
@@ -818,7 +824,6 @@ import { mapActions, mapGetters } from 'vuex';
 </script>
 
 <style lang="scss" scoped>
-$background-color-main: rgb(22,233,205);
 
 @mixin text-description(){
     font-size: 14px;

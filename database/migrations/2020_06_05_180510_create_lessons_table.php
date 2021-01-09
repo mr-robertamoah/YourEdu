@@ -17,16 +17,12 @@ class CreateLessonsTable extends Migration
             $table->id();
             $table->nullableMorphs('ownedby'); //school facilitator professional group collaboration
             $table->morphs('addedby'); //delivered by collaboration facilitator professional
-            $table->nullableMorphs('lessonable'); //post class course
-            $table->nullableMorphs('curriculumable'); //curriculum extracurriculum
+            $table->nullableMorphs('lessonable'); //post class course extracurriculum
             $table->unsignedBigInteger('previous_lesson_id')->nullable();
-            $table->unsignedBigInteger('structure_id')->nullable();
-            $table->unsignedBigInteger('course_id')->nullable();
-            $table->unsignedBigInteger('class_id')->nullable();
-            $table->unsignedBigInteger('class_section_id')->nullable();
             $table->string('title');
             $table->string('description')->nullable();
             $table->string('ageGroup')->nullable();
+            $table->enum('state',['PENDING','DECLINED','ACCEPTED','DELETED'])->nullable();
             $table->softDeletes();
             $table->timestamps();
 

@@ -1,191 +1,220 @@
 <template>
-    <just-fade>
-        <template slot="transition" v-if="show">
-            <main-modal
-                :show="show"
-                :main="false"
-                :requests="false"
-                @mainModalDisappear="mainModalDisappear"
-                class="modal-wrapper"
-                :alertMessage="alertMessage"
-                :showAlert="alertMessage.length"
-                :scrollUp="scrollUp"
-            >
-                <template slot="main-other">
-                    <h5>Create a Lesson</h5>
-                    <welcome-form class="welcome-form">
-                        <template slot="input">
-                            <div class="section">Lesson Info</div>
-                            <div class="form-edit">
-                                <text-input
-                                    placeholder="lesson title"  
-                                    :bottomBorder="true"
-                                    :error="errorTitle"
-                                    v-model="lessonData.title"></text-input>
-                            </div>
-                            <div class="form-edit">
-                                <text-textarea type="text" 
-                                    placeholder="lesson description"
-                                    :bottomBorder="true"
-                                    v-model="lessonData.description"></text-textarea>
-                            </div>
-                            <div class="form-edit">
-                                <text-input
-                                    placeholder="age group"  
-                                    :bottomBorder="true"
-                                    v-model="lessonData.title"></text-input>
-                            </div>
-                            <div class="section">Lesson Resources</div>
-                            <div class="info">you can up upload three different files for a lesson</div>
-                            <div class="files">
-                                <div class="file"
-                                    @click="clickedFileType('video')"
-                                    :class="{active: fileType === 'video'}"
-                                >video</div>
-                                <div class="file"
-                                    @click="clickedFileType('audio')"
-                                    :class="{active: fileType === 'audio'}"
-                                >audio</div>
-                                <div class="file"
-                                    @click="clickedFileType('picture')"
-                                    :class="{active: fileType === 'picture'}"
-                                >picture</div>
-                            </div>
-                            <div class="actions">
-                                <div class="action"
-                                    @click="clickedAction('upload')"
-                                    v-if="fileType.length"
-                                    :title="`upload ${fileType}`"
-                                >
-                                    <font-awesome-icon :icon="['fa','upload']"></font-awesome-icon>
+    <div>
+        <just-fade>
+            <template slot="transition" v-if="show">
+                <main-modal
+                    :show="show"
+                    :main="false"
+                    :requests="false"
+                    @mainModalDisappear="mainModalDisappear"
+                    class="modal-wrapper"
+                    :scrollUp="scrollUp"
+                >
+                    <template slot="main-other">
+                        <welcome-form class="welcome-form"
+                            :title="title"
+                        >
+                            <template slot="input">
+                                <auto-alert
+                                    :message="alertMessage"
+                                    :success="alertSuccess"
+                                    :danger="alertDanger"
+                                    :sticky="true"
+                                    @hideAlert="clearAlert"
+                                ></auto-alert>
+                                <div class="loading" v-if="loading">
+                                    <pulse-loader :loading="loading"></pulse-loader>
                                 </div>
-                                <div class="action"
-                                    v-if="fileType === 'video'" 
-                                    @click="clickedAction('video')"
-                                    title="record a video"
-                                >
-                                    <font-awesome-icon :icon="['fa','video']"></font-awesome-icon>
+                                <div class="section">Lesson Info</div>
+                                <div class="form-edit">
+                                    <text-input
+                                        placeholder="lesson title"  
+                                        :bottomBorder="true"
+                                        :error="errorTitle"
+                                        v-model="data.title"></text-input>
                                 </div>
-                                <div class="action"
-                                    v-if="fileType === 'picture'" 
-                                    @click="clickedAction('camera')"
-                                    title="snap a picture"
-                                >
-                                    <font-awesome-icon :icon="['fa','camera']"></font-awesome-icon>
+                                <div class="form-edit">
+                                    <text-textarea type="text" 
+                                        placeholder="lesson description"
+                                        :bottomBorder="true"
+                                        v-model="data.description"></text-textarea>
                                 </div>
-                                <div class="action"
-                                    v-if="fileType === 'audio'" 
-                                    @click="clickedAction('microphone')"
-                                    title="record an audio"
-                                >
-                                    <font-awesome-icon :icon="['fa','microphone']"></font-awesome-icon>
+                                <div class="form-edit">
+                                    <text-input
+                                        placeholder="age group"  
+                                        :bottomBorder="true"
+                                        v-model="data.title"></text-input>
                                 </div>
-                            </div>
-                            <div class="media-section">
-                                <div class="media-item" v-if="imageFile">
-                                    <div class="item-type" @click="clickedFile('image')">
-                                        <font-awesome-icon :icon="['fa','image']"></font-awesome-icon>
-                                    </div>
-                                    <div class="item-info" @click="clickedFile('image')">
-                                        {{imageFile.name}}
-                                    </div>
-                                    <div class="item-clear"
-                                        @click="clickedBan('image')"
-                                        :title="`remove ${fileType}`"
+                                <div class="section">Lesson Resources</div>
+                                <div class="info">you can up upload three different files for a lesson</div>
+                                <div class="files">
+                                    <div class="file"
+                                        @click="clickedFileType('video')"
+                                        :class="{active: fileType === 'video'}"
+                                    >video</div>
+                                    <div class="file"
+                                        @click="clickedFileType('audio')"
+                                        :class="{active: fileType === 'audio'}"
+                                    >audio</div>
+                                    <div class="file"
+                                        @click="clickedFileType('picture')"
+                                        :class="{active: fileType === 'picture'}"
+                                    >picture</div>
+                                </div>
+                                <div class="actions">
+                                    <div class="action"
+                                        @click="clickedAction('upload')"
+                                        v-if="fileType.length"
+                                        :title="`upload ${fileType}`"
                                     >
-                                        <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
+                                        <font-awesome-icon :icon="['fa','upload']"></font-awesome-icon>
                                     </div>
-                                </div>
-                                <div class="media-item" v-if="videoFile">
-                                    <div class="item-type" @click="clickedFile('video')">
-                                        <font-awesome-icon :icon="['fa','film']"></font-awesome-icon>
-                                    </div>
-                                    <div class="item-info" @click="clickedFile('video')">
-                                        {{videoFile.name}}
-                                    </div>
-                                    <div class="item-clear"
-                                        @click="clickedBan('video')"
-                                        :title="`remove ${fileType}`"
+                                    <div class="action"
+                                        v-if="fileType === 'video'" 
+                                        @click="clickedAction('video')"
+                                        title="record a video"
                                     >
-                                        <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
+                                        <font-awesome-icon :icon="['fa','video']"></font-awesome-icon>
                                     </div>
-                                </div>
-                                <div class="media-item" v-if="audioFile">
-                                    <div class="item-type" @click="clickedFile('audio')">
-                                        <font-awesome-icon :icon="['fa','music']"></font-awesome-icon>
-                                    </div>
-                                    <div class="item-info" @click="clickedFile('audio')">
-                                        {{audioFile.name}}
-                                    </div>
-                                    <div class="item-clear"
-                                        @click="clickedBan('audio')"
-                                        :title="`remove ${fileType}`"
+                                    <div class="action"
+                                        v-if="fileType === 'picture'" 
+                                        @click="clickedAction('camera')"
+                                        title="snap a picture"
                                     >
-                                        <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
+                                        <font-awesome-icon :icon="['fa','camera']"></font-awesome-icon>
+                                    </div>
+                                    <div class="action"
+                                        v-if="fileType === 'audio'" 
+                                        @click="clickedAction('microphone')"
+                                        title="record an audio"
+                                    >
+                                        <font-awesome-icon :icon="['fa','microphone']"></font-awesome-icon>
                                     </div>
                                 </div>
-                            </div>
-                            <fade-up>
-                                <template slot="transition" v-if="showFilePreview">
-                                    <file-preview
-                                        class="file-preview"
-                                        :file="activeFile"
-                                        :middle="true"
-                                        @removeFile="removeFile"
-                                    ></file-preview>
-                                </template>
-                            </fade-up>
-                            <input type="file" class="d-none" 
-                                @change="fileChange" 
-                                ref="inputfile"
-                                :accept="fileAccept"
-                            >
-                        </template>
-            
-                        <template slot="buttons">
-                            <post-button 
-                                :buttonText="'create'" 
-                                buttonStyle='success'
-                                @click="clickedCreate"
-                            ></post-button>
-                            <post-button 
-                                :buttonText="'close preview'" 
-                                buttonStyle='success'
-                                v-if="activeFile"
-                                @click="clickedClosePreview"
-                            ></post-button>
-                        </template>
-                    </welcome-form>
+                                <div class="media-section">
+                                    <div class="media-item" v-if="imageFile">
+                                        <div class="item-type" @click="clickedFile('image')">
+                                            <font-awesome-icon :icon="['fa','image']"></font-awesome-icon>
+                                        </div>
+                                        <div class="item-info" @click="clickedFile('image')">
+                                            {{imageFile.name}}
+                                        </div>
+                                        <div class="item-clear"
+                                            @click="clickedBan('image')"
+                                            :title="`remove ${fileType}`"
+                                        >
+                                            <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
+                                        </div>
+                                    </div>
+                                    <div class="media-item" v-if="videoFile">
+                                        <div class="item-type" @click="clickedFile('video')">
+                                            <font-awesome-icon :icon="['fa','film']"></font-awesome-icon>
+                                        </div>
+                                        <div class="item-info" @click="clickedFile('video')">
+                                            {{videoFile.name}}
+                                        </div>
+                                        <div class="item-clear"
+                                            @click="clickedBan('video')"
+                                            :title="`remove ${fileType}`"
+                                        >
+                                            <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
+                                        </div>
+                                    </div>
+                                    <div class="media-item" v-if="audioFile">
+                                        <div class="item-type" @click="clickedFile('audio')">
+                                            <font-awesome-icon :icon="['fa','music']"></font-awesome-icon>
+                                        </div>
+                                        <div class="item-info" @click="clickedFile('audio')">
+                                            {{audioFile.name}}
+                                        </div>
+                                        <div class="item-clear"
+                                            @click="clickedBan('audio')"
+                                            :title="`remove ${fileType}`"
+                                        >
+                                            <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                <fade-up>
+                                    <template slot="transition" v-if="showFilePreview">
+                                        <file-preview
+                                            class="file-preview"
+                                            :file="activeFile"
+                                            :middle="true"
+                                            @removeFile="removeFile"
+                                        ></file-preview>
+                                    </template>
+                                </fade-up>
+                                <input type="file" class="d-none" 
+                                    @change="fileChange" 
+                                    ref="inputfile"
+                                    :accept="fileAccept"
+                                >
+                            </template>
+                
+                            <template slot="buttons">
+                                <post-button 
+                                    :buttonText="'create'" 
+                                    buttonStyle='success'
+                                    @click="clickedCreate"
+                                ></post-button>
+                                <post-button 
+                                    :buttonText="'close preview'" 
+                                    buttonStyle='success'
+                                    v-if="activeFile"
+                                    @click="clickedClosePreview"
+                                ></post-button>
+                            </template>
+                        </welcome-form>
 
-                    <!-- media capture -->
-                    <media-capture
-                        v-if="showMediaCapture"
-                        :show="showMediaCapture"
-                        :type="mediaCaptureType"
-                        @closeMediaCapture="closeMediaCapture"
-                        @sendFile="receiveMediaCapture"
-                    ></media-capture>
-                </template>
-            </main-modal>
-        </template>
-    </just-fade>
+                        <!-- media capture -->
+                        <media-capture
+                            v-if="showMediaCapture"
+                            :show="showMediaCapture"
+                            :type="mediaCaptureType"
+                            @closeMediaCapture="closeMediaCapture"
+                            @sendFile="receiveMediaCapture"
+                        ></media-capture>
+                    </template>
+                </main-modal>
+            </template>
+        </just-fade>
+        <create-discussion
+            :show="data.discussion"
+            v-if="data.discussion && main"
+            :edit="edit"
+            :auto="true"
+            @clickedCreate="getDiscussionData"
+            @createDiscussionDisappear="closeDiscussionModal"
+        ></create-discussion>
+    </div>
 </template>
 
 <script>
 import TextInput from '../TextInput';
 import TextTextarea from '../TextTextarea';
 import PostButton from '../PostButton';
+import AttachmentBadge from '../AttachmentBadge';
+import PostAttachment from '../PostAttachment';
+import AutoAlert from '../AutoAlert';
+import PaymentTypes from '../PaymentTypes';
 import FadeUp from '../transitions/FadeUp';
 import MediaCapture from '../MediaCapture';
+import PriceBadge from '../PriceBadge';
+import FeeBadge from '../FeeBadge';
+import SubscriptionBadge from '../SubscriptionBadge';
 import WelcomeForm from '.././welcome/WelcomeForm';
+import { bus } from '../../app';
+import { mapActions, mapGetters } from 'vuex';
+import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
     export default {
-        props: {
-            show: {
-                type: Boolean,
-                default: false
-            },
-        },
         components: {
+            PaymentTypes,
+            AutoAlert,
+            PostAttachment,
+            SubscriptionBadge,
+            FeeBadge,
+            PriceBadge,
             WelcomeForm,
             MediaCapture,
             FadeUp,
@@ -193,13 +222,14 @@ import WelcomeForm from '.././welcome/WelcomeForm';
             TextTextarea,
             TextInput,
         },
+        props: {
+            main: {
+                type: Boolean,
+                default: false
+            },
+        },
         data() {
             return {
-                lessonData: {
-                    ageGroup: '',
-                    title: '',
-                    description: '',
-                },
                 imageFile: null,
                 videoFile: null,
                 audioFile: null,
@@ -212,14 +242,20 @@ import WelcomeForm from '.././welcome/WelcomeForm';
                 mediaCaptureType: '',
                 showMediaCapture: false,
                 scrollUp: false,
-                alertMessage: '',
             }
         },
-        computed: {
-            computedFile() {
-                return this.fileType === 'video' ? this.videoFile :
-                    this.fileType === 'audio' ? this.audioFile :
-                    this.fileType === 'picture' ? this.imageFile : null
+        watch: {
+            main: {
+                immediate: true,
+                handler(newValue, oldValue){
+
+                }
+            },
+            edit: {
+                immediate: true,
+                handler(newValue, oldValue){
+                    
+                }
             }
         },
         watch: {
@@ -228,7 +264,7 @@ import WelcomeForm from '.././welcome/WelcomeForm';
                     this.activeFile = null
                 }
             },
-            lessonData: {
+            data: {
                 handler(newValue){
                     if (newValue.title.length) {
                         this.errorTitle = false
@@ -238,14 +274,14 @@ import WelcomeForm from '.././welcome/WelcomeForm';
             },
             errorFile(newValue){
                 if (newValue) {
+                    this.alertDanger = true
                     this.alertMessage = 'a lesson requires at least one file'
-                    this.clearAlert()
                 }
             },
             errorTitle(newValue){
                 if (newValue) {
+                    this.alertDanger = true
                     this.alertMessage = 'a lesson requires a title'
-                    this.clearAlert()
                 }
             },
             scrollUp(newValue) {
@@ -256,12 +292,30 @@ import WelcomeForm from '.././welcome/WelcomeForm';
                 }
             },
         },
+        created () {
+            this.title = 'create a lesson'
+            bus
+            .$on('editLesson',(data)=>{
+                this.setData(data)
+            })
+            .$on('lessonOwnership',()=>{
+                this.hasOwnership = true
+                this.data.owner = this.computedCreator
+            })
+        },
+        mixins: [DashboardCreateForm],
+        computed: {
+            ...mapGetters(['dashboard/getAccountDetails','dashboard/getCurrentAccount',
+                'getUser']),
+            computedFile() {
+                return this.fileType === 'video' ? this.videoFile :
+                    this.fileType === 'audio' ? this.audioFile :
+                    this.fileType === 'picture' ? this.imageFile : null
+            }
+        },
         methods: {
-            clearAlert(){
-                setTimeout(() => {
-                    this.alertMessage = ''
-                }, 4000);
-            },
+            ...mapActions(['dashboard/createLesson','dashboard/editLesson',
+                'dashboard/getAccountSpecificItem']),
             mainModalDisappear() {
                 this.$emit('createLessonDisappear')
             },
@@ -312,7 +366,8 @@ import WelcomeForm from '.././welcome/WelcomeForm';
                 this.showMediaCapture = false
             },
             clickedCreate(){
-                if (!this.lessonData.title.length) {
+                if (this.loading) return
+                if (!this.data.title.length) {
                     this.scrollUp = true
                     this.errorTitle = true
                     return 
@@ -323,16 +378,34 @@ import WelcomeForm from '.././welcome/WelcomeForm';
                     return 
                 }
                 let lesson = []
-                lesson['title'] = this.lessonData.title
-                lesson['description'] = this.lessonData.description
-                lesson['ageGroup'] = this.lessonData.ageGroup
+                lesson['title'] = this.data.title
+                lesson['description'] = this.data.description
+                lesson['ageGroup'] = this.data.ageGroup
                 lesson['file'] = [
                     this.imageFile,
                     this.videoFile,
                     this.audioFile,
                 ]
-                this.$emit('clickedCreate',lesson)
-                this.$emit('createLessonDisappear')
+                if (this.main) {
+                    this.createLesson(lesson)
+                } else {
+                    this.$emit('clickedCreate',lesson)
+                    this.$emit('createLessonDisappear')
+                }
+            },
+            async createLesson(lesson) {
+                let response,
+                    data = new FormData
+
+                this.loading = true
+                response = await this['dashboard/createLesson'](data)
+
+                this.loading = false
+                if (response.status) {
+                    
+                } else {
+                    console.log('repsonse :>> ', repsonse);
+                }
             },
             clickedAction(data){
                 if (data === 'video') {
@@ -384,9 +457,7 @@ import WelcomeForm from '.././welcome/WelcomeForm';
         padding: 0;
 
         .section{
-            font-size: 12px;
-            font-weight: 500;
-            border-bottom: 1px solid gray;
+            @include form-section()
         }
 
         .info{

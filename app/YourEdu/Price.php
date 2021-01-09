@@ -11,7 +11,7 @@ class Price extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'amount','description',
+        'amount','description', 'for'
     ];
 
     public function paymentFor()

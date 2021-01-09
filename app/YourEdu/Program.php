@@ -2,16 +2,17 @@
 
 namespace App\YourEdu;
 
+use App\Traits\NotOwnedByTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Program extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, NotOwnedByTrait;
 
     protected $fillable = [
-        'name','description','rationale'
+        'name','description','rationale', 'state'
     ];
     
     public function aliases()
@@ -22,6 +23,16 @@ class Program extends Model
     public function addedby()
     {
         return $this->morphTo();
+    }
+
+    public function ownedby()
+    {
+        return $this->morphTo();
+    }
+    
+    public function payments()
+    {
+        return $this->morphMany(Payment::class,'what');
     }
 
     public function attachments()

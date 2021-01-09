@@ -45,11 +45,46 @@ const DashboadService = {
             return error.response
         }
     },
+    //accounts
+    async fetchAccounts(data){
+        let {nextPage, account, accountId} = data
+        try {
+            let response = await ApiService.get(`api/dashboard/accounts?page=${nextPage}&account=${account}&accountId=${accountId}`)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async fetchAccountActivities(data){
+        let {nextPage, account, accountId, adminId} = data
+        try {
+            let response = await ApiService.get(`api/dashboard/activities?page=${nextPage}&account=${account}&accountId=${accountId}&adminId=${adminId}`)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
     //admins
     async fetchAdmins(data){
         let {nextPage, account, accountId} = data
         try {
             let response = await ApiService.get(`api/dashboard/admins?page=${nextPage}&account=${account}&accountId=${accountId}`)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async fetchItem(data){
+        console.log('data :>> ', data);
+        let {item, itemId} = data
+        try {
+            let response = await ApiService.get(`api/${item}/${itemId}`)
 
             return response
         } catch (error) {
@@ -165,6 +200,100 @@ const DashboadService = {
     async updateClass(data){
         try {
             let response = await ApiService.post(`api/class/update`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    //course
+    async createCourse(data){
+        try {
+            let response = await ApiService.post(`api/course/create/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async deleteCourse(data){
+        try {
+            let response = await ApiService.post(`api/course/delete/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async updateCourse(data){
+        try {
+            let response = await ApiService.post(`api/course/update/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    //extracurriculum
+    async createExtracurriculum(data){
+        try {
+            let response = await ApiService.post(`api/extracurriculum/create`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async deleteExtracurriculum(data){
+        try {
+            let response = await ApiService.post(`api/extracurriculum/delete`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async updateExtracurriculum(data){
+        try {
+            let response = await ApiService.post(`api/extracurriculum/update`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    //
+    async createAccountAttachments(data){
+        try {
+            let response = await ApiService.post(`api/dashboard/account/attach`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async deleteAccountAttachments(data){
+        try {
+            let response = await ApiService.post(`api/dashboard/account/unattach`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async getAccountSpecificItem(main){
+        let {nextPage, data} = main
+        try {
+            let response = await ApiService.get(`api/dashboard/account/item?page=${nextPage}`,data)
 
             return response
         } catch (error) {

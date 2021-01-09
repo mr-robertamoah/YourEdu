@@ -16,10 +16,10 @@ class CreateCoursesTable extends Migration
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
             $table->nullableMorphs('addedby'); // facilitator school admin professional
-            $table->string('name');
             $table->nullableMorphs('ownedby');
+            $table->string('name');
             $table->text('description')->nullable();
-            $table->text('rationale')->nullable();
+            $table->enum('state',['PENDING','DECLINED','ACCEPTED','DELETED'])->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

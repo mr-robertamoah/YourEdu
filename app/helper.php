@@ -60,6 +60,8 @@ function getAccountString($classString)
     }
     if (Str::contains(strtolower($classString), 'learner')) {
         return 'learner';
+    } else if (Str::contains(strtolower($classString), 'user')) {
+        return 'user';
     } else if (Str::contains(strtolower($classString), 'parent')) {
         return 'parent';
     } else if (Str::contains(strtolower($classString), 'facilitator')) {
@@ -112,6 +114,28 @@ function getAccountString($classString)
         return 'class';
     } else if (Str::contains(strtolower($classString), 'extracurriculum')) {
         return 'extracurriculum';
+    } else if (Str::contains(strtolower($classString), 'like')) {
+        return 'like';
+    } else if (Str::contains(strtolower($classString), 'flag')) {
+        return 'flag';
+    } else if (Str::contains(strtolower($classString), 'subject')) {
+        return 'subject';
+    } else if (Str::contains(strtolower($classString), 'grade')) {
+        return 'grade';
+    } else if (Str::contains(strtolower($classString), 'course')) {
+        return 'course';
+    } else if (Str::contains(strtolower($classString), 'program')) {
+        return 'program';
+    } else if (Str::contains(strtolower($classString), 'fee')) {
+        return 'fee';
+    } else if (Str::contains(strtolower($classString), 'price')) {
+        return 'price';
+    } else if (Str::contains(strtolower($classString), 'subscription')) {
+        return 'subscription';
+    } else if (Str::contains(strtolower($classString), 'academicyear')) {
+        return 'academicYear';
+    } else if (Str::contains(strtolower($classString), 'academicyearsection')) {
+        return 'academicYearSection';
     }
     return '';
 }

@@ -10,7 +10,7 @@ class Lesson extends Model
     //
     use SoftDeletes;
     protected $fillable = [
-        'title', 'description', 'ageGroup',
+        'title', 'description', 'ageGroup', 'state'
     ];
 
     public function addedby()
@@ -162,6 +162,11 @@ class Lesson extends Model
     
     public function discussion()
     {
-        return $this->morphOne(Discussion::class,'discussionon');
+        return $this->morphOne(Discussion::class,'discussionfor');
+    }
+    
+    public function payments()
+    {
+        return $this->morphMany(Payment::class,'what');
     }
 }

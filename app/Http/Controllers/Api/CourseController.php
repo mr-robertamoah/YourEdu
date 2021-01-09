@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CourseCreateRequest;
+use App\Http\Requests\CreateCourseRequest;
 use App\Http\Resources\CourseResource;
+use App\Http\Resources\DashboardCourseResource;
+use App\Http\Resources\DashboardItemResource;
 use App\Services\CourseService;
 use App\YourEdu\Course;
 use Illuminate\Database\Eloquent\Builder;
@@ -63,7 +66,7 @@ class CourseController extends Controller
 
     public function coursesGet()
     {
-        return CourseResource::collection(Course::paginate(2));
+        return CourseResource::collection(Course::where('ownedby_type',null)->paginate(2));
     }
 
     public function coursesSearch($search)
@@ -88,6 +91,118 @@ class CourseController extends Controller
                 'message' => $courseInfo
             ]);
         } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    // for actual courses with lessons
+    public function createCourse(CreateCourseRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+            $course = (new CourseService())->createCourse(
+                $request->account,
+                $request->accountId,
+                auth()->id(),
+                [
+                    'owner' => $request->owner,
+                    'ownerId' => $request->ownerId,
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'attachments' => json_decode($request->attachments),
+                    'classes' => json_decode($request->classes),
+                    'facilitate' => json_decode($request->facilitate),
+                    'type' => $request->type,
+                    'discussionData' => json_decode($request->discussionData),
+                    'discussionFiles' => $request->file('discussionFile'),
+                    'paymentData' => json_decode($request->paymentData)
+                ]
+            );
+
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                'course' => new DashboardCourseResource($course)
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function getCourse(Request $request)
+    {
+        try {
+            $course = (new CourseService())->getCourse(
+                $request->courseId
+            );
+
+            return new CourseResource($course);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function getCourses(Request $request)
+    {
+        try {
+            $courses = (new CourseService())->getCourses();
+
+            return CourseResource::collection($courses);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function updateCourse(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $course = (new CourseService())->updateCourse(
+                $request->account,
+                $request->accountId,
+                $request->courseId,
+                auth()->id(),
+                [
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'state' => $request->state,
+                    'attachments' => json_decode($request->attachments),
+                    'removedAttachments' => json_decode($request->removedAttachments),
+                    'name' => $request->adminId,
+                ]
+            );
+
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                'course' => new DashboardCourseResource($course),
+                'courseResource' => new DashboardItemResource($course),
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function deleteCourse(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $course = (new CourseService())->deleteCourse(
+                $request->courseId,
+                auth()->id(),
+                $request->adminId,
+                $request->action
+            );
+
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                'course' => $course ? new DashboardCourseResource($course) : null
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
             throw $th;
         }
     }

@@ -21,7 +21,7 @@ class CreateClassModelsTable extends Migration
             $table->nullableMorphs('ownedby'); //facilitator school
             $table->smallInteger('max_learners')->nullable();
             $table->string('structure')->nullable();
-            $table->enum('state',['PENDING','DECLINED','ACCEPTED'])->nullable();
+            $table->enum('state',['PENDING','DECLINED','ACCEPTED','DELETED'])->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

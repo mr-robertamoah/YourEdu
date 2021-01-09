@@ -397,6 +397,8 @@ import { mapActions } from 'vuex';
                         
                         response = await this['profile/getCourses'](this.searchNextPage)
                     }
+                } else {
+                    return
                 }
 
                 if (response.status) {

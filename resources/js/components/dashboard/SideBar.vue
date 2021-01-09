@@ -302,16 +302,10 @@ import { mapGetters } from 'vuex'
 
 <style lang="scss" scoped>
 
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    width: 100%;
-    white-space: nowrap;
-}
     .side-bar-wrapper{
         position: fixed;
         width: 200px;
-        background-color: rgba(22, 233, 205, 0.65);
+        background-color:$background-color-main;
         height: 100vh;
         z-index: 100;
         transition: width 1s ease-in-out;
@@ -348,7 +342,7 @@ import { mapGetters } from 'vuex'
 
         .active{
             color: whitesmoke;
-            background: rgba(22, 233, 205, 1);
+            background:$background-color-main-light;
         }
 
         .main-item{
@@ -392,7 +386,7 @@ import { mapGetters } from 'vuex'
                 position: relative;
 
                 &:hover{
-                    background-color: rgba(22, 233, 205, 0.9);
+                    background-color:$background-color-main;
                     box-shadow: 0 0 2px rgba(105, 105, 105, .8);
                     transition: all .5s ease-in-out;                    
 
@@ -407,6 +401,9 @@ import { mapGetters } from 'vuex'
                 .item-text{
                     display: block;
                     visibility: visible;
+                    opacity: 1;
+                    transition: all .5s ease-in-out;
+                    transition-delay: .5s;
                 }
 
                 .item-icon{
@@ -450,7 +447,7 @@ import { mapGetters } from 'vuex'
                         justify-content: space-around;
                         align-items: center;
                         padding: 10px;
-                        background-color: rgba(22, 233, 205, 1);
+                        background-color: $background-color-main;
                         margin: 0 0 5px 5px;
                         border-radius: 10px;
 
@@ -490,6 +487,7 @@ import { mapGetters } from 'vuex'
                 .item-text{
                     display: none;
                     visibility: hidden;
+                    opacity: 0;
                 }
 
                 .item-sub{
@@ -523,7 +521,7 @@ import { mapGetters } from 'vuex'
                     transition: all 1s ease-in-out;
 
                     .item-text{
-                        display: none;
+                        display: none;      
                     }
 
                     .item-sub{
@@ -557,7 +555,7 @@ import { mapGetters } from 'vuex'
                     left: 0;
                     width: 0;
                     height: 0;
-                    background-color: rgba(22, 233, 205, 0.65);
+                    background-color: $background-color-main-light;
 
                     .sub-item{
                         position: relative;
@@ -576,7 +574,7 @@ import { mapGetters } from 'vuex'
                 display: flex;
 
                 &:hover{ 
-                    background-color: rgba(22, 233, 205, 0.9);
+                    background-color:$background-color-main;
                     box-shadow: 0 0 2px rgba(105, 105, 105, .8);
                     transition: all .5s ease-in-out;
                     
@@ -610,6 +608,11 @@ import { mapGetters } from 'vuex'
                 .item-text,
                 .item-icon{
                     margin: 5px;
+                }
+
+                .item-text{                  
+                    transition: all .5s ease-in-out;
+                    transition-delay: .5s;
                 }
 
                 .item-sub{

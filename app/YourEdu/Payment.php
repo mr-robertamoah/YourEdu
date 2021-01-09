@@ -10,17 +10,26 @@ class Payment extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'type', 'amount', 'state', 'postponement_date'
+    ];
+
     public function transactions()
     {
         return $this->morphOne(Transaction::class,'transactable');
     }
 
-    public function account()
+    public function discount()
     {
-        return $this->belongsTo(Account::class);
+        return $this->belongsTo(Discount::class);
     }
 
     public function paidby()
+    {
+        return $this->morphTo();
+    }
+
+    public function what()
     {
         return $this->morphTo();
     }

@@ -172,9 +172,21 @@ import { files } from '../services/helpers';
                 type: Boolean,
                 default: false
             },
+            mediaChat: {
+                type: Boolean,
+                default: false
+            },
         },
         watch: {
             request: {
+                immediate: true,
+                handler(newValue){
+                    if (newValue) {
+                        this.placeholder = 'have a message?'
+                    }
+                }
+            },
+            mediaChat: {
                 immediate: true,
                 handler(newValue){
                     if (newValue) {

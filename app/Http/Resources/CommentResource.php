@@ -21,11 +21,14 @@ class CommentResource extends JsonResource
 
         if ($this->images()->exists()) {
             $images = ImageResource::collection($this->images);
-        } else if ($this->videos()->exists()) {
+        } 
+        if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
-        } else if ($this->audios()->exists()) {
+        }
+        if ($this->audios()->exists()) {
             $audios = AudioResource::collection($this->audios);
-        } else if ($this->videos()->exists()) {
+        }
+        if ($this->videos()->exists()) {
             $files = FileResource::collection($this->files);
         }
 

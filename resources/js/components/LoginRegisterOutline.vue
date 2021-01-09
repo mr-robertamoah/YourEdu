@@ -144,8 +144,6 @@ import { mapGetters, mapActions } from "vuex";
 <style lang="scss" scoped>
 $mainSectionColor : rgb(255, 248, 220, .8);
 $buttonBackground : rgba(2, 104, 90, .6);
-$sectionOtherBackground: rgba(22, 233, 205, 0.233);
-$sectionMainBackground: rgba(22, 233, 205, 0.65);
 
 @mixin rotate($deg){
     -webkit-transform: rotate($deg);
@@ -201,7 +199,7 @@ $sectionMainBackground: rgba(22, 233, 205, 0.65);
 
 .section-other{
     @include rotate(10deg);
-    background-color: $sectionOtherBackground;
+    background-color: $background-color-other;
     height: 70vh;
     width: 50%;
     position: absolute;
@@ -221,7 +219,7 @@ $sectionMainBackground: rgba(22, 233, 205, 0.65);
 }
 
 .section-main{
-    background-color: $sectionMainBackground;
+    background-color: $background-color-main;
     width: 60%;
     min-height: 70vh * 0.65;
     border-radius: 0 2vw 2vw 0;

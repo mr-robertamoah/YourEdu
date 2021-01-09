@@ -16,11 +16,12 @@ import { faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, faTrash,
         faPen, faBookmark, faPaperclip, faHome, faEllipsisH, faEllipsisV, faLongArrowAltLeft,
         faGrin,faMicrophone,faVideo, faCamera, faPaperPlane, faImage, faMusic, faFilm,
         faArrowCircleRight, faQuestionCircle, faCameraRetro, faInfoCircle, faPencilAlt, 
-        faBell, faUsers, faChevronUp} from "@fortawesome/free-solid-svg-icons"
+        faBell, faUsers, faChevronUp, faCircle, faPause, faTrashRestore} from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { BootstrapVue } from 'bootstrap-vue'
 import AppNav from './components/Nav.vue'
 import VuePageTransition from 'vue-page-transition'
+import { faMicrophoneAltSlash } from '@fortawesome/fontawesome-free-solid'
 
 
 require('./bootstrap');
@@ -38,7 +39,8 @@ library.add(faUserCircle, faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpl
     faComment, faChevronLeft,faCheck,faCommentAlt,faCheckDouble,faPen,faBookmark,
     faPaperclip, faHome,faEllipsisH, faEllipsisV,faLongArrowAltLeft,faGrin,faPaperPlane,
     faImage,faMusic,faFilm,faArrowCircleRight, faQuestionCircle,faCameraRetro,faInfoCircle,
-    faPencilAlt,faBell,faUsers,faChevronUp);
+    faPencilAlt,faBell,faUsers,faChevronUp,faCircle,faMicrophoneAltSlash,faPause,faTrashRestore,
+    );
 
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
@@ -69,13 +71,16 @@ Vue.component('just-fade', require('./components/transitions/JustFade.vue').defa
 Vue.component('user-addons', require('./components/UserAddons.vue').default);
 Vue.component('addon-modal', require('./components/AddonModal.vue').default);
 Vue.component('file-preview', require('./components/FilePreview.vue').default);
+Vue.component('post-attachment', require('./components/PostAttachment.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to
  * the page. Then, you may begin adding components to this application
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
+ApiService.init('http://127.0.0.1:8000/')
 
+export const bus = new Vue();
 
 const app = new Vue({
     el: '#app',

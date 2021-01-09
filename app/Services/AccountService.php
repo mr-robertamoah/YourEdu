@@ -105,6 +105,8 @@ class AccountService
                 'company_name' => $data['name'],
                 'role' => $data['role'],
                 'class_structure' => $data['classStructure'],
+                'types' => $data['types'],
+                'about' => $data['about'],
             ]);
         }  
 

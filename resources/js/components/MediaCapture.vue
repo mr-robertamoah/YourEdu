@@ -321,7 +321,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
         .buttons{
             width: 100%;
             position: absolute;
-            bottom: 10px;
+            bottom: -40px;
 
             .record-button,
             .send-button{

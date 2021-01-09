@@ -20,6 +20,8 @@ class SchoolResource extends JsonResource
             'created_at' => $this->created_at,
             'admins' => $this->admins()->count(),
             'verification' => $this->verification,
+            'types' => $this->types,
+            'about' => $this->about,
             'phoneNumbers' => $this->when(
                 $this->phoneNumbers()->exists()&& 
                 $this->phoneNumbers()->count() > 3,

@@ -34,7 +34,7 @@
                     :value="typeValue"
                     :disabled="true"
                 ></main-textarea>
-                <div class="possible-answers" v-if="!typeMediaFull && computedPossibleAnswers"
+                <div class="possible-answers" v-if="computedPossibleAnswers"
                     @click="clickedShowPostPreview">
                     <div class="answer"
                         :key="key"
@@ -98,6 +98,10 @@ import PostButton from './PostButton'
                 default: false
             },
             showButton: {
+                type: Boolean,
+                default: false
+            },
+            disabled: {
                 type: Boolean,
                 default: false
             },
@@ -171,7 +175,7 @@ import PostButton from './PostButton'
             computedPossibleAnswers(){
                 if (this.type.hasOwnProperty('possible_answers') &&
                     this.type.possible_answers.length) {
-                    return true
+                    return this.disabled ? true : !this.typeMediaFull ? false : true
                 }
                 return false
             },
@@ -225,7 +229,7 @@ import PostButton from './PostButton'
                 this.$emit('clickedMedia',{url,mediaType})
             },
             clickedShowPostPreview(){
-                if (this.typeMediaFull) {
+                if (this.typeMediaFull || this.disabled) {
                     return 
                 }
                 this.$emit('clickedShowPostPreview',{
@@ -246,11 +250,6 @@ import PostButton from './PostButton'
 </script>
 
 <style lang="scss" scoped>
-@mixin text-overflow(){
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}
 
     .post-preview-wrapper{
         position: relative;

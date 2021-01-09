@@ -77,9 +77,10 @@
                     if (this.items.length) {
                         this.$emit('selection',newValue)
                     } else {
-                        this.$emit('selection',this.objects.find(object=>{
-                            return object.name === newValue
-                        }))
+                        let index = this.findObjectIndex(newValue)
+                        if (index > -1) {
+                            this.$emit('selection', this.objects[index])
+                        }
                     }
                 } else {
                     this.inputValue = ''
@@ -126,7 +127,12 @@
                     this.inputValue = ''
                 } else this.inputValue = data
                 this.activeIcon = 'up'
-            }
+            },
+            findObjectIndex(name) {
+                return this.objects.findIndex(object=>{
+                    return object === name || object.name === name
+                })
+            },
         },
     }
 </script>

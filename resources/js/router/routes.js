@@ -5,7 +5,10 @@ import Dashboard from '../views/Dashboard.vue'
 import Welcome from "../views/Welcome.vue";
 import About from "../views/About.vue";
 import Profile from "../views/Profile.vue";
-import ViewComments from "../views/ViewComments.vue";
+import PostModal from "../components/PostModal.vue";
+import DiscussionModal from "../components/DiscussionModal.vue";
+import ModalSwitcher from "../components/ModalSwitcher.vue";
+import ViewComments from "../components/ViewComments.vue";
 import CatchAll from "../views/CatchAll.vue";
 
 import Testing from "../views/Testing.vue";
@@ -50,15 +53,34 @@ const routes =  [
         }
     },
     {
-        name: 'comments',
-        path: '/comment/:commentId/comments',
+        name: 'comment',
+        path: '/comment/:itemId',
         component: ViewComments,
-        props: true
+    },
+    {
+        name: 'post',
+        path: '/post/:itemId',
+        component: PostModal,
+    },
+    {
+        name: 'discussion',
+        path: '/discussion/:itemId',
+        component: DiscussionModal,
+    },
+    {
+        name: 'answer',
+        path: '/answer/:itemId',
+        component: ViewComments,
     },
     {
         name: 'about',
         path: '/about',
         component: About,
+    },
+    {
+        name: 'item',
+        path: '/:item/:itemId',
+        component: ModalSwitcher,
     },
     {
         name: 'profile',

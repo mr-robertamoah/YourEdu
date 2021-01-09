@@ -25,6 +25,10 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
             PulseLoader,
         },
         props: {
+            hasLoading: {
+                type: Boolean,
+                default: true
+            },
             text: {
                 type: String,
                 default: ''
@@ -51,6 +55,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
         },
         methods: {
             clickedDashboardAction() {
+                this.loading = true
                 this.$emit('click',{
                     data: this.data, text: this.text, icon: this.icon
                 })
@@ -69,9 +74,11 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
         padding: 5px;
         color: mintcream;
         border-radius: 5px;
-        margin: 5px;
+        margin: 5px auto;
         cursor: pointer;
         justify-content: center;
+        max-width: 300px;
+        min-width: 80px;
 
         .icon{
             font-size: 16px;

@@ -14,7 +14,7 @@
         "guzzlehttp/guzzle": "^6.3",
         "laravel/cashier": "^11.2",
         "laravel/framework": "^7.0",
-        "laravel/passport": "^8.4",
+        "laravel/passport": "~9.0",
         "laravel/tinker": "^2.0",
         "mtolhuys/laravel-schematics": "^0.10.3",
         "pusher/pusher-php-server": "~3.0",
@@ -32,6 +32,8 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
+        "process-timeout": 1000,
+        "github-protocols": ["https"],
         "sort-packages": true
     },
     "extra": {

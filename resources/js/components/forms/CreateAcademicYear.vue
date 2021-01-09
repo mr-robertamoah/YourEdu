@@ -486,7 +486,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
 </script>
 
 <style lang="scss" scoped>
-$background-color-main: rgb(22,233,205);
+
     .welcome-form{        
 
         .loading{

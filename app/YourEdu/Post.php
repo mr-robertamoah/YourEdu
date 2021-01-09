@@ -106,6 +106,15 @@ class Post extends Model
         return $this->morphMany(Question::class,'questionable');
     }
 
+    public function scopeDoesntHaveType($query)
+    {
+        return $query->whereDoesntHave('activities')
+            ->whereDoesntHave('questions')
+            ->whereDoesntHave('poems')
+            ->whereDoesntHave('riddles')
+            ->whereDoesntHave('books');
+    }
+
     public function scopeHasPublished($query)
     {
         return $query->whereDoesntHave('activities',function(Builder $query){

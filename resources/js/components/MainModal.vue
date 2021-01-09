@@ -9,8 +9,9 @@
                 <font-awesome-icon :icon="['fas','times']"></font-awesome-icon>
             </div>
             <template>
-                <div class="heading" v-if="computedHeading">
-                    <slot name="heading"></slot>
+                <div class="heading">
+                    {{heading}}
+                    <slot name="heading" v-if="!computedHeading"></slot>
                 </div>
                 <div class="loading-errors" v-if="loading">
                     <slot name="loading"></slot>

@@ -6,17 +6,20 @@ use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\BanException;
 use App\YourEdu\Admin;
 use App\YourEdu\Ban;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class BanService
 {
-    public function ban(Admin $admin,$authId,$bannable,$issuedfor,$state,$type) : Ban
+    public function ban(Admin $admin,$authId,$bannable,$issuedfor,$state,$type,$dueDate) : Ban
     {
         $this->checkAdminAuthorization($admin,$authId);
 
         $ban = $admin->bans()->create([
             'state' => $state ? Str::upper($state) : 'PENDING',
             'type' => Str::upper($type),
+            'due_date' => $dueDate ? Carbon::parse($dueDate)->toDateTime() : 
+                Carbon::now()->addMonths(3),
         ]);
 
         $ban->bannable()->associate($bannable);

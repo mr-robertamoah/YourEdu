@@ -77,7 +77,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
 $wrapper-background: transparent;
 $modal-background: aliceblue;
 $modal-width: 60%;
-$modal-height: 70vh;
+$modal-height: 90vh;
 $modal-margin-width: (100% - $modal-width)/2;
 $modal-margin-height: (100vh - $modal-height)/2;
 
@@ -149,7 +149,8 @@ $modal-margin-height: (100vh - $modal-height)/2;
 
 @media screen and (min-width:800px) and (max-width:1100px){
 $modal-width: 70%;
-$modal-height: 80vh;
+$modal-height: 9
+0vh;
 $modal-margin-width: (100% - $modal-width)/2;
 $modal-margin-height: (100vh - $modal-height)/2;
 

@@ -20,6 +20,12 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
     //
+    public function authFailed(Request $request)
+    {
+        return response()->json([
+            'message' => 'unauthenticated'
+        ]);
+    }
 
     public function getUser()
     {

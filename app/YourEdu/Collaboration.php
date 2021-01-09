@@ -38,7 +38,7 @@ class Collaboration extends Model
     public function courses()
     {
         return $this->morphToMany(Course::class,'ownedby','coursables')
-            ->withPivot(['activity','ownedby_id','ownedby_type']);
+            ->withPivot(['activity','resource']);
     }
 
     public function facilitators()

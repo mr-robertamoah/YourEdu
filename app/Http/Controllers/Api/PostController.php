@@ -272,7 +272,7 @@ class PostController extends Controller
                 ->hasNoFlags($parentsLearnerUserIds)
                 ->get();
 
-            $items = $items->merge(Discussion::with([
+            $items = $items->merge(Discussion::notSocial()->with([
                 'images','videos','audios','files','comments','flags','attachments',
                 'beenSaved','messages','raisedby.profile','requests.requestfrom'])
                 ->get());
@@ -578,7 +578,7 @@ class PostController extends Controller
             'books.audios','postedby.profile','lessons.images','lessons.videos',
             'lessons.files','lessons.audios'])->get();
         
-        $items = $items->merge($mainAccount->discussions()->with([
+        $items = $items->merge($mainAccount->discussions()->notSocial()->with([
             'images','videos','audios','files','likes','comments','messages',
             'attachments','participants','beenSaved','flags','raisedby.profile',
         ])->get());

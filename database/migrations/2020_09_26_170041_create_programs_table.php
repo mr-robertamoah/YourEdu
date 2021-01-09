@@ -16,9 +16,11 @@ class CreateProgramsTable extends Migration
         Schema::create('programs', function (Blueprint $table) {
             $table->id();
             $table->nullableMorphs('addedby'); // facilitator school admin professional
+            $table->nullableMorphs('ownedby'); // facilitator school professional
             $table->string('name');
             $table->text('description')->nullable();
             $table->text('rationale')->nullable();
+            $table->enum('state',['PENDING','DECLINED','ACCEPTED','DELETED'])->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -39,25 +39,29 @@
         },
         watch: {
             inputRadio(newValue) {
-                this.$emit('input',newValue)
+                if (newValue.length) {
+                    this.$emit('input',newValue)
+                    this.inputRadio = ''
+                }
             },
             value(newValue) {
                 if (newValue === this.inputRadio) {
                     this.$refs.radioinput.checked = true
+                } else {
+                    this.$refs.radioinput.checked = false
                 }
             }
         },
         methods: {
             inputRadioMethod() {
                 this.inputRadio = this.$refs.radioinput.value
-
+                console.log(this.inputRadio);
             }
         },
     }
 </script>
 
 <style lang="scss" scoped>
-$background-color-main: rgba(22, 233, 205, 1);
 
     .check-input-wrapper{
         position: relative;

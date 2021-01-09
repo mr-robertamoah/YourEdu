@@ -183,9 +183,15 @@ class Professional extends Model
         return $this->morphMany(Extracurriculum::class,'addedby');
     }
 
+    public function ownedExtracurriculums()
+    {
+        return $this->morphMany(Extracurriculum::class,'ownedby');
+    }
+
     public function extracurriculums()
     {
-        return $this->morphMany(Extracurriculum::class,'extrable');
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
+            ->withPivot(['resource','activity'])->withTimestamps();
     }
 
     public function lessonsAdded()
@@ -201,6 +207,21 @@ class Professional extends Model
     public function uniqueProgramsAdded()
     {
         return $this->morphMany(Program::class,'addedby');
+    }
+
+    public function ownedCourses()
+    {
+        return $this->morphMany(Course::class,'ownedby');
+    }
+
+    public function addedCourses()
+    {
+        return $this->morphMany(Course::class,'addedby');
+    }
+
+    public function ownedPrograms()
+    {
+        return $this->morphMany(Program::class,'ownedby');
     }
 
     public function uniqueCoursesAdded()

@@ -4,7 +4,7 @@
             <div class="close" @click="disappear">
                 <font-awesome-icon :icon="['fas','times']"></font-awesome-icon>
             </div>
-            <div class="main">
+            <div class="main" v-if="!dataLoading">
                 <fade-right-fast>
                     <template slot="transition" v-if="alertMessage.length">
                         <div class="alert-message"
@@ -19,11 +19,13 @@
                     <pulse-loader :loading="postLoading"></pulse-loader>
                 </div>
                 <div class="post"
-                    v-if="type === 'post' && !postLoading"
+                    v-if="(type === 'post' ||
+                        computedPostTypeName === 'post') && !postLoading"
                 >
                     <post-show
-                        :post="data"
+                        :post="computedData"
                         :postMediaFull="true"
+                        :disabled="item ? true : false"
                         @postModalCommentCreated="postModalCommentCreated"
                         @clickedShowPostComments="clickedShowPostComments"
                         @clickedShowPostPreview="clickedShowPostPreview"
@@ -37,6 +39,7 @@
                     <answer-single
                         :answerFull="true"
                         :answer="data.type"
+                        :disabled="item ? true : false"
                         @answerUnlikeSuccessful="answerUnlikeSuccessful"
                         @answerLikeSuccessful="answerLikeSuccessful"
                         @answerUnsaveSuccessful="answerUnsaveSuccessful"
@@ -48,12 +51,14 @@
                     ></answer-single>
                 </div>
                 <div class="post-preview"
-                    v-if="type === 'posttype' && !postLoading"
+                    v-if="(type === 'posttype' || 
+                        computedPostTypeName !== 'post') && !postLoading"
                 >
                     <post-preview
-                        :type="data.type"
-                        :typeName="data.typeName"
-                        :owner="data.owner"
+                        :type="computedPostType"
+                        :typeName="computedPostTypeName"
+                        :owner="computedOwner"
+                        :disabled="item ? true : false"
                         :typeMediaFull="true"
                         @clickedMedia="clickedMedia"
                         @clickedAnswer="clickedAnswer"
@@ -107,6 +112,9 @@
                     </div>
                 </div>
             </div>
+            <div class="loading" v-else>
+                <pulse-loader :loading="dataLoading"></pulse-loader>
+            </div>
             <div class="main-comments">
                 <div class="no-comments" 
                     v-if="computedNoCommentAnswer">
@@ -120,6 +128,7 @@
                                     v-for="comment in comments"
                                     :key="comment.id"
                                     :comment="comment"
+                                    :disabled="item ? true : false"
                                     :onPostModal="true"
                                     @clickedMedia="clickedMedia"
                                     @commentDeleteSuccess="commentDeleteSuccess"
@@ -142,6 +151,7 @@
                                     v-for="answer in answers"
                                     :key="answer.id"
                                     :answer="answer"
+                                    :disabled="item ? true : false"
                                     :possibleAnswers="computedPossibleAnswers"
                                     @askLoginRegister="askLoginRegister"
                                     @clickedShowAnswer="clickedShowAnswer"
@@ -259,6 +269,10 @@ import { strings } from '../services/helpers';
                 type: Object,
                 default: null,
             },
+            itemData: {
+                type: Object,
+                default: null,
+            },
             heading: {
                 type: String,
                 default: ''
@@ -318,6 +332,9 @@ import { strings } from '../services/helpers';
                 showLoginRegister: false,
                 showSmallModalOther: false,
                 smallModalTitle: '',
+                //
+                dataLoading: false,
+                item: null,
             }
         },
         watch: {
@@ -335,15 +352,27 @@ import { strings } from '../services/helpers';
                             this.data.type.hasOwnProperty('possible_answers')) {
                             this.showAnswerList = true
                         }
+                        this.listen()
+                    } else if (this.itemData) {
+                        this.getPost()
+                    } else {
+                        this.dataLoading = true
                     }
-                    // this.getCommentsAnswers()
-                    this.listen()
                 }
             },
             data: {
                 immediate: true,
                 handler(newValue){
                     if (newValue !==  null) {
+                        this.getCommentsAnswers()
+                    }
+                }
+            },
+            item: {
+                immediate: true,
+                handler(newValue){
+                    if (newValue !==  null) {
+                        this.listen()
                         this.getCommentsAnswers()
                     }
                 }
@@ -365,8 +394,16 @@ import { strings } from '../services/helpers';
                 }
             },
         },
+        beforeRouteEnter(to, from, next) {
+            next(vm => {
+                console.log(to);
+                if (to.name === 'post') {
+                    vm.getPost()
+                }
+            });
+        },
         computed: {
-            ...mapGetters(['getProfiles']),
+            ...mapGetters(['getProfiles','getUser']),
             computedNoCommentAnswer(){
                 if (this.type === 'posttype' && 
                     (this.data && this.data.typeName === 'question' || this.data.typeName === 'riddle')) {
@@ -393,30 +430,87 @@ import { strings } from '../services/helpers';
                 if (this.data && this.data.typeName === 'question' && this.type === 'posttype' &&
                     this.data.type.hasOwnProperty('possible_answers')) {
                     return this.data.type.possible_answers
+                } else if (this.item && this.item.typeName === 'question' &&
+                    this.item.type.hasOwnProperty('possible_answers')) {
+                    return this.item.type.possible_answers
                 }
                 return []
+            },
+            computedData(){
+                return this.data ? this.data : this.item ? this.item : null
+            },
+            computedPostType(){
+                return this.data ? this.data.type : this.item ? this.item.type[0] : null
+            },
+            computedPostTypeName(){
+                return this.data ? this.data.typeName : this.item ? this.item.typeName : ''
+            },
+            computedOwner(){
+                return this.data ? this.data.owner : null
             },
         },
         methods: {
             ...mapActions(['profile/getComments','profile/getAnswers',
-                'profile/updateAnswer','profile/createAnswer']),
+                'profile/updateAnswer','profile/createAnswer',
+                'dashboard/fetchItem']),
             listen(){
-                if (this.type === 'post') {
-                    Echo.channel(`.youredu.post.${this.data.id}`)
+                let itemId
+                if ((this.data && this.type === 'post') || 
+                    (this.item && this.item.typeName === 'post')) {
+
+                    itemId = this.data ? this.data.id : this.item.id
+                    Echo.channel(`.youredu.post.${itemId}`)
                         .listen('.deleteComment', commentInfo=>{
                             // this.removeItem(commentInfo.comment.id, 'comment')
                             console.log('commentInfo :>> ', commentInfo);
                         })
-                } else if (this.type === 'posttype' && this.data.typeName === 'question') {
-                    Echo.channel(`.youredu.question.${this.data.type.id}`)
+                } else if ((this.data && this.type === 'posttype' && 
+                    this.data.typeName === 'question') || 
+                    (this.item && this.item.typeName === 'question')) {
+
+                    itemId = this.data ? this.data.type.id : this.item.type.id
+                    Echo.channel(`.youredu.question.${itemId}`)
                         .listen('.deleteAnswer', answerInfo=>{
                             this.removeItem(answerInfo.answer.id, 'answer')
                         })
-                } else if (this.type === 'posttype' && this.data.typeName === 'riddle') {
-                    Echo.channel(`.youredu.riddle.${this.data.type.id}`)
+                } else if ((this.data && this.type === 'posttype' && 
+                    this.data.typeName === 'riddle') || 
+                    (this.item && this.item.typeName === 'riddle')) {
+                    
+                    itemId = this.data ? this.data.type.id : this.item.type.id
+                    Echo.channel(`.youredu.riddle.${itemId}`)
                         .listen('.deleteAnswer', answerInfo=>{
                             this.removeItem(answerInfo.answer.id, 'answer')
                         })
+                }
+            },
+            async getPost(){
+                let item,
+                    itemId,
+                    response
+                if (this.$route.name === 'post') {
+                    item = this.$route.name
+                    itemId = this.$route.params.itemId
+                } else {
+                    item = this.itemData.item
+                    itemId = this.itemData.itemId
+                }
+
+                this.dataLoading = true
+                if (!this.getUser) {
+                    setTimeout(() => {
+                        this.getPost()
+                    }, 1000);
+                    return
+                }
+
+                response = await this['dashboard/fetchItem']({item,itemId})
+
+                this.dataLoading = false
+                if (response.status) {
+                    this.item = response.item
+                } else {
+                    console.log('response :>> ', response);
                 }
             },
             answerMarkedSuccessful(data){ //from main answer or ans in answers
@@ -910,14 +1004,14 @@ import { strings } from '../services/helpers';
                 this.getCommentsAnswers()
             },
             async getCommentsAnswers(){
-                if (this.data === null) {
+                if (this.data === null && this.item === null) {
                     return
                 }
                 this.loading = true
                 let data = {},
                     response = null
                 data.nextPage = this.nextPage
-                if (this.type === 'post') {
+                if (this.data && this.type === 'post') {
                     data.item = 'post'
                     data.itemId = this.data.id
                     response = await this['profile/getComments'](data)
@@ -937,11 +1031,31 @@ import { strings } from '../services/helpers';
                     data.itemId = this.data.type.id
 
                     response = await this['profile/getComments'](data)
+                } else if (this.item.typeName === 'post') {
+                    data.item = 'post'
+                    data.itemId = this.item.id
+                    response = await this['profile/getComments'](data)
+                } else if (this.item.typeName !== 'question' &&
+                    this.item.typeName === 'riddle') {
+                    data.item = this.item.typeName
+                    data.itemId = this.item.type[0].id
+                    response = await this['profile/getComments'](data)
+                } else if (this.item.typeName === 'question' || 
+                    this.item.typeName === 'riddle') {
+                    data.item = this.item.typeName
+                    data.itemId = this.item.type[0].id
+                    response = await this['profile/getAnswers'](data)
                 }
 
-                if (this.type === 'posttype' && 
-                   ( this.data.typeName === 'riddle' || this.data.typeName === 'question')) {
+                if (this.data && (this.type === 'posttype' && 
+                   (this.data.typeName === 'riddle' || this.data.typeName === 'question'))) {
                     this.answers.push(...response.data.data)
+                } else if (this.item &&
+                   (this.item.typeName === 'riddle' || this.item.typeName === 'question')) {
+                    this.answers.push(...response.data.data)
+                } else if (this.item &&
+                   (this.item.typeName !== 'riddle' && this.item.typeName !== 'question')) {
+                    this.comments.push(...response.data.data)
                 } else {
                     this.comments.push(...response.data.data)
                 }
@@ -1061,6 +1175,14 @@ $modal-margin-height: (100vh - $modal-height)/2;
                         text-align: start;
                     }
                 }
+            }
+            
+            .loading{
+                width: 100%;
+                height: 100px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .main-comments{

@@ -23,7 +23,8 @@ class NotificationController extends Controller
                         ->orWhere('type','App\Notifications\AdminResponseNotification')
                         ->orWhere('type','App\Notifications\FacilitatorResponseNotification')
                         ->orWhere('type','App\Notifications\SchoolResponseNotification')
-                        ->orWhere('type','App\Notifications\RequestMessageNotification');
+                        ->orWhere('type','App\Notifications\RequestMessageNotification')
+                        ->orWhere('type','App\Notifications\BanNotification');
                     })
                     ->get();
             } else {
@@ -57,7 +58,8 @@ class NotificationController extends Controller
                 ->orWhere('type','App\Notifications\RequestMessageNotification')
                 ->orWhere('type','App\Notifications\AdminResponseNotification')
                 ->orWhere('type','App\Notifications\FacilitatorResponseNotification')
-                ->orWhere('type','App\Notifications\SchoolResponseNotification');
+                ->orWhere('type','App\Notifications\SchoolResponseNotification')
+                ->orWhere('type','App\Notifications\BanNotification');
             })
             ->latest()->get();
             return NotificationResource::collection(paginate($notifications,10));

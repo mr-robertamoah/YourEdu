@@ -94,4 +94,9 @@ class Discussion extends Model
     {
         return $this->morphMany(PostAttachment::class,'attachable');
     }
+
+    public function scopeNotSocial($query)
+    {
+        return $query->whereNull('discussionfor_type');
+    }
 }

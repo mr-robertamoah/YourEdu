@@ -9,6 +9,8 @@ class SocialMedia extends Model
 {
     //
     use SoftDeletes;
+
+    protected $table = 'social_medias';
     
     protected $fillable = ['profile_id','username','name', 'url','type','show'];
     

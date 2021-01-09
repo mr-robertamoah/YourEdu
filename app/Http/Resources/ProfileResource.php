@@ -14,7 +14,6 @@ class ProfileResource extends JsonResource
      */
     public function toArray($request)
     {
-        $array = [];
         $array = [
             'id' => $this->id,
             'user_id' => $this->user_id ? $this->user_id : $this->owner_id,
@@ -56,7 +55,6 @@ class ProfileResource extends JsonResource
         } else {
             $array['follows'] = [];
         }
-        // dd($array);
 
         if ($this->profileable_type === "App\\YourEdu\\Learner") {
             $array['owner'] = $this->profileable;

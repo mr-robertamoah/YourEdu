@@ -14,6 +14,13 @@ class BanResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'adminId' => $this->admin_id,
+            'state' => $this->state,
+            'type' => $this->type,
+            'dueDate' => $this->due_date,
+            'createdAt' => $this->created_at,
+        ];
     }
 }

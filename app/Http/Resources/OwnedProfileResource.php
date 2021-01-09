@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use \Debugbar;
 
 class OwnedProfileResource extends JsonResource
 {
@@ -20,11 +21,13 @@ class OwnedProfileResource extends JsonResource
         $data['profile_name'] = $this->name;
         $data['profile_url'] = $this->url;
         $data['profile'] = $this->profileable_type;
-        $data['userId'] = $this->profileable->user_id ? $this->profileable->user_id :
-            $this->profileable->owner_id;
+        if ($this->profileable) {            
+            $data['userId'] = $this->profileable->user_id ? $this->profileable->user_id :
+                $this->profileable->owner_id;
+        }
         if ($data['account_type'] === 'parent') {
                 
-        } else if ($data['account_type'] === 'school') {
+        } else if ($data['account_type'] === 'school' && $data['userId']) {
             $data['admin'] = new AdminResource(
                 $this->profileable->admins()->where('user_id',auth()->id())->first());
         } else if ($data['account_type'] === 'learner') {

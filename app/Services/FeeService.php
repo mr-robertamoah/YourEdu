@@ -7,7 +7,7 @@ use App\Exceptions\FeeException;
 
 class FeeService
 {
-    public function setFee($item,$amount,$addedby,$feeableData)
+    public static function setFee($item,$amount,$addedby,$feeableData)
     {
         $fee = $item->fees()->create([
             'amount' => $amount

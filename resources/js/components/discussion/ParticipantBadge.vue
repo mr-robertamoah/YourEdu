@@ -198,13 +198,6 @@ import { dates } from '../../services/helpers'
 
 <style lang="scss" scoped>
 
-@mixin text-overflow(){
-    text-transform: capitalize;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
     .account-badge-wrapper{
         padding: 10px;
         box-shadow: 0 0 2px;
