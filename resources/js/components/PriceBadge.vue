@@ -7,7 +7,7 @@
         </div>
         <div class="close"
             v-if="hasClose"
-            @click="clickedRemovePrice"
+            @click="clickedRemoveData"
         >
             <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
         </div>
@@ -22,12 +22,6 @@ import paymentTypeMixin from '../mixins/PaymentType.mixin';
     export default {
         mixins: [paymentTypeMixin],
         methods: {
-            clickedRemovePrice() {
-                this.$emit('clickedRemovePrice', this.price)
-            },
-            clickedPrice() {
-                this.$emit('clickedPrice', this.price)
-            },
         },
     }
 </script>
@@ -42,14 +36,6 @@ import paymentTypeMixin from '../mixins/PaymentType.mixin';
         border-radius: 5px;
         margin: 0 10px 10px 0;
         box-shadow: 0 0 1px grey;
-
-        .amount{
-            width: 100px;
-            text-align: start;
-            text-overflow: ellipsis;
-            overflow: hidden;
-            font-size: 12px;
-        }
 
         .for{
             font-size: 10px;

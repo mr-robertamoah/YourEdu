@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\ExtracurriculumData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExtracurriculumCreateRequest;
+use App\Http\Resources\DashboardExtracurriculumResource;
 use App\Http\Resources\DashboardItemResource;
 use App\Http\Resources\ExtracurriculumResource;
 use App\Services\ExtracurriculumService;
@@ -19,28 +21,13 @@ class ExtracurriculumController extends Controller
             DB::beginTransaction();
             
             $extracurriculum = (new ExtracurriculumService())->createExtracurriculum(
-                $request->account,
-                $request->accountId,
-                auth()->id(),
-                [
-                    'owner' => $request->owner,
-                    'ownerId' => $request->ownerId,
-                    'name' => $request->name,
-                    'description' => $request->description,
-                    'attachments' => json_decode($request->attachments),
-                    'classes' => json_decode($request->classes),
-                    'facilitate' => json_decode($request->facilitate),
-                    'type' => $request->type,
-                    'discussionData' => json_decode($request->discussionData),
-                    'discussionFiles' => $request->file('discussionFile'),
-                    'paymentData' => json_decode($request->paymentData)
-                ]
+                ExtracurriculumData::createFromRequest($request)
             );
 
             DB::commit();
             return response()->json([
                 'message' => "successful",
-                'extracurriculum' => new ExtracurriculumResource($extracurriculum)
+                'extracurriculum' => new DashboardExtracurriculumResource($extracurriculum)
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -58,7 +45,7 @@ class ExtracurriculumController extends Controller
                 $request->courseId
             );
 
-            return new ExtracurriculumResource($course);
+            return new DashboardExtracurriculumResource($course);
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -69,7 +56,7 @@ class ExtracurriculumController extends Controller
         try {
             $courses = (new ExtracurriculumService())->getExtracurriculums();
 
-            return ExtracurriculumResource::collection($courses);
+            return DashboardExtracurriculumResource::collection($courses);
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -80,25 +67,15 @@ class ExtracurriculumController extends Controller
         try {
             DB::beginTransaction();
             $extracurriculum = (new ExtracurriculumService())->updateExtracurriculum(
-                $request->account,
-                $request->accountId,
-                $request->extracurriculumId,
-                auth()->id(),
-                [
-                    'name' => $request->name,
-                    'description' => $request->description,
-                    'state' => $request->state,
-                    'attachments' => json_decode($request->attachments),
-                    'removedAttachments' => json_decode($request->removedAttachments),
-                    'name' => $request->adminId,
-                ]
+                ExtracurriculumData::createFromRequest($request)
             );
 
             DB::commit();
             return response()->json([
                 'message' => 'successful',
-                'extracurriculum' => new ExtracurriculumResource($extracurriculum),
-                'extracurriculumResource' => new DashboardItemResource($extracurriculum),
+                'extracurriculum' => new DashboardExtracurriculumResource($extracurriculum),
+                'extracurriculumResource' => json_decode($request->main) ?
+                    new DashboardItemResource($extracurriculum) : null,
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -111,16 +88,13 @@ class ExtracurriculumController extends Controller
         try {
             DB::beginTransaction();
             $extracurriculum = (new ExtracurriculumService())->deleteExtracurriculum(
-                $request->extracurriculumId,
-                auth()->id(),
-                $request->adminId,
-                $request->action
+                ExtracurriculumData::createFromRequest($request)
             );
 
             DB::commit();
             return response()->json([
                 'message' => 'successful',
-                'extracurriculum' => $extracurriculum ? new ExtracurriculumResource($extracurriculum) : null
+                'extracurriculum' => $extracurriculum ? new DashboardExtracurriculumResource($extracurriculum) : null
             ]);
         } catch (\Throwable $th) {
             DB::rollback();

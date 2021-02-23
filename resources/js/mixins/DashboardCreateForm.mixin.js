@@ -1,4 +1,8 @@
+import SearchInput from '../components/SearchInput.vue';
 export default {
+    components: {
+        SearchInput,
+    },
     props: {
         show: {
             type: Boolean,
@@ -7,6 +11,10 @@ export default {
         edit: {
             type: Boolean,
             default: false
+        },
+        mainSection: {
+            type: String,
+            default: ''
         },
         editable: {
             type: Object,
@@ -25,14 +33,17 @@ export default {
         return {
             data: {
                 name: '',
-                feeable: '',
-                feeableId: '',
+                title: '',
                 ageGroup: '',
+                free: false,
+                intro: false,
                 type: 'free',
                 description: '',
                 grade: {},
                 owner: {name: ''},
-                subjects: [],
+                items: [], //courses and subjects 
+                mainItems: [],
+                removedItems: [],
                 classes: [],
                 maximum: '',
                 structure: '',
@@ -50,9 +61,12 @@ export default {
                 attachments: [],
                 mainAttachments: [],
                 removedAttachments: [],
+                mainClasses: [], //also for owned programs
+                removedClasses: [], 
                 mainPaymentData: [],
                 removedPaymentData: [],
-                paymentData: null
+                paymentData: null, //but an array
+                hasDiscussion: false,
             },
             discussionFiles: [], //for discussion
             loading: false,
@@ -61,10 +75,11 @@ export default {
             alertMessage: '',
             alertDanger: false,
             alertSuccess: false,
+            alertLengthy: false,
             hasOwnership: false,
             paymentType: 'subscription and one-time',
+            searchItemsText: '',
             //specific items in this case classes
-            specificItem: '',
             specificItemLoading: false,
             specificItemDetailsNextPage: 0,
             specificItemDetails: [], //this is for specific item of an account like class details
@@ -79,11 +94,15 @@ export default {
                 }
             }
         },
+        searchItemsText(newValue) {
+            this.debouncedSearchItems()
+        }
     },
     computed: {
         computedCreator() {
             return {
                 name: this['dashboard/getAccountDetails'].name,
+                hasFreeResources: this['dashboard/getAccountDetails'].hasFreeResources,
                 account: this.computedAccount.account,
                 accountId: this.computedAccount.accountId,
             }
@@ -95,25 +114,15 @@ export default {
                 a.push(this.computedCreator)
                 a.push(...this['dashboard/getAccountDetails'].schools.map(school=>{
                     return {
-                        name: school.company_name,
+                        name: school.name,
                         account: 'school',
                         accountId: school.id,
+                        hasFreeResources: school.hasFreeResources
                     }
                 }))
                 return a
             }
             return []
-        },
-        computedAdmin(){
-            if (this.computedAccount.account === 'school') {
-                let index = this["dashboard/getAccountDetails"].admins.findIndex(admin=>{
-                    return admin.userId === this.getUser.id
-                })
-                if (index > -1) {
-                    return this["dashboard/getAccountDetails"].admins[index]
-                }
-            }
-            return null
         },
         computedAccount(){
             return this["dashboard/getCurrentAccount"]
@@ -140,10 +149,62 @@ export default {
             return this.specificItemDetails
         },
         computedShowOwnership() {
-            return this.computedPossibleOwners.length > 1 && !this.edit && !this.hasOwnership
+            return this.computedPossibleOwners.length > 1 && !this.edit
+        },
+        computedShowGetMore() {
+            return this.specificItemDetailsNextPage && this.specificItemDetailsNextPage > 1 &&
+                !this.specificItemLoading
+        },
+        computedShowPayment() {
+            return this.computedPayment
+            // return !this.edit ? this.computedPayment && !edit : !this.data.mainPaymentData.length
+        },
+        computedCheckMain() {
+            return this.mainSection && this.mainSection.length ? true : false
+        },
+        computedShowDiscussion() {
+            return !this.edit ? true : this.data.hasDiscussion ? true : false
         },
     },
     methods: {
+        checkDiscussion(data) {
+            if ((data.discussions.constructor === Array && data.discussions.length > 0) ||
+                data.discussions > 0) {
+                this.data.hasDiscussion = true
+            } else {
+                this.data.hasDiscussion = false
+            } 
+        },
+        initiateGetItems() {
+            this.specificItemDetails = []
+            this.specificItemDetailsNextPage = 0
+            this.getSpecificAccountItem()
+        },
+        debouncedSearchItems: _.debounce(
+            function() {
+                this.initiateGetItems()
+            }, 200
+        ),
+        responseErrorAlert(response) {
+            this.alertDanger = true
+            if (response?.data?.message) {
+                this.alertMessage = response?.data?.message
+            }  else {
+                this.alertMessage = `${this.edit ? 'editing' : 'creation'} was unsuccessful`
+            }
+        },
+        error(data) {
+            console.log('error :>> ', data);
+            this.alertDanger = true
+            this.alertLengthy = data.lengthy
+            this.alertMessage = data.message
+        },
+        getSearchItemsText(search) {
+            this.searchItemsText = search
+        },
+        stateSelection(data){
+            this.data.state = data
+        },
         clearAlert(){
             this.alertMessage = ''
             this.alertDanger = false
@@ -160,30 +221,46 @@ export default {
         closeDiscussionModal() {
             this.data.discussion = false
         },
-        clearData(){
+        async clearData(){
             this.data.name = ''
             this.data.type = 'free'
             this.data.description = ''
-            this.data.owner = {name: ''}
-            this.data.classes = []
+            // this.data.owner = {name: ''}
+            this.data.items = []
             this.data.attachments = []
             this.data.mainAttachments = []
             this.data.removedAttachments = []
             this.data.state = ''
             this.data.attachmentType = ''
             this.data.paymentData = null
+            this.data.mainPaymentData = []
+            this.data.removedPaymentData = []
             this.data.facilitate = false
-            this.data.discussionData = {
-                    title: '',
-                    type: '',
-                    preamble: '',
-                    allowed: '',
-                    restricted: false,
-                }
+            this.clearDiscussionData()
             this.discussionFiles = []
+            this.grades = []
+            this.grade = {}
             this.data.discussion = false
-            this.data.feeable = ''
-            this.data.feeableId = ''
+            this.hasMaxLearners = false
+            this.buttonText = 'create'
+            this.specificItemLoading = false
+            if (this.title.includes('lesson')) {
+                this.data.title = ''
+                this.data.ageGroup = ''
+                this.data.intro = false
+                this.data.free = false
+                this.links = []
+                this.errorTitle = false
+                this.errorFile = false
+            }
+            if (this.data.account) {
+                this.specificItemDetails = []
+                this.specificItemDetailsNextPage = 0
+                this.data.classes = []
+                this.data.mainClasses = []
+                this.data.removedClasses = []
+            }
+            this.$forceUpdate()
         },
         //attachments
         attachmentSelected(data) {
@@ -230,19 +307,33 @@ export default {
             this.data.mainAttachments.push(data)
         },
         //payment
+        getPaymentType(data){
+            if (this.data.mainPaymentData.length &&
+                this.data.mainPaymentData[0].type !== data.type) {
+                this.data.removedPaymentData.push(...this.data.mainPaymentData)
+                this.data.mainPaymentData = []
+            }
+            this.data.type = data.type
+            this.data.paymentData = data.data
+        },
         clickedRemovePayment(data,type) {
             let index = this.findPaymentDataIndex(data,type)
             if (index > -1) {
                 if (type === 'main') {
                     this.spliceMainPaymentData(index,data)
                 } else if (type === 'removed') {
-                    this.spliceRemovedPaymentData(index,data)
+                    if (this.data.paymentData && this.data.paymentData.length &&
+                        this.data.removedPaymentData.length && 
+                        this.data.type !== this.data.removedPaymentData[0].type) {
+                            return
+                        }
+                        this.spliceRemovedPaymentData(index,data)
                 } else {
                     this.data.paymentData.splice(index,1)
                 }
             }
         },
-        findPaymentDataIndex() {
+        findPaymentDataIndex(data,type) {
             let payments = []
             if (type === 'main') {
                 payments.push(...this.data.mainPaymentData)
@@ -254,8 +345,8 @@ export default {
                 payments.push(...this.data.removedPaymentData)
             }
             return payments.findIndex(payment=>{
-                return payment.data.name === data.data.name && 
-                    payment.data.id === data.data.id
+                return payment.name === data.name && 
+                    payment.id === data.id
             })
         },
         spliceMainPaymentData(index,data) {
@@ -265,6 +356,31 @@ export default {
         spliceRemovedPaymentData(index,data) {
             this.data.removedPaymentData.splice(index,1)
             this.data.mainPaymentData.push(data)
+        },
+        ownerSelection(data){
+            this.data.owner = data
+            this.data.paymentData = null
+            this.data.type = 'free'
+        },
+        clearDiscussionData(data) {
+            this.data.discussionData = {
+                    title: '',
+                    type: '',
+                    preamble: '',
+                    allowed: '',
+                    restricted: false,
+                }
+        },
+        getDiscussionData(data) {
+            this.data.discussionData.title = data.title
+            this.data.discussionData.preamble = data.preamble
+            this.data.discussionData.type = data.type
+            this.data.discussionData.restricted = data.restricted
+            this.data.discussionData.allowed = data.allowed
+            this.discussionFiles = data.files
+        },
+        closeDiscussionModal() {
+            this.data.discussion = false
         },
     },
     

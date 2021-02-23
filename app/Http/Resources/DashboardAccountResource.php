@@ -18,7 +18,7 @@ class DashboardAccountResource extends JsonResource
     {
         $class = get_class($this->resource);
         $data = [];
-        $data['account'] = getAccountString($class);
+        $data['account'] = class_basename_lower($class);
         $data['accountId'] = $this->id;
         if ($data['account'] === 'admin') {
             $data['name'] = $this->name;
@@ -68,53 +68,123 @@ class DashboardAccountResource extends JsonResource
             $data['courses'] = DashboardCourseResource::collection($this->courses);
             if ($data['account'] === 'learner') {
                 $data['parents'] = ParentResource::collection($this->parents);
-                $data['programs'] = DashboardProgramResource::collection($this->programs);
-                $data['schools'] = DashboardSchoolResource::collection($this->schools);
-                $data['courses'] = DashboardCourseResource::collection($this->courses);
-                $data['classes'] = DashboardClassResource::collection($this->classes);
-                $data['extracurriculums'] = DashboardExtracurriculumResource::collection($this->extracurriculums);
+                $data['programs'] = ProgramResource::collection(
+                    $this->programs()->hasOwner()->get()->sortByDesc('created_at')
+                );
+                $data['schools'] = DashboardSchoolResource::collection(
+                    $this->schools->sortByDesc('created_at')
+                );
+                $data['courses'] = CourseResource::collection(
+                    $this->courses()->hasOwner()->get()->sortByDesc('created_at')
+                );
+                $data['classes'] = DashboardClassResource::collection(
+                    $this->classes->sortByDesc('created_at')
+                );
+                $data['extracurriculums'] = ExtracurriculumResource::collection(
+                    $this->extracurriculums->sortByDesc('created_at')
+                );
             } else if ($data['account'] === 'parent') {
                 $data['wards'] = WardResource::collection($this->wards);
-                $data['courses'] = DashboardCourseResource::collection(
+                $data['courses'] = CourseResource::collection(
                     $this->courses()
-                        ->notOwnedby($class,$data['accountId'])->get());
-                $data['schools'] = DashboardSchoolResource::collection($this->schools);
+                        ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')
+                );
+                $data['schools'] = DashboardSchoolResource::collection(
+                    $this->schools->sortByDesc('created_at')
+                );
             } else if ($data['account'] === 'facilitator') {
+                $data['hasFreeResources'] = $this->hasFreeResources();
                 $data['programs'] = DashboardProgramResource::collection(
                     $this->programs()
-                        ->notOwnedby($class,$data['accountId'])->get());
+                        ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')
+                );
                 $data['subjects'] = DashboardAttachmentResource::collection($this->subjects);
-                $data['ownedPrograms'] = DashboardProgramResource::collection($this->ownedPrograms);
+                $data['programs'] = DashboardProgramResource::collection(
+                    $this->programs->sortByDesc('created_at')
+                );
+                $data['ownedPrograms'] = DashboardProgramResource::collection(
+                    $this->ownedPrograms->sortByDesc('created_at')
+                );
                 $data['curricula'] = DashboardCurriculumResource::collection($this->curricula);
                 $data['classes'] = DashboardClassResource::collection(
                     $this->classes()
-                        ->notOwnedby($class,$data['accountId'])->get());
-                $data['ownedClasses'] = DashboardClassResource::collection($this->ownedClasses);
-                $data['courses'] = DashboardCourseResource::collection(
+                        ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')
+                );
+                $data['ownedClasses'] = DashboardClassResource::collection(
+                    $this->ownedClasses->sortByDesc('created_at')
+                );
+                $data['courses'] = CourseResource::collection(
                     $this->courses()
-                        ->notOwnedby($class,$data['accountId'])->get());
-                $data['ownedCourses'] = DashboardCourseResource::collection($this->ownedCourses);
-                $data['schools'] = DashboardSchoolResource::collection($this->schools);
-                $data['ownedExtracurriculums'] = DashboardExtracurriculumResource::collection($this->ownedExtracurriculums);
+                        ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')
+                );
+                $data['ownedCourses'] = DashboardCourseResource::collection(
+                    $this->ownedCourses->sortByDesc('created_at')
+                );
+                $data['schools'] = DashboardSchoolResource::collection(
+                    $this->schools->sortByDesc('created_at')
+                );
+                $data['lessons'] = $this->addedLessons;
+                $data['lessons'] = $data['lessons']->merge($this->ownedLessons);
+                $data['lessons'] = DashboardLessonResource::collection(
+                    $data['lessons']->unique()->sortByDesc('created_at')
+                );
+                $data['ownedExtracurriculums'] = DashboardExtracurriculumResource::collection(
+                    $this->ownedExtracurriculums->sortByDesc('created_at')
+                );
+                $data['extracurriculums'] = ExtracurriculumResource::collection(
+                    $this->extracurriculums->sortByDesc('created_at')
+                );
+                $data['collaborations'] = DashboardCollaborationResource::collection(
+                    $this->allCollaborations()
+                );
             } else if ($data['account'] === 'professional') {
-                $data['courses'] = DashboardCourseResource::collection(
+                $data['hasFreeResources'] = $this->hasFreeResources();
+                $data['courses'] = CourseResource::collection(
                     $this->courses()
-                        ->notOwnedby($class,$data['accountId'])->get());
-                $data['ownedCourses'] = DashboardCourseResource::collection($this->ownedCourses);
+                        ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')
+                    );
+                $data['programs'] = DashboardProgramResource::collection(
+                    $this->programs->sortByDesc('created_at')
+                );
+                $data['ownedCourses'] = DashboardCourseResource::collection(
+                    $this->ownedCourses->sortByDesc('created_at')
+                );
                 $data['programs'] = DashboardProgramResource::collection(
                     $this->programs()
-                        ->notOwnedby($class,$data['accountId'])->get());
-                $data['ownedPrograms'] = DashboardProgramResource::collection($this->ownedPrograms);
-                $data['extracurriculums'] = DashboardExtracurriculumResource::collection($this->extracurriculums);
-                $data['schools'] = DashboardSchoolResource::collection($this->schools);
+                        ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')
+                );
+                $data['ownedPrograms'] = DashboardProgramResource::collection(
+                    $this->ownedPrograms->sortByDesc('created_at')
+                );
+                $data['extracurriculums'] = ExtracurriculumResource::collection(
+                    $this->extracurriculums->sortByDesc('created_at')
+                );
+                $data['schools'] = DashboardSchoolResource::collection(
+                    $this->schools->sortByDesc('created_at')
+                );
+                $data['lessons'] = $this->addedLessons;
+                $data['lessons'] = $data['lessons']->merge($this->ownedLessons);
+                $data['lessons'] = DashboardLessonResource::collection(
+                    $data['lessons']->unique()->sortByDesc('created_at')
+                );
+                $data['collaborations'] = DashboardCollaborationResource::collection(
+                    $this->allCollaborations()
+                );
             } else if ($data['account'] === 'school') {
+                $data['hasFreeResources'] = $this->hasFreeResources();
                 $data['learners'] = UserAccountResource::collection($this->learners);
                 $data['parents'] = UserAccountResource::collection($this->parents);
                 $data['facilitators'] = UserAccountResource::collection($this->facilitators);
-                $data['ownedPrograms'] = DashboardProgramResource::collection($this->ownedPrograms);
+                $data['ownedPrograms'] = DashboardProgramResource::collection(
+                    $this->ownedPrograms->sortByDesc('created_at')
+                );
                 $data['curricula'] = DashboardCurriculumResource::collection($this->curricula);
-                $data['ownedCourses'] = DashboardCourseResource::collection($this->ownedCourses);
-                $data['ownedClasses'] = DashboardClassResource::collection($this->ownedClasses);
+                $data['ownedCourses'] = DashboardCourseResource::collection(
+                    $this->ownedCourses->sortByDesc('created_at')
+                );
+                $data['ownedClasses'] = DashboardClassResource::collection(
+                    $this->ownedClasses->sortByDesc('created_at')
+                );
                 $data['academicYears'] = AcademicYearResource::collection($this->currentAcademicYears);
                 $data['ownedExtracurriculums'] = DashboardExtracurriculumResource::collection($this->ownedExtracurriculums);
                 $data['classStructure'] = $this->class_structure;
@@ -127,6 +197,9 @@ class DashboardAccountResource extends JsonResource
                 } else {
                     $data['admin'] = new AdminResource($this->admins()->where('user_id',$id)->first());
                 }
+                $data['collaborations'] = DashboardCollaborationResource::collection(
+                    $this->allCollaborations()
+                );
             }
         }
 

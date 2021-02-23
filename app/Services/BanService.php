@@ -33,7 +33,7 @@ class BanService
     {
         $this->checkAdminAuthorization($admin,$authId);
 
-        $ban = getAccountObject('ban',$banId);
+        $ban = getYourEduModel('ban',$banId);
         if (is_null($ban)) {
             throw new AccountNotFoundException("ban with id {$banId} not found.");
         }

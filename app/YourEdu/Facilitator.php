@@ -115,6 +115,11 @@ class Facilitator extends Model
         return $this->morphMany(ClassModel::class,'addedby');
     }
 
+    public function addedPrograms()
+    {
+        return $this->morphMany(Program::class,'addedby');
+    }
+
     public function addedCourses()
     {
         return $this->morphMany(Course::class,'addedby');
@@ -140,9 +145,9 @@ class Facilitator extends Model
         return $this->morphMany(Lesson::class,'ownedby');
     }
 
-    public function deliveredLessons()
+    public function addedLessons()
     {
-        return $this->morphMany(Lesson::class,'lessonable');
+        return $this->morphMany(Lesson::class,'addedby');
     }
 
     public function savesMade()
@@ -157,13 +162,13 @@ class Facilitator extends Model
 
     public function collaborations()
     {
-        return $this->morphToMany(Lesson::class,'collaborationable','collabo')
-                ->withTimestamps();
+        return $this->morphToMany(Collaboration::class,'collaborationable','collabo')
+            ->withPivot(['state'])->withTimestamps();
     }
 
-    public function ownedCollaborations()
+    public function collabos()
     {
-        return $this->morphMany(Collaboration::class,'collaborationable');
+        return $this->morphMany(Collabo::class,'collaborationable');
     }
 
     public function commissions()
@@ -434,16 +439,6 @@ class Facilitator extends Model
         return $this->morphMany(Riddle::class,'authoredby');
     }
 
-    public function lessonsAdded()
-    {
-        return $this->morphMany(Lesson::class,'addedby');
-    }
-
-    public function lessonsOwned()
-    {
-        return $this->morphMany(Lesson::class,'ownedby');
-    }
-
     public function discussions()
     {
         return $this->morphMany(Discussion::class,'raisedby');
@@ -492,6 +487,11 @@ class Facilitator extends Model
     public function messagesReceived()
     {
         return $this->morphMany(Message::class,'toable');
+    }
+
+    public function addedCollaborations()
+    {
+        return $this->morphMany(Collaboration::class,'addedby');
     }
 
     

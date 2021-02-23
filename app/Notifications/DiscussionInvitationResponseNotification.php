@@ -28,7 +28,7 @@ class DiscussionInvitationResponseNotification extends Notification
         $this->title = $title;
         $this->action = $action;
         $this->account = new UserAccountResource($account);
-        $this->accountType = getAccountString(get_class($account));
+        $this->accountType = class_basename_lower(get_class($account));
         $this->accountName = $account->name ? $account->name : $account->company_name;
         $this->discussionId = $discussionId;
     }

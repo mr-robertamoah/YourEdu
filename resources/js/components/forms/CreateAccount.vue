@@ -3,7 +3,6 @@
         <template slot="transition" v-if="show"> 
             <main-modal :show='show' 
                 @mainModalDisappear='modalDisappear'
-                :alertError="true"
                 :requests="false"
                 :mainOther="false"
             >
@@ -683,7 +682,9 @@ import { dates } from '../../services/helpers'
             },
             cleanUp(){
                 if (this.type.length) {
-                    
+                    this.inputName = ''
+                    this.inputDescription = ''
+                    this.inputRole = ''
                 } else {
                     this.steps = 0
                     this.actionDescription = ''
@@ -710,9 +711,9 @@ import { dates } from '../../services/helpers'
             },
             hideAlert(){
                 this.clearAlert()
-                if (this.type.length) {
-                    this.modalDisappear()
-                }
+                // if (this.type.length) {
+                //     this.modalDisappear()
+                // }
             },
             parentRoleSelection(data){
                 this.userDataTwo.parentRole = data
@@ -989,6 +990,7 @@ import { dates } from '../../services/helpers'
                 this.clickedCreate()
             },
             async clickedCreate(skip = false){
+                if (this.modalLoading) return
                 let formData = new FormData,
                     message = ''
 
@@ -1138,17 +1140,15 @@ import { dates } from '../../services/helpers'
                         }
                         this.alertSuccess = true
                         this.alertMessage = msg
-                         
+                        this.cleanUp()
                     } else {
                         console.log('response :>> ', response);
                         let msg
-                        if (this.type.length) {
+                        if (!response.response.data.errors) {
                             msg = `${this.type} creation was unsuccessful.`
-                        } else {
-                            if (response.response.data.errors) {
-                                msg = Object.values(response.response.data.errors).toString()
-                            } else msg = `unsuccessful`
-                        }
+                        } else if (response.response.data.errors) {
+                            msg = Object.values(response.response.data.errors).toString()
+                        } else msg = `unsuccessful`
                         this.alertDanger = true
                         this.alertMessage = msg
                     }
@@ -1202,8 +1202,7 @@ import { dates } from '../../services/helpers'
         }
 
         .loading{
-            width: 100%;
-            text-align: center;
+           @include sticky-loader()
         }
 
         .date-picker,
@@ -1212,7 +1211,7 @@ import { dates } from '../../services/helpers'
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $background-color-main;
+            border-bottom: 2px solid $color-main;
             border-radius: 0;
         }
 
@@ -1307,7 +1306,7 @@ import { dates } from '../../services/helpers'
                 border: none;
 
                 .icon{
-                    color: $background-color-main;
+                    color: $color-main;
                     margin-right: 10px;
                 }
 

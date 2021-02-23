@@ -1292,7 +1292,6 @@ const actions = {
         commit('LOADING_END')
         if (response.data.data) {
             commit('POSTS_SUCCESS',response.data)
-            // console.log('next',response.data.links.next)
             if (response.data.hasOwnProperty('links')) {
                 
                 return response.data.links.next
@@ -1301,7 +1300,19 @@ const actions = {
             }
         }else {
             commit('PROFILE_FAILURE','retrieving posts unsuccessful')
-            // return 'unsuccessful'
+        }
+    },
+    async getProfileAccounts({}, data) {
+        let response = await ProfileService.getProfileAccounts(data)
+
+        if (response.data.data) {
+            return {
+                status: true,
+                accounts: response.data.data,
+                next: response.data.links.next
+            }
+        } else {
+            return {status: false, response}
         }
     },
     ////////////////////

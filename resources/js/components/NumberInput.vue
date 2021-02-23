@@ -1,7 +1,8 @@
 <template>
-    <div class="text-input-wrapper"
-        :title="title"
-    >
+    <div class="text-input-wrapper">
+        <div class="label" v-if="label.length">
+            {{label}}
+        </div>
         <div class="main-section"
             :class="{error,bottomBorder,
             noBorder,sm}"
@@ -9,7 +10,6 @@
             <input type="number" 
                 :placeholder="placeholder"
                 v-model="inputNumber"
-                @keyup="checkInput" 
                 :max="inputMax"
                 :min="inputMin"
                 class="form-control"
@@ -17,6 +17,9 @@
                 pattern="[0-9]*"
                 inputmode="numeric"
             >
+        </div>
+        <div class="prepend" v-if="prepend.length">
+            {{prepend}}
         </div>
     </div>
 </template>
@@ -64,7 +67,11 @@
                 type: String,
                 default: ''
             },
-            title: {
+            prepend: {
+                type: String,
+                default: ''
+            },
+            label: {
                 type: String,
                 default: ''
             },
@@ -76,6 +83,13 @@
         },
         watch: {
             inputNumber(newValue){
+                if (newValue < this.inputMin) {
+                    this.inputNumber = `${this.inputMin}`
+                    return
+                } else if (this.hasMax && newValue > this.inputMax) {
+                    this.inputNumber = `${this.inputMax}`
+                    return
+                }
                 this.$emit('numberinput', newValue)
                 this.$emit('input', newValue)
             },
@@ -89,16 +103,12 @@
         methods: {
             checkInput(event) {
                 if (event.target.value < this.inputMin) {
-                    // event.target.value = this.inputMin
-                    this.$emit('numberinput',`${event.target.value}`)
+                    this.inputNumber = `${this.inputMin}`
+                    // this.$emit('numberinput',`${event.target.value}`)
                 } else if (this.hasMax && event.target.value > this.inputMax) {
-                    event.target.value = this.inputMax
-                    this.$emit('numberinput',`${event.target.value}`)
+                    this.inputNumber = `${this.inputMax}`
+                    // this.$emit('numberinput',`${event.target.value}`)
                 }
-            },
-            input($event) {
-                let value = $event.target.value 
-                this.$emit('numberinput',`${value}`)
             },
         },
     }
@@ -111,11 +121,25 @@ $border-color-error:rgba(201, 6, 6, 0.9);
 $buttonColor : rgba(2, 104, 90, .6);
 
     .text-input-wrapper{
+        display: flex;
         width: 100%;
+        align-items: center;
         background-color: white;
+
+        .prepend{
+            min-width: fit-content;
+            margin-left: 10px;
+        }
+
+        .label{
+            margin-right: 10px;
+            color: gray;
+            min-width: fit-content;
+        }
 
         .main-section{
             display: flex;
+            width: 100%;
             justify-content: center;
             align-items: center;
             border-radius: $border-radius;
@@ -133,7 +157,7 @@ $buttonColor : rgba(2, 104, 90, .6);
             }
 
             .form-control{
-                // min-width: 90%;
+                box-shadow: none;
                 margin: 0 !important;
             }
         }

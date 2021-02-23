@@ -12,7 +12,7 @@ class ConversationService
     
     public function getMessages($conversationId, $id)
     {
-        $conversation = getAccountObject('conversation',$conversationId);
+        $conversation = getYourEduModel('conversation',$conversationId);
 
         if (is_null($conversation)) {
             throw new AccountNotFoundException("unsuccessful, conversation was not found for id {$conversationId}.");

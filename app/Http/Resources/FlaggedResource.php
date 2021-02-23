@@ -23,7 +23,7 @@ class FlaggedResource extends JsonResource
             $data['full_name'] = $this->user->full_name;
         }
         if ($this->profileable) {
-            $data['account'] = getAccountString($this->profileable_type);
+            $data['account'] = class_basename_lower($this->profileable_type);
             $data['url'] = $this->url;
             if ($data['account'] === 'school') {
                 $data['name'] = $this->profileable->company_name;
@@ -38,20 +38,20 @@ class FlaggedResource extends JsonResource
             $data['flags'] = FlagResource::collection($this->flags);
         }
         if (!is_null($this->postedby)) {
-            $data['postedby_type'] = getAccountString($this->postedby_type);
+            $data['postedby_type'] = class_basename_lower($this->postedby_type);
             $data['postedby_id'] = $this->postedby_id;
             $data['name'] = $this->postedby->profile->name;
             $data['url'] = $this->postedby->profile->url;
         }
         if (!is_null($this->commentedby)) {
-            $data['commentedby_type'] = getAccountString($this->commentedby_type);
+            $data['commentedby_type'] = class_basename_lower($this->commentedby_type);
             $data['commentedby_id'] = $this->commentedby_id;
             $data['name'] = $this->commentedby->profile->name;
             $data['url'] = $this->commentedby->profile->url;
             $data['comment'] = $this->body;
         }
         if (!is_null($this->answeredby)) {
-            $data['answeredby_type'] = getAccountString($this->answeredby_type);
+            $data['answeredby_type'] = class_basename_lower($this->answeredby_type);
             $data['answeredby_id'] = $this->answeredby_id;
             $data['answer'] = $this->answer;
             $data['name'] = $this->answeredby->profile->name;

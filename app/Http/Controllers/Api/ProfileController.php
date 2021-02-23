@@ -9,18 +9,14 @@ use App\Http\Resources\ImageResource;
 use App\Http\Resources\PhoneNumberResource;
 use App\Http\Resources\ProfileResource;
 use App\Http\Resources\SocialMediaResource;
+use App\Http\Resources\UserAccountResource;
 use App\Http\Resources\VideoResource;
+use App\Services\ProfileService;
 use App\YourEdu\Email;
-use App\YourEdu\Facilitator;
-use App\YourEdu\Group;
 use Spatie\Image\Image;
 use Spatie\Image\Manipulations;
-use App\YourEdu\Learner;
-use App\YourEdu\ParentModel;
 use App\YourEdu\PhoneNumber;
-use App\YourEdu\Professional;
 use App\YourEdu\Profile;
-use App\YourEdu\School;
 use App\YourEdu\SocialMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +30,7 @@ class ProfileController extends Controller
     public function profileMediaChange(Request $request, $media,$mediaId)
     {
         $mainMedia = null;
-        $account = getAccountObject($request->account, $request->accountId);
+        $account = getYourEduModel($request->account, $request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -92,7 +88,7 @@ class ProfileController extends Controller
     public function profileUploadFile(Request $request, $profile)
     {
         $mainProfile = Profile::find($profile);
-        $account = getAccountObject($request->account, $request->accountId);
+        $account = getYourEduModel($request->account, $request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -185,7 +181,7 @@ class ProfileController extends Controller
     public function profilePicUpdate(Request $request, $profile)
     {
         $mainProfile = Profile::find($profile);
-        $account = getAccountObject($request->account, $request->accountId);
+        $account = getYourEduModel($request->account, $request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -420,7 +416,7 @@ class ProfileController extends Controller
         $mainAccount = null;
 
         try {
-            $mainAccount = getAccountObject($account, $accountId);
+            $mainAccount = getYourEduModel($account, $accountId);
     
             if ($mainAccount && $mainAccount->profile) {
                 return response()->json([
@@ -448,7 +444,7 @@ class ProfileController extends Controller
 
     public function profilePrivateMediasGet($requestAccount,$requestAccountId,$media)
     {
-        $account = getAccountObject($requestAccount, $requestAccountId);
+        $account = getYourEduModel($requestAccount, $requestAccountId);
 
         if (!$account) {
             return response()->json([
@@ -482,7 +478,7 @@ class ProfileController extends Controller
     
     public function profileMediasGet($requestAccount,$requestAccountId,$media)
     {
-        $account = getAccountObject($requestAccount,$requestAccountId);
+        $account = getYourEduModel($requestAccount,$requestAccountId);
         if (!$account) {
             return response()->json([
                 'message' => 'unsuccessful, your account does not exist.'
@@ -512,7 +508,7 @@ class ProfileController extends Controller
         $mainProfile = Profile::find($profile);
         $mainMedia = null;
 
-        $account = getAccountObject($requestAccount,$requestAccountId);
+        $account = getYourEduModel($requestAccount,$requestAccountId);
 
         if (!$account) {
             return response()->json([

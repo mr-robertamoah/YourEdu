@@ -8,7 +8,7 @@
         </div>
         <div class="close"
             v-if="hasClose"
-            @click="clickedRemoveSubscription"
+            @click="clickedRemoveData"
         >
             <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
         </div>
@@ -23,12 +23,6 @@ import paymentTypeMixin from '../mixins/PaymentType.mixin';
     export default {
         mixins: [paymentTypeMixin],
         methods: {
-            clickedRemoveSubscription() {
-                this.$emit('clickedRemoveSubscription',this.subscription)
-            },
-            clickedSubscription() {
-                this.$emit('clickedSubscription',this.subscription)
-            },
         },
     }
 </script>

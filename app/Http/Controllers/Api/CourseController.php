@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CourseData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CourseCreateRequest;
 use App\Http\Requests\CreateCourseRequest;
@@ -66,7 +67,7 @@ class CourseController extends Controller
 
     public function coursesGet()
     {
-        return CourseResource::collection(Course::where('ownedby_type',null)->paginate(2));
+        return CourseResource::collection(Course::hasNoOwner()->paginate(2));
     }
 
     public function coursesSearch($search)
@@ -74,7 +75,7 @@ class CourseController extends Controller
         $courses = Course::where('name','like',"%{$search}%")
             ->orWhereHas('aliases',function(Builder $query) use ($search){
                 $query->where('name','like',"%{$search}%");
-            })->get();
+            })->hasNoOwner()->get();
 
         return response()->json([
             'message' => 'successful',
@@ -101,22 +102,7 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             $course = (new CourseService())->createCourse(
-                $request->account,
-                $request->accountId,
-                auth()->id(),
-                [
-                    'owner' => $request->owner,
-                    'ownerId' => $request->ownerId,
-                    'name' => $request->name,
-                    'description' => $request->description,
-                    'attachments' => json_decode($request->attachments),
-                    'classes' => json_decode($request->classes),
-                    'facilitate' => json_decode($request->facilitate),
-                    'type' => $request->type,
-                    'discussionData' => json_decode($request->discussionData),
-                    'discussionFiles' => $request->file('discussionFile'),
-                    'paymentData' => json_decode($request->paymentData)
-                ]
+                CourseData::createFromRequest($request)
             );
 
             DB::commit();
@@ -159,25 +145,15 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             $course = (new CourseService())->updateCourse(
-                $request->account,
-                $request->accountId,
-                $request->courseId,
-                auth()->id(),
-                [
-                    'name' => $request->name,
-                    'description' => $request->description,
-                    'state' => $request->state,
-                    'attachments' => json_decode($request->attachments),
-                    'removedAttachments' => json_decode($request->removedAttachments),
-                    'name' => $request->adminId,
-                ]
+                CourseData::createFromRequest($request)
             );
 
             DB::commit();
             return response()->json([
                 'message' => 'successful',
                 'course' => new DashboardCourseResource($course),
-                'courseResource' => new DashboardItemResource($course),
+                'courseResource' => json_decode($request->main) ?
+                    new DashboardItemResource($course) : null,
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -190,10 +166,7 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             $course = (new CourseService())->deleteCourse(
-                $request->courseId,
-                auth()->id(),
-                $request->adminId,
-                $request->action
+                CourseData::createFromRequest($request)
             );
 
             DB::commit();

@@ -33,7 +33,7 @@ class DeleteSave implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = getAccountString($this->saveInfo->account);
+        $account = class_basename_lower($this->saveInfo->account);
         return [
             new Channel('youredu.home'),
             new Channel("youredu.{$account}.{$this->saveInfo->accountId}")

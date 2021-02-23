@@ -3,7 +3,7 @@
         :class="{borderRadius:!hasClose}"
         @click="clickedBadge"
     >
-        {{attachment.name ? attachment.name : file.name}}
+        {{computedName}}
         <div class="close" 
             @click="clickedClose"
             v-if="hasClose"
@@ -34,6 +34,12 @@
                 type: Boolean,
                 default: false
             },
+        },
+        computed: {
+            computedName() {
+                return this.attachment.name ? this.attachment.name : 
+                    this.file ? this.file.name : ''
+            }
         },
         methods: {
             clickedClose() {

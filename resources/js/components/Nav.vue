@@ -310,9 +310,10 @@ import { dates, strings } from '../services/helpers';
                                 notification.type === 'App\\Notifications\\AdminResponseNotification' ||
                                 notification.type === 'App\\Notifications\\FacilitatorResponseNotification' ||
                                 notification.type === 'App\\Notifications\\SchoolResponseNotification' ||
+                                notification.type === 'App\\Notifications\\CollaborationNotification' ||
                                 notification.type === 'App\\Notifications\\RemoveDiscussionParticipantNotification') {
                                 this.otherNotifications.push(notification)
-                                
+                                console.log(notification);
                                 let alert = {
                                     isMessage: true,
                                     account: notification.account,

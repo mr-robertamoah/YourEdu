@@ -15,18 +15,15 @@ class CreateAssessmentsTable extends Migration
     {
         Schema::create('assessments', function (Blueprint $table) {
             $table->id();
-            $table->morphs('assessmentby'); // school facilitator professional parent
-            $table->morphs('assessmentable'); // lesson topic curriculumdetail admission`qz
-            $table->unsignedBigInteger('academic_year_section_id')->nullable();
-            $table->unsignedBigInteger('report_detail_id')->nullable();
+            $table->nullableMorphs('addedby'); // school facilitator professional parent
             $table->string('name');
-            $table->float('total_mark');
-            $table->string('remark')->nullable();
+            $table->text('description')->nullable();
+            $table->float('total_mark')->nullable();
+            $table->integer('duration')->nullable();
+            $table->timestamp('publish_date')->nullable();
+            $table->timestamp('due_date')->nullable();
+            $table->softDeletes();
             $table->timestamps();
-
-            
-            $table->foreign('academic_year_section_id')->references('id')->on('academic_year_sections')->cascadeOnDelete();
-            // $table->foreign('report_detail_id')->references('id')->on('report_details')->cascadeOnDelete();
         });
     }
 

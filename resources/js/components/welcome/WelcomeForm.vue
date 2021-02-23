@@ -42,7 +42,7 @@ $input-color: rgba(22, 233, 205, 1);
     .welcome-form{
         width: 70%;
         margin: 30px auto 10px;
-        padding: 30px 10px 10px;
+        padding: 0px 10px 10px;
 
         .title{
             font-size: 20px;
@@ -124,6 +124,12 @@ $input-color: rgba(22, 233, 205, 1);
 @media screen and (max-width:800px) {
     .welcome-form{
         width: 80%;
+    }
+}
+
+@media screen and (max-width:600px) {
+    .welcome-form{
+        width: 90%;
     }
 }
 

@@ -1,6 +1,14 @@
 <template>
     <div class="fee-badge-wrapper">
-
+        <div class="close"
+            v-if="hasClose"
+            @click="clickedRemoveData"
+        >
+            <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
+        </div>
+        <div class="details" v-if="computedDetails.length">
+            {{computedDetails}}
+        </div>
     </div>
 </template>
 
@@ -29,6 +37,16 @@ import paymentTypeMixin from '../mixins/PaymentType.mixin';
             width: 100%;
             text-align: center;
             text-transform: lowercase;
+        }
+
+        .close{
+            font-size: 14px;
+            color: red;
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 5px 5px 10px 10px;
+            cursor: pointer;
         }
     }
 </style>

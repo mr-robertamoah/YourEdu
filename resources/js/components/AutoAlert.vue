@@ -13,7 +13,7 @@
 
 <script>
 import FadeRight from './transitions/FadeRight'
-import { mapActions } from 'vuex'
+import { mapActions, mapGetters } from 'vuex'
     export default {
         props: {
             message: {
@@ -28,6 +28,10 @@ import { mapActions } from 'vuex'
                 type: Boolean,
                 default: false
             },
+            lengthy: {
+                type: Boolean,
+                default: false
+            },
             sticky: {
                 type: Boolean,
                 default: false
@@ -38,7 +42,8 @@ import { mapActions } from 'vuex'
         },
         data() {
             return {
-                show: false
+                show: false,
+                time: 4000
             }
         },
         watch: {
@@ -48,10 +53,25 @@ import { mapActions } from 'vuex'
                     setTimeout(() => {
                         this.show = false
                         this.$emit('hideAlert', newValue)
-                        this['profile/clearMsg']()
-                    }, 3000);
+                        if (this['profile/getMsg'] && this['profile/getMsg'].length) {
+                            this['profile/clearMsg']()
+                        }
+                    }, this.time);
                 }
-            }
+            },
+            lengthy: {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        this.time = 10000
+                    } else {
+                        this.time = 4000
+                    }
+                }
+            },
+        },
+        computed: {
+            ...mapGetters(['profile/getMsg'])
         },
         methods: {
             ...mapActions(['profile/clearMsg']),

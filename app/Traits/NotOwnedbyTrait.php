@@ -5,7 +5,7 @@ namespace App\Traits;
 /**
  * this is for courses, programs, classes, extracurriculum
  */
-trait NotOwnedByTrait
+trait NotOwnedbyTrait
 {
     public function scopeNotOwnedby($query,$accountClass,$accountId)
     {
@@ -19,5 +19,13 @@ trait NotOwnedByTrait
                     }
                 }
             );
+    }
+
+    public function scopeHasNoOwner($query) {
+        return $query->whereNull('ownedby_type');
+    }
+
+    public function scopeHasOwner($query) {
+        return $query->whereNotNull('ownedby_type');
     }
 }

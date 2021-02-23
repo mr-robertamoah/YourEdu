@@ -2,18 +2,26 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AssessmentTrait;
 use App\Traits\DashboardItemTrait;
-use App\Traits\NotOwnedByTrait;
+use App\Traits\NotOwnedbyTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property bool $stand_alone
+ */
 class Course extends Model
 {
     //
-    use SoftDeletes, NotOwnedByTrait, DashboardItemTrait;
+    use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait;
 
     protected $fillable = [
-        'name','description', 'state'
+        'name','description', 'state', 'stand_alone'
+    ];
+
+    protected $casts = [
+        'stand_alone' => 'boolean'
     ];
 
     public function addedby()
@@ -37,7 +45,8 @@ class Course extends Model
 
     public function lessons()
     {
-        return $this->morphMany(Lesson::class,'lessonable');
+        return $this->morphedByMany(Lesson::class,'coursable','coursables')
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function subscriptions()
@@ -47,6 +56,11 @@ class Course extends Model
 
     public function classes(){
         return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id');
+    }
+
+    public function courseSections()
+    {
+        return $this->hasMany(CourseSection::class);
     }
 
     public function prices()
@@ -68,7 +82,7 @@ class Course extends Model
     public function parents()
     {
         return $this->morphedByMany(ParentModel::class,'coursable','coursables')
-            ->withPivot(['activity','resource'])->withTimestamps();
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function facilitators()
@@ -87,6 +101,12 @@ class Course extends Model
     {
         return $this->morphedByMany(School::class,'coursable','coursables')
             ->withPivot(['activity','resource'])->withTimestamps();
+    }
+
+    public function extracurriculums()
+    {
+        return $this->morphedByMany(Extracurriculum::class,'coursable','coursables')
+            ->withTimestamps();
     }
 
     public function collaborations()
@@ -119,7 +139,7 @@ class Course extends Model
     public function programs()
     {
         return $this->morphToMany(Program::class,'programmable','programmables')
-            ->withPivot(['activity','resource'])->withTimestamps();
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function topics()

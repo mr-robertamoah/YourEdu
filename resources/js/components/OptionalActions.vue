@@ -1,7 +1,7 @@
 <template>
     <just-fade>
         <template slot="transition" v-if="show">
-            <div class="options-wrapper">
+            <div class="options-wrapper" :class="{horizontal}">
                 <div class="option" v-if="hasSave && !hasOthers">
                     <font-awesome-icon :icon="['fa','bookmark']"></font-awesome-icon>
                     <span @click="clickedOption('save')">
@@ -67,6 +67,10 @@
                 type: Boolean,
                 default: true
             },
+            horizontal: {
+                type: Boolean,
+                default: false
+            },
             hasDelete: {
                 type: Boolean,
                 default: true
@@ -130,6 +134,22 @@
                 box-shadow: 0 0 3px dimgray;
             }
 
+        }
+
+        &.horizontal{
+            width: fit-content;
+            max-width: 300px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            max-height: 100px;
+            padding: 5px 10px;
+        }
+    }
+
+    .horizontal{
+
+        .option{
+            width: fit-content;
         }
     }
 </style>

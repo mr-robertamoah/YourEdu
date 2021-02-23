@@ -5,17 +5,20 @@ namespace App\Services;
 use App\Exceptions\AccountException;
 use App\Exceptions\AccountNotFoundException;
 use App\User;
+use App\YourEdu\Profile;
 use \Debugbar;
 use Illuminate\Support\Str;
 
 class AccountService
 {
+    const PAGINATION_LENGTH = 10;
+
     public function createAccountWithCreator($mainCreator,$creator,$create,$accountUser,
         $accountData)
     {        
         if ($creator !== 'user') {
 
-            if (getAccountString(get_class($mainCreator)) !== $creator) {
+            if (class_basename_lower(get_class($mainCreator)) !== $creator) {
                 throw new AccountException("account not {$creator}");
             }
         }
@@ -124,10 +127,19 @@ class AccountService
         return $user;
     }
 
-    public function createUserAccount($userDataOne,$accountDataOne,$create,$creator = null,
-        $creatorId = null,$parentRole = null,$userDataTwo = null,$accountDataTwo = null)
+    public function createUserAccount
+    (
+        $userDataOne,
+        $accountDataOne,
+        $create,
+        $creator = null,
+        $creatorId = null,
+        $parentRole = null,
+        $userDataTwo = null,
+        $accountDataTwo = null
+    )
     {
-        $mainCreator = getAccountObject($creator,$creatorId);
+        $mainCreator = getYourEduModel($creator,$creatorId);
         if (is_null($mainCreator)) {
             throw new AccountNotFoundException("{$creator} with id {$creatorId} not found");
         }
@@ -156,4 +168,5 @@ class AccountService
             'accountTwo' => $accountTwo,
         ];
     }
+
 }

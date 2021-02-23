@@ -33,7 +33,7 @@ class UpdateDisucssion implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = getAccountString($this->discussion->raisedby_type);
+        $account = class_basename_lower($this->discussion->raisedby_type);
         return [
             new Channel('youredu.home'),
             new Channel("youredu.{$account}.{$this->discussion->raisedby_id}"),

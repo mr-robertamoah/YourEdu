@@ -45,7 +45,7 @@ class FollowService
     public function unfollow($followId,$userId)
     {
         //user_id of follow belongs to follower, meaning follow belongs to follower 
-        $mainFollow = getAccountObject('follow',$followId);
+        $mainFollow = getYourEduModel('follow',$followId);
         if ($mainFollow) {
             if ($mainFollow->user_id !== $userId) {
                 throw new FollowException("you cannot unfollow a follow you do not own");
@@ -60,7 +60,7 @@ class FollowService
         }
 
         $mainAccount = $mainFollow->followedby;
-        $account = getAccountString($mainFollow->followedby_type);
+        $account = class_basename_lower($mainFollow->followedby_type);
         $accountId = $mainFollow->followedby_id;
         $unfollowRequestInfo = [
             'followId' => $mainFollow->id,
@@ -115,11 +115,11 @@ class FollowService
 
     private function getFollowRequest($account, $accountId, $myAccount, $myAccountId)
     {
-        $requestfrom = getAccountObject($account, $accountId);
+        $requestfrom = getYourEduModel($account, $accountId);
         if (is_null($requestfrom)) {
             throw new AccountNotFoundException("{$account} with id {$accountId} not found");
         }
-        $requestto = getAccountObject($myAccount, $myAccountId);
+        $requestto = getYourEduModel($myAccount, $myAccountId);
         if (is_null($requestto)) {
             throw new AccountNotFoundException("{$myAccount} with id {$myAccountId} not found");
         }
@@ -154,12 +154,12 @@ class FollowService
     public function follow($account,$accountId,$myAccount,$myAccountId,$id)
     {
         //check if there is a request with the a follow
-        $mainAccount = getAccountObject($account, $accountId);
+        $mainAccount = getYourEduModel($account, $accountId);
         if (!$mainAccount) {
             throw new AccountNotFoundException("unsuccessful. the account you are trying to follow does not exist");
         }
 
-        $followerAccount = getAccountObject($myAccount, $myAccountId);
+        $followerAccount = getYourEduModel($myAccount, $myAccountId);
         if (!$followerAccount) {
             throw new AccountNotFoundException("unsuccessful. your account does not exist");
         } 

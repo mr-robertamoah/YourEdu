@@ -22,7 +22,7 @@ class MarkController extends Controller
 
     public function markCreate(Request $request,$answer, $answerId)
     {
-        $mainAccount = getAccountObject($request->account,$request->accountId);
+        $mainAccount = getYourEduModel($request->account,$request->accountId);
         
         if ($mainAccount) {
             $mainItem = null;
@@ -81,7 +81,7 @@ class MarkController extends Controller
 
     public function getAnswerMarks($answerId)
     {
-        $answer = getAccountObject('answer', $answerId);
+        $answer = getYourEduModel('answer', $answerId);
 
         if (is_null($answer)) {
             return response()->json([

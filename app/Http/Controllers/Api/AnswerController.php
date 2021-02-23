@@ -43,7 +43,7 @@ class AnswerController extends Controller
                 ],422);
         }
 
-        $account = getAccountObject($request->account,$request->accountId);
+        $account = getYourEduModel($request->account,$request->accountId);
 
         if (!$account) {
             return response()->json([
@@ -124,7 +124,7 @@ class AnswerController extends Controller
         // for now, answer must be required, on a later date, it wont be. but we will 
         //check to ensure that the update doesnt lead to an empty answer (without answer and file)
 
-        $mainAccount = getAccountObject($request->account,$request->accountId);
+        $mainAccount = getYourEduModel($request->account,$request->accountId);
 
         if (!$mainAccount) {
             return response()->json([

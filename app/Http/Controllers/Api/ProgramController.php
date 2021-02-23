@@ -2,13 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\ProgramData;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateProgramRequest;
 use App\Http\Requests\ProgramAliasCreateRequest;
 use App\Http\Requests\ProgramCreateRequest;
+use App\Http\Requests\UpdateProgramRequest;
+use App\Http\Resources\DashboardItemResource;
+use App\Http\Resources\DashboardProgramResource;
 use App\Http\Resources\ProgramResource;
 use App\Services\ProgramService;
 use App\YourEdu\Program;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ProgramController extends Controller
@@ -62,7 +68,7 @@ class ProgramController extends Controller
 
     public function programsGet()
     {
-        return ProgramResource::collection(Program::paginate(2));
+        return ProgramResource::collection(Program::hasNoOwner()->paginate(2));
     }
 
     public function programsSearch($search)
@@ -70,7 +76,7 @@ class ProgramController extends Controller
         $programs = Program::where('name','like',"%{$search}%")
             ->orWhereHas('aliases',function(Builder $query) use ($search){
                 $query->where('name','like',"%{$search}%");
-            })->get();
+            })->hasNoOwner()->get();
 
         return response()->json([
             'message' => 'successful',
@@ -87,6 +93,65 @@ class ProgramController extends Controller
                 'message' => $programInfo
             ]);
         } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+    
+    public function createProgram(CreateProgramRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+            $program = (new ProgramService())->createProgram(
+                ProgramData::createFromRequest($request)
+            );
+
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                'program' => new DashboardProgramResource($program)
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function updateProgram(UpdateProgramRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+            $program = (new ProgramService())->updateProgram(
+                ProgramData::createFromRequest($request)
+            );
+
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                'program' => new DashboardProgramResource($program),
+                'programResource' => json_decode($request->main) ?
+                    new DashboardItemResource($program) : null,
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function deleteProgram(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $program = (new ProgramService())->deleteProgram(
+                ProgramData::createFromRequest($request)
+            );
+
+            DB::commit();
+            return response()->json([
+                'message' => 'successful',
+                'program' => $program ? new DashboardProgramResource($program) : null
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
             throw $th;
         }
     }

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AnswerController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClassController;
+use App\Http\Controllers\Api\CollaborationController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\CourseController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\ExtracurriculumController;
 use App\Http\Controllers\Api\FlagController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\GradeController;
+use App\Http\Controllers\Api\LessonController;
 use App\Http\Controllers\Api\LikeController;
 use App\Http\Controllers\Api\MarkController;
 use App\Http\Controllers\Api\NotificationController;
@@ -85,7 +87,10 @@ Route::get('/search', [Search::class,'search']);
 Route::get('/discussion/{discussionId}/messages', [DiscussionController::class,'getMessages']);
 Route::get('/discussion/{discussionId}/participants', [DiscussionController::class,'getParticipants']);
 
+Route::get('dashboard/search',[DashboardController::class,'search']);
 
+Route::get('dashboard/{item}/{itemId}', [DashboardController::class,'getItemDetails'])
+    ->where('item','lesson|course|class|extracurriculum|program');
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return response()->json([
 //         'user'=> $request->user()
@@ -98,9 +103,21 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/class/delete', [ClassController::class,'deleteClass']);
     Route::post('/class/update', [ClassController::class,'updateClass']);
     
-    Route::post('/extracurriculum/create', [ExtracurriculumController::class,'createClass']);
-    Route::post('/extracurriculum/delete', [ExtracurriculumController::class,'deleteClass']);
-    Route::post('/extracurriculum/update', [ExtracurriculumController::class,'updateClass']);
+    Route::post('/program/create/main', [ProgramController::class,'createProgram']);
+    Route::post('/program/delete/main', [ProgramController::class,'deleteProgram']);
+    Route::post('/program/update/main', [ProgramController::class,'updateProgram']);
+
+    Route::post('/lesson/create', [LessonController::class,'createLesson']);
+    Route::post('/lesson/delete', [LessonController::class,'deleteLesson']);
+    Route::post('/lesson/update', [LessonController::class,'updateLesson']);
+
+    Route::post('/collaboration/create', [CollaborationController::class,'createCollaboration']);
+    Route::post('/collaboration/delete', [CollaborationController::class,'deleteCollaboration']);
+    Route::post('/collaboration/update', [CollaborationController::class,'updateCollaboration']);
+    
+    Route::post('/extracurriculum/create', [ExtracurriculumController::class,'createExtracurriculum' ]);
+    Route::post('/extracurriculum/delete', [ExtracurriculumController::class,'deleteExtracurriculum' ]);
+    Route::post('/extracurriculum/update', [ExtracurriculumController::class,'updateExtracurriculum' ]);
     
     Route::post('/course/create/main', [CourseController::class,'createCourse']);
     Route::post('/course/delete/main', [CourseController::class,'deleteCourse']);
@@ -112,6 +129,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/dashboard/admins', [DashboardController::class,'getAdmins']);
     Route::get('/dashboard/account', [DashboardController::class,'getAccountDetails']);
     Route::get('/dashboard/account/item', [DashboardController::class,'getAccountSpecificItem']);
+    Route::get('/dashboard/account/items', [DashboardController::class,'getAccountItems']);
     Route::get('/dashboard/item/data', [DashboardController::class,'getSectionItemData']);
     Route::post('/dashboard/school/academicyear', [DashboardController::class,'createAcademicYear']);
     Route::post('/dashboard/school/academicyearsection', [DashboardController::class,'createAcademicYearSection']);

@@ -24,7 +24,7 @@
                 </div>
             </div>
         </div>
-        <div class="top-section" 
+        <div class="top-section mt-8" 
             v-if="!mainSection.length"
             :class="{full}"
         >
@@ -177,16 +177,6 @@
                     class="dashboard-badge"
                     :hasItems="true"
                     :hasSearch="true"
-                    heading="collaborations"
-                    :items="computedCollaborations"
-                    @clickedItem="clickedDashboardItem"
-                    v-if="account.account === 'school' || account.account === 'facilitator' ||
-                        account.account === 'professional'"
-                ></dashboard-item-badge>
-                <dashboard-item-badge
-                    class="dashboard-badge"
-                    :hasItems="true"
-                    :hasSearch="true"
                     heading="schools"
                     :items="computedSchools"
                     @clickedItem="clickedDashboardItem"
@@ -231,9 +221,12 @@
                 ></dashboard-item-badge>
             </div>
         </div>
-        <div class="bottom-section" v-if="!mainSection.length">
+        <div class="bottom-section" 
+            v-if="!mainSection.length"
+            :class="{'mt-8': full}"
+        >
             <div class="info" v-if="!loading && !type.length">
-                Yaay...get active
+                Yaay...get active by clicking any of your community accounts
             </div>
             <div class="main-title" v-if="computedBottomTitle.length">
                 {{computedBottomTitle}}
@@ -384,7 +377,9 @@
                         </template>
                         <template v-if="account.account === 'school'">
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="admins"
+                                v-if="computedCurrentAccount.account === 'school'"
                             >
                                 <template slot="body">
                                     <div class="sub-main">
@@ -394,23 +389,27 @@
                                             :key="index"
                                             type="admin"
                                             :account="admin"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
                                         <div class="no-ward" v-if="!computedSchoolAdmins || !computedSchoolAdmins.length">
                                             no admins
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add admin"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add admin"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="grades"
                             >
                                 <template slot="body">
@@ -421,23 +420,27 @@
                                             :key="index"
                                             type="grade"
                                             :account="grade"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
                                         <div class="no-ward" v-if="!computedSchoolGrades || !computedSchoolGrades.length">
                                             no grades
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add grade"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add grade"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="subjects"
                             >
                                 <template slot="body">
@@ -448,50 +451,151 @@
                                             :key="index"
                                             type="subject"
                                             :account="subject"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
                                         <div class="no-ward" v-if="!computedSchoolSubjects || !computedSchoolSubjects.length">
                                             no subjects
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add subject"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add subject"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
-                                subText="programs"
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
+                                subText="owned programs"
                             >
                                 <template slot="body">
                                     <div class="sub-main">
                                         <dashboard-section-account
                                             class="dashboard-section-account"
-                                            v-for="(program,index) in computedSchoolPrograms"
+                                            v-for="(program,index) in computedOwnedPrograms"
                                             :key="index"
-                                            type="program"
+                                            type="owned program"
                                             :account="program"
+                                            :admin="computedSchoolAuthority"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
-                                        <div class="no-ward" v-if="!computedSchoolPrograms || !computedSchoolPrograms.length">
+                                        <div class="no-ward" v-if="!computedOwnedPrograms || !computedOwnedPrograms.length">
                                             no programs
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add program"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add program"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
+                                subText="owned classes"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(ownedClass,index) in computedOwnedClasses"
+                                            :key="index"
+                                            type="owned class"
+                                            :account="ownedClass"
+                                            :admin="computedSchoolAuthority"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedOwnedClasses || !computedOwnedClasses.length">
+                                            no classes
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add class"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
+                                subText="owned courses"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(ownedCourse,index) in computedOwnedCourses"
+                                            :key="index"
+                                            type="owned course"
+                                            :account="ownedCourse"
+                                            :admin="computedSchoolAuthority"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedOwnedCourses || !computedOwnedCourses.length">
+                                            no courses
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add course"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
+                                subText="owned extracurriculums"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(ownedExtracurriculum,index) in computedOwnedExtracurriculums"
+                                            :key="index"
+                                            type="owned extracurriculum"
+                                            :account="ownedExtracurriculum"
+                                            :admin="computedSchoolAuthority"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedOwnedExtracurriculums || !computedOwnedExtracurriculums.length">
+                                            no extracurriculums
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add extracurriculum"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="facilitators"
                             >
                                 <template slot="body">
@@ -509,17 +613,20 @@
                                         <div class="no-ward" v-if="!computedSchoolFacilitators || !computedSchoolFacilitators.length">
                                             no facilitators
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add facilitator"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add facilitator"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="professionals"
                             >
                                 <template slot="body">
@@ -537,17 +644,20 @@
                                         <div class="no-ward" v-if="!computedSchoolProfessionals || !computedSchoolProfessionals.length">
                                             no professionals
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add professional"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add professional"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="learners"
                             >
                                 <template slot="body">
@@ -565,17 +675,20 @@
                                         <div class="no-ward" v-if="!computedSchoolLearners || !computedSchoolLearners.length">
                                             no learners
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add learner"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add learner"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="parents"
                             >
                                 <template slot="body">
@@ -593,41 +706,46 @@
                                         <div class="no-ward" v-if="!computedSchoolParents || !computedSchoolParents.length">
                                             no parents
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add parent"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add parent"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="collaborations"
                             >
                                 <template slot="body">
                                     <div class="sub-main">
                                         <dashboard-section-account
                                             class="dashboard-section-account"
-                                            v-for="(collaboration,index) in computedSchoolCollaboration"
+                                            v-for="(collaboration,index) in computedCollaborations"
                                             :key="index"
                                             type="collaboration"
                                             :account="collaboration"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
                                         </dashboard-section-account>
-                                        <div class="no-ward" v-if="!computedSchoolCollaboration || !computedSchoolCollaboration.length">
+                                        <div class="no-ward" v-if="!computedCollaborations || !computedCollaborations.length">
                                             no collaborations
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add collaboration"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add collaboration"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                         </template>
@@ -650,14 +768,16 @@
                                         <div class="no-ward" v-if="!computedAdmins || !computedAdmins.length">
                                             no admins
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add admin"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add admin"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
@@ -714,9 +834,72 @@
                                 </template>
                             </dashboard-sub-section>
                         </template>
+                        <template v-if="account.account === 'learner'">
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton" 
+                                subText="lessons"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(lesson,index) in computedAccountLessons"
+                                            :key="index"
+                                            type="lesson"
+                                            :account="lesson"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedAccountLessons || !computedAccountLessons.length">
+                                            no lessons
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add lesson"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                        </template>
                         <template v-if="account.account === 'facilitator' ||
                             account.account === 'professional'">
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton" 
+                                subText="lessons"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(lesson,index) in computedAccountLessons"
+                                            :key="index"
+                                            type="lesson"
+                                            :account="lesson"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedAccountLessons || !computedAccountLessons.length">
+                                            no lessons
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add lesson"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="subjects"
                                 v-if="account.account === 'facilitator'"
                             >
@@ -734,17 +917,20 @@
                                         <div class="no-ward" v-if="!computedSubjects || !computedSubjects.length">
                                             no subjects
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add subject"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add subject"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="curricula"
                                 v-if="account.account === 'facilitator'"
                             >
@@ -762,17 +948,20 @@
                                         <div class="no-ward" v-if="!computedCurricula || !computedCurricula.length">
                                             no curricula
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add curriculum"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add curriculum"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="owned classes"
                                 v-if="account.account === 'facilitator'"
                             >
@@ -782,7 +971,7 @@
                                             class="dashboard-section-account"
                                             v-for="(ownedClass,index) in computedOwnedClasses"
                                             :key="index"
-                                            type="owned classes"
+                                            type="owned class"
                                             :account="ownedClass"
                                             @clickedDashboardActionButton="clickedDashboardActionButton"
                                         >                                            
@@ -790,17 +979,20 @@
                                         <div class="no-ward" v-if="!computedOwnedClasses || !computedOwnedClasses.length">
                                             no classes
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add class"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add class"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="schedules"
                                 v-if="account.account === 'professional'"
                             >
@@ -818,17 +1010,20 @@
                                         <div class="no-ward" v-if="!computedSchedules || !computedSchedules.length">
                                             no schedules
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add schedule"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add schedule"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="counselling sections"
                                 v-if="account.account === 'professional'"
                             >
@@ -846,17 +1041,20 @@
                                         <div class="no-ward" v-if="!computedCounselling || !computedCounselling.length">
                                             no counselling sections
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add counselling"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add counselling"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="owned courses"
                             >
                                 <template slot="body">
@@ -873,17 +1071,20 @@
                                         <div class="no-ward" v-if="!computedOwnedCourses || !computedOwnedCourses.length">
                                             no courses
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add course"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add course"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                             <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
                                 subText="owned extracurriculums"
                             >
                                 <template slot="body">
@@ -900,14 +1101,76 @@
                                         <div class="no-ward" v-if="!computedOwnedExtracurriculums || !computedOwnedExtracurriculums.length">
                                             no extracurriculums
                                         </div>
-                                        <dashboard-action-button
-                                            class="add-another"
-                                            text="add extracurriculum"
-                                            icon="plus"
-                                            :data="null"
-                                            @click="clickedDashboardActionButton"
-                                        ></dashboard-action-button>
                                     </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add extracurriculum"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
+                                subText="owned programs"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(program,index) in computedOwnedPrograms"
+                                            :key="index"
+                                            type="owned program"
+                                            :account="program"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedOwnedPrograms || !computedOwnedPrograms.length">
+                                            no programs
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add program"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton"
+                                subText="collaborations"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(collaboration,index) in computedCollaborations"
+                                            :key="index"
+                                            type="collaboration"
+                                            :account="collaboration"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedCollaborations || !computedCollaborations.length">
+                                            no collaborations
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add collaboration"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
                                 </template>
                             </dashboard-sub-section>
                         </template>
@@ -947,7 +1210,7 @@
                     :professional="computedMainProfessional"
                     :admin="computedMainAdmin"
                     :mainSectionData="mainSectionData"
-                    @clickedEditClass="clickedEditClass"
+                    @clickedEditSomething="clickedEditSomething"
                     @clickedDashboardActionButton="clickedDashboardActionButton"
                 ></dashboard-main-section>
                 <dashboard-sub-section
@@ -1020,39 +1283,62 @@
         ></attachment-modal>
 
         <create-class
-            :show="showEditClass"
-            @closeCreateClass="showEditClass = false"
+            :show="showCreateModal === 'class'"
+            @closeCreateClass="closeCreateModal"
             :editable="mainSectionData"
+            :mainSection="mainSection"
             :schoolAdmin="computedSchoolAdmin"
-            :edit="true"
-            @classSuccessfullyEdited="classSuccessfullyEdited"
+            :edit="createModalEdit === 'class'"
+            @classSuccessfullyEdited="successfullyEdited"
         ></create-class>
         
         <create-lesson
-            :show="showEditLesson"
-            @createLessonDisappear="showEditLesson = false"
+            :show="showCreateModal === 'lesson'"
+            @createLessonDisappear="closeCreateModal"
             :editable="mainSectionData"
-            :schoolAdmin="computedSchoolAdmin"
-            :edit="true"
-            @classSuccessfullyEdited="lessonSuccessfullyEdited"
+            :main="true"
+            :mainSection="mainSection"
+            :edit="createModalEdit === 'lesson'"
+            @classSuccessfullyEdited="successfullyEdited"
         ></create-lesson>
         
         <create-extracurriculum
-            :show="showEditExtracurriculum"
-            @closeCreateExtracurriculum="showEditExtracurriculum = false"
+            :show="showCreateModal === 'extracurriculum'"
+            @closeCreateExtracurriculum="closeCreateModal"
             :editable="mainSectionData"
             :schoolAdmin="computedSchoolAdmin"
-            :edit="true"
-            @extracurriculumSuccessfullyEdited="extracurriculumSuccessfullyEdited"
+            :edit="createModalEdit === 'extracurriculum'"
+            @extracurriculumSuccessfullyEdited="successfullyEdited"
         ></create-extracurriculum>
+
+        <create-collaboration
+            :show="showCreateModal === 'collaboration'"
+            @closeCreateCollaboration="closeCreateModal"
+            :editable="mainSectionData"
+            :mainSection="mainSection"
+            :schoolAdmin="computedSchoolAdmin"
+            :edit="createModalEdit === 'collaboration'"
+            @collaborationSuccessfullyEdited="successfullyEdited"
+        ></create-collaboration>
+
+        <create-program
+            :show="showCreateModal === 'program'"
+            @closeCreateProgram="closeCreateModal"
+            :editable="mainSectionData"
+            :mainSection="mainSection"
+            :schoolAdmin="computedSchoolAdmin"
+            :edit="createModalEdit === 'program'"
+            @programSuccessfullyEdited="successfullyEdited"
+        ></create-program>
         
         <create-course
-            :show="showEditCourse"
-            @closeCreateCourse="showEditCourse = false"
+            :show="showCreateModal === 'course'"
+            @closeCreateCourse="closeCreateModal"
             :editable="mainSectionData"
+            :mainSection="mainSection"
             :schoolAdmin="computedSchoolAdmin"
-            :edit="true"
-            @courseSuccessfullyEdited="courseSuccessfullyEdited"
+            :edit="createModalEdit === 'course'"
+            @courseSuccessfullyEdited="successfullyEdited"
         ></create-course>
 
         <activity-modal
@@ -1073,6 +1359,23 @@
             @invitationDisappear="showInvitationModal = false"
         ></invitation-modal>
         <edit-profile></edit-profile>
+
+        <lesson-modal
+            :show="viewDashboardItem === 'lesson'"
+            @closeLessonModal="viewDashboardItem = ''"
+        ></lesson-modal>
+
+        <dashboard-item-modal
+            :show="viewDashboardItem === 'item'"
+            @closeDashboardItemModal="viewDashboardItem = ''"
+        ></dashboard-item-modal>
+
+        <view-account-items
+            :show="viewMoreItems.length > 0"
+            :item="viewMoreItems"
+            @closeViewAccountItems="viewMoreItems = ''"
+            @clickedDashboardActionButton="clickedDashboardActionButton"
+        ></view-account-items>
 
         <view-comments
             v-if="itemType === 'comment' || itemType === 'answer'"
@@ -1186,7 +1489,9 @@ import FadeRight from '../transitions/FadeRight'
 import EditProfile from '../forms/EditProfile'
 import ActionButton from '../ActionButton'
 import CreateClass from '../forms/CreateClass'
+import CreateProgram from '../forms/CreateProgram'
 import CreateCourse from '../forms/CreateCourse'
+import CreateCollaboration from '../forms/CreateCollaboration'
 import CreateExtracurriculum from '../forms/CreateExtracurriculum'
 import CreateLesson from '../forms/CreateLesson'
 import InfiniteLoader from 'vue-infinite-loading'
@@ -1204,6 +1509,9 @@ import DashboardSectionAccount from './DashboardSectionAccount'
 import DashboardMainSection from './DashboardMainSection'
 import DashboardActionButton from './DashboardActionButton'
 import ViewComments from '../ViewComments'
+import ViewAccountItems from './ViewAccountItems'
+import LessonModal from '../LessonModal'
+import DashboardItemModal from './DashboardItemModal'
 import PostModal from '../PostModal'
 import ModalSwitcher from '../ModalSwitcher'
 import AttachmentModal from '../AttachmentModal'
@@ -1219,6 +1527,9 @@ import {bus} from '../../app';
             AttachmentModal,
             ModalSwitcher,
             PostModal,
+            DashboardItemModal,
+            LessonModal,
+            ViewAccountItems,
             ViewComments,
             DashboardActionButton,
             DashboardMainSection,
@@ -1234,6 +1545,7 @@ import {bus} from '../../app';
             AddComment,
             CommentSingle,
             InfiniteLoader,
+            CreateProgram,
             CreateClass,
             CreateLesson,
             CreateExtracurriculum,
@@ -1245,6 +1557,7 @@ import {bus} from '../../app';
             DashboardItemBadge,
             AccountInfo,
             PostButton,
+            CreateCollaboration,
         },
         props: {
             barSmall: {
@@ -1283,10 +1596,8 @@ import {bus} from '../../app';
                 mainSectionCommentsLoading: false,
                 mainSectionLoading: false,
                 commentsNextPage: 1,
-                showEditClass: false,
-                showEditCourse: false,
-                showEditLesson: false,
-                showEditExtracurriculum: false,
+                showCreateModal: '',
+                createModalEdit: '',
                 //requests
                 showRequests: false,
                 actionRequests: '',
@@ -1322,7 +1633,43 @@ import {bus} from '../../app';
                 //attachment
                 showAttachmentModal: false,
                 attachmentType: '',
+                viewMoreItems: '',
+                viewDashboardItem: '',
             }
+        },
+        mounted () {
+            bus.
+            $on('editLesson',()=>{
+                this.showCreateModal = 'lesson'
+                this.createModalEdit = 'lesson'
+            }).
+            $on('editClass',()=>{
+                this.showCreateModal = 'class'
+                this.createModalEdit = 'class'
+            }).
+            $on('editCourse',()=>{
+                this.showCreateModal = 'course'
+                this.createModalEdit = 'course'
+            }).
+            $on('editProgram',()=>{
+                this.showCreateModal = 'program'
+                this.createModalEdit = 'program'
+            }).
+            $on('editExtracurriculum',()=>{
+                this.showCreateModal = 'extracurriculum'
+                this.createModalEdit = 'extracurriculum'
+            }).
+            $on('editCollaboration',()=>{
+                this.showCreateModal = 'collaboration'
+                this.createModalEdit = 'collaboration'
+            }).
+            $on('viewDashboardItem',()=>{
+                console.log('in main section');
+                this.viewDashboardItem = 'item'
+            }).
+            $on('viewLesson',()=>{
+                this.viewDashboardItem = 'lesson'
+            })
         },
         watch: {
             showHeaderDropdown(newValue) {
@@ -1402,10 +1749,6 @@ import {bus} from '../../app';
                 return this.computedAccountDetails && this.computedAccountDetails.subjects ?
                     this.computedAccountDetails.subjects : null
             },
-            computedSchoolPrograms(){
-                return this.computedAccountDetails && this.computedAccountDetails.programs ?
-                    this.computedAccountDetails.programs : null
-            },
             computedSchoolFacilitators(){
                 return this.computedAccountDetails && this.computedAccountDetails.facilitators ?
                     this.computedAccountDetails.facilitators : null
@@ -1422,9 +1765,10 @@ import {bus} from '../../app';
                 return this.computedAccountDetails && this.computedAccountDetails.parents ?
                     this.computedAccountDetails.parents : null
             },
-            computedSchoolCollaboration(){
-                return this.computedAccountDetails && this.computedAccountDetails.collaborations ?
-                    this.computedAccountDetails.collaborations : null
+            computedCollaborations(){
+                return this['dashboard/getAccountDetails'] && 
+                    this['dashboard/getAccountDetails'].collaborations ?
+                    this['dashboard/getAccountDetails'].collaborations : null
             },
             //end of schools
             computedDob() {
@@ -1445,7 +1789,11 @@ import {bus} from '../../app';
                 return this['dashboard/getAccountDetails']
             },
             computedCurrentAccount(){
-                return this['dashboard/getCurrentAccount']
+                return this.computedSchoolAdmin ? {
+                    accountId: this.computedSchoolAdmin.id,
+                    account: 'admin',
+                    level: this.computedSchoolAdmin.level
+                } : this['dashboard/getCurrentAccount']
             },
             computedLearners(){
                 if (this.computedAccountDetails && this.computedAccountDetails.account === 'school') {
@@ -1458,6 +1806,12 @@ import {bus} from '../../app';
                 }
                 return []
             },
+            computedAccountLessons() {
+                return (this.computedAccountDetails.account === 'facilitator' ||
+                    this.computedAccountDetails.account === 'professional') &&
+                    this.computedAccountDetails.lessons ? 
+                    this.computedAccountDetails.lessons : []
+            },
             computedParents(){
                 
             },
@@ -1467,15 +1821,13 @@ import {bus} from '../../app';
             computedProfessionals(){
                 
             },
-            computedCollaborations(){
-                
-            },
             computedSchools(){
                 if (this.computedAccountDetails && 
-                    this.computedAccountDetails.account !== 'school') {
+                    this.computedAccountDetails.account !== 'school' ||
+                     this.computedAccountDetails.schools) {
                     return this.computedAccountDetails.schools.map(item=>{
                         return {
-                            sectionOne: item.company_name,
+                            sectionOne: item.company_name ? item.company_name : item.name,
                             sectionTwo: item.role,
                             sectionThree: item.about ? item.about : '',
                             id: item.id,
@@ -1491,14 +1843,13 @@ import {bus} from '../../app';
                 let classes = []
                 if (this.computedAccountDetails && 
                     this.computedAccountDetails.account === 'school') {
-                    classes = this.computedAccountDetails.ownedClasses
+                    classes.push(...this.computedAccountDetails.ownedClasses)
                 } else if (this.computedAccountDetails && 
                     this.computedAccountDetails.account !== 'school' && 
                     this.computedAccountDetails.account !== 'facilitator') {
-                    classes = this.computedAccountDetails.classes
+                    classes.push(...this.computedAccountDetails.classes)
                 } else if (this.computedAccountDetails && 
                     this.computedAccountDetails.account === 'facilitator') {
-                    classes = this.computedAccountDetails.ownedClasses
                     classes.push(...this.computedAccountDetails.classes)
                 }
                 return this.getDashboardItemBadgeClasses(classes)
@@ -1511,6 +1862,11 @@ import {bus} from '../../app';
             },
             computedCurriculums(){
                 
+            },
+            computedOwnedPrograms() {
+                return this.computedAccountDetails && 
+                    this.computedAccountDetails.ownedPrograms ? 
+                    this.computedAccountDetails.ownedPrograms : []
             },
             computedCourses(){
                 if (this.computedAccountDetails && 
@@ -1527,19 +1883,31 @@ import {bus} from '../../app';
                 return []
             },
             computedPrograms(){
-
+                return this['dashboard/getAccountDetails'].programs ?
+                    this.computedAccountDetails.programs.map(item=>{
+                        return {
+                            sectionOne: item.name,
+                            sectionTwo: '',
+                            sectionThree: item.description ? item.description : '',
+                            id: item.id,
+                        }
+                    }) : []
             },
             //facilitator and professional
             computedOwnedExtracurriculums(){
                 if (this.computedCurrentAccount.account === 'facilitator' ||
-                    this.computedCurrentAccount.account === 'professional') {
-                    return this.computedAccountDetails.extracurriculums
+                    this.computedCurrentAccount.account === 'professional' ||
+                    this.computedCurrentAccount.account === 'school'||
+                    this.computedCurrentAccount.account === 'admin') {
+                    return this.computedAccountDetails.ownedExtracurriculums
                 }
                 return null
             },
             computedOwnedClasses(){
                 if (this.computedCurrentAccount.account === 'facilitator' ||
-                    this.computedCurrentAccount.account === 'professional') {
+                    this.computedCurrentAccount.account === 'professional' ||
+                    this.computedCurrentAccount.account === 'school' ||
+                    this.computedCurrentAccount.account === 'admin') {
                     return this.computedAccountDetails.ownedClasses
                 }
                 return null
@@ -1550,7 +1918,9 @@ import {bus} from '../../app';
             },
             computedOwnedCourses(){
                 if (this.computedCurrentAccount.account === 'facilitator' ||
-                    this.computedCurrentAccount.account === 'professional') {
+                    this.computedCurrentAccount.account === 'professional' || 
+                    this.computedCurrentAccount.account === 'school' ||
+                    this.computedCurrentAccount.account === 'admin') {
                     return this.computedAccountDetails.ownedCourses
                 }
                 return null
@@ -1566,15 +1936,6 @@ import {bus} from '../../app';
             //main section
             computedIdMainSection(){
                 return this.mainSectionData ? this.mainSectionData.id : null
-            },
-            computedMainAdmin(){ //for course ...school admins and class owner (facilitator)
-                if (this.computedAccountDetails.account === 'facilitator') {
-                    return this.computedMainOwner
-                }
-                if (!this.computedMainOwner) {
-                    return this.computedSchoolAdmin
-                }
-                return null
             },
             computedMainProfessional(){
                 if (this.computedMainOwner && this.mainSectionData && 
@@ -1601,16 +1962,15 @@ import {bus} from '../../app';
                 return null
             },
             computedMainOwner(){ //for classes
-                return this.mainSectionData && this.mainSectionData && 
-                    this.mainSectionData.ownedby ? 
+                return this.mainSectionData && this.mainSectionData.ownedby ? 
                     this.mainSectionData.ownedby : this.computedCurrentAccount.owner ?
                     this.computedCurrentAccount : null
             },
             computedMainAdmin(){ //school admins and class owner (facilitator)
-                if (this.computedAccountDetails.account === 'facilitator') {
+                if (this.computedAccountDetails.account === 'facilitator' ||
+                    this.computedAccountDetails.account === 'professional') {
                     return this.computedMainOwner
-                }
-                if (this.computedMainOwner) {
+                } else if (this.computedSchoolAdmin) {
                     return this.computedSchoolAdmin
                 }
                 return null
@@ -1640,8 +2000,8 @@ import {bus} from '../../app';
                 return null
             },
             computedSchoolAuthority() {
-                return this.computedCurrentMainAccount.hasOwnProperty('owner') ||
-                    this.computedCurrentMainAccount.hasOwnProperty('admin')
+                return this.computedCurrentMainAccount?.hasOwnProperty('owner') ||
+                    this.computedCurrentMainAccount?.hasOwnProperty('admin')
             },
             computedCurrentMainAccount(){
                 return this.computedMainOwner ? {owner: true, account: this.computedMainOwner} :
@@ -1651,19 +2011,12 @@ import {bus} from '../../app';
                     this.computedMainLearner ? {learner: true, account: this.computedMainLearner} :
                     this.computedMainParent ? {parent: true, account: this.computedMainParent} : null
             },
-            // computedCurrentSchoolAccount(){
-            //     return this.computedMainFacilitator ? {facilitator: true, account: this.computedMainFacilitator} :
-            //         this.computedMainFacilitator ? {facilitator: true, account: this.computedMainFacilitator} :
-            //         this.computedMainFacilitator ? {facilitator: true, account: this.computedMainFacilitator} :
-            //         this.computedMainLearner ? {learner: true, account: this.computedMainLearner} : 
-            //         this.computedMainProfessional ? {professional: true, account: this.computedMainProfessional} : null
-            // },
             computedAccount(){ //use this for dashboard main section
-                if (this.mainSection === 'class' || this.mainSection === 'course' ||
-                    this.mainSection === 'extracurriculum' || this.mainSection === 'school') {
-                    return this.computedCurrentMainAccount
-                }
-                // else if (this.mainSection === 'school') {
+                return this.computedCurrentMainAccount
+                // if (this.mainSection === 'class' || this.mainSection === 'course' ||
+                //     this.mainSection === 'extracurriculum' || this.mainSection === 'school') {
+                //     return this.computedCurrentMainAccount
+                // } else if (this.mainSection === 'school') {
                 //     return this.computedCurrentSchoolAccount
                 // }
                 return null
@@ -1700,11 +2053,19 @@ import {bus} from '../../app';
                 "dashboard/getSectionItemComments",'dashboard/newComment',
                 'dashboard/removeComment','dashboard/updateComment',
                 'dashboard/addClass','dashboard/updateClass','dashboard/removeClass',
+                'dashboard/addExtracurriculum','dashboard/updateExtracurriculum',
+                'dashboard/removeExtracurriculum',
+                'dashboard/addLesson','dashboard/updateLesson','dashboard/removeLesson',
                 'dashboard/fetchUsers','dashboard/fetchAdmins',"dashboard/fetchAccounts",
                 "dashboard/banUser",'dashboard/deleteAccountAttachments',
                 'dashboard/addAccountAttachments','dashboard/addCourse',
                 'dashboard/updateCourse','dashboard/removeCourse',
                 'dashboard/deleteClass','dashboard/deleteCourse',
+                'dashboard/deleteLesson','dashboard/deleteExtracurriculum',
+                'dashboard/addProgram','dashboard/updateProgram',
+                'dashboard/removeProgram','dashboard/deleteProgram',
+                'dashboard/addCollaboration','dashboard/updateCollaboration',
+                'dashboard/removeCollaboration','dashboard/deleteCollaboration',
                 ]),
             clickedHeaderDropdown() {
                 this.showHeaderDropdown = !this.showHeaderDropdown
@@ -1736,7 +2097,9 @@ import {bus} from '../../app';
             },
             clickedDashboardActionButton(data){
                 console.log(data);
-                if (data.text === 'add admin') {
+                if (data.type === 'view more') {
+                    this.viewMoreItems = data.subText
+                } else if (data.text === 'add admin') {
                     this.invitationType = data.text
                     this.showInvitationModal = true
                 } else if (data.buttonData) {
@@ -1760,37 +2123,33 @@ import {bus} from '../../app';
                         this.smallModalTitle = `are you sure you want to unattach ${data.buttonData.data.data.name}?`
                         this.smallModalData = {type: 'unattach' , data: data.buttonData.data}
                         this.showSmallModal = true
-                    } else if (data.type === 'owned course') {
+                    } else if (data.type === 'owned extracurriculum' ||
+                        data.type === 'lesson' ||
+                        data.type === 'owned program' ||
+                        data.type === 'owned course' ||
+                        data.type === 'owned class' ||
+                        data.type === 'collaboration') {
+                        let name = data.type.includes('extracurriculum') ? 'extracurriculum' : 
+                            data.type.includes('program') ? 'program' : 
+                            data.type.includes('course') ? 'course' : 
+                            data.type.includes('class') ? 'class' : 
+                            data.type
                         if (data.buttonData.text === 'delete') {
-                            this.smallModalTitle = `are you sure you want to delete course with name: ${data.buttonData.data.name}?`
-                            this.smallModalData = {type: 'course' , data: data.buttonData.data, action: 'delete'}
+                            this.smallModalTitle = `are you sure you want to delete ${name} with name: ${data.buttonData.data.name ?? data.buttonData.data.title}?`
+                            this.smallModalData = {type: name , data: data.buttonData.data, action: 'delete'}
                             this.showSmallModal = true
                         } else if (data.buttonData.text === 'undo delete') {
-                            this.smallModalTitle = `are you sure you want to undo deletion of course with name: ${data.buttonData.data.name}?`
-                            this.smallModalData = {type: 'course' , data: data.buttonData.data, action: 'undo'}
+                            this.smallModalTitle = `are you sure you want to undo deletion of ${name} with name: ${data.buttonData.data.name ?? data.buttonData.data.title}?`
+                            this.smallModalData = {type: name , data: data.buttonData.data, action: 'undo'}
                             this.showSmallModal = true
                         } else if (data.buttonData.text === 'edit') {
-                            this.showEditCourse = true
-                            bus.$emit('editCourse', data.buttonData.data)
+                            let event = this.getEventName('edit',name)
+                            this.createModalEdit = name
+                            this.showCreateModal = name
+                            bus.$emit(event, _.cloneDeep(data.buttonData.data))
                         } else if (data.buttonData.text === 'view') {
-                            this.mainSection = 'course'
-                            this.getMainSectionData(data.buttonData.data)
-                        }
-                    } else if (data.type === 'owned class') {
-                        if (data.buttonData.text === 'delete') {
-                            this.smallModalTitle = `are you sure you want to delete class with name: ${data.buttonData.data.name}?`
-                            this.smallModalData = {type: 'class' , data: data.buttonData.data, action: 'delete'}
-                            this.showSmallModal = true
-                        } else if (data.buttonData.text === 'undo delete') {
-                            this.smallModalTitle = `are you sure you want to undo deletion of class with name: ${data.buttonData.data.name}?`
-                            this.smallModalData = {type: 'class' , data: data.buttonData.data, action: 'undo'}
-                            this.showSmallModal = true
-                        } else if (data.buttonData.text === 'edit') {
-                            this.showEditClass = true
-                            bus.$emit('editClass', data.buttonData.data)
-                        } else if (data.buttonData.text === 'view') {
-                            this.mainSection = 'class'
-                            this.getMainSectionData(data.buttonData.data)
+                            this.mainSection = name
+                            this.getMainSectionData(_.cloneDeep(data.buttonData.data))
                         }
                     } else if (data.buttonData.icon === 'pencil-alt') {
                         this.$emit('accountModal',{
@@ -1815,17 +2174,30 @@ import {bus} from '../../app';
                     this.attachmentType = data.text.slice(4)
                     this.showAttachmentModal = true
                 } else if (data.text === 'add class') {
-                    this.$emit('clickedPostButton',{type: this.type, data: 'create class'})
+                    // this.$emit('clickedPostButton',{type: this.type, data: 'create class'})
+                    this.createModalEdit = ''
+                    this.showCreateModal = 'class'
                     bus.$emit('classOwnership')
                 } else if (data.text === 'add course') {
-                    this.$emit('clickedPostButton',{type: this.type, data: 'create course'})
+                    this.createModalEdit = ''
+                    this.showCreateModal = 'course'
                     bus.$emit('courseOwnership') ///to set the ownership of the course
                 } else if (data.text === 'add lesson') {
-                    this.$emit('clickedPostButton',{type: this.type, data: 'create lesson'})
+                    this.createModalEdit = ''
+                    this.showCreateModal = 'lesson'
                     bus.$emit('lessonOwnership')
                 } else if (data.text === 'add extracurriculum') {
-                    this.$emit('clickedPostButton',{type: this.type, data: 'create extracurriculum'})
+                    this.createModalEdit = ''
+                    this.showCreateModal = 'extracurriculum'
                     bus.$emit('extracurriculumOwnership')
+                } else if (data.text === 'add program') {
+                    this.createModalEdit = ''
+                    this.showCreateModal = 'program'
+                    bus.$emit('programOwnership')
+                } else if (data.text === 'add collaboration') {
+                    this.createModalEdit = ''
+                    this.showCreateModal = 'collaboration'
+                    bus.$emit('collaborationOwnership')
                 }
             },
             attachmentSuccess(data){
@@ -1855,7 +2227,11 @@ import {bus} from '../../app';
                     } else if (this.smallModalData.type === 'unattach') {
                         this.smallModalContinueProcess()
                     } else if (this.smallModalData.type === 'class' || 
-                        this.smallModalData.type === 'course') {
+                        this.smallModalData.type === 'course' || 
+                        this.smallModalData.type === 'lesson' ||
+                        this.smallModalData.type === 'program' ||
+                        this.smallModalData.type === 'collaboration' ||
+                        this.smallModalData.type === 'extracurriculum') {
                         this.smallModalContinueProcess()
                     }
                 } else if (data === 'ok') {
@@ -1872,8 +2248,7 @@ import {bus} from '../../app';
                     await this.banUser()
                 } else if (this.smallModalData.type === 'unattach') {
                     await this.deleteAccountAttachments()
-                } else if (this.smallModalData.type === 'class' || 
-                    this.smallModalData.type === 'course') {
+                } else {
                     await this.deleteAccountItem(this.smallModalData)
                 }
                 this.smallModalLoading = false
@@ -2083,10 +2458,19 @@ import {bus} from '../../app';
             async deleteAccountItem(item) {
                 console.log('item :>> ', item);
                 let response,
+                    attribute, //finding the attribute of the account in which to determine facilitation
                     data = {action: item.action}
 
                 if (this.computedSchoolAdmin) {
                     data.adminId = this.computedSchoolAdmin.id
+                }
+                if (item.type === 'class') {
+                    attribute = `${item.type}es`
+                } else {
+                    attribute = `${item.type}s`
+                }
+                if (this['dashboard/getAccountDetails'][attribute]) {
+                    data.hasAttribute = true
                 }
                 if (item.type === 'class') {
                     data.classId = item.data.id
@@ -2099,14 +2483,35 @@ import {bus} from '../../app';
                     response = await this['dashboard/deleteExtracurriculum'](data)
                 } else if (item.type === 'lesson') {
                     data.lessonId = item.data.id
-                    response = await this['dashboard/deleteLesson'](data)
+                    response = await this['dashboard/deleteLesson']({
+                        data,items:item.data.items
+                    })
+                } else if (item.type === 'program') {
+                    data.programId = item.data.id
+                    response = await this['dashboard/deleteProgram'](data)
+                } else if (item.type === 'collaboration') {
+                    data.collaborationId = item.data.id
+                    data.account = item.data.addedby.account
+                    data.accountId = item.data.addedby.accountId
+                    response = await this['dashboard/deleteCollaboration'](data)
                 }
 
                 if (response.status) {
-                    
+                    this.emitEventsListeners({
+                        data: response.data ? response.data : item.data.id,
+                        action: response.action,
+                        type: item.type
+                    })
                 } else {
                     console.log('response :>> ', response);
                 }
+            },
+            emitEventsListeners(data) {
+                let event = this.getEventName(data.action,data.type)
+                bus.$emit(event,data.data)
+            },
+            getEventName(action,item) {
+                return `${action}${item.charAt(0).toUpperCase()}${item.slice(1)}`
             },
             async unattachAccount(account) {
                 let response,
@@ -2150,20 +2555,16 @@ import {bus} from '../../app';
                     this.showRequests = true
                 }
             },
-            classSuccessfullyEdited(classResource){
+            successfullyEdited(classResource){
                 this.mainSectionData = classResource
             },
-            courseSuccessfullyEdited(courseResource){
-                this.mainSectionData = courseResource
+            closeCreateModal() {
+                this.showCreateModal = ''
+                this.createModalEdit = ''
             },
-            lessonSuccessfullyEdited(lessonResource){
-                this.mainSectionData = lessonResource
-            },
-            extracurriculumSuccessfullyEdited(extracurriculumResource){
-                this.mainSectionData = extracurriculumResource
-            },
-            clickedEditClass(){
-                this.showEditClass = true
+            clickedEditSomething(data){
+                this.createModalEdit = data
+                this.showCreateModal = data
             },
             async deleteAccountAttachments(item) { //for removing attachments like grade, subject
                 let response,
@@ -2462,10 +2863,16 @@ import {bus} from '../../app';
             clickedPostButton(data){
                 if (data === `${this.type} info`) {
                     this.activePostButton = 'info'
+                } else if (data === 'create class' ||
+                    data === 'create course' || data === 'create extracurriculum' ||
+                    data === 'create lesson' || data === 'create program') {
+                    this.createModalEdit = ''
+                    this.showCreateModal = data.substr(7)
+                    this.activePostButton = data
                 } else {
                     this.activePostButton = data
+                    this.$emit('clickedPostButton',{type:this.type,data})
                 }
-                this.$emit('clickedPostButton',{type:this.type,data})
             },
             clickedAccount(data){
                 this.$emit('clickedAccount',{type:'account',account:data.params})
@@ -2519,15 +2926,14 @@ import {bus} from '../../app';
 </script>
 
 <style lang="scss" scoped>
-$background-main: whitesmoke;
+// $background-main: whitesmoke;
 $background-color-section: white;
 
     .dashboard-section{
         width: 100%;
-        height: 100vh;
+        // height: 100vh;
         padding: 0 0 0 50px;
         transition: all 1s ease-in-out;
-        background: $background-main;
 
         .no-ward{
             width: 100%;
@@ -2546,6 +2952,10 @@ $background-color-section: white;
             }
         }
 
+        .mt-8{
+            margin-top: 80px !important
+        }
+
         .dashboard-header{
             padding: 10px;
             font-size: 20px;
@@ -2557,12 +2967,12 @@ $background-color-section: white;
             border-bottom: 2px solid dimgray;
             display: inline-flex;
             justify-content: space-between;
-            width: 100%;
+            width: calc(100% - 50px);
             align-items: center;
-            position: sticky;
+            position: fixed;
             top: 0;
             z-index: 1;
-            background: $background-color-main;
+            background: $color-main;
 
             .youredu{
 
@@ -2613,6 +3023,7 @@ $background-color-section: white;
         .bottom-section{
             background: $background-color-section;
             width: 100%;
+            max-width: 700px;
 
             .loading{
                 width: 100%;
@@ -2624,13 +3035,9 @@ $background-color-section: white;
             }
             
             .main-title{
+                @include main-section-headings(14px);
                 margin: 10px auto;
                 width: 100%;
-                color: gray;
-                font-weight: 500;
-                padding: 10px;
-                background: mintcream;
-                font-size: 14px;
                 position: relative;
 
                 .icon{
@@ -2645,19 +3052,14 @@ $background-color-section: white;
         }
 
         .top-section{
-            margin: 20px auto;
+            margin: 0px auto 20px;
             position: relative;
             min-height: 100px;
             transition: all .5s linear;
 
             .heading{
-                font-size: 16px;
+                @include main-section-headings(16px);
                 text-transform: capitalize;
-                text-align: center;
-                background: mintcream;
-                padding: 10px;
-                font-weight: 500;
-                color: gray;
             }
 
             .title{
@@ -2706,7 +3108,7 @@ $background-color-section: white;
 
         .bottom-section{
             min-height: 100px;
-            margin-bottom: 80px;
+            margin: 10px auto 80px;
 
             .info{
                 width: 100%;
@@ -2882,15 +3284,17 @@ $background-color-section: white;
         }
 
         .main-section{
+            margin: 10px auto 80px;
+            max-width: 700px;
 
             .loading{
                 text-align: center;
             }
 
             .section{
-                max-height: 85vh;
-                overflow-y: auto;
-                overflow-x: hidden;
+                // max-height: 85vh;
+                // overflow-y: auto;
+                // overflow-x: hidden;
 
                 .back{
                     font-size: 18px;
@@ -2924,7 +3328,7 @@ $background-color-section: white;
             bottom: 0;
             padding: 10px;
             width: 100%;
-            background: $background-color-main;
+            background: $color-main;
         }
     }
 

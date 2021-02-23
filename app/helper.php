@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\AdminService;
 use App\User;
 use App\YourEdu\AcademicYear;
 use App\YourEdu\AcademicYearSection;
@@ -10,6 +11,8 @@ use App\YourEdu\ParentModel;
 use App\YourEdu\Professional;
 use App\YourEdu\Admin;
 use App\YourEdu\Answer;
+use App\YourEdu\Assessment;
+use App\YourEdu\AssessmentSection;
 use App\YourEdu\Audio;
 use App\YourEdu\Ban;
 use App\YourEdu\Book;
@@ -19,8 +22,10 @@ use App\YourEdu\Collaboration;
 use App\YourEdu\Comment;
 use App\YourEdu\Conversation;
 use App\YourEdu\Course;
+use App\YourEdu\CourseSection;
 use App\YourEdu\Discussion;
 use App\YourEdu\Extracurriculum;
+use App\YourEdu\Fee;
 use App\YourEdu\File;
 use App\YourEdu\Flag;
 use App\YourEdu\Follow;
@@ -29,11 +34,13 @@ use App\YourEdu\Image;
 use App\YourEdu\Keyword;
 use App\YourEdu\Lesson;
 use App\YourEdu\Like;
+use App\YourEdu\Link;
 use App\YourEdu\Mark;
 use App\YourEdu\Message;
 use App\YourEdu\Poem;
 use App\YourEdu\Post;
 use App\YourEdu\PostAttachment;
+use App\YourEdu\Price;
 use App\YourEdu\Program;
 use App\YourEdu\Question;
 use App\YourEdu\Read;
@@ -41,120 +48,46 @@ use App\YourEdu\Request;
 use App\YourEdu\Save;
 use App\YourEdu\School;
 use App\YourEdu\Subject;
+use App\YourEdu\Subscription;
 use App\YourEdu\Video;
 use App\YourEdu\Word;
 use Illuminate\Container\Container;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
-function getAccountString($classString)
+function class_basename_lower(Model | string $class)
 {
-    if (!is_string($classString)) {
-        $classString = get_class($classString);
-        if (!$classString) {
-            return '';
-        }
+    $string = '';
+    if (is_string($class)) {
+        $string = substr($class,strrpos($class,'\\') + 1);
     }
-    if (Str::contains(strtolower($classString), 'learner')) {
-        return 'learner';
-    } else if (Str::contains(strtolower($classString), 'user')) {
-        return 'user';
-    } else if (Str::contains(strtolower($classString), 'parent')) {
-        return 'parent';
-    } else if (Str::contains(strtolower($classString), 'facilitator')) {
-        return 'facilitator';
-    } else if (Str::contains(strtolower($classString), 'professional')) {
-        return 'professional';
-    } else if (Str::contains(strtolower($classString), 'school')) {
-        return 'school';
-    } else if (Str::contains(strtolower($classString), 'admin')) {
-        return 'admin';
-    } else if (Str::contains(strtolower($classString), 'post')) {
-        return 'post';
-    } else if (Str::contains(strtolower($classString), 'question')) {
-        return 'question';
-    } else if (Str::contains(strtolower($classString), 'riddle')) {
-        return 'riddle';
-    } else if (Str::contains(strtolower($classString), 'poem')) {
-        return 'poem';
-    } else if (Str::contains(strtolower($classString), 'activity')) {
-        return 'activity';
-    } else if (Str::contains(strtolower($classString), 'Lesson')) {
-        return 'lesson';
-    } else if (Str::contains(strtolower($classString), 'book')) {
-        return 'book';
-    } else if (Str::contains(strtolower($classString), 'answer')) {
-        return 'answer';
-    } else if (Str::contains(strtolower($classString), 'comment')) {
-        return 'comment';
-    } else if (Str::contains(strtolower($classString), 'discussion')) {
-        return 'discussion';
-    } else if (Str::contains(strtolower($classString), 'character')) {
-        return 'character';
-    } else if (Str::contains(strtolower($classString), 'keyword')) {
-        return 'keyword';
-    } else if (Str::contains(strtolower($classString), 'word')) {
-        return 'word';
-    } else if (Str::contains(strtolower($classString), 'expression')) {
-        return 'expression';
-    } else if (Str::contains(strtolower($classString), 'image')) {
-        return 'image';
-    } else if (Str::contains(strtolower($classString), 'video')) {
-        return 'video';
-    } else if (Str::contains(strtolower($classString), 'audio')) {
-        return 'audio';
-    } else if (Str::contains(strtolower($classString), 'file')) {
-        return 'file';
-    } else if (Str::contains(strtolower($classString), 'collaboration')) {
-        return 'collaboration';
-    } else if (Str::contains(strtolower($classString), 'class')) {
-        return 'class';
-    } else if (Str::contains(strtolower($classString), 'extracurriculum')) {
-        return 'extracurriculum';
-    } else if (Str::contains(strtolower($classString), 'like')) {
-        return 'like';
-    } else if (Str::contains(strtolower($classString), 'flag')) {
-        return 'flag';
-    } else if (Str::contains(strtolower($classString), 'subject')) {
-        return 'subject';
-    } else if (Str::contains(strtolower($classString), 'grade')) {
-        return 'grade';
-    } else if (Str::contains(strtolower($classString), 'course')) {
-        return 'course';
-    } else if (Str::contains(strtolower($classString), 'program')) {
-        return 'program';
-    } else if (Str::contains(strtolower($classString), 'fee')) {
-        return 'fee';
-    } else if (Str::contains(strtolower($classString), 'price')) {
-        return 'price';
-    } else if (Str::contains(strtolower($classString), 'subscription')) {
-        return 'subscription';
-    } else if (Str::contains(strtolower($classString), 'academicyear')) {
-        return 'academicYear';
-    } else if (Str::contains(strtolower($classString), 'academicyearsection')) {
-        return 'academicYearSection';
+    
+    if ($class instanceof Model) {        
+        $string = class_basename($class);
     }
-    return '';
+
+    return strtolower(substr($string,0,1)) . substr($string,1);
 }
 
 function getAccountClass($string)
 {
-    if ($string === 'learner') {
+    if (str_contains($string,'learner')) {
         return Learner::class;
-    } else if ($string === 'parent') {
+    } else if (str_contains($string,'parent')) {
         return ParentModel::class;
-    } else if ($string === 'facilitator') {
+    } else if (str_contains($string,'facilitator')) {
         return Facilitator::class;
-    } else if ($string === 'professional') {
+    } else if (str_contains($string,'professional')) {
         return Professional::class;
-    } else if ($string === 'school') {
+    } else if (str_contains($string,'school')) {
         return School::class;
-    } else if ($string === 'admin') {
+    } else if (str_contains($string,'admin')) {
         return Admin::class;
-    } else if ($string === 'post') {
+    } else if (str_contains($string,'post')) {
         return 'post';
     } else if ($string === 'school') {
         return 'school';
@@ -174,11 +107,13 @@ function getAccountClass($string)
         return 'answer';
     } else if ($string === 'comment') {
         return 'comment';
+    } else if ($string === 'coursesection') {
+        return 'courseSection';
     }
     return '';
 }
 
-function getAccountObject($accountText, $accountTextId)
+function getYourEduModel($accountText, $accountTextId): Model | null
 {
     $account = null;
     if ($accountText === 'learner') {
@@ -215,6 +150,8 @@ function getAccountObject($accountText, $accountTextId)
         $account = Book::find($accountTextId);
     } else if ($accountText === 'program') {
         $account = Program::find($accountTextId);
+    } else if ($accountText === 'courseSection') {
+        $account = CourseSection::find($accountTextId);
     } else if ($accountText === 'course') {
         $account = Course::find($accountTextId);
     } else if ($accountText === 'grade') {
@@ -265,192 +202,47 @@ function getAccountObject($accountText, $accountTextId)
         $account = AcademicYear::find($accountTextId);
     } else if ($accountText === 'academicYearSection') {
         $account = AcademicYearSection::find($accountTextId);
+    } else if ($accountText === 'price') {
+        $account = Price::find($accountTextId);
+    } else if ($accountText === 'fee') {
+        $account = Fee::find($accountTextId);
+    } else if ($accountText === 'subscription') {
+        $account = Subscription::find($accountTextId);
     } else if ($accountText === 'ban') {
         $account = Ban::find($accountTextId);
+    } else if ($accountText === 'link') {
+        $account = Link::find($accountTextId);
+    } else if ($accountText === 'collaboration') {
+        $account = Collaboration::find($accountTextId);
+    } else if ($accountText === 'assessment') {
+        $account = Assessment::find($accountTextId);
+    } else if ($accountText === 'assessmentSection') {
+        $account = AssessmentSection::find($accountTextId);
     }
 
     return $account;
 }
-    
-function getAdminIds(School $school)
+
+function isOwnedBy($ownedby,$userId)
 {
-    $fromUserIds = $school->admins->pluck('user_id')->toArray();
-    if (!in_array($school->owner->id,$fromUserIds)) {        
-        $fromUserIds[] = $school->owner->id;
-    }
-
-    return $fromUserIds;
-}
-
-function uploadYourEduFiles($files)
-{
-   
-    $uploadedFilePaths = [];
-    foreach ($files as $file) {
-        $uploadedFilePaths[] = uploadYourEduFile($file);
-    }
-    return $uploadedFilePaths;
-}
-
-function deleteYourEduFiles($item)
-{
-    if (!is_null($item)) {
-        $files = $item->files;
-        $files = $files->merge($item->audios);
-        $files = $files->merge($item->videos);
-        $files = $files->merge($item->images);
-        
-        foreach ($files as $file) {
-            deleteYourEduFile($file);
-        }
-    }
-}
-
-function deleteYourEduFile($file)
-{
-    if (!is_null($file)) {
-        Storage::delete($file->path);
-        $file->delete();
-    }
-}
-
-function deleteFile($fileId, $fileType)
-{
-    $file = null;
-    if (Str::contains($fileType,'image')) {
-        $file = getAccountObject('image', $fileId);
-    } else if (Str::contains($fileType,'video')) {
-        $file = getAccountObject('video', $fileId);
-    } else if (Str::contains($fileType,'audio')) {
-        $file = getAccountObject('audio', $fileId);
-    } else if (Str::contains($fileType,'file')) {
-        $file = getAccountObject('file', $fileId);
-    }
-
-    if (!is_null($file)) {
-        Storage::delete($file->path);
-        $file->delete();
-    }
-}
-
-function getFileDetails($actualFile, $save = true)
-{
-    $fileArray['mime'] = $actualFile->getClientMimeType();
-    $fileArray['name'] = $actualFile->getClientOriginalName();
-    $fileArray['size'] = $actualFile->getSize();
-    if ($save) {
-        $fileArray['path'] = uploadYourEduFile($actualFile);
-    }
-
-    return $fileArray;
-}
-
-function imageResize($file, $save = true)
-{
-    $width = imagesx($file);
-    $height = imagesy($file);
-    $newWidth = 100;
-    $newHeight = $newWidth/$width * $height;
-
-    $newFile = imagescale($file,$newWidth,$newHeight);
-
-    $fileArray['mime'] = $file->getClientMimeType();
-    $fileArray['size'] = $file->getSize();
-    if ($save) {
-        $fileArray['path'] = uploadYourEduFile($newFile);
-    }
-
-    return $fileArray;
-}
-
-function accountCreateFile($account, $fileDetails, $associate = null)
-{
-    $file = null;
-    if(Str::contains($fileDetails['mime'], 'image')){
-        $file = $account->addedImages()->create($fileDetails);
-        if($associate){
-            $associate->images()->attach($file);
-        }
-    } else if(Str::contains($fileDetails['mime'], 'video')){
-        $file = $account->addedVideos()->create($fileDetails);
-        if($associate){
-            $associate->videos()->attach($file);
-        }
-    } else if(Str::contains($fileDetails['mime'], 'audio')){
-        $file = $account->addedAudio()->create($fileDetails);
-        if($associate){
-            $associate->audios()->attach($file);
+    if ($ownedby) {
+        if ($ownedby->user_id === $userId ||
+            $ownedby->owner_id === $userId) {
+            return true;
+        } else if (class_basename_lower($ownedby) === 'school' && 
+            in_array($userId,AdminService::getAdminIds($ownedby))) {
+            return true;
+        } else {
+            return false;
         }
     } else {
-        $file = $account->addedFiles()->create($fileDetails);
-        if($associate){
-            $associate->files()->attach($file);
-        }
-    }
-
-    return $file;
-}
-
-// function createThumbnail($path, $width, $height)
-// {
-//     $img = Image::make($path)->resize($width, $height, function ($constraint) {
-//         $constraint->aspectRatio();
-//     });
-//     $img->save($path);
-// }
-
-function saveFileWithDetails($file, $newFile)
-{
-    if ($file) {
-        $originalFileName = $file->getClientOriginalName();
-        $originalFileExtension = $file->getClientOriginalExtension();
-        $fileNameOnly = pathinfo($originalFileName, PATHINFO_FILENAME);
-        $fileName = Str::slug($fileNameOnly . time()) . "." . $originalFileExtension;
-
-        $path = $newFile->save(public_path("assets/images/{$fileName}"));
-
-        return $path;
+        return true;
     }
 }
 
-function uploadYourEduFile($file, $hasThumbnail = false)
+function capitalize(string $value)
 {
-    if ($file) {
-        $originalFileName = $file->getClientOriginalName();
-        $originalMime = $file->getClientMimeType();
-        $originalFileExtension = $file->getClientOriginalExtension();
-        $fileNameOnly = pathinfo($originalFileName, PATHINFO_FILENAME);
-        $fileName = Str::slug($fileNameOnly . time()) . "." . $originalFileExtension;
-        if ($hasThumbnail) {
-            $fileNameSmall = Str::slug($fileNameOnly. 'small' . time()) . "." . $originalFileExtension;
-            $fileNameMedium = Str::slug($fileNameOnly. 'medium' . time()) . "." . $originalFileExtension;
-        }
-        if (Str::contains($originalMime, 'image')) {
-            $dir = 'images';
-        } else if (Str::contains($originalMime, 'video')) {
-            $dir = 'videos';
-        } else if (Str::contains($originalMime, 'audio')) {
-            $dir = 'audio';
-        } else {
-            $dir = 'files';
-        }
-        
-        if ($hasThumbnail) {
-
-            $paths = [];
-            
-            $paths['main'] = $file->storeAs($dir,$fileName);
-            $paths['small'] = $file->storeAs($dir,$fileNameSmall);
-            $paths['medium'] = $file->storeAs($dir,$fileNameMedium);
-
-            return $paths;
-        } else {
-
-            $path = $file->storeAs($dir,$fileName);
-
-            return $path;
-        }
-    }
+    return strtoupper(substr($value,0,1)) . strtolower(substr($value,1));
 }
 
 function paginate(Collection $collection,$pageSize){

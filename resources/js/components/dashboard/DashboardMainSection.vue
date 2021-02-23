@@ -6,17 +6,11 @@
         <div class="description" v-if="computedDescription.length">
             {{computedDescription}}
         </div>
-        <div class="edit" 
-            @click="clickedEditClass"
-            v-if="computedClassAdmin || computedClassOwner"
-        >
-            <font-awesome-icon :icon="['fa','pencil-alt']"></font-awesome-icon>
-        </div>
         <div class="data">
-            <template v-if="computedClassAdmin || computedClassOwner">
-                <div class="state" v-if="mainSectionData.state">
+            <template v-if="computedAuthority">
+                <!-- <div class="state" v-if="mainSectionData.state">
                     {{mainSectionData.state}}
-                </div>
+                </div> -->
                 <account-badge
                     v-if="mainSectionData.addedby"
                     :account="mainSectionData.addedby"
@@ -30,6 +24,18 @@
                     {{mainSectionData.role}}
                 </div>
             </template>
+        </div>
+        <div class="authority-actions">
+            <dashboard-action-button
+                text="edit"
+                icon="pencil-alt"
+                v-if="computedAuthority"
+                @click="clickedEditSomething"
+                class="edit"
+            ></dashboard-action-button>
+            <state-badge
+                :state="mainSectionData.state"
+            ></state-badge>
         </div>
         <dashboard-sub-section
             subText="lessons"
@@ -75,6 +81,30 @@
                     {{mainSectionData.classes}}
                     <div class="no-data" v-if="!mainSectionData.classes.length">
                         no classes
+                    </div>
+                </div>
+            </template>
+        </dashboard-sub-section>
+        <dashboard-sub-section
+            subText="attachments"
+            v-if="computedShowAttachments"
+        >
+            <template slot="body">
+                <div class="actions">
+
+                </div>
+                <div class="main">
+                    <dashboard-section-account
+                        class="dashboard-section-account"
+                        v-for="(item,index) in mainSectionData.attachments"
+                        :key="index"
+                        :type="getAttachmentString(item.type)"
+                        :account="item"
+                        @clickedDashboardActionButton="clickedDashboardActionButton"
+                    >                                            
+                    </dashboard-section-account>
+                    <div class="no-data" v-if="!mainSectionData.attachments.length">
+                        no attachments
                     </div>
                 </div>
             </template>
@@ -201,6 +231,7 @@
         </dashboard-sub-section>
         <dashboard-sub-section
             subText="learners"
+            v-if="mainSectionData.learners"
         >
             <template slot="body">
                 <div class="actions">
@@ -264,8 +295,10 @@ import AccountBadge from './AccountBadge';
 import DashboardSubSection from './DashboardSubSection';
 import DashboardSectionAccount from './DashboardSectionAccount';
 import DashboardActionButton from './DashboardActionButton';
+import StateBadge from './StateBadge';
     export default {
         components: {
+            StateBadge,
             DashboardActionButton,
             DashboardSectionAccount,
             DashboardSubSection,
@@ -322,21 +355,10 @@ import DashboardActionButton from './DashboardActionButton';
         computed: {
             computedName() {
                 return this.type === 'class' || this.type === 'school' ||
-                     this.type === 'course' ||  this.type === 'extracurriculum' ? 
-                    this.mainSectionData.name : 
-                    ''
-            },
-            computedClassAdmin(){
-                return this.type === 'class' && this.account.admin ? this.account.account : null
-            },
-            computedClassOwner(){
-                return this.type === 'class' && this.account.owner ? this.account.account : null
-            },
-            computedClassLearner(){
-                return this.type === 'class' && this.account.learner ? this.account.account : null
-            },
-            computedClassFacilitator(){
-                return this.type === 'class' && this.account.facilitator ? this.account.account : null
+                    this.type === 'course' ||  this.type === 'extracurriculum' ||
+                    this.type === 'program' ? 
+                    this.mainSectionData.name : this.mainSectionData.title ? 
+                    this.mainSectionData.title : ''
             },
             computedDescription(){
                 return this.mainSectionData.description ? 
@@ -344,10 +366,16 @@ import DashboardActionButton from './DashboardActionButton';
                     this.mainSectionData.about ? 
                     `about ${this.type}: ${this.mainSectionData.description}` : ''
             },
+            computedShowAttachments() {
+                return this.mainSectionData && this.mainSectionData.hasOwnProperty('attachments')
+            },
+            computedAuthority() {
+                return this.admin || (this.account && this.account.owner)
+            }
         },
         methods: {
-            clickedEditClass() {
-                this.$emit('clickedEditClass')
+            clickedEditSomething() {
+                this.$emit('clickedEditSomething',this.type)
             },
             clickedDashboardActionButton(data) {
                 this.$emit('clickedDashboardActionButton',data)
@@ -374,12 +402,24 @@ import DashboardActionButton from './DashboardActionButton';
             color: gray;
         }
 
-        .edit{
-            float: right;
-            font-size: 18px;
-            margin: 0 10px 0 0;
-            color: gray;
-            cursor: pointer;
+        .authority-actions{
+            display: flex;
+            margin: 5px 0;
+            align-items: center;
+            width: 100%;
+            flex-wrap: wrap;
+
+            .edit{
+                min-width: unset;
+                width: fit-content;
+                padding: 5px 10px;
+                float: right;
+                margin-right: 10px;
+            }
+
+            .state{
+                margin-right: 10px;
+            }
         }
 
         .state{
@@ -402,7 +442,9 @@ import DashboardActionButton from './DashboardActionButton';
             padding: 0 10px;
             width: 100%;
             text-align: center;
-            font-weight: 500;
+            color: gray;
+            font-weight: 600;
+            font-size: 18px;
         }
 
         .description{

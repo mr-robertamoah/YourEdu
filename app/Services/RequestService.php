@@ -25,7 +25,6 @@ use App\YourEdu\Professional;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
 use App\YourEdu\School;
-use \Debugbar;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -33,6 +32,27 @@ use Illuminate\Support\Str;
 class RequestService
 {
 
+    public function createRequest
+    (
+        $from, $to, $requestable = null, $data = null
+    ): Request
+    {
+        $request = $from->requestsSent()->create([
+            'state' => 'PENDING',
+            'data' => serialize($data)
+        ]);
+
+        if (is_null($request)) {
+            throw new RequestException(
+                message: 'failed to crete and send request'
+            );
+        }
+
+        $request->requestto()->associate($to);
+        $request->requestable()->associate($requestable);
+        $request->save();
+        return $request;
+    }
     /**
      * sending request between accounts and school
      * 
@@ -80,7 +100,7 @@ class RequestService
     public function schoolRelatedResponse(string $requestId,string $action,
         string $other,int $id,string $mine)
     {
-        $request = getAccountObject('request',$requestId);
+        $request = getYourEduModel('request',$requestId);
         if (is_null($request)) {
             throw new AccountNotFoundException("request was not found with id {$requestId}");
         }
@@ -102,7 +122,7 @@ class RequestService
         $name = $request->requestto->username ? $request->requestto->username : $request->requestto->name;
         
         if ($other === 'school') {
-            $otherUserIds = getAdminIds($request->requestfrom);
+            $otherUserIds = $request->requestfrom->getAdminIds();
             $message = "{$name} {$action} your request to be {$mine} of your {$other}";
             if ($mine === 'admin') {
                 
@@ -201,10 +221,10 @@ class RequestService
         $recepientUserIds = [];
         if ($messageData['belongsTo']->requestto_type === 'App\YourEdu\School' && 
             $account !== 'school') {
-            $recepientUserIds = getAdminIds($messageData['belongsTo']->requestto);
+            $recepientUserIds = $messageData['belongsTo']->requestto->getAdminIds();
         } else if ($messageData['belongsTo']->requestfrom_type === 'App\YourEdu\School' &&
             $account !== 'school') {
-            $recepientUserIds = getAdminIds($messageData['belongsTo']->requestfrom);
+            $recepientUserIds = $messageData['belongsTo']->requestfrom->getAdminIds();
         } else if ($messageData['belongsTo']->requestto_type === 'App\User' && 
             $account === 'school') {
             $recepientUserIds[] = $messageData['belongsTo']->requestto_id;
@@ -279,7 +299,7 @@ class RequestService
     public function sendAccountRequest($from,$fromId,$to,$toId,$item,$itemId,$data,
         $files = null,$adminId = null,$what = null)
     { 
-        $requestfrom = getAccountObject($from,$fromId);
+        $requestfrom = getYourEduModel($from,$fromId);
         if (is_null($requestfrom)) {
             throw new AccountNotFoundException("$from not found with id $fromId");
         }
@@ -287,14 +307,14 @@ class RequestService
         if ($to === 'user') {
             $requestto = User::where('username',$toId);
         } else {
-            $requestto = getAccountObject($to,$toId);
+            $requestto = getYourEduModel($to,$toId);
         }
         if (is_null($requestto)) {
             throw new AccountNotFoundException("$to not found with $toId");
         }
 
         $requestData = [];
-        $requestData['main'] = getAccountObject($item,$itemId); //ward
+        $requestData['main'] = getYourEduModel($item,$itemId); //ward
         if ($files) {
             $requestData['files'] = [];
             foreach ($files as $file) {                    
@@ -389,8 +409,8 @@ class RequestService
     public function notifyAppropriateUsers($requestto,$requestfrom,$type)
     {
         $users = [];
-        $from = getAccountString($requestfrom);
-        $to = getAccountString($requestto);
+        $from = class_basename_lower($requestfrom);
+        $to = class_basename_lower($requestto);
         if ($type === 'request') {
             switch ($to) {
                 case 'learner':
@@ -408,7 +428,7 @@ class RequestService
                     $users[] = $requestto->ownedby->user;
                     break;
                 case 'school':
-                    $users = User::whereIn('id',getAdminIds($requestto));
+                    $users = User::whereIn('id',$requestto->getAdminIds());
                     break;
                 case 'collaboration':
                     
@@ -433,7 +453,7 @@ class RequestService
             Notification::send($users,
                 new AccountsRequestNotification());
         } else {
-            switch (getAccountString($requestfrom)) {
+            switch (class_basename_lower($requestfrom)) {
                 case 'learner':
                     if ($requestfrom->user->age >= 18) {
                         $users[] = $requestfrom->user;
@@ -448,7 +468,7 @@ class RequestService
                     $users[] = $requestfrom->ownedby->user;
                     break;
                 case 'school':
-                    $users = User::whereIn('id',getAdminIds($requestfrom));
+                    $users = User::whereIn('id',$requestfrom->getAdminIds());
                     break;
                 case 'collaboration':
                     
@@ -518,10 +538,14 @@ class RequestService
 
         if (count($files)) {
             foreach ($files as $requestFile) {
-                $file = accountCreateFile($sender,$requestFile,$request);
+                $file = FileService::createAndAttachFiles(
+                    account: $sender,
+                    file: $requestFile,
+                    item: $request
+                );
                 $data['file'][] = [
                     'id' => $file->id, 
-                    'type' => getAccountString(get_class($file))
+                    'type' => class_basename_lower($file)
                 ];
             }
         }
@@ -534,7 +558,7 @@ class RequestService
 
     public function getMessages($requestId)
     {
-        $request = getAccountObject('request',$requestId);
+        $request = getYourEduModel('request',$requestId);
         if (is_null($request)) {
             throw new AccountNotFoundException("request not found with id {$requestId}");
         }
@@ -594,8 +618,7 @@ class RequestService
     
     public function getAccountRequests($account,$accountId)
     {
-        Debugbar::ifno($account);
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
@@ -616,7 +639,7 @@ class RequestService
             throw new AccountNotFoundException("request with id {$requestId} not found");
         }
 
-        $requestTo = getAccountObject(getAccountString($mainRequest->requestto_type),
+        $requestTo = getYourEduModel(class_basename_lower($mainRequest->requestto_type),
             $mainRequest->requestto_id);
 
         if (is_null($requestTo) || $requestTo->user_id !== $id || 

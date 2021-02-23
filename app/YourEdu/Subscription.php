@@ -16,7 +16,7 @@ class Subscription extends Model
         return $this->morphTo();
     }
 
-    public function subsribable()
+    public function subscribable()
     {
         return $this->morphTo();
     }

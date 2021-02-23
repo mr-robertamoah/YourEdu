@@ -189,13 +189,13 @@ $modal-margin-height: (100vh - $modal-height)/2;
             position: relative;
             
             .close{
-                position: absolute;
-                width: 20px;
-                top: 0;
-                right: 0;
+                position: sticky;
+                top: 10px;
                 margin: 10px 10px 0 0;
                 color: rgba(105, 105, 105,.8);
                 cursor: pointer;
+                text-align: end;
+                padding: 0 10px 0 0;
 
                 &:hover{
                     color: rgba(255, 0, 0, 0.603);
@@ -220,9 +220,9 @@ $modal-margin-height: (100vh - $modal-height)/2;
             }
 
             .main{
-                display: flex;
-                justify-content: center;
-                align-items: center;
+                // display: flex;
+                // justify-content: center;
+                // align-items: center;
                 min-height: 75%;
             }
 

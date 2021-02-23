@@ -2,30 +2,54 @@
 
 namespace App\Services;
 
+use App\Contracts\PaymentTypeContract;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\FeeException;
 
-class FeeService
+class FeeService extends PaymentTypeContract
 {
-    public static function setFee($item,$amount,$addedby,$feeableData)
+    public static function set($item,$data,$addedby)
     {
         $fee = $item->fees()->create([
-            'amount' => $amount
+            'amount' => $data['amount']
         ]);
-        if (!count($feeableData)) {
+        $fee->addedby()->associate($addedby);
+        // $fee->save();
+
+        $feeables = [];
+        $sections = [];
+        array_push($sections,...$data['sections']);
+        array_push($sections,...$data['academicYears']);
+        if (count($sections)) {
+            foreach ($sections as $section) {
+                $feeable = getYourEduModel($section->type,$section->id);
+                if (is_null($feeable)) {
+                    throw new AccountNotFoundException("academic year section with id {$section->id} not found.");
+                } else {
+                    $feeables[] = $feeable;
+                }
+            }
+        } else {
             throw new FeeException("academic year or academic year section is required for fees");
         }
-        $feeable = getAccountObject($feeableData['feeable'],$feeableData['feeableId']);
-        if (is_null($feeable)) {
-            throw new AccountNotFoundException("{$feeableData['feeable']} was not found with id {$feeableData['feeableId']}");
+        // $feeable = getYourEduModel($data['feeableData']['feeable'],$data['feeableData']['feeableId']);
+        // if (is_null($feeable)) {
+        //     throw new AccountNotFoundException("{$data['feeableData']['feeable']} was not found with id {$feeableData['feeableId']}");
+        // }
+        foreach ($feeables as $f) {
+            $fee->feeable()->associate($f);
         }
-        $fee->feeable()->associate($feeable);
-        $fee->addedby()->associate($addedby);
         $fee->save();
     }
 
-    public static function __callStatic($method, $arguments)
+    public static function unset($item,$feeId)
     {
-        self::$method(...$arguments);
+        $fee = getYourEduModel('fee', $feeId);
+        if (is_null($fee)) {
+            throw new AccountNotFoundException("fee not found with id {$feeId}");
+        }
+
+        $item->fees()->where('id',$feeId)->first()?->delete();
+        // $fee->delete();
     }
 }

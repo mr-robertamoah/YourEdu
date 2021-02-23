@@ -79,6 +79,8 @@ $border-color-error:rgba(201, 6, 6, 0.9);
             width: 100%;
             font-size: 16px;
             width: 100%;
+            font-weight: 500;
+            color: black;
 
             &:focus,
             &:active{

@@ -21,7 +21,7 @@ class DashboardAcademicYearResource extends JsonResource
             'endDate' => $this->end_date,
             'description' => $this->description,
             'addedbyId' => $this->addedby_id,
-            'addedby' => getAccountString($this->addedby_type),
+            'addedby' => class_basename_lower($this->addedby_type),
         ];
     }
 }

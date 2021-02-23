@@ -966,6 +966,18 @@ const ProfileService = {
         }
     },
     //////////////////////////////////////////////////////////
+    async getProfileAccounts(main){ //get accounts through profiles
+        let {nextPage, data} = main
+        try {
+            let response = 
+                await ApiService.get(`api/dashboard/search?page=${nextPage}`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
 }
 
 export {ProfileService}

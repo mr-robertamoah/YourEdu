@@ -138,11 +138,8 @@ $search-color:rgba(22, 233, 205, 1);
 @media screen and (max-width: 800px){
     .search-wrapper{
 
-        .input-wrapper{
-
-            .input-text{
-                font-size: 14px;
-            }
+        .input-text{
+            font-size: 14px;
         }
     }
 }

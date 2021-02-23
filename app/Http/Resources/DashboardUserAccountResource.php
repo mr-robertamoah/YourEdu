@@ -19,7 +19,7 @@ class DashboardUserAccountResource extends JsonResource
             'userId' => $this->user_id ? $this->user_id : $this->owner_id,
             'name' => $this->profile ? $this->profile->name : $this->name,
             'url' => $this->profile ? $this->profile->url : '',
-            'account' => getAccountString(get_class($this->resource)),
+            'account' => class_basename_lower(get_class($this->resource)),
             'bans' => BanResource::collection($this->hasBan()->get()),
         ];
     }

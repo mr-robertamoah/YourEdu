@@ -18,8 +18,10 @@ use App\YourEdu\Professional;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
 use App\YourEdu\School;
+use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -27,7 +29,7 @@ use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use Notifiable, HasApiTokens, SoftDeletes;
+    use Notifiable, HasApiTokens, SoftDeletes, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -189,5 +191,5 @@ class User extends Authenticatable
     public function messagesReceived()
     {
         return $this->hasMany(Message::class,'to_user_id');
-    }    
+    }
 }

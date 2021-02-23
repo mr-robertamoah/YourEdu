@@ -18,10 +18,13 @@ class CreateClassablesTable extends Migration
             $table->unsignedBigInteger('class_id');
             $table->nullableMorphs('classable');
             $table->boolean('resource')->default(false);
+            $table->unsignedBigInteger('subject_id')->nullable(); //used for lessons when structure is subjects
+            $table->enum('activity',['FREE','INTRO'])->nullable();
             $table->timestamps();
 
 
             $table->foreign('class_id')->references('id')->on('class_models')->cascadeOnDelete();
+            // $table->foreign('subject_id')->references('id')->on('subjects')->cascadeOnDelete();
         });
     }
 

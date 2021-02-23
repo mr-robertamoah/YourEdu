@@ -22,7 +22,7 @@ class Profile extends Model
     public function getUrlAttribute()
     {
         return $this->images()->where('state','PUBLIC')->where('thumbnail',1)->exists() ? 
-        asset("assets/{$this->images()->where('state','PUBLIC')->where('thumbnail',1)->latest()->take(1)->first()->path}") :
+        asset("assets/{$this->images()->where('state','PUBLIC')->where('thumbnail',1)->latest()->first()->path}") :
         asset('storage/default.webp');
     }
 
@@ -73,5 +73,43 @@ class Profile extends Model
                     ->orWhere('status',"APPROVED");
             });
         });
+    }
+
+    public function scopeSearch
+    (
+        Builder $query, 
+        $search = '',
+        $searchAccount = '',
+        $account = '',
+        $accountId = '',
+        $only = [],
+    )
+    {
+        return $query
+            ->whereIn('profileable_type',$only)
+            ->when(strlen($searchAccount),
+                function($query) use ($searchAccount) {
+                    $query
+                        ->where('profileable_type',$searchAccount);
+                }
+            )
+            ->when($account && $accountId,
+                function($query) use ($account,$accountId) {
+                    $query
+                        ->where('profileable_type','!=',"App\\YourEdu\\$account")
+                        ->where('profileable_type','!=',$accountId);
+                }
+            )
+            ->where(
+                function($query) use ($search) {
+                    $query->whereHasMorph('profileable','*',
+                        function($query) use ($search) {
+                            $query->searchAccounts($search);
+                        }
+                    )
+                    ->orWhere('name','like',$search)
+                    ->orWhere('about','like',$search);
+                }
+            )->with('profileable');
     }
 }

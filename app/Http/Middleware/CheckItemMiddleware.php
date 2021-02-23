@@ -47,6 +47,7 @@ class CheckItemMiddleware
                 $item === 'professional' ||
                 $item === 'extracurriculum' ||
                 $item === 'course' ||
+                $item === 'program' ||
                 $item === 'school') {
             } else {
                 return response()->json([

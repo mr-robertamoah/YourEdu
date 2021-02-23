@@ -10,7 +10,13 @@ class Answer extends Model
     //
     use SoftDeletes;
 
-    protected $fillable = ['answer','work_id','possible_answer_id'];
+    protected $fillable = [
+        'answer','work_id','possible_answer_id','possible_answer_ids'
+    ];
+
+    protected $casts = [
+        'possible_answer_ids' => 'array'
+    ];
 
     protected $touches = ['answerable'];
     

@@ -158,19 +158,20 @@ class Professional extends Model
         return $this->morphMany(Lesson::class,'ownedby');
     }
 
-    public function deliveredLessons()
+    public function addedLessons()
     {
-        return $this->morphMany(Lesson::class,'lessonable');
+        return $this->morphMany(Lesson::class,'addedby');
     }
 
     public function collaborations()
     {
-        return $this->morphToMany(Collaboration::class,'collaborationable','collabo');
+        return $this->morphToMany(Collaboration::class,'collaborationable','collabo')
+            ->withPivot(['state'])->withTimestamps();
     }
 
-    public function ownedCollaborations()
+    public function collabos()
     {
-        return $this->morphMany(Collaboration::class,'collaborationable');
+        return $this->morphMany(Collabo::class,'collaborationable');
     }
 
     public function curricula()
@@ -183,6 +184,11 @@ class Professional extends Model
         return $this->morphMany(Extracurriculum::class,'addedby');
     }
 
+    public function addedPrograms()
+    {
+        return $this->morphMany(Program::class,'addedby');
+    }
+
     public function ownedExtracurriculums()
     {
         return $this->morphMany(Extracurriculum::class,'ownedby');
@@ -192,16 +198,6 @@ class Professional extends Model
     {
         return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
             ->withPivot(['resource','activity'])->withTimestamps();
-    }
-
-    public function lessonsAdded()
-    {
-        return $this->morphMany(Lesson::class,'addedby');
-    }
-
-    public function lessonsOwned()
-    {
-        return $this->morphMany(Lesson::class,'ownedby');
     }
 
     public function uniqueProgramsAdded()
@@ -231,7 +227,8 @@ class Professional extends Model
 
     public function programs()
     {
-        return $this->morphToMany(Program::class,'programmable','programmables');
+        return $this->morphToMany(Program::class,'programmable','programmables')
+            ->withPivot(['activity'])->withTimestamps();
     }
     
     public function works()
@@ -460,6 +457,11 @@ class Professional extends Model
     public function messagesReceived()
     {
         return $this->morphMany(Message::class,'toable');
+    }
+
+    public function addedCollaboration()
+    {
+        return $this->morphMany(Collaboration::class,'addedby');
     }
 
 }

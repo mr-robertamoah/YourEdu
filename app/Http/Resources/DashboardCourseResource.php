@@ -14,11 +14,14 @@ class DashboardCourseResource extends JsonResource
      */
     public function toArray($request)
     {
-        return [
+        $data =  [
             'id' => $this->id,
             'name' => $this->name,
             'state' => $this->state,
-            'programs' => DashboardAttachmentResource::collection($this->programs),
+            'standAlone' => $this->stand_alone,
+            'programs' => DashboardAttachmentResource::collection(
+                $this->programs()->hasNoOwner()->get()
+            ),
             'courses' => DashboardAttachmentResource::collection($this->courses),
             'grades' => DashboardAttachmentResource::collection($this->grades),
             'description' => $this->description,
@@ -28,8 +31,15 @@ class DashboardCourseResource extends JsonResource
             'addedby' => new UserAccountResource($this->addedby),
             'facilitators' => UserAccountResource::collection($this->facilitators),
             'professionals' => UserAccountResource::collection($this->professionals),
-            'learners' => UserAccountResource::collection($this->learners),
+            'learners' => $this->learners->count(),
             'lessons' => $this->lessons->count(),
+            'sections' => DashboardItemMiniResource::collection($this->courseSections),
+            'discussions' => $this->discussions->count(),
         ];
+        $data['classes'] = $this->classes;
+        $data['classes'] = $data['classes']->merge($this->programs()->hasOwner()->get());
+        $data['classes'] = DashboardItemMiniResource::collection($data['classes']);
+
+        return $data;
     }
 }

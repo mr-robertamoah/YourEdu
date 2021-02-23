@@ -14,6 +14,14 @@ class DashboardCollaborationResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'type' => class_basename_lower($this->resource::class),
+            'name' => $this->name,
+            'description' => $this->description,
+            'type' => $this->type,
+            'collaborators' => CollaboratorResource::newCollection($this->collaborators(), $this->resource),
+            'addedby' => new UserAccountResource($this->addedby)
+        ];
     }
 }

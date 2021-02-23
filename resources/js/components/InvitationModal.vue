@@ -898,7 +898,7 @@ import { mapActions, mapGetters } from 'vuex';
 
             .text-input{
                 border: none;
-                border-bottom: 2px solid $background-color-main;
+                border-bottom: 2px solid $color-main;
                 border-radius: 0;
             }
 
@@ -920,7 +920,7 @@ import { mapActions, mapGetters } from 'vuex';
                     border: none;
 
                     .icon{
-                        color: $background-color-main;
+                        color: $color-main;
                         margin-right: 10px;
                     }
 

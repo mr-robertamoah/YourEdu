@@ -16,6 +16,7 @@ class AudioResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'type' => 'audio',
             'name' => $this->name,
             'state' => $this->pivot->state,
             'url' => asset("assets/{$this->path}"),

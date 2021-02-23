@@ -136,11 +136,6 @@ class School extends Model
         return $this->morphMany(Lesson::class,'ownedby');
     }
 
-    public function ownedCollaborations()
-    {
-        return $this->morphMany(Collaboration::class,'collaborationable');
-    }
-
     public function activityTrack()
     {
        return $this->morphOne(ActivityTrack::class,'for');
@@ -207,6 +202,11 @@ class School extends Model
     public function ownedPrograms()
     {
         return $this->morphMany(Program::class,'ownedby');
+    }
+
+    public function addedPrograms()
+    {
+        return $this->morphMany(Program::class,'addedby');
     }
 
     public function groupsOwned()
@@ -492,16 +492,6 @@ class School extends Model
         return $this->morphMany(Activity::class,'owned');
     }
 
-    public function lessonsAdded()
-    {
-        return $this->morphMany(Lesson::class,'addedby');
-    }
-
-    public function lessonsOwned()
-    {
-        return $this->morphMany(Lesson::class,'ownedby');
-    }
-
     public function conversations()
     {
         return $this->morphToMany(Conversation::class,'accountable','conversationables');
@@ -525,6 +515,11 @@ class School extends Model
     public function messagesReceived()
     {
         return $this->morphMany(Message::class,'toable');
+    }
+
+    public function addedCollaboration()
+    {
+        return $this->morphMany(Collaboration::class,'addedby');
     }
 
     public function scopeHasMyAdmin($query,$id)

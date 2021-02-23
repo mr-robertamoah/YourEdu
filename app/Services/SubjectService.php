@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\SubjectException;
+use App\YourEdu\Subject;
 use Illuminate\Support\Str;
 
 class SubjectService
@@ -27,11 +28,11 @@ class SubjectService
 
     public function subjectAliasCreate($subjectId,$account,$accountId,$name,$description)
     {
-        $mainSubject = getAccountObject('subject',$subjectId);
+        $mainSubject = getYourEduModel('subject',$subjectId);
         if (is_null($mainSubject)) {
             throw new AccountNotFoundException("subject not found with id {$subjectId}");
         }
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
@@ -48,7 +49,7 @@ class SubjectService
 
     public function subjectDelete($subjectId,$id)
     {
-        $subject = getAccountObject('subject',$subjectId);
+        $subject = getYourEduModel('subject',$subjectId);
         if (is_null($subject)) {
             throw new AccountNotFoundException("subject not found with id {$subjectId}");
         }
@@ -67,7 +68,8 @@ class SubjectService
         if (is_null(
             $item->subjects->where('id',$subjectId)->first()
         )) {
-            $item->subjects()->attach($subjectId,['activity' => Str::upper($activity)]);
+            $pivotArray = is_string($activity) ? ['activity' => Str::upper($activity)] : [];
+            $item->subjects()->attach($subjectId,$pivotArray);
             $item->save();
         }
     }
@@ -80,5 +82,10 @@ class SubjectService
             $item->subjects()->detach($subjectId);
             $item->save();
         }
+    }
+
+    public static function getSubjects()
+    {
+        return Subject::all();
     }
 }

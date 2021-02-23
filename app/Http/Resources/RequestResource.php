@@ -19,9 +19,9 @@ class RequestResource extends JsonResource
         $data = [];
         $data['id'] = $this->id;
         if ($this->requestable_type === 'App\YourEdu\Follow') {
-            $data['account_type'] = getAccountString($this->requestfrom_type);
+            $data['account_type'] = class_basename_lower($this->requestfrom_type);
             $data['account_id'] = $this->requestfrom_id;
-            $data['myAccount'] = getAccountString($this->requestto_type);
+            $data['myAccount'] = class_basename_lower($this->requestto_type);
             $data['myAccountId'] = $this->requestto_id;
             $data['myName'] = $this->requestto->profile->name;
             $data['name'] = $this->requestfrom->profile->name;
@@ -71,7 +71,7 @@ class RequestResource extends JsonResource
             $data['created_at'] = $this->requestable->created_at;
             $data['name'] = $this->requestfrom->profile->name;
             $data['url'] = $this->requestfrom->profile->url;
-            $data['account'] = getAccountString($this->requestfrom_type);
+            $data['account'] = class_basename_lower($this->requestfrom_type);
             $data['accountId'] = $this->requestfrom_id;
             $data['discussionId'] = $this->requestable->id;
         }  else if ($this->data) {
@@ -80,7 +80,7 @@ class RequestResource extends JsonResource
             $files = [];
             if (Arr::has($requestData,'file')) {                
                 foreach ($requestData['file'] as $file) {
-                    $files[] = getAccountObject($file['type'],$file['id']);
+                    $files[] = getYourEduModel($file['type'],$file['id']);
                 }
                 $data['file'] = ImageResource::collection($files);
             }
@@ -93,9 +93,9 @@ class RequestResource extends JsonResource
             }
             $data['name'] = $this->requestfrom->profile->name;
             $data['url'] = $this->requestfrom->profile->url;
-            $data['account'] = getAccountString($this->requestfrom_type);
+            $data['account'] = class_basename_lower($this->requestfrom_type);
             $data['accountId'] = $this->requestfrom_id;
-            $data['myAccount'] = getAccountString($this->requestto_type);
+            $data['myAccount'] = class_basename_lower($this->requestto_type);
             $data['myAccountId'] = $this->requestto_id;
         }
         return $data;

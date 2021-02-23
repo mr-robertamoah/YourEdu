@@ -7,6 +7,7 @@
                     :mainOther="false"
                     :requests="false"
                     @mainModalDisappear='closeModal'
+                    class="modal-wrapper"
                 >
                     <template slot="main">
                         <welcome-form
@@ -24,6 +25,7 @@
                                 <div class="loading" v-if="loading">
                                     <pulse-loader :loading="loading"></pulse-loader>
                                 </div>
+                                <div class="section">Extracurriculum Info</div>
                                 <text-input
                                     :bottomBorder="true"
                                     placeholder="extracurriculum name*"
@@ -36,7 +38,23 @@
                                     v-model="data.description"
                                     class="class-input"
                                 ></text-textarea>
+                                <main-select
+                                    v-if="edit"
+                                    :items="['pending','accepted','declined','suspended']"
+                                    :value="data.state"
+                                    backgroundColor="white"
+                                    @selection="stateSelection"
+                                    class="other-input"
+                                    placeholder="change state of class"
+                                ></main-select>
+                                <main-checkbox
+                                    v-if="computedCreator.account !== 'school'"
+                                    v-model="data.facilitate"
+                                    label="will you be a faciliatator in this extracurriculum?"
+                                    class="class-input"
+                                ></main-checkbox>
 
+                                <div class="section" v-if="computedShowOwnership">Extracurriculum Ownership</div>
                                 <main-select
                                     class="other-input"
                                     v-if="computedShowOwnership"
@@ -47,6 +65,7 @@
                                     @selection="ownerSelection"
                                 ></main-select>
                                 
+                                <div class="section">Extracurriculum Attachments</div>
                                 <main-select
                                     class="other-input"
                                     v-if="computedAttachment.length > 1"
@@ -58,7 +77,9 @@
                                 ></main-select>
 
                                 <template v-if="edit">
-                                    <div class="attachment-heading">
+                                    <div class="attachment-heading"
+                                        v-if="data.mainAttachments.length"
+                                    >
                                         already attached
                                     </div>
                                     <div class="attachments"
@@ -72,7 +93,9 @@
                                             @removeAttachment="removeAttachment(attachment,'main')"
                                         ></attachment-badge>
                                     </div>
-                                    <div class="attachment-heading">
+                                    <div class="attachment-heading"
+                                        v-if="data.removedAttachments.length"
+                                    >
                                         to be removed/unattached
                                     </div>
                                     <div class="attachments danger"
@@ -88,7 +111,9 @@
                                     </div>
                                 </template>
 
-                                <div class="attachment-heading" v-if="edit">
+                                <div class="attachment-heading" 
+                                    v-if="edit && data.attachments.length"
+                                >
                                     new attachments
                                 </div>
                                 <div class="attachments"
@@ -112,12 +137,16 @@
                                     class="class-input"
                                 ></post-attachment>
 
-                                <div class="class-payment course-classes-section" 
-                                    v-if="computedAccount.account === 'school' ||
-                                        data.owner.account === 'school'"
-                                >
-                                    <!-- class badge and select to show classes to which this 
-                                        course belongs-->
+                                <div class="attachment-heading">
+                                    {{computedSpecificItemType}}
+                                </div>
+                                <search-input
+                                    class="search-input"
+                                    v-if="data.owner.account"
+                                    :searchPlaceholder="`search for classes and programs`"
+                                    @search="getSearchItemsText"
+                                ></search-input>
+                                <div class="class-payment course-classes-section">
                                     <div
                                         v-if="computedSpecificItems.length"
                                         class="class-wrapper"
@@ -133,6 +162,10 @@
                                             @clickedRemoveItem="removeClass"
                                         ></item-badge>
                                     </div>
+                                    <div class="no-data" 
+                                        v-if="!specificItemLoading && !computedSpecificItems.length">
+                                        {{`no ${computedSpecificItemType} for this ${data.owner.account}`}}
+                                    </div>
                                     <pulse-loader 
                                         :loading="specificItemLoading"
                                         size="12px"
@@ -140,17 +173,21 @@
                                     ></pulse-loader>
                                     <div class="get-more" 
                                         @click="getSpecificAccountItem"
+                                        v-if="computedShowGetMore"
                                     >
-                                        <!-- v-if="specificItemDetailsNextPage"
-                                        @click="getSpecificAccountItem" -->
                                         get more
                                     </div>
                                 </div>
                                 
-                                <div class="attachment-heading" v-if="edit">
+                                <div class="section">Payments</div>
+                                <div class="attachment-heading"
+                                    v-if="data.mainPaymentData.length"
+                                >
                                     current payment types
                                 </div>
-                                <div class="attachments" v-if="edit">
+                                <div class="attachments"
+                                    v-if="data.mainPaymentData.length"
+                                >
                                     <div
                                         v-for="(item,index) in data.mainPaymentData"
                                         :key="index"
@@ -158,67 +195,77 @@
                                         <price-badge
                                             v-if="item.type === 'price'"
                                             :data="item"
-                                            @clickedRemovePrice="clickedRemovePayment(item,'main')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
                                             class="payment-badge"
                                         ></price-badge>
                                         <subscription-badge
                                             v-if="item.type === 'subscription'"
                                             :data="item"
-                                            @clickedRemoveSubscription="clickedRemovePayment(item,'main')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
                                             class="payment-badge"
                                         ></subscription-badge>
                                     </div>
                                 </div>
                                 
-                                <div class="attachment-heading" v-if="edit">
+                                <div class="attachment-heading"
+                                    v-if="data.removedPaymentData.length"
+                                >
                                     payment types to be removed
                                 </div>
-                                <div class="attachments danger" v-if="edit">
+                                <div class="attachments danger"
+                                    v-if="data.removedPaymentData.length"
+                                >
                                     <div
-                                        v-for="(item,index) in data.mainPaymentData"
+                                        v-for="(item,index) in data.removedPaymentData"
                                         :key="index"
                                     >
                                         <price-badge
                                             v-if="item.type === 'price'"
                                             :data="item"
-                                            @clickedRemovePrice="clickedRemovePayment(item,'removed')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
                                             class="payment-badge"
                                         ></price-badge>
                                         <subscription-badge
                                             v-if="item.type === 'subscription'"
                                             :data="item"
-                                            @clickedRemoveSubscription="clickedRemovePayment(item,'removed')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
                                             class="payment-badge"
                                         ></subscription-badge>
                                     </div>
                                 </div>
-                                <div class="attachment-heading" v-if="edit">
+                                <div class="attachment-heading"
+                                    v-if="edit && data.paymentData"
+                                >
                                     new payment types
                                 </div>
                                 <payment-types
-                                    v-if="computedPayment && !edit"
+                                    v-if="computedShowPayment"
                                     @paymentType="getPaymentType"
                                     :type="paymentType"
                                     :radioValue="data.type"
                                     class="other-input"
+                                    @paymentTypeError="error"
                                 ></payment-types>
 
-                                <main-select
-                                    v-if="edit"
-                                    :items="['pending','accepted','declined','suspended']"
-                                    :value="data.state"
-                                    backgroundColor="white"
-                                    @selection="extracurriculumStateSelection"
-                                    class="other-input"
-                                    placeholder="change state of class"
-                                ></main-select>
-
+                                <div class="section" v-if="computedShowDiscussion">Discussion</div>
                                 <main-checkbox
-                                    v-if="computedCreator.account !== 'school'"
-                                    v-model="data.facilitate"
-                                    label="will you be a faciliatator in this extracurriculum?"
+                                    v-model="data.discussion"
+                                    v-if="computedShowDiscussion && 
+                                        !data.discussionData.title.length"
+                                    label="automatically add a discussion?"
                                     class="class-input"
                                 ></main-checkbox>
+                                <!-- discussion preview -->
+                                <div class="discussion-preview"
+                                    v-if="data.discussionData.title.length"
+                                >
+                                    <item-badge
+                                        type="discussion"
+                                        :item="data.discussionData"
+                                        :hasRemove="true"
+                                        @clickedRemoveItem="clearDiscussionData"
+                                    ></item-badge>
+                                </div>
                             </template>
                             <template slot="buttons">
                                 <post-button
@@ -257,6 +304,7 @@ import PriceBadge from '../PriceBadge';
 import FeeBadge from '../FeeBadge';
 import SubscriptionBadge from '../SubscriptionBadge';
 import CreateDiscussion from './CreateDiscussion';
+import ItemBadge from '../dashboard/ItemBadge';
 import PulseLoader from 'vue-spinner/src/PulseLoader';
 import { mapActions, mapGetters } from 'vuex'
 import {bus} from '../../app';
@@ -268,6 +316,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             SubscriptionBadge,
             FeeBadge,
             PriceBadge,
+            ItemBadge,
             AutoAlert,
             PostAttachment,
             TextInput,
@@ -289,14 +338,8 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         watch: {
             computedOwner: {
                 deep: true,
-                handler(newValue, oldValue){
-                    if (newValue.account === 'school') {
-                        this.specificItemDetails = []
-                        this.specificItem = ''
-                        this.specificItemDetailsNextPage = 0
-                        this.specificItem = 'class'
-                        this.getSpecificAccountItem()
-                    }
+                handler(newValue){
+                    if (newValue.account) this.debouncedSearchItems()
                 }
             },
         },
@@ -324,41 +367,56 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             computedOwner() {
                 return this.data.owner
             },
+            computedSpecificItemType() {
+                return this.data.owner.account !== 'professional' ? 
+                    `classes and programs` : `programs`
+            },
         },
         methods: {
             ...mapActions(['dashboard/createExtracurriculum','dashboard/editExtracurriculum',
                 'dashboard/getAccountSpecificItem']),
             closeModal() {
+                this.data.owner = {name: ''}
                 this.clearData()
                 this.$emit('closeCreateExtracurriculum')
-            },
-            getDiscussionData(data) {
-                this.data.discussionData.title = data.title
-                this.data.discussionData.preamble = data.preamble
-                this.data.discussionData.type = data.type
-                this.data.discussionData.restricted = data.restricted
-                this.data.discussionData.allowed = data.allowed
-                this.discussionFiles = data.files
-            },
-            closeDiscussionModal() {
-                this.data.discussion = false
             },
             setData(data) {
                 this.data.name = data.name
                 this.data.extracurriculumId = data.id
-                this.data.state = data.state.toLowerCase()
+                this.data.state = data.state?.toLowerCase()
                 this.data.description = data.description
-                this.data.mainAttachments.push(...data.courses)
-                this.data.mainAttachments.push(...data.programs)
-                this.data.mainAttachments.push(...data.grades)
+                this.data.classes = []
+                this.data.mainClasses = []
+                this.data.classes.push(...data.classes)
+                this.data.mainClasses.push(...data.classes)
+                this.data.mainAttachments = []
+                if (data.attachments) {
+                    this.data.mainAttachments.push(...data.attachments)
+                } else {
+                    this.data.mainAttachments.push(...data.courses)
+                    this.data.mainAttachments.push(...data.programs)
+                    this.data.mainAttachments.push(...data.grades)
+                }
+                this.data.mainPaymentData = []
                 this.data.mainPaymentData.push(...data.subscriptions)
                 this.data.mainPaymentData.push(...data.prices)
                 this.data.facilitate = data.facilitators.findIndex(facilitator=>{
                     return facilitator.userId === this.getUser.id
                 }) > -1
+                if (!this.data.facilitate) {                    
+                    this.data.facilitate = data.professionals.findIndex(professional=>{
+                        return professional.userId === this.getUser.id
+                    }) > -1
+                }
                 this.buttonText = 'edit'
+                this.data.owner = {
+                    name: data.ownedby.name,
+                    account: data.ownedby.account,
+                    accountId: data.ownedby.accountId,
+                }
+                this.checkDiscussion(data)
             },
-            //classes
+            //classes or programs
             inClassesSelection(data) {
                 let index = this.findClassIndex(data)
                 if (index > -1) {
@@ -374,7 +432,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             },
             findClassIndex(data) {
                 return this.data.classes.findIndex(cl=>{
-                    return cl.id === data.id 
+                    return cl.id === data.id && cl.type === data.type
                 })
             },
             removeClass(data) {
@@ -383,24 +441,16 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.data.classes.splice(index,1)
                 }
             },
-            extracurriculumStateSelection(data){
-                this.data.state = data
-            },
-            ownerSelection(data){
-                this.data.owner = data
-                this.data.paymentData = null
-                this.data.type = 'free'
+            removedClassesUpdate(data) {
+                let index = this.data.removedClasses.findIndex(cl=>{
+                    return data.type === cl.type && data.id === cl.id
+                })
+                if (index === -1) {
+                    this.data.removedClasses.push(data)
+                }
             },
             attachmentSelection(data){
                 this.data.attachmentType = data
-            },
-            //payment
-            getPaymentType(data){
-                this.data.type = data.type
-                this.data.paymentData = data.data
-            },
-            clickedRemovePayment(item,type) {
-                console.log('item :>> ', item);
             },
             async getSpecificAccountItem(){
                 if (this.specificItemDetailsNextPage === null) {
@@ -410,7 +460,9 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: this.specificItem
+                        item: 'class',
+                        secondItem: 'program',
+                        search: this.searchItemsText
                     }
 
                 this.specificItemLoading = true
@@ -420,7 +472,11 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.specificItemLoading = false
 
                 if (response.status) {
-                    this.specificItemDetails.push(...response.items)
+                    if (!this.specificItemDetailsNextPage) {
+                        this.specificItemDetails = response.items
+                    } else {
+                        this.specificItemDetails.push(...response.items)
+                    }
                     if (response.next) {
                         this.specificItemDetailsNextPage += 1
                     } else {
@@ -463,42 +519,66 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 let response,
                     data = new FormData
                     
-                    data.append('name', this.data.name)
-                    data.append('description', this.data.description)
-                    data.append('attachments', JSON.stringify(this.data.attachments.map(attachment=>{
-                        return {
-                            type: attachment.type.slice(0, attachment.type.length - 1),
-                            id: attachment.data.id
-                        }
-                    })))
-
-                if (!this.edit && this.data.owner.account === 'school') {  
-                    data.append('classes', JSON.stringify(this.data.classes.map(cl=>{
-                        return {
-                            id: cl.id
-                        }
-                    })))
-            }
+                data.append('name', this.data.name)
+                data.append('description', this.data.description)
+                data.append('attachments', JSON.stringify(this.data.attachments.map(attachment=>{
+                    return {
+                        type: attachment.type.slice(0, attachment.type.length - 1),
+                        id: attachment.data.id
+                    }
+                })))
+                data.append('type', this.data.type)
+                data.append('paymentData', JSON.stringify(this.data.paymentData))
+ 
+                data.append('classes', JSON.stringify(this.data.classes.map(cl=>{
+                    return {
+                        id: cl.id,
+                        type: cl.type,
+                    }
+                })))
+                if (this.computedAccount.account === 'facilitator' ||
+                    this.computedAccount.account === 'professional') { 
+                    data.append('facilitate', JSON.stringify(this.data.facilitate))
+                }
+                if (this.schoolAdmin) { 
+                    data.append('account', 'admin')
+                    data.append('accountId', this.schoolAdmin.id)
+                } else {
+                    data.append('account', this.computedAccount.account)
+                    data.append('accountId', this.computedAccount.accountId)
+                }
 
                 if (this.edit) {
-                    if (this.computedAdmin) { 
-                        data.append('account', 'admin')
-                        data.append('accountId', this.computedAdmin.id)
-                    } else {
-                        data.append('account', this.computedAccount.account)
-                        data.append('accountId', this.computedAccount.accountId)
-                    }
-
-                    if (this.computedAccount.account === 'facilitator' ||
-                        this.computedAccount.account === 'professional') { 
-                        data.append('facilitate', JSON.stringify(this.data.facilitate))
-                    }
                     data.append('state', this.data.state)
+                    data.append('main', JSON.stringify(this.computedCheckMain))
                     data.append('extracurriculumId', this.data.extracurriculumId)
                     data.append('removedAttachments', JSON.stringify(this.data.removedAttachments.map(attachment=>{
                         return {
                             type: attachment.type.slice(0, attachment.type.length - 1),
                             id: attachment.data.id
+                        }
+                    })))
+                    data.append('removedPaymentData', JSON.stringify(
+                        this.data.removedPaymentData.map(payment=>{
+                            return {
+                                type: payment.type,
+                                id: payment.id
+                            }
+                        }
+                    )))
+                    this.data.mainClasses.forEach(mainCl=>{ //check if class or program has been removed
+                        let index = this.data.classes.findIndex(cl=>{
+                            return cl.type === mainCl.type && cl.id === mainCl.id
+                        })
+                        if (index === -1) {
+                            this.removedClassesUpdate(mainCl)
+                        }
+                        console.table(this.data.removedClasses)
+                    })
+                    data.append('removedClasses', JSON.stringify(this.data.removedClasses.map(attachment=>{
+                        return {
+                            type: attachment.type,
+                            id: attachment.id
                         }
                     })))
                     response = await this['dashboard/editExtracurriculum'](data)
@@ -509,8 +589,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             data.append('discussionFile[]', file)
                         })
                     }
-                    data.append('type', this.data.type)
-                    data.append('paymentData', JSON.stringify(this.data.paymentData))
                     if (this.computedAccount.account === 'facilitator' ||
                         this.computedAccount.account === 'professional') {                    
                         data.append('owner', this.data.owner.account ? 
@@ -519,19 +597,9 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                         data.append('ownerId', this.data.owner.account ? 
                             this.data.owner.accountId : 
                             this.computedAccount.accountId)
-                        data.append('account', this.computedAccount.account)
-                        data.append('accountId', this.computedAccount.accountId)
-                        data.append('facilitate', JSON.stringify(this.data.facilitate))
                     } else if (this.computedAccount.account === 'school') {                  
                         data.append('owner', this.computedAccount.account)
                         data.append('ownerId', this.computedAccount.accountId)
-                        if (this.computedAccount.owner) {                        
-                            data.append('account', this.computedAccount.account)
-                            data.append('accountId', this.computedAccount.accountId)
-                        } else if (this.computedAdmin) {
-                            data.append('account', 'admin')
-                            data.append('accountId', this.computedAdmin.id)
-                        }
                     }
 
                     response = await this['dashboard/createExtracurriculum'](data)
@@ -543,13 +611,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.alertSuccess = true
                     this.alertMessage = `${this.data.name} was successfully ${action}`
                     if (this.edit) {
-                        this.$emit('extracurriculumSuccessfullyEdited', response.extracurriculumResource)
+                        if (this.computedCheckMain) this.$emit('extracurriculumSuccessfullyEdited', response.extracurriculumResource)
+                    } else {
+                        this.clearData()
                     }
-                    this.clearData()
+                    bus.$emit('updateExtracurriculum',response.extracurriculum)
                 } else {
-                    let action = this.edit ? 'editing' : 'creation'
-                    this.alertDanger = true
-                    this.alertMessage = `extracurriculum ${action} was unsuccessful`
+                    this.responseErrorAlert(response.response)
                     console.log('response :>> ', response);
                 }
             },
@@ -558,6 +626,10 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 </script>
 
 <style lang="scss" scoped>
+
+    .modal-wrapper{
+        z-index: 10005;
+    }
 
     .create-extracurriculum-wrapper{
         position: relative;
@@ -574,7 +646,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $background-color-main;
+            border-bottom: 2px solid $color-main;
             border-radius: 0;
         }
 
@@ -601,6 +673,12 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             margin: 10px auto;
         }
 
+        .search-input{
+            border: none;
+            border-bottom: 2px solid $color-main;
+            background: white;
+        }
+
         .attachment-heading{
             font-size: 12px;
             color: gray;
@@ -609,9 +687,9 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 
         .attachments{
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-wrap: nowrap;
             align-items: center;
+            overflow-y: auto;
         }
 
         .attachments.danger{
@@ -629,13 +707,26 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         }
 
         .course-classes-section{
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
 
             .class-wrapper{
                 display: flex;
-                flex-wrap: wrap;
                 width: 90%;
                 margin: 10px auto;
                 align-items: center;
+                overflow: auto;
+
+                .class-badge{
+                    min-width: 150px;
+                }
+            }
+
+            .no-data{
+                font-size: 12px;
+                color: gray;
             }
 
             .get-more{

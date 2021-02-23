@@ -141,13 +141,13 @@ const actions = {
         let response = await UserService.accountCreate(data)
 
         if (response.data.message === 'successful') {
-            if (data.creator === 'user') {                
+            if (data.get('creator') === 'user') {                
                 commit('ACCOUNT_CREATE_SUCCESS',{
                     profile: response.data.profile
                 })
                 return {status:true}
             } else {
-                if (data.creator === 'school') {
+                if (data.get('creator') === 'school') {
                     commit('dashboard/SCHOOL_ADD_ACCOUNTS',{
                         accountOne: response.data.accountOne,
                         accountTwo: response.data.accountTwo,

@@ -8,6 +8,10 @@ class Commission extends Model
 {
     //
 
+    protected $fillable = ['percent'];
+
+    protected $casts = ['percent' => 'double'];
+
     public function for()
     {
         return $this->morphTo();

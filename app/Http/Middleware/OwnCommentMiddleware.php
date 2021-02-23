@@ -25,8 +25,8 @@ class OwnCommentMiddleware
             ]);
         }
 
-        if (getAccountString($mainComment->commentedby) === 'school') {
-            if (!in_array(auth()->id(),getAdminIds($mainComment->commentedby))) {
+        if (class_basename_lower($mainComment->commentedby) === 'school') {
+            if (!in_array(auth()->id(),$mainComment->commentedby->getAdminIds())) {
                 return response()->json([
                     'message' => "unsuccessful. you are not authorized to perform this action."
                 ],422);

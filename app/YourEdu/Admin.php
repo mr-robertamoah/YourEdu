@@ -67,6 +67,11 @@ class Admin extends Model
         return $this->morphMany(ClassModel::class,'addedby');
     }
 
+    public function addedPrograms()
+    {
+        return $this->morphMany(Program::class,'addedby');
+    }
+
     public function attachments()
     {
         return $this->morphMany(PostAttachment::class,'attachedby');

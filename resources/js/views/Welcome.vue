@@ -237,7 +237,6 @@ import BlackWhiteBadge from '../components/BlackWhiteBadge'
 import SyncLoader from 'vue-spinner/src/SyncLoader'
 import { mapGetters, mapActions } from 'vuex'
 import { dates } from "../services/helpers";
-import RelationVue from '../../../vendor/mtolhuys/laravel-schematics/resources/js/components/Modal/Relation.vue'
 
     export default {
         components: {

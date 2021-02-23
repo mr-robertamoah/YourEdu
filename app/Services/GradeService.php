@@ -27,11 +27,11 @@ class GradeService
 
     public function gradeAliasCreate($gradeId,$account,$accountId,$name,$description)
     {
-        $mainGrade = getAccountObject('grade',$gradeId);
+        $mainGrade = getYourEduModel('grade',$gradeId);
         if (is_null($mainGrade)) {
             throw new AccountNotFoundException("grade not found with id {$gradeId}");
         }
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
@@ -48,7 +48,7 @@ class GradeService
 
     public function gradeDelete($gradeId,$id)
     {
-        $grade = getAccountObject('grade',$gradeId);
+        $grade = getYourEduModel('grade',$gradeId);
         if (is_null($grade)) {
             throw new AccountNotFoundException("grade not found with id {$gradeId}");
         }

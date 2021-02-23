@@ -13,13 +13,13 @@ class MessageService
     public function createMessage($what,$whatId,$account,$accountId,$userId,$message,
         $state,$file = null,$chattingAccount = null,$chattingAccountId = null,$chattingUserId = null)
     {
-        $toWhatMessageBelongs = getAccountObject($what,$whatId); //request discussion conversation
+        $toWhatMessageBelongs = getYourEduModel($what,$whatId); //request discussion conversation
         if (is_null($toWhatMessageBelongs)) {
             throw new AccountNotFoundException("{$what} was not found with id {$whatId}");
         }
-        $fromable = getAccountObject($account,$accountId);
+        $fromable = getYourEduModel($account,$accountId);
 
-        $toable = getAccountObject($chattingAccount,$chattingAccountId);
+        $toable = getYourEduModel($chattingAccount,$chattingAccountId);
         if ($what === 'conversation' && is_null($toable)) {
             throw new AccountNotFoundException("{$chattingAccount} does not exist");
         }
@@ -60,16 +60,18 @@ class MessageService
 
     private function accountCreateFile($file, $account, $item)
     {
-        $fileDetails = getFileDetails($file);
-    
-        $uploadedFile = accountCreateFile($account,$fileDetails,$item);
+        $uploadedFile = FileService::createAndAttachFiles(
+            account: $account,
+            file: $file,
+            item: $item
+        );
         $uploadedFile->ownedby()->associate($account);
         $uploadedFile->save();
     }
 
     public function deleteMessage($userId, $messageId, $action,$auth = true)
     {
-        $message = getAccountObject('message', $messageId);
+        $message = getYourEduModel('message', $messageId);
 
         if (is_null($message)) {
             throw new AccountNotFoundException("message not found with id {$messageId}");

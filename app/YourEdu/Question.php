@@ -9,9 +9,23 @@ class Question extends Model
 {
     //
     use SoftDeletes;
+    
+    const IMAGE = 'IMAGE';
+    const VIDEO = 'VIDEO';
+    const AUDIO = 'AUDIO';
+    const OPTION = 'OPTION';
+    const NUMBER = 'NUMBER';
+    const ARRANGE = 'ARRANGE';
+    const FLOW = 'FLOW';
+    const TRUE_FALSE = 'TRUE_FALSE';
+    const LONG_ANSWER = 'LONG_ANSWER';
+    const SHORT_ANSWER = 'SHORT_ANSWER';
+
+    const int MIN_NUMBER_OF_OPTIONS = 0;
 
     protected $fillable = [
-        'question', 'state','published','user_deletes','updated_at'
+        'question', 'state','published','user_deletes','updated_at',
+        'hint','position'
     ];
 
     protected $touches = [
@@ -68,5 +82,23 @@ class Question extends Model
     public function comments()
     {
         return $this->morphMany(Comment::class,'commentable');
+    }
+
+    public function doesntRequireOptionalAnswers()
+    {
+        return $this->answer_type !== self::OPTION &&
+            $this->answer_type !== self::FLOW && 
+            $this->answer_type !== self::ARRANGE &&
+            $this->answer_type !== self::TRUE_FALSE;
+    }
+
+    public function doesntHaveOptionalAnswers()
+    {
+        return $this->possibleAnswers->count() < 1;
+    }
+
+    public function doesntHaveRequiredNumberOfOptionalAnswers()
+    {
+        return $this->possibleAnswers->count() < self::MIN_NUMBER_OF_OPTIONS;
     }
 }

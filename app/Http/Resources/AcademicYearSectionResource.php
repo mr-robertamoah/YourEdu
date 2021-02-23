@@ -20,6 +20,7 @@ class AcademicYearSectionResource extends JsonResource
             'startDate' => $this->start_date,
             'endDate' => $this->end_date,
             'promotion' => $this->promotion,
+            'academicYearId' => $this->academic_year_id,
         ];
     }
 }

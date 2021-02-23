@@ -15,7 +15,7 @@ class FollowRequestResource extends JsonResource
      */
     public function toArray($request)
     {
-        $account = getAccountString($this->requestfrom_type);
+        $account = class_basename_lower($this->requestfrom_type);
         $data = [];
         $data = [
             'id' => $this->id,

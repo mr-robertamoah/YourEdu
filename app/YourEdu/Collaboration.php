@@ -2,17 +2,30 @@
 
 namespace App\YourEdu;
 
+use App\Traits\CommissionTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Collaboration extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, CommissionTrait;
+
+    const FREE = 'FREE';
+    const PAID = 'PAID';
+
+    protected $fillable = [
+        'description', 'name', 'type'
+    ];
 
     public function ownedLessons()
     {
         return $this->morphMany(Lesson::class,'ownedby');
+    }
+
+    public function collabos()
+    {
+        return $this->hasMany(Collabo::class);
     }
 
     public function deliveredLessons()
@@ -20,7 +33,7 @@ class Collaboration extends Model
         return $this->morphMany(Lesson::class,'lessonable');
     }
 
-    public function ownedby()
+    public function addedby()
     {
         return $this->morphTo();
     }
@@ -37,18 +50,25 @@ class Collaboration extends Model
 
     public function courses()
     {
-        return $this->morphToMany(Course::class,'ownedby','coursables')
+        return $this->morphToMany(Course::class,'coursable','coursables')
             ->withPivot(['activity','resource']);
     }
 
     public function facilitators()
     {
-        return $this->morphedByMany(Facilitator::class,'collaborationable','collabo');
+        return $this->morphedByMany(Facilitator::class,'collaborationable','collabo')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function professionals()
     {
-        return $this->morphedByMany(Professional::class,'collaborationable','collabo');
+        return $this->morphedByMany(Professional::class,'collaborationable','collabo')
+            ->withPivot(['state'])->withTimestamps();
+    }
+
+    public function collaborators()
+    {
+        return $this->facilitators->merge($this->professionals);
     }
 
     public function extracurriculums()

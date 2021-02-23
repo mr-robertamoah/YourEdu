@@ -4,13 +4,12 @@
             <template slot="transition" v-if="show">
                 <main-modal
                     :show="show"
-                    :main="false"
+                    :mainOther="false"
                     :requests="false"
                     @mainModalDisappear="mainModalDisappear"
                     class="modal-wrapper"
-                    :scrollUp="scrollUp"
                 >
-                    <template slot="main-other">
+                    <template slot="main">
                         <welcome-form class="welcome-form"
                             :title="title"
                         >
@@ -39,27 +38,121 @@
                                         :bottomBorder="true"
                                         v-model="data.description"></text-textarea>
                                 </div>
-                                <div class="form-edit">
+                                <div class="form-edit"
+                                    v-if="!main"
+                                >
                                     <text-input
                                         placeholder="age group"  
                                         :bottomBorder="true"
-                                        v-model="data.title"></text-input>
+                                        v-model="data.ageGroup"></text-input>
                                 </div>
+                                <main-select
+                                    v-if="edit"
+                                    :items="['pending','accepted','declined','suspended']"
+                                    :value="data.state"
+                                    backgroundColor="white"
+                                    @selection="stateSelection"
+                                    class="other-input"
+                                    placeholder="change state of class"
+                                ></main-select>
+                                <div class="attachment-heading">
+                                    Note: setting a lesson as free or an introduction will be implemented in every course and/or class to which this lesson is added.
+                                </div>
+                                <main-checkbox
+                                    v-model="data.intro"
+                                    label="set it as an introduction"
+                                    class="class-input"
+                                ></main-checkbox>
+                                <main-checkbox
+                                    v-model="data.free"
+                                    label="should be free"
+                                    class="class-input"
+                                ></main-checkbox>
+
                                 <div class="section">Lesson Resources</div>
-                                <div class="info">you can up upload three different files for a lesson</div>
+                                <div class="info" v-if="main">add links to this lesson</div>
+
+                                <template v-if="edit">
+                                    <div class="attachment-heading"
+                                        v-if="mainLinks.length"
+                                    >
+                                        current links
+                                    </div>
+                                    <div class="attachments"
+                                        v-if="mainLinks.length"
+                                    >
+                                        <link-badge
+                                            v-for="(item,index) in mainLinks"
+                                            :key="index"
+                                            :link="item"
+                                            class="class-badge"
+                                            @clickedLink="selectedLinks"
+                                            @clickedRemoveLink="removeLink(item,'main')"
+                                        ></link-badge>
+                                    </div>
+                                    <div class="attachment-heading"
+                                        v-if="removedLinks.length"
+                                    >
+                                        links to be removed
+                                    </div>
+                                    <div class="attachments danger"
+                                        v-if="removedLinks.length"
+                                    >
+                                        <link-badge
+                                            v-for="(item,index) in removedLinks"
+                                            :key="index"
+                                            :link="item"
+                                            class="class-badge"
+                                            @clickedRemoveLink="removeLink(item,'removed')"
+                                        ></link-badge>
+                                    </div>
+                                </template>
+                                <div class="attachment-heading"
+                                    v-if="edit && links.length"
+                                >
+                                    new links
+                                </div>
+                                <add-link
+                                    v-if="main"
+                                    class="links-input"
+                                    :editable="selectedLink"
+                                    @linkAdded="getLinks"
+                                    @editedLink="editedLink"
+                                    @linkError="error"
+                                ></add-link>
+                                <files-preview-backend
+                                    :mainMessage="computedMainMessage"
+                                    :files="mainFiles"
+                                    :checkLocalFiles="true"
+                                    @error="error"
+                                    :localFiles="computedFiles"
+                                    @previewFiles="getPreviewFiles"
+                                    :removedMessage="computedRemovedMessage"
+                                ></files-preview-backend>
+                                <div class="info" v-if="computedUploadMessage">
+                                    {{computedUploadMessage}}
+                                </div>
                                 <div class="files">
                                     <div class="file"
+                                        v-if="computedShowVideo"
                                         @click="clickedFileType('video')"
                                         :class="{active: fileType === 'video'}"
                                     >video</div>
                                     <div class="file"
+                                        v-if="computedShowAudio"
                                         @click="clickedFileType('audio')"
                                         :class="{active: fileType === 'audio'}"
                                     >audio</div>
                                     <div class="file"
+                                        v-if="computedShowImage"
                                         @click="clickedFileType('picture')"
                                         :class="{active: fileType === 'picture'}"
                                     >picture</div>
+                                </div>
+                                <div class="attachment-heading"
+                                    v-if="computedHasLocalFile"
+                                >
+                                    these are the files to be uploaded
                                 </div>
                                 <div class="actions">
                                     <div class="action"
@@ -150,11 +243,219 @@
                                     ref="inputfile"
                                     :accept="fileAccept"
                                 >
+                                <div class="section" 
+                                    v-if="computedShowOwnership">Lesson Ownership</div>
+                                <main-select
+                                    class="other-input"
+                                    v-if="computedShowOwnership"
+                                    placeholder="select owner of this lesson"
+                                    backgroundColor='white'
+                                    :objects="computedPossibleOwners"
+                                    :value="data.owner.name"
+                                    @selection="ownerSelection"
+                                ></main-select>
+                                <div class="section">Lesson Attachments</div>
+                                <template v-if="edit">
+                                    <div class="attachment-heading"
+                                        v-if="data.mainAttachments.length"
+                                    >
+                                        already attached
+                                    </div>
+                                    <div class="attachments"
+                                        v-if="data.mainAttachments.length"
+                                    >
+                                        <attachment-badge
+                                            v-for="(attachment,index) in data.mainAttachments"
+                                            :key="index"
+                                            :attachment="attachment.data"
+                                            :hasClose="true"
+                                            @removeAttachment="removeAttachment(attachment,'main')"
+                                        ></attachment-badge>
+                                    </div>
+                                    <div class="attachment-heading"
+                                        v-if="data.removedAttachments.length"
+                                    >
+                                        to be removed/unattached
+                                    </div>
+                                    <div class="attachments danger"
+                                        v-if="data.removedAttachments.length"
+                                    >
+                                        <attachment-badge
+                                            v-for="(attachment,index) in data.removedAttachments"
+                                            :key="index"
+                                            :attachment="attachment.data"
+                                            :hasClose="true"
+                                            @removeAttachment="removeAttachment(attachment,'removed')"
+                                        ></attachment-badge>
+                                    </div>
+                                </template>
+
+                                <div class="attachment-heading" 
+                                    v-if="edit && data.attachments.length"
+                                >
+                                    new attachments
+                                </div>
+                                <div class="attachments"
+                                    v-if="data.attachments.length"
+                                >
+                                    <attachment-badge
+                                        v-for="(attachment,index) in data.attachments"
+                                        :key="index"
+                                        :attachment="attachment.data"
+                                        :hasClose="true"
+                                        @removeAttachment="removeAttachment"
+                                    ></attachment-badge>
+                                </div>
+                                <post-attachment
+                                    :show="true"
+                                    :hasSelect="true"
+                                    :mainSearchItem="data.attachmentType"
+                                    :hasClose="false"
+                                    @clickedAttachmentSelection="attachmentSelected"
+                                    class="class-input"
+                                ></post-attachment>
+
+                                <div class="attachment-heading p-1">
+                                    add lesson to courses, class' subjects and extracurriculums
+                                </div>
+
+                                <search-input
+                                    class="search-input"
+                                    searchPlaceholder="search for courses, extracurriculums and classes"
+                                    @search="getSearchItemsText"
+                                ></search-input>
+                                <div class="class-payment course-classes-section">
+                                    <div
+                                        v-if="computedSpecificItems.length"
+                                        class="class-wrapper"
+                                    >
+                                        <item-badge
+                                            v-for="(item,index) in computedSpecificItems"
+                                            :key="index"
+                                            :item="item"
+                                            type="class"
+                                            :hasRemove="inItemSelection(item)"
+                                            class="class-badge"
+                                            @clickedItem="itemSelected"
+                                            @clickedRemoveItem="removeItem"
+                                        ></item-badge>
+                                    </div>
+                                    <div class="no-data" 
+                                        v-if="!specificItemLoading && !computedSpecificItems.length">
+                                        {{`nothing to show for this ${data.owner.account}`}}
+                                    </div>
+                                    <pulse-loader 
+                                        :loading="specificItemLoading"
+                                        size="12px"
+                                        class="loading"
+                                    ></pulse-loader>
+                                </div>
+                                <div class="get-more" 
+                                    @click="getSpecificAccountItem"
+                                    v-if="computedShowGetMore"
+                                >
+                                    get more
+                                </div>
+                                <!-- secondary selection of subjects or courses for classes -->
+                                <div class="no-data text-center" v-if="selectedClass">
+                                    {{`please select any of these ${selectedClass.structure ? selectedClass.structure : 'course sections'}`}}
+                                </div>
+                                <div
+                                    v-if="selectedClass"
+                                    class="class-wrapper"
+                                >
+                                    <item-badge
+                                        v-for="(item,index) in selectedClass.items"
+                                        :key="index"
+                                        :item="item"
+                                        :type="item.type"
+                                        :hasRemove="inItemSelection(item)"
+                                        class="class-badge"
+                                        @clickedItem="itemSelected"
+                                        @clickedRemoveItem="removeItem"
+                                    ></item-badge>
+                                </div>
+
+                                <div class="section" v-if="computedShowLessonPayment">Payments</div>
+                                <div class="attachment-heading" 
+                                    v-if="data.mainPaymentData.length && computedShowLessonPayment"
+                                >
+                                    current payment types
+                                </div>
+                                <div class="attachments" 
+                                    v-if="data.mainPaymentData.length && main"
+                                >
+                                    <div
+                                        v-for="(item,index) in data.mainPaymentData"
+                                        :key="index"
+                                    >
+                                        <price-badge
+                                            v-if="item.type === 'price'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
+                                            class="payment-badge"
+                                        ></price-badge>
+                                    </div>
+                                </div>
+                                
+                                <div class="attachment-heading" 
+                                    v-if="data.removedPaymentData.length && main"
+                                >
+                                    payment types to be removed
+                                </div>
+                                <div class="attachments danger" 
+                                    v-if="data.removedPaymentData.length"
+                                >
+                                    <div
+                                        v-for="(item,index) in data.removedPaymentData"
+                                        :key="index"
+                                    >
+                                        <price-badge
+                                            v-if="item.type === 'price'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
+                                            class="payment-badge"
+                                        ></price-badge>
+                                    </div>
+                                </div>
+                                <div class="attachment-heading" 
+                                    v-if="edit && data.paymentData"
+                                >
+                                    new payment types
+                                </div>
+                                <payment-types
+                                    v-if="!data.free && !data.intro"
+                                    @paymentType="getPaymentType"
+                                    :type="paymentType"
+                                    :radioValue="data.type"
+                                    class="other-input"
+                                    @paymentTypeError="error"
+                                ></payment-types>
+
+                                <div class="section" v-if="computedShowDiscussion">Discussion</div>
+                                <main-checkbox
+                                    v-model="data.discussion"
+                                    v-if="computedShowDiscussion &&
+                                        !data.discussionData.title.length"
+                                    label="automatically add a discussion?"
+                                    class="class-input"
+                                ></main-checkbox>
+                                <!-- discussion preview -->
+                                <div class="discussion-preview"
+                                    v-if="data.discussionData.title.length"
+                                >
+                                    <item-badge
+                                        type="discussion"
+                                        :item="data.discussionData"
+                                        :hasRemove="true"
+                                        @clickedRemoveItem="clearDiscussionData"
+                                    ></item-badge>
+                                </div>
                             </template>
                 
                             <template slot="buttons">
                                 <post-button 
-                                    :buttonText="'create'" 
+                                    :buttonText="buttonText" 
                                     buttonStyle='success'
                                     @click="clickedCreate"
                                 ></post-button>
@@ -194,26 +495,40 @@
 import TextInput from '../TextInput';
 import TextTextarea from '../TextTextarea';
 import PostButton from '../PostButton';
-import AttachmentBadge from '../AttachmentBadge';
+import MainCheckbox from '../MainCheckbox';
 import PostAttachment from '../PostAttachment';
+import MainSelect from '../MainSelect';
+import AttachmentBadge from '../AttachmentBadge';
+import CreateDiscussion from './CreateDiscussion';
+import PulseLoader from 'vue-spinner/src/PulseLoader';
+import ItemBadge from '../dashboard/ItemBadge';
 import AutoAlert from '../AutoAlert';
+import AddLink from '../AddLink';
 import PaymentTypes from '../PaymentTypes';
+import FilesPreviewBackend from '../FilesPreviewBackend';
 import FadeUp from '../transitions/FadeUp';
 import MediaCapture from '../MediaCapture';
 import PriceBadge from '../PriceBadge';
-import FeeBadge from '../FeeBadge';
-import SubscriptionBadge from '../SubscriptionBadge';
+import LinkBadge from '../LinkBadge';
 import WelcomeForm from '.././welcome/WelcomeForm';
 import { bus } from '../../app';
 import { mapActions, mapGetters } from 'vuex';
 import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
+import { strings } from '../../services/helpers';
     export default {
         components: {
+            MainSelect,
+            AttachmentBadge,
+            CreateDiscussion,
+            PulseLoader,
+            ItemBadge,
+            FilesPreviewBackend,
             PaymentTypes,
+            AddLink,
             AutoAlert,
+            MainCheckbox,
             PostAttachment,
-            SubscriptionBadge,
-            FeeBadge,
+            LinkBadge,
             PriceBadge,
             WelcomeForm,
             MediaCapture,
@@ -227,6 +542,10 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 type: Boolean,
                 default: false
             },
+            maxUploads: {
+                type: Number,
+                default: 3
+            }
         },
         data() {
             return {
@@ -241,22 +560,19 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 errorFile: false,
                 mediaCaptureType: '',
                 showMediaCapture: false,
-                scrollUp: false,
+                mainFiles: [],
+                removedFiles: [],
+                links: [],
+                // hasLinks: false,
+                mainLinks: [],
+                removedLinks: [],
+                editedLinks: [],
+                selectedLink: null,
+                selectedClass: null, //for class (subject) and courses (course sections)
             }
         },
         watch: {
-            main: {
-                immediate: true,
-                handler(newValue, oldValue){
-
-                }
-            },
-            edit: {
-                immediate: true,
-                handler(newValue, oldValue){
-                    
-                }
-            }
+            
         },
         watch: {
             showFilePreview(newValue) {
@@ -264,18 +580,42 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.activeFile = null
                 }
             },
-            data: {
+            'data.title': {
                 handler(newValue){
-                    if (newValue.title.length) {
+                    if (newValue && newValue.length) {
                         this.errorTitle = false
                     }
                 },
-                deep: true
+            },
+            'data.free': {
+                handler(newValue){
+                    if (newValue) {
+                        this.data.paymentData = []
+                        if (this.data.intro) {
+                            this.data.intro = false
+                        }
+                    }
+                },
+            },
+            'data.intro': {
+                handler(newValue){
+                    if (newValue && this.data.free) {
+                        this.data.free = false
+                    }
+                },
+            },
+            'data.owner': {
+                handler(newValue) {
+                    if (newValue.account) {
+                        this.debouncedSearchItems()
+                    }
+                }
             },
             errorFile(newValue){
                 if (newValue) {
                     this.alertDanger = true
                     this.alertMessage = 'a lesson requires at least one file'
+                    this.errorFile = false
                 }
             },
             errorTitle(newValue){
@@ -284,16 +624,12 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.alertMessage = 'a lesson requires a title'
                 }
             },
-            scrollUp(newValue) {
-                if (newValue) {
-                    setTimeout(() => {
-                        this.scrollUp = false
-                    }, 3000);
-                }
-            },
         },
         created () {
             this.title = 'create a lesson'
+            if (this.main) {
+                this.paymentType = 'one-time'
+            }
             bus
             .$on('editLesson',(data)=>{
                 this.setData(data)
@@ -311,17 +647,250 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 return this.fileType === 'video' ? this.videoFile :
                     this.fileType === 'audio' ? this.audioFile :
                     this.fileType === 'picture' ? this.imageFile : null
-            }
+            },
+            computedFiles() {
+                return [
+                    this.videoFile, 
+                    this.audioFile, 
+                    this.imageFile
+                ]
+            },
+            computedHasLocalFile() {
+                return this.videoFile || this.audioFile || this.imageFile
+            },
+            computedShowDiscussion() {
+                return !this.main ? false : this.data.hasDiscussion ? true : 
+                    !this.edit ? true : false
+            },
+            computedShowLessonPayment() {
+                return this.main && !this.data.free && !this.data.intro
+            },
+            computedShowVideo() {
+                return !this.edit ? true : this.mainFiles.findIndex(file=>{
+                    return file.type === 'video'
+                }) === -1
+            },
+            computedShowAudio() {
+                return !this.edit ? true : this.mainFiles.findIndex(file=>{
+                    return file.type === 'audio'
+                }) === -1
+            },
+            computedShowImage() {
+                return !this.edit ? true : this.mainFiles.findIndex(file=>{
+                    return file.type === 'image'
+                }) === -1
+            },
+            computedUploadMessage() {
+                return !this.edit ? 
+                    `you can up upload ${strings.getNumberString(this.maxUploads)} different files for a lesson` :
+                    this.computedUploadAllowance > 0 ? 
+                    `you can upload ${strings.getNumberString(this.computedUploadAllowance)} more different files` : ''
+            },
+            computedUploadAllowance() { //during edit and tells number of uploads remaining
+                return this.maxUploads - this.mainFiles.length
+            },
+            computedMainMessage() {
+                return this.mainFiles.length ? 'current files' : ''
+            },
+            computedRemovedMessage() {
+                return this.removedFiles.length ? 'files to be deleted' : ''
+            },
         },
         methods: {
             ...mapActions(['dashboard/createLesson','dashboard/editLesson',
                 'dashboard/getAccountSpecificItem']),
             mainModalDisappear() {
+                this.data.owner = {name: ''}
+                this.clearData()
+                this.clearExtraData()
                 this.$emit('createLessonDisappear')
+            },
+            getPreviewFiles(files) {
+                this.removedFiles = files.removed
+                this.mainFiles = files.main
+            },
+            clearExtraData() {
+                this.specificItemDetails = []
+                this.specificItemDetailsNextPage = 0
+                this.specificItemLoading = false
+                this.selectedClass = null
+                this.selectedLink = null
+                this.mainLinks = []
+                this.removedLinks = []
+                this.editedLinks = []
+                // this.hasLinks = false
+                this.mainFiles = []
+                this.removedFiles = []
+                this.fileType = ''
+                this.imageFile = null
+                this.videoFil = null
+                this.audioFile = null
             },
             clickedClosePreview(){
                 this.showFilePreview = false
                 this.activeFile = null
+            },
+            getLinks(links) {
+                this.links = links
+            },
+            getLinkError(error) {
+                this.alertDanger = true
+                this.alertMessage = error
+            },
+            setData(data) {
+                this.data.title = data.title
+                this.data.description = data.description
+                this.data.state = data.state?.toLowerCase()
+                this.data.lessonId = data.id
+                this.data.items = []
+                this.data.mainItems = []
+                this.data.items.push(...data.items)
+                this.data.mainItems.push(...this.data.items)
+                this.data.mainAttachments = []
+                if (data.attachments) {
+                    this.data.mainAttachments.push(...data.attachments)
+                } else {
+                    this.data.mainAttachments.push(...data.courses)
+                    this.data.mainAttachments.push(...data.programs)
+                    this.data.mainAttachments.push(...data.grades)
+                }
+                //files
+                this.mainFiles = []
+                this.mainFiles.push(...data.videos)
+                this.mainFiles.push(...data.images)
+                this.mainFiles.push(...data.audios)
+                //links
+                this.mainLinks = []
+                this.mainLinks.push(...data.links)
+                // if (data.links.length) {
+                //     this.hasLinks = true
+                // }
+                if (data.prices.length) {
+                    this.data.mainPaymentData = []
+                    this.data.mainPaymentData.push(...data.prices)
+                } else {
+                    this.type = 'free'
+                }
+                this.buttonText = 'edit'
+                this.data.owner = {
+                    name: data.ownedby.name,
+                    account: data.ownedby.account,
+                    accountId: data.ownedby.accountId,
+                }
+                this.checkDiscussion(data)
+            },
+            //courses
+            inItemSelection(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    return true
+                }
+                return false
+            },
+            itemSelected(data) {
+                console.log('data :>> ', data);
+                if (data.type === 'class' ||
+                    (data.type === 'course' && data.items.length > 0)) {
+                    this.selectedClass = data
+                    return
+                } else if (this.selectedClass && !this.isInSelectedClass(data)) {
+                    this.selectedClass = null
+                }
+                let index = this.findItemIndex(data)
+                if (index === -1) {
+                    this.data.items.push({
+                        classId: this.selectedClass && data.type === 'subject' ? 
+                            this.selectedClass.id : null,
+                        id: data.id,
+                        type: data.type,
+                        description: data.description,
+                        name: data.name
+                    })
+                    // this.data.items.push(data)
+                }
+            },
+            isInSelectedClass(data){
+                let index
+                index = this.selectedClass.items.findIndex(item=>{
+                    return item.type === data.type && 
+                        item.id === data.id
+                })
+                if (index > -1) {
+                    return true
+                }
+                return false
+            },
+            findItemIndex(data) {
+                return this.data.items.findIndex(cl=>{
+                    return cl.id === data.id && cl.type === data.type 
+                })
+            },
+            removeItem(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    this.data.items.splice(index,1)
+                }
+            },
+            removedItemsUpdate(data) {
+                let index = this.data.removedItems.findIndex(cl=>{
+                    return data.type === cl.type && data.id === cl.id &&
+                        data.classId === cl.classId
+                })
+                if (index === -1) {
+                    this.data.removedItems.push(data)
+                }
+            },
+            //links
+            editedLink(data) {
+                let index = this.mainLinks.findIndex(link=>{
+                    return link.id === data.id
+                })
+                if (index > -1) {
+                    data.edited = true
+                    this.mainLinks[index] = data
+                    this.editedLinksUpdate(data)
+                }
+                this.selectedLink = null
+            },
+            selectedLinks(data) {
+                this.selectedLink = data
+            },
+            findLinkIndex(data, type) {
+                let links = type === 'main' ? this.mainLinks : 
+                    type === 'removed' ? this.removedLinks : this.links
+                return links.findIndex(link=>{
+                    return link.id === data.id 
+                })
+            },
+            removeLink(data, type) {
+                let index = this.findLinkIndex(data, type)
+                if (index > -1) {
+                    if (type === 'main') {
+                        this.mainLinks.splice(index,1)
+                        this.removedLinks.push(data)
+                        this.editedLinksUpdate(data, true)
+                    } else if (type === 'removed') {
+                        this.removedLinks.splice(index,1)
+                        this.mainLinks.push(data)
+                        if (data.edited) {
+                            this.editedLinksUpdate(data)
+                        }
+                    }
+                }
+            },
+            editedLinksUpdate(data, del = false) {
+                let index = this.editedLinks.findIndex(link=>{
+                    return data.id === link.id
+                })
+                if (!del && index === -1) {
+                    this.editedLinks.push(data)
+                } else if (!del && index > -1) {
+                    this.editedLinks[index].name = data.name
+                    this.editedLinks[index].description = data.description
+                    this.editedLinks[index].link = data.link
+                } else if (del && index > -1) {
+                    this.editedLinks.splice(index,1)
+                }
             },
             clickedBan(data){
                 if (data === 'image') {
@@ -342,6 +911,42 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.activeFile = this.audioFile
                 }
                 this.showFilePreview = !this.showFilePreview
+            },
+            async getSpecificAccountItem(){
+                if (this.specificItemDetailsNextPage === null) {
+                    return
+                }
+                let response,
+                    data = {
+                        account: this.data.owner.account,
+                        accountId: this.data.owner.accountId,
+                        item: 'courses',
+                        secondItem: 'extracurriculums',
+                        for: 'lesson',
+                        thirdItem: 'classes',
+                        search: this.searchItemsText
+                    }
+
+                this.specificItemLoading = true
+                response = await this['dashboard/getAccountSpecificItem']({
+                    data, nextPage: this.specificItemDetailsNextPage
+                })
+                this.specificItemLoading = false
+
+                if (response.status) {
+                    if (!this.specificItemDetailsNextPage) {
+                        this.specificItemDetails = response.items
+                    } else {
+                        this.specificItemDetails.push(...response.items)
+                    }
+                    if (response.next) {
+                        this.specificItemDetailsNextPage += 1
+                    } else {
+                        this.specificItemDetailsNextPage = null
+                    }
+                } else {
+                    console.log('response :>> ', response);
+                }
             },
             receiveMediaCapture(file){
                 if (file.type.includes('image')) {
@@ -368,43 +973,167 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             clickedCreate(){
                 if (this.loading) return
                 if (!this.data.title.length) {
-                    this.scrollUp = true
                     this.errorTitle = true
                     return 
                 }
-                if (!this.imageFile || !this.videoFile || !this.audioFile) {
-                    this.scrollUp = true
+                if (!this.imageFile && !this.videoFile && !this.audioFile &&
+                    !this.mainFiles.length > 0) {
                     this.errorFile = true
                     return 
                 }
-                let lesson = []
-                lesson['title'] = this.data.title
-                lesson['description'] = this.data.description
-                lesson['ageGroup'] = this.data.ageGroup
-                lesson['file'] = [
-                    this.imageFile,
-                    this.videoFile,
-                    this.audioFile,
-                ]
                 if (this.main) {
-                    this.createLesson(lesson)
+                    this.createLesson()
                 } else {
+                    let lesson = []
+                    lesson['title'] = this.data.title
+                    lesson['description'] = this.data.description
+                    lesson['ageGroup'] = this.data.ageGroup
+                    lesson['file'] = this.computedFiles
                     this.$emit('clickedCreate',lesson)
+                    this.clearData()
+                    this.clearExtraData()
                     this.$emit('createLessonDisappear')
                 }
             },
-            async createLesson(lesson) {
+            async createLesson() {
+                let msg = ''
+                if (this.edit) {
+                    if (!this.data.state.length) {
+                        msg = 'extracurriculum requires a state'
+                    }
+                } else {
+                    if (this.computedPossibleOwners.length > 1 && 
+                        !this.data.owner.account) {
+                        msg = 'Please select the owner of this lesson you are creating.'
+                    } else if (this.data.type !== 'free' && 
+                        this.data.paymentData === null) {
+                        msg = 'Please enter the required data for the payment.'                    
+                    }
+                }
+
+                if (msg.length) {
+                    this.alertDanger = true
+                    this.alertMessage = msg
+                    return 
+                }
+
+                this.loading = true
                 let response,
                     data = new FormData
 
-                this.loading = true
-                response = await this['dashboard/createLesson'](data)
+                data.append('title', this.data.title)
+                data.append('description', this.data.description)
+                data.append('intro', JSON.stringify(this.data.intro))
+                data.append('free', JSON.stringify(this.data.free))
+                data.append('attachments', JSON.stringify(this.data.attachments.map(attachment=>{
+                    return {
+                        type: attachment.type.slice(0, attachment.type.length - 1),
+                        id: attachment.data.id
+                    }
+                })))
+                data.append('type', this.data.type)
+                data.append('paymentData', JSON.stringify(this.data.paymentData))
+
+                if (this.data.discussionData.title.length) {                        
+                    data.append('discussionData', JSON.stringify(this.data.discussionData))
+                    this.discussionFiles.forEach(file=>{
+                        data.append('discussionFile[]', file)
+                    })
+                }
+                data.append('items', JSON.stringify(this.data.items.map(cl=>{
+                    return {
+                        id: cl.id,
+                        type: cl.type,
+                        classId: cl.classId
+                    }
+                })))
+                if (this.imageFile) {
+                    data.append('files[]',this.imageFile)
+                }
+                if (this.videoFile) {
+                    data.append('files[]',this.videoFile)
+                }
+                if (this.audioFile) {
+                    data.append('files[]',this.audioFile)
+                }
+                
+                data.append('paymentData', JSON.stringify(this.data.paymentData))
+                data.append('account', this.computedAccount.account)
+                data.append('accountId', this.computedAccount.accountId)
+                data.append('owner', this.data.owner.account ? 
+                    this.data.owner.account : 
+                    this.computedAccount.account)
+                data.append('ownerId', this.data.owner.account ? 
+                    this.data.owner.accountId : 
+                    this.computedAccount.accountId)
+                data.append('links',JSON.stringify(this.links))
+                if (this.edit) {
+                    data.append('state', this.data.state)
+                    data.append('lessonId', this.data.lessonId)
+                    data.append('main', JSON.stringify(this.computedCheckMain))
+                    data.append('removedAttachments', JSON.stringify(this.data.removedAttachments.map(attachment=>{
+                        return {
+                            type: attachment.type.slice(0, attachment.type.length - 1),
+                            id: attachment.data.id
+                        }
+                    })))
+                    data.append('removedPaymentData', JSON.stringify(
+                        this.data.removedPaymentData.map(payment=>{
+                            return {
+                                type: payment.type,
+                                id: payment.id
+                            }
+                        }
+                    )))
+                    this.data.mainItems.forEach(mainCl=>{ //check if class or program has been removed
+                        let index = this.data.items.findIndex(cl=>{
+                            return cl.type === mainCl.type && cl.id === mainCl.id &&
+                                cl.classId === mainCl.classId
+                        })
+                        if (index === -1) {
+                            this.removedItemsUpdate(mainCl)
+                        }
+                    })
+                    data.append('removedItems', JSON.stringify(this.data.removedItems.map(attachment=>{
+                        return {
+                            type: attachment.type,
+                            id: attachment.id,
+                            classId: attachment.classId
+                        }
+                    })))
+                    data.append('removedFiles', JSON.stringify(this.removedFiles.map(file=>{
+                        return {
+                            id: file.id,
+                            type: file.type,
+                        }
+                    })))
+                    data.append('removedLinks', JSON.stringify(this.removedLinks.map(link=>{
+                        return {
+                            id: link.id
+                        }
+                    })))
+                    data.append('editedLinks', JSON.stringify(this.editedLinks))
+                    
+                    response = await this['dashboard/editLesson'](data)
+                } else {
+
+                    response = await this['dashboard/createLesson'](data)
+                }
 
                 this.loading = false
                 if (response.status) {
-                    
+                    let action = this.edit ? 'edited' : 'created'
+                    this.alertSuccess = true
+                    this.alertMessage = `${this.data.title} was successfully ${action}`
+                    if (this.edit) {
+                        if (this.computedCheckMain) this.$emit('itemSuccessfullyEdited', response.lessonResource)
+                    } else {
+                        this.clearData()
+                    }
+                    bus.$emit('updateLesson',response.lesson)
                 } else {
-                    console.log('repsonse :>> ', repsonse);
+                    this.responseErrorAlert(response.response)
+                    console.log('response :>> ', response);
                 }
             },
             clickedAction(data){
@@ -453,8 +1182,16 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 
 <style lang="scss" scoped>
 
+    .modal-wrapper{
+        z-index: 10005;
+    }
+
     .welcome-form{
-        padding: 0;
+        position: relative;
+
+        .loading{
+            @include sticky-loader()
+        }
 
         .section{
             @include form-section()
@@ -535,6 +1272,83 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     }
                 }
             }
+        }
+
+        .attachment-heading{
+            font-size: 12px;
+            color: gray;
+            text-align: center;
+        }
+
+        .attachments{
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        .attachments.danger{
+            background: red;
+            padding: 5px;
+        }
+
+        .links-input{
+            width: 90%;
+            margin: 10px auto;
+        }
+
+        .search-input{
+            border: none;
+            border-bottom: 2px solid $color-main;
+            background: white;
+        }
+
+        .class-payment{
+            
+            .message{
+                font-size: 12px;
+                color: gray;
+                margin-bottom: 10px;
+            }
+        }
+
+        .course-classes-section{
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            .loading{
+                text-align: center;
+            }
+        }
+
+        .class-wrapper{
+            display: flex;
+            width: 90%;
+            margin: 10px auto;
+            align-items: center;
+            overflow: auto;
+
+            .class-badge{
+                min-width: 150px;
+            }
+        }
+
+        .no-data{
+            font-size: 12px;
+            color: gray;
+        }
+
+        .get-more{
+            width: fit-content;
+            margin: 10px auto;
+            padding: 5px;
+            background: cadetblue;
+            color: white;
+            font-size: 12px;
+            border-radius: 10px;
+            cursor: pointer;
         }
 
         .file-preview{

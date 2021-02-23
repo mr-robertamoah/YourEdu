@@ -28,19 +28,19 @@ Broadcast::channel('youredu.request.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('youredu.school.{id}', function ($user, $id) {
-    $school = getAccountObject('school',$id);
+    $school = getYourEduModel('school',$id);
     if (is_null($school)) {
         return false;
     }
     //add ids of learners, facilitators, professionals, parents of learners
-    if (in_array($user->id,getAdminIds($school))) {
+    if (in_array($user->id,$school->getAdminIds())) {
         return true;
     }
     return false;
 });
 
 Broadcast::channel('youredu.class.{id}', function ($user, $id) {
-    $class = getAccountObject('class',$id);
+    $class = getYourEduModel('class',$id);
     if (is_null($class)) {
         return false;
     }
@@ -53,7 +53,7 @@ Broadcast::channel('youredu.class.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('youredu.course.{id}', function ($user, $id) {
-    $course = getAccountObject('course',$id);
+    $course = getYourEduModel('course',$id);
     if (is_null($course)) {
         return false;
     }
@@ -66,7 +66,7 @@ Broadcast::channel('youredu.course.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('youredu.lesson.{id}', function ($user, $id) {
-    $lesson = getAccountObject('lesson',$id);
+    $lesson = getYourEduModel('lesson',$id);
     if (is_null($lesson)) {
         return false;
     }
@@ -77,7 +77,7 @@ Broadcast::channel('youredu.lesson.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('youredu.extracurriculum.{id}', function ($user, $id) {
-    $extracurriculum = getAccountObject('extracurriculum',$id);
+    $extracurriculum = getYourEduModel('extracurriculum',$id);
     if (is_null($extracurriculum)) {
         return false;
     }

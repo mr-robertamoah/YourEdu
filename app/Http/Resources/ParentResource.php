@@ -21,7 +21,7 @@ class ParentResource extends JsonResource
             'userId' => $this->user_id ? $this->user_id : $this->owner_id,
             'name' => $this->profile->name,
             'url' => $this->profile->url,
-            'account' => getAccountString(get_class($this->resource)),
+            'account' => class_basename_lower(get_class($this->resource)),
         ];
     }
 }

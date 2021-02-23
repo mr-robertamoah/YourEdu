@@ -17,7 +17,7 @@ class CreateCommissionsTable extends Migration
             $table->id();
             $table->nullableMorphs('for');
             $table->nullableMorphs('ownedby');
-            $table->float('percent',4,4)->nullable();
+            $table->float('percent',7,4)->nullable();
             $table->timestamps();
         });
     }

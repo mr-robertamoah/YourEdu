@@ -1,16 +1,32 @@
 <template>
     <div class="dashboard-section-account-wrapper" v-if="account">
+        <optional-actions
+            class="optional-actions"
+            v-if="showOptionalActions"
+            :show="computedShowOptionalActions"
+            :hasOthers="true"
+            :horizontal="true"
+            @clickedOption="clickedOption"
+            :others="computedOptionalActions"
+        ></optional-actions>
         <div 
             class="state" 
             :class="{danger: computedState === 'DELETED'}"
-            v-if="computedOwner && computedState.length"
+            v-if="computedShowState"
         >
             {{computedState}}
         </div>
-        <div class="name">
-            {{computedName}}
-            <div class="username" v-if="computedUsername">
-                {{computedUsername}}
+        <div class="top">
+            <profile-picture class="profile-picture" v-if="computedProfileUrl.length">
+                <template slot="image">
+                    <img :src="computedProfileUrl">
+                </template>
+            </profile-picture>
+            <div class="name">
+                {{computedName}}
+                <div class="username" v-if="computedUsername">
+                    {{computedUsername}}
+                </div>
             </div>
         </div>
         <div class="detail">
@@ -35,14 +51,6 @@
                     class="action-button"
                 ></dashboard-action-button>
                 <dashboard-action-button
-                    :text="`profile`"
-                    icon="eye"
-                    :data="account"
-                    v-if="computedViewProfile"
-                    @click="clickedDashboardActionButton"
-                    class="action-button"
-                ></dashboard-action-button>
-                <dashboard-action-button
                     :text="`remove ${type}`"
                     icon=""
                     :data="account"
@@ -52,11 +60,19 @@
                     class="action-button"
                 ></dashboard-action-button>
                 <dashboard-action-button
+                    :text="`profile`"
+                    icon="eye"
+                    :data="account"
+                    v-if="computedViewProfile"
+                    @click="clickedDashboardActionButton"
+                    class="action-button"
+                ></dashboard-action-button>
+                <dashboard-action-button
                     :title="`edit this ${type}'s information`"
                     text="edit"
                     icon="pencil-alt"
                     :data="account"
-                    v-if="type === 'admin'|| this.type === 'admin'"
+                    v-if="type === 'admin'"
                     @click="clickedDashboardActionButton"
                     class="action-button"
                 ></dashboard-action-button>
@@ -115,13 +131,22 @@
                     @click="clickedDashboardActionButton"
                     class="action-button"
                 ></dashboard-action-button>
+                <dashboard-action-button
+                    :title="`add this ${type} to something (class, course, extracurriculum)`"
+                    text="add"
+                    icon="plus"
+                    :data="account"
+                    v-if="computedShowOptionalActions"
+                    @click="clickedDashboardActionButton"
+                    class="action-button"
+                ></dashboard-action-button>
             </div>
         </div>
-        <div class="other-details" v-if="computedOtherDetails.length">
+        <div class="other-details" v-if="computedOtherDetails && computedOtherDetails.length">
             {{computedOtherDetails}}
         </div>
         <div class="payment-types" 
-            v-text="computedShowPaymentType"
+            v-text="computedPaymentTypeButtonText"
             v-if="computedPaymentDetails"
             :class="[showPaymentTypes ? 'hide' : 'show']"
             @click="showPaymentTypes = !showPaymentTypes"
@@ -149,26 +174,47 @@
                 <fee-badge
                     v-for="(fee,index) in computedPaymentDetails.data"
                     :key="index"
-                    :fee="fee"
+                    :data="fee"
                     :hasClose="false"
                     class="payment-badge"
                 ></fee-badge>
             </template>
         </div>
+        <div class="payment-types" 
+            v-text="computedCollaboratorsButtonText"
+            v-if="type === 'collaboration'"
+            :class="[showCollaborators ? 'hide' : 'show']"
+            @click="showCollaborators = !showCollaborators"
+        ></div>
+        <div class="collaborators" v-if="showCollaborators">
+            <simple-account-badge
+                v-for="(collaborator,index) in account.collaborators"
+                :key="index"
+                :account="collaborator"
+                :detailKeys="['share','state']"
+                class="mr-3"
+            ></simple-account-badge>
+        </div>
     </div>
 </template>
 
 <script>
-import { dates } from '../../services/helpers'
+import { dates, strings } from '../../services/helpers'
 import DashboardActionButton from './DashboardActionButton'
 import FeeBadge from '../FeeBadge'
+import ProfilePicture from '../profile/ProfilePicture'
 import PriceBadge from '../PriceBadge'
+import OptionalActions from '../OptionalActions'
+import SimpleAccountBadge from '../SimpleAccountBadge'
 import SubscriptionBadge from '../SubscriptionBadge'
 import { mapGetters } from 'vuex'
     export default {
         components: {
             SubscriptionBadge,
+            SimpleAccountBadge,
+            OptionalActions,
             PriceBadge,
+            ProfilePicture,
             FeeBadge,
             DashboardActionButton,
         },
@@ -190,27 +236,56 @@ import { mapGetters } from 'vuex'
         },
         data() {
             return {
-                showPaymentTypes: false
+                showPaymentTypes: false,
+                showCollaborators: false,
+                showOptionalActions: false,
+            }
+        },
+        watch: {
+            showOptionalActions(newValue) {
+                if (newValue) {
+                    setTimeout(() => {
+                        // this.showOptionalActions = false
+                    }, 5000);
+                }
             }
         },
         computed: {
-            ...mapGetters(['getUser']),
+            ...mapGetters(['getUser','dashboard/getAccountDetails']),
             computedTitle() {
-                return this.account.title ? this.account.title : '' 
+                return this.type !== 'lesson' && this.account.title ? 
+                    this.account.title : '' 
             },
-            computedShowPaymentType() {
+            computedShowOptionalActions() {
+                return this.type !== 'parent' && this.computedIsAccount && 
+                    this['dashboard/getAccountDetails'].account === 'school'
+            },
+            computedOptionalActions() {
+                return ['class','course','extracurriculum','collaboration']
+            },
+            computedPaymentTypeButtonText() {
                 return this.showPaymentTypes ? 'hide payment' : 'show payment'
+            },
+            computedCollaboratorsButtonText() {
+                return this.showCollaborators ? 'hide collaborators' : 'show collaborators'
             },
             computedName(){
                 return this.type === 'admin' ? `${this.account.name}` :
                     this.type === 'user' ? this.account.full_name : 
                     this.type === 'subject' || this.type === 'grade' ||
                     this.type === 'course' || this.type === 'program' ? 
-                    this.account.data.name : this.account.name
+                    this.account.data.name : this.account.title ?
+                    this.account.title : this.account.name
+            },
+            computedShowState() {
+                return (this.admin || this.computedOwner) && this.computedState.length
             },
             computedUsername(){
                 return this.type === 'admin' || this.type === 'user' ? ` 
                     (@${this.account.username})` : ''
+            },
+            computedProfileUrl( ){
+                return this.computedIsAccount ? this.account.url : ''
             },
             computedOtherDetails() {
                 let msg = ''
@@ -218,6 +293,10 @@ import { mapGetters } from 'vuex'
                     if (this.account.level) {
                         msg = `level: ${this.account.level} `
                     }
+                    if (this.account.description) {
+                        msg += `description: ${this.account.description} `
+                    }
+                } else if (this.type === 'lesson') {
                     if (this.account.description) {
                         msg += `description: ${this.account.description} `
                     }
@@ -235,43 +314,55 @@ import { mapGetters } from 'vuex'
                         msg = `age group: ${this.account.data.age_group} `
                     }
                     if (this.account.data.description) {
-                        msg += `description: ${this.account.data.description} `
+                        msg += `description: ${strings.content(this.account.data.description)} `
                     }
                     if (this.account.data.rationale) {
                         msg += `rationale: ${this.account.data.rationale} `
                     }
-                } else if (this.type === 'owned course' || this.type === 'normal course') {
+                } else if (this.type === 'collaboration') {
+                    if (this.account.type) {
+                        msg += `type: ${this.account.type.toLowerCase()} \n`
+                    }
                     if (this.account.description) {
-                        msg += `description: ${this.account.description} `
+                        msg += `description: ${strings.content(this.account.description)} `
+                    }
+                    if (this.account.collaborators.length) {
+                        msg += `${this.account.collaborators.length} collaborators`
+                    }
+                } else if (this.computedShowView) {
+                    if (this.account.description) {
+                        msg += `description: ${strings.content(this.account.description)} `
                     }
                     if (this.account.lessons) {
                         msg += `lessons: ${this.account.lessons} `
                     }
                     if (this.account.learners) {
-                        msg += `learners: ${this.account.learners.length} learners`
+                        msg += `learners: ${this.account.learners} learners`
                     }
                     if (this.account.facilitators) {
-                        msg += `facilitators: ${this.account.facilitators,length} facilitators`
+                        msg += `facilitators: ${this.account.facilitators.length} facilitators`
                     }
                     if (this.account.professionanls) {
                         msg += `professionanls: ${this.account.professionanls.length} professionals`
                     }
-                } else if (this.type === 'owned class') {
-                    
-                } else if (this.type === 'owned extracurriculum') {
-                    
                 }
 
-                return msg
+                return strings.content(msg)
             },
             computedPaymentDetails() {
-                if (this.type === 'owned course' || this.type === 'owned class') {
-                    if (this.account.subscriptions.length) {
+                if (this.type === 'owned course' || this.type === 'owned class' ||
+                    this.type === 'lesson' || this.type === 'owned program' ||
+                    this.type === 'course' || this.type === 'class' ||
+                    this.type === 'program' || this.type === 'extracurriculum' ||
+                    this.type === 'owned extracurriculum') {
+                    if (this.account.subscriptions && this.account.subscriptions.length) {
                         return {type: 'subscription', data: this.account.subscriptions}
-                    } else if (this.account.prices.length) {
+                    } else if (this.account.prices && this.account.prices.length) {
                         return {type: 'price', data: this.account.prices}
-                    } else if (this.account.fees.length) {
+                    } else if (this.account.fees && this.account.fees.length) {
                         return {type: 'fee', data: this.account.fees}
+                    } else {
+                        return null
                     }
                 }
                 return null
@@ -303,28 +394,46 @@ import { mapGetters } from 'vuex'
             },
             computedShowDelete() {
                 return this.type === 'owned course' || this.type === 'owned class' ||
-                    this.type === 'owned extracurriculum'
+                    this.type === 'owned extracurriculum' || this.type === 'owned program' ||
+                    this.type === 'extracurriculum' || this.type === 'program' ||
+                    this.type === 'course' || this.type === 'class' ||
+                    this.type === 'owned extracurriculum' || this.type === 'lesson' ||
+                    (this.type === 'collaboration' && this.computedOwner)
             },
             computedState() {
                 return this.account.state ? this.account.state : ''
             },
             computedShowView() {
-                return this.type === 'owned course' || this.type === 'owned class' ||
-                    this.type === 'normal course' || this.type === 'normal class' ||
-                    this.type === 'normal extracurriculum' || this.type === 'owned extracurriculum'
+                return this.type.includes('course') ||
+                    this.type.includes('extracurriculum') ||
+                    this.type.includes('program') ||
+                    this.type.includes('lesson') ||
+                    this.type.includes('class')
             },
             computedOwner() {
-                let ownerStatus = false
-                if (this.account.hasOwnProperty('ownedby')) {
-                    ownerStatus = this.account.ownedby.userId === this.getUser.id
-                }
-                return ownerStatus
+                return this.type === 'collaboration' ?
+                    this.isOwner(this.account.addedby) : 
+                    this.isOwner(this.account.ownedby)
             },
         },
         methods: {
+            isOwner(account) {
+                return account && account.userId === this.getUser.id
+            },
             clickedDashboardActionButton(data) {
-                this.$emit('clickedDashboardActionButton',{type: this.type, buttonData: data})
-            }
+                if (data.icon === 'plus') {
+                    this.showOptionalActions = true
+                } else {
+                    this.$emit('clickedDashboardActionButton',{
+                        type: this.type, 
+                        buttonData: data}
+                    )
+                }
+                    
+            },
+            clickedOption(data) {
+                console.log('data :>> ', data);
+            },
         },
     }
 </script>
@@ -335,6 +444,11 @@ import { mapGetters } from 'vuex'
         box-shadow: 0 0 2px grey;
         border-radius: 5px;
         padding: 5px;
+        position: relative;
+
+        .optional-actions{
+            top: 10px;
+        }
 
         .state{
             background: green;
@@ -353,21 +467,35 @@ import { mapGetters } from 'vuex'
             }
         }
 
-        .name{
+        .top{
             display: flex;
             align-items: center;
-            justify-content: center;
-            flex-wrap: nowrap;
-            font-size: 14px;
-            text-transform: capitalize;
-            @include text-overflow();
+            width: 100%;
 
-            .username{
-                font-size: 12px;
-                color: gray;
-                text-transform: initial;
+            .profile-picture{
+                width: 50px;
+                height: 50px;
+                min-width: 50px;
+                margin-right: 10px;
+            }
+
+            .name{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-wrap: nowrap;
+                font-size: 14px;
+                text-transform: capitalize;
+                @include text-overflow();
+
+                .username{
+                    font-size: 12px;
+                    color: gray;
+                    text-transform: initial;
+                }
             }
         }
+
 
         .detail{
             padding: 5px;
@@ -433,6 +561,10 @@ import { mapGetters } from 'vuex'
                 max-width: 250px;
                 min-width: 200px;
             }
+        }
+
+        .collaborators{
+            @include scroll-x;
         }
     }
 </style>

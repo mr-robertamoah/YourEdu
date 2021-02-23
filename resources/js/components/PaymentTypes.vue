@@ -7,6 +7,7 @@
                 radioValue="free"
                 v-model="payment"
                 class="radio-button"
+                key="payment1"
             ></radio-input>
             <radio-input
                 name="payment"
@@ -15,6 +16,7 @@
                 v-model="payment"
                 class="radio-button"
                 v-if="computedCommission"
+                key="payment2"
             ></radio-input>
             <radio-input
                 name="payment"
@@ -23,6 +25,7 @@
                 v-model="payment"
                 class="radio-button"
                 v-if="computedSubscription"
+                key="payment3"
             ></radio-input>
             <radio-input
                 name="payment"
@@ -31,6 +34,7 @@
                 v-model="payment"
                 class="radio-button"
                 v-if="computedOneTime"
+                key="payment4"
             ></radio-input>
             <radio-input
                 name="payment"
@@ -39,8 +43,43 @@
                 v-model="payment"
                 class="radio-button"
                 v-if="computedFee"
+                key="payment5"
             ></radio-input>
         </div>
+
+        <div class="preview-section" v-if="computedOneTime || computedSubscription || 
+            computedFee">
+            <div class="main">
+                <template v-if="computedOneTime">
+                    <price-badge
+                        v-for="(price,index) in prices"
+                        :key="index"
+                        :data="price"
+                        @clickedRemoveData="clickedRemovePrice"
+                        class="payment-badge"
+                    ></price-badge>
+                </template>
+                <template v-if="computedSubscription">
+                    <subscription-badge
+                        v-for="(subscription,index) in subscriptions"
+                        :key="index"
+                        :data="subscription"
+                        @clickedRemoveData="clickedRemoveSubscription"
+                        class="payment-badge"
+                    ></subscription-badge>
+                </template>
+                <template v-if="computedFee">
+                    <fee-badge
+                        v-for="(fee,index) in fees"
+                        :key="index"
+                        :data="fee"
+                        @clickedRemoveData="clickedRemoveFee"
+                        class="payment-badge"
+                    ></fee-badge>
+                </template>
+            </div>
+        </div>
+        
         <div class="commission-section" v-if="payment === 'commission'">
 
             <number-input placeholder="commission"
@@ -53,37 +92,35 @@
         <div class="fee-section" v-if="payment === 'fee'">
 
             <number-input placeholder="fee"
-                v-model="fee"
+                v-model="fee.amount"
                 :bottomBorder="true"
                 :hasMax="false"
             ></number-input>
+
+            <div class="message">
+                Please note: if you do not select academic year section(s) for this fee, the selected academic years will be used for the fee. You can create fees for different academic year sections.
+            </div>
+            <div class="academic-sections" v-if="sections.length">
+                <item-badge
+                    v-for="(item,index) in sections"
+                    :key="index"
+                    :item="item"
+                    type="section"
+                    :hasRemove="inItemSelection(item)"
+                    class="class-badge"
+                    @clickedItem="itemSelected"
+                    @clickedRemoveItem="removeItem"
+                ></item-badge>
+            </div>
+
+            <div class="message" v-if="!sections.length">
+                there are no academic year sections
+            </div>
+            <div class="fee-ok" @click="clickedFeeOk">
+                set up fee
+            </div>
         </div>
 
-        <div class="preview-section" v-if="computedOneTime || computedSubscription">
-            <div class="error" v-if="errorMessage.length">
-                {{errorMessage}}
-            </div>
-            <div class="main">
-                <template v-if="computedOneTime">
-                    <price-badge
-                        v-for="(price,index) in prices"
-                        :key="index"
-                        :data="price"
-                        @clickedRemovePrice="clickedRemovePrice"
-                        class="payment-badge"
-                    ></price-badge>
-                </template>
-                <template v-if="computedSubscription">
-                    <subscription-badge
-                        v-for="(subscription,index) in subscriptions"
-                        :key="index"
-                        :data="subscription"
-                        @clickedRemoveSubscription="clickedRemoveSubscription"
-                        class="payment-badge"
-                    ></subscription-badge>
-                </template>
-            </div>
-        </div>
         <div class="price-section" v-if="payment === 'price'">
             <number-input 
                 placeholder="one time price"
@@ -152,9 +189,11 @@
 
 <script>
 import RadioInput from './RadioInput';
+import ItemBadge from './dashboard/ItemBadge';
 import MainSelect from './MainSelect';
 import TextInput from './TextInput';
 import PriceBadge from './PriceBadge';
+import FeeBadge from './FeeBadge';
 import SubscriptionBadge from './SubscriptionBadge';
 import NumberInput from './NumberInput';
 import TextTextarea from './TextTextarea.vue';
@@ -162,9 +201,11 @@ import TextTextarea from './TextTextarea.vue';
         components: {
             NumberInput,
             SubscriptionBadge,
+            FeeBadge,
             PriceBadge,
             TextInput,
             MainSelect,
+            ItemBadge,
             RadioInput,
             TextTextarea,
         },
@@ -177,11 +218,21 @@ import TextTextarea from './TextTextarea.vue';
                 type: String,
                 default: ''
             },
+            sections: {
+                type: Array,
+                default() {
+                    return []
+                }
+            }
         },
         data() {
             return {
                 payment: '',
-                fee: '',
+                fee: {
+                    amount: '',
+                    id: '',
+                    sections: [],
+                },
                 price: {
                     amount: '',
                     description: '',
@@ -195,8 +246,10 @@ import TextTextarea from './TextTextarea.vue';
                     period: '',
                 },
                 prices: [],
+                fees: [],
                 commission: '',
                 errorMessage: '',
+                errorLengthy: false,
                 subscriptions: [],
             }
         },
@@ -212,7 +265,7 @@ import TextTextarea from './TextTextarea.vue';
             subscriptions(newValue) {
                 this.$emit('paymentType',{type: this.payment,data: newValue})
             },
-            fee(newValue) {
+            fees(newValue) {
                 this.$emit('paymentType',{
                     type: this.payment,
                     data: newValue
@@ -252,9 +305,11 @@ import TextTextarea from './TextTextarea.vue';
             },
             errorMessage(newValue){
                 if (newValue.length) {
-                    setTimeout(() => {
-                        this.errorMessage = ''
-                    }, 3000);
+                    this.$emit('paymentTypeError',{
+                        message: newValue,
+                        lengthy: this.errorLengthy
+                    })
+                    this.errorLengthy = false
                 }
             },
         },
@@ -274,6 +329,37 @@ import TextTextarea from './TextTextarea.vue';
             },
         },
         methods: {
+            clickedFeeOk() {
+                if (this.fee.amount.length) {
+                    this.updateFees()
+                } else {
+                    this.errorMessage = 'please enter fee amount'
+                }
+            },
+            inItemSelection(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    return true
+                }
+                return false
+            },
+            itemSelected(data) {
+                let index = this.findItemIndex(data)
+                if (index === -1) {
+                    this.fee.sections.push(data)
+                }
+            },
+            findItemIndex(data) {
+                return this.fee.sections.findIndex(cl=>{
+                    return cl.id === data.id
+                })
+            },
+            removeItem(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    this.fee.sections.splice(index,1)
+                }
+            },
             priceForSelection(data) {
                 this.price.for = data
             },
@@ -301,6 +387,14 @@ import TextTextarea from './TextTextarea.vue';
                     this.subscriptions.splice(index,1)
                 }
             },
+            clickedRemoveFee(data){
+                let index = this.fees.findIndex(fee=>{
+                    return fee.id === data.id
+                })
+                if (index > -1) {
+                    this.fees.splice(index,1)
+                }
+            },
             clickedAction(data){
                 if (this.payment === 'price') {
                     this.updatePrices()
@@ -316,6 +410,7 @@ import TextTextarea from './TextTextarea.vue';
                 })
                 if (index > -1) {
                     if (this.price.for.length) {
+                        this.errorLengthy = true
                         this.errorMessage = `There is already a price for ${this.price.for}. Either remove existing or change it for this.`
                     }
                     return
@@ -333,6 +428,7 @@ import TextTextarea from './TextTextarea.vue';
                 })
                 if (index > -1) {
                     if (this.subscription.for.length) {
+                        this.errorLengthy = true
                         this.errorMessage = `There is already a subscription for ${this.subscription.for}. Either remove existing or change it for this.`
                     }
                     return
@@ -346,10 +442,50 @@ import TextTextarea from './TextTextarea.vue';
                 })
                 this.clearSubscription()
             },
+            updateFees() {
+                let sectionIndex
+                let index = this.fees.findIndex(fee=>{
+                    for (let i = 0; i < this.fee.sections.length; i++) {
+                        const section = this.fee.sections[i];
+                        sectionIndex = fee.sections.findIndex(sec=>{
+                            return sec.id === section.id
+                        })
+                        if (sectionIndex > -1) {
+                            return true
+                        }
+                        if (!fee.sections.length && !section.length) {
+                            return true
+                        }
+                    }
+                    return false
+                })
+                if (index > -1) {
+                    this.errorLengthy = true
+                    if (this.fee.sections.length) {
+                        this.errorMessage = `There is already a fee for one of the selected academic year sections. Either remove existing fee or change it for this.`
+                    } else {
+                        this.errorMessage = 'There is a fee for the academic years selected. Either remove that or set up this fee for specific academic year sections.'
+                    }
+                    return
+                }
+                this.fees.push({
+                    amount: this.fee.amount,
+                    sections: this.fee.sections.map(section=>{
+                        return {
+                            id: section.id,
+                            name: section.name,
+                            type: 'academicYearSection'
+                        }
+                    }),
+                    id: Math.round(Math.random() * 100)
+                })
+                this.clearFee()
+            },
             clearPrice(){
                 this.price.for = ''
                 this.price.amount = ''
                 this.price.description = ''
+                this.errorLengthy = false
             },
             clearSubscription(){
                 this.subscription.name = ''
@@ -357,12 +493,19 @@ import TextTextarea from './TextTextarea.vue';
                 this.subscription.description = ''
                 this.subscription.for = ''
                 this.subscription.period = ''
+                this.errorLengthy = false
+            },
+            clearFee() {
+                this.fee.amount = ''
+                this.fee.id = ''
+                this.fee.sections = []
+                this.errorLengthy = false
             },
             cleanUp(){
                 this.clearPrice()
                 this.clearSubscription()
+                this.clearFee()
                 this.commission = ''
-                this.fee = ''
                 this.prices = []
                 this.subscriptions = []
             },
@@ -401,11 +544,11 @@ import TextTextarea from './TextTextarea.vue';
                 align-items: center;
                 flex-wrap: nowrap;
             }
+        }
 
-            .error{
-                color: red;
-                font-size: 12px;
-            }
+        .error{
+            color: red;
+            font-size: 12px;
         }
 
         .commission-section{
@@ -423,6 +566,33 @@ import TextTextarea from './TextTextarea.vue';
 
             .description{
                 @include description();
+            }
+
+            .message{
+                font-size: 12px;
+                color: gray;
+                padding: 20px 10px;
+                text-align: center;
+            }
+
+            .academic-sections{
+                width: 100%;
+                padding: 10px;
+                max-height: 300px;
+                overflow-y: auto;
+                display: flex;
+                margin-bottom: 10px;
+            }
+
+            .fee-ok{
+                font-size: 12px;
+                padding: 5pxx 10px;
+                width: fit-content;
+                cursor: pointer;
+                margin: 0px auto;
+                box-shadow: 0 0 3px grey;
+                border-radius: 10px;
+                padding: 5px 10px;
             }
         }
 
@@ -454,7 +624,7 @@ import TextTextarea from './TextTextarea.vue';
         }
 
         .input{
-            border: 2px solid $background-color-main;
+            border: 2px solid $color-main;
         }
     }
 </style>

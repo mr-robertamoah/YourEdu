@@ -15,9 +15,10 @@ class CreateCollaborationsTable extends Migration
     {
         Schema::create('collaborations', function (Blueprint $table) {
             $table->id();
-            $table->morphs('ownedby'); // facilitator professional school
-            $table->morphs('collaborationable'); //lesson course class
-            $table->enum('status',['FREE','PAID'])->default('FREE');
+            $table->morphs('addedby'); // facilitator professional school
+            $table->string('name'); 
+            $table->string('description')->nullable(); 
+            $table->enum('type',['FREE','PAID'])->default('FREE');
             $table->softDeletes();
             $table->timestamps();
         });

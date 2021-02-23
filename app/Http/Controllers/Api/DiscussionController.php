@@ -320,7 +320,7 @@ class DiscussionController extends Controller
 
     public function getParticipants($discussionId)
     {
-        $discussion = getAccountObject('discussion',$discussionId);
+        $discussion = getYourEduModel('discussion',$discussionId);
 
         $participants = $discussion->participants()
             ->latest()->with('accountable.profile')

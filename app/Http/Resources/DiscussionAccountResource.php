@@ -20,7 +20,7 @@ class DiscussionAccountResource extends JsonResource
             'name' => $this->accountable->profile->name,
             'url' => $this->accountable->profile->url,
             'accountId' => $this->accountable_id,
-            'account' => getAccountString($this->accountable_type),
+            'account' => class_basename_lower($this->accountable_type),
             'user_id' => $this->user_id,
             'discussion_id' => $this->participation_id,
         ];

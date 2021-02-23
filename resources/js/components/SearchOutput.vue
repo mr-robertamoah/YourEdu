@@ -257,6 +257,7 @@ $second-color: rebeccapurple;
             padding: 5px;
             color: gray;
             cursor: pointer;
+            z-index: 1;
 
             &:hover{
                 color: red;

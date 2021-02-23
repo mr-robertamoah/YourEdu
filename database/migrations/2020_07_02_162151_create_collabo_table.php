@@ -14,8 +14,10 @@ class CreateCollaboTable extends Migration
     public function up()
     {
         Schema::create('collabo', function (Blueprint $table) {
+            $table->id();
             $table->unsignedBigInteger('collaboration_id');
-            $table->morphs('collaborationable'); // facilitator professional
+            $table->nullableMorphs('collaborationable'); // facilitator professional
+            $table->enum('state',['PENDING','ACCEPTED','DECLINED'])->default('PENDING');
             $table->timestamps();
         });
     }

@@ -18,8 +18,10 @@ use App\Http\Resources\ChatQuestionResource;
 use App\Http\Resources\MessageQuestionResource;
 use App\Services\AnswerService;
 use App\Services\ConversationService;
+use App\Services\FileService;
 use App\Services\MarkService;
 use App\Services\MessageService;
+use App\Services\QuestionData;
 use App\Services\QuestionService;
 use App\YourEdu\Answer;
 use App\YourEdu\Conversation;
@@ -37,7 +39,7 @@ class ConversationController extends Controller
 
     public function updateItemState(Request $request)
     {
-        $mainItem = getAccountObject($request->item, $request->itemId);
+        $mainItem = getYourEduModel($request->item, $request->itemId);
 
         if (is_null($mainItem)) {
             return response()->json([
@@ -100,8 +102,8 @@ class ConversationController extends Controller
 
     public function markAnswer(Request $request)
     {
-        $answer = getAccountObject('answer', $request->answerId);
-        $account = getAccountObject($request->account, $request->accountId);
+        $answer = getYourEduModel('answer', $request->answerId);
+        $account = getYourEduModel($request->account, $request->accountId);
 
         if (is_null($answer) || is_null($account)) {
             return response()->json([
@@ -146,7 +148,7 @@ class ConversationController extends Controller
             ], 422);
         }
 
-        $account = getAccountObject($request->account, $request->accountId);
+        $account = getYourEduModel($request->account, $request->accountId);
 
         if (is_null($account)) {
             return response()->json([
@@ -187,8 +189,8 @@ class ConversationController extends Controller
             'file' => 'nullable|file',
         ]);
 
-        $conversation = getAccountObject('conversation',$conversationId);
-        $account = getAccountObject($request->account,$request->accountId);
+        $conversation = getYourEduModel('conversation',$conversationId);
+        $account = getYourEduModel($request->account,$request->accountId);
 
         if (is_null($account)) {
             return response()->json([
@@ -204,7 +206,11 @@ class ConversationController extends Controller
 
         try {
             DB::beginTransaction();
-            $question = (new QuestionService)->createQuestion($request, $conversation, $account,'conversation');
+            $questionData = QuestionData::createFromRequest($request);
+            $questionData->questionable = $conversation;
+            $questionData->questionedby = $account;
+            $questionData->state = 'SENT';
+            $question = (new QuestionService)->createQuestion($questionData);
             
             if ($request->has('file')) {
                 //account has uploaded a file and that file is attached to a question
@@ -256,9 +262,9 @@ class ConversationController extends Controller
 
     private function accountCreateFile($request, $account, $item)
     {
-        $fileDetails = getFileDetails($request->file('file'));
+        $fileDetails = FileService::getFileDetails($request->file('file'));
     
-        $uploadedFile = accountCreateFile($account,$fileDetails,$item);
+        $uploadedFile = FileService::accountCreateFile($account,$fileDetails,$item);
         $uploadedFile->ownedby()->associate($account);
         $uploadedFile->save();
     }
@@ -296,7 +302,7 @@ class ConversationController extends Controller
 
     public function createConversation(Request $request)
     {
-        $account = getAccountObject($request->account, $request->accountId);
+        $account = getYourEduModel($request->account, $request->accountId);
 
         if (is_null($account)) {
             return response()->json([
@@ -304,7 +310,7 @@ class ConversationController extends Controller
             ], 422);
         }
         
-        $chatAccount = getAccountObject($request->chatAccount,$request->chatAccountId);
+        $chatAccount = getYourEduModel($request->chatAccount,$request->chatAccountId);
 
         if (is_null($chatAccount)) {
             return response()->json([
@@ -426,8 +432,8 @@ class ConversationController extends Controller
 
     public function createConversationResponse(Request $request)
     {
-        $account = getAccountObject($request->account, $request->accountId);
-        $chattingAccount = getAccountObject($request->chattingAccount, $request->chattingAccountId);
+        $account = getYourEduModel($request->account, $request->accountId);
+        $chattingAccount = getYourEduModel($request->chattingAccount, $request->chattingAccountId);
 
         if (is_null($account)) {
             return response()->json([
@@ -481,8 +487,8 @@ class ConversationController extends Controller
 
     public function unblockConversation(Request $request,$conversationId)
     {
-        $accountOne = getAccountObject($request->accountOne, $request->accountOneId);
-        $accountTwo = getAccountObject($request->accountTwo, $request->accountTwoId);
+        $accountOne = getYourEduModel($request->accountOne, $request->accountOneId);
+        $accountTwo = getYourEduModel($request->accountTwo, $request->accountTwoId);
         $userId = auth()->id();
         $otherUserId = null;
 
@@ -532,8 +538,8 @@ class ConversationController extends Controller
 
     public function blockConversation(Request $request,$conversationId)
     {
-        $account = getAccountObject($request->account, $request->accountId);
-        $chattingAccount = getAccountObject($request->chattingAccount, $request->chattingAccountId);
+        $account = getYourEduModel($request->account, $request->accountId);
+        $chattingAccount = getYourEduModel($request->chattingAccount, $request->chattingAccountId);
         
         $conversation = Conversation::find($conversationId);
         if (is_null($conversation)) {

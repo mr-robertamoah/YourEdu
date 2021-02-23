@@ -15,7 +15,7 @@ class BanBroadcastResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'account' => getAccountString($this->bannable_type),
+            'account' => class_basename_lower($this->bannable_type),
             'username' => $this->bannable->username,
             // 'name' => $this->bannable->name,
             'state' => $this->state,

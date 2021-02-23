@@ -7,10 +7,11 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewExtracurriculumEvent
+class NewExtracurriculumEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,7 +20,7 @@ class NewExtracurriculumEvent
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(private array $extracurriculumData)
     {
         //
     }
@@ -31,6 +32,30 @@ class NewExtracurriculumEvent
      */
     public function broadcastOn()
     {
-        return new PrivateChannel('channel-name');
+        $on = [];
+        $on[] = new PrivateChannel("youredu.{$this->extracurriculumData['account']}.{$this->extracurriculumData['accountId']}");
+        if (is_array($this->extracurriculumData['classes'])) {
+            foreach ($this->extracurriculumData['classes'] as $cl) {
+                $on[] = new PresenceChannel("youredu.class.{$cl->id}");
+            }
+        }
+        if (is_array($this->extracurriculumData['programs'])) {
+            foreach ($this->extracurriculumData['programs'] as $cl) {
+                $on[] = new PresenceChannel("youredu.program.{$cl->id}");
+            }
+        }
+        return $on;
+    }
+
+    public function broadcastAs()
+    {
+        return "newExtracurriculum";
+    }
+
+    public function broadcastWith()
+    {
+        return [
+            'extracurriculum' => $this->extracurriculumData['extracurriculum']
+        ];
     }
 }

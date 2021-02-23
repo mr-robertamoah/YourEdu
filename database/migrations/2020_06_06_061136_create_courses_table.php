@@ -18,6 +18,7 @@ class CreateCoursesTable extends Migration
             $table->nullableMorphs('addedby'); // facilitator school admin professional
             $table->nullableMorphs('ownedby');
             $table->string('name');
+            $table->boolean('stand_alone')->default(0);
             $table->text('description')->nullable();
             $table->enum('state',['PENDING','DECLINED','ACCEPTED','DELETED'])->nullable();
             $table->softDeletes();

@@ -27,7 +27,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
         props: {
             hasLoading: {
                 type: Boolean,
-                default: true
+                default: false
             },
             text: {
                 type: String,
@@ -55,7 +55,9 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
         },
         methods: {
             clickedDashboardAction() {
-                this.loading = true
+                if (this.hasLoading) {
+                    this.loading = true
+                }
                 this.$emit('click',{
                     data: this.data, text: this.text, icon: this.icon
                 })

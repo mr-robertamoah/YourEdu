@@ -26,15 +26,11 @@ class AnswerService
             return null;
         }
 
-        if ($request->hasFile('file')) {
-            $fileDetails = getFileDetails($request->file('file'));
-
-            accountCreateFile(
-                $account, 
-                $fileDetails,
-                $answer
-            );
-        }
+        FileService::createAndAttachFiles(
+            account: $account,
+            file: $request->file('file'),
+            item: $answer
+        );
 
         if (!$chat) {
             $account->point->value += 1;

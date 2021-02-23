@@ -215,7 +215,7 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
             justify-content: center;
             align-items: center;
             margin-left: auto;
-            background-color: $background-color-main;
+            background-color: $color-main;
 
             .inner-circle{
                 width: 130px;

@@ -15,17 +15,17 @@ class AttachmentService
     public function attachmentCreate($account,$accountId,$item,$itemId,$attachable,
         $attachableId,$note,$adminId)
     {
-        $mainAccount = getAccountObject($account,$accountId); 
+        $mainAccount = getYourEduModel($account,$accountId); 
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
 
-        $mainItem = getAccountObject($item,$itemId);
+        $mainItem = getYourEduModel($item,$itemId);
         if (is_null($mainItem)) {
             throw new AccountNotFoundException("{$item} not found with id {$itemId}");
         }
 
-        $attach = getAccountObject($attachable, $attachableId);
+        $attach = getYourEduModel($attachable, $attachableId);
         if (is_null($attach)) {
             throw new AccountNotFoundException("{$attachable} not found with id {$attachableId}");
         }
@@ -37,7 +37,7 @@ class AttachmentService
         }
         
         if ($adminId) {
-            $admin = getAccountObject('admin',$adminId);
+            $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
                 (new ActivityTrackService())->createActivityTrack(
                     $attachment,$attachment->attachedby,$admin,__METHOD__
@@ -50,7 +50,7 @@ class AttachmentService
     //delete an attachment from request
     public function attachmentDelete($attachmentId,$id,$adminId)
     {
-        $mainAttachment = getAccountObject('postattachment',$attachmentId);
+        $mainAttachment = getYourEduModel('postattachment',$attachmentId);
         if (is_null($mainAttachment)) {
             throw new AccountNotFoundException("attachment not found with id {$attachmentId}");
             return response()->json([
@@ -62,13 +62,13 @@ class AttachmentService
             $mainAttachment->attachedby->user_id !== $id) ||
             ($mainAttachment->attachedby->owner_id && 
             $mainAttachment->attachedby->owner_id !== $id) ||
-            (getAccountString($mainAttachment->attachedby) === 'school' && 
-            !in_array($id,getAdminIds($mainAttachment->attachedby)))) {
+            (class_basename_lower($mainAttachment->attachedby) === 'school' && 
+            !in_array($id,$mainAttachment->attachedby->getAdminIds()))) {
             throw new AttachmentException('you cannot delete attachment you did not create');
         }
         
         if ($adminId) {
-            $admin = getAccountObject('admin',$adminId);
+            $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
                 (new ActivityTrackService())->createActivityTrack(
                     $mainAttachment,$mainAttachment->attachedby,$admin,__METHOD__
@@ -79,7 +79,7 @@ class AttachmentService
         $mainAttachment->delete();
 
         return [
-            'item' => getAccountString($mainAttachment->attachable_type),
+            'item' => class_basename_lower($mainAttachment->attachable_type),
             'itemId' => $mainAttachment->attachable_id
         ];
     }
@@ -106,7 +106,7 @@ class AttachmentService
     //create an attachment
     public function createAttachment($account,$accountId,$type,$name,$description,$rationale,$aliases)
     {
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }

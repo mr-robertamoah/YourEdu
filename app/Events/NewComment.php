@@ -26,7 +26,7 @@ class NewComment implements ShouldBroadcastNow
         $this->newArray['comment'] = $commentArray['comment'];
         $this->newArray['item'] = $commentArray['item'];
         $this->newArray['itemId'] = $commentArray['itemId'];
-        $this->newArray['account'] =  getAccountString(get_class($commentArray['commentable_owner']));
+        $this->newArray['account'] =  class_basename_lower(get_class($commentArray['commentable_owner']));
         $this->newArray['accountId'] = $commentArray['commentable_owner']->id;
     }
 

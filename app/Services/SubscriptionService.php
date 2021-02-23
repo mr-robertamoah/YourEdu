@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Contracts\PaymentTypeContract;
+use App\Exceptions\AccountNotFoundException;
 use Illuminate\Support\Str;
 
-class SubscriptionService
+class SubscriptionService extends PaymentTypeContract
 {
-    public static function setSubscription($item,$subscriptionData,$ownedby)
+    public static function set($item,$subscriptionData,$ownedby)
     {
         //the owned by is actually added by
         $subscription = $item->subscriptions()->create([
@@ -17,5 +19,16 @@ class SubscriptionService
         ]);
         $subscription->ownedby()->associate($ownedby);
         $subscription->save();
+    }
+
+    public static function unset($item,$subscriptionId)
+    {
+        $subscription = getYourEduModel('subscription', $subscriptionId);
+        if (is_null($subscription)) {
+            throw new AccountNotFoundException("subscription not found with id {$subscriptionId}");
+        }
+
+        $subscription->subscribable()->dissociate($item);
+        $subscription->delete();
     }
 }

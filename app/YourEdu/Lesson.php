@@ -2,13 +2,16 @@
 
 namespace App\YourEdu;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Contracts\DashboardItemContract;
+use App\Traits\AssessmentTrait;
+use App\Traits\DashboardItemTrait;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Lesson extends Model
+class Lesson extends DashboardItemContract
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, DashboardItemTrait, AssessmentTrait;
+
     protected $fillable = [
         'title', 'description', 'ageGroup', 'state'
     ];
@@ -91,14 +94,58 @@ class Lesson extends Model
         return $this->belongsTo(CurriculumStructure::class,'stucture_id');
     }
 
-    public function course()
+    public function courses()
     {
-        return $this->belongsTo(Course::class);
+        return $this->morphToMany(Course::class,'coursable','coursables')
+            ->withPivot(['activity'])->withTimestamps();
     }
 
-    public function class()
+    public function classSubjects()
     {
-        return $this->belongsTo(ClassModel::class,'class_id');
+        return $this->classes->map(function($class) {
+            return [
+                'id' => $class->pivot->subject_id,
+                'name' => Subject::find($class->pivot->subject_id)->name,
+                'classId' => $class->id,
+                'type' => 'subject',
+            ];
+        });
+    }
+
+    public function extracurriculums()
+    {
+        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
+            ->withPivot(['activity'])->withTimestamps();
+    }
+
+    public function courseSections()
+    {
+        return $this->morphToMany(CourseSection::class,'sectionable','sectionables',null,'section_id')
+            ->withPivot(['lesson_number'])->withTimestamps();
+    }
+
+    public function classes()
+    {
+        return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id')
+            ->withPivot(['activity','subject_id'])->withTimestamps();
+    }
+
+    public function programs()
+    {
+        return $this->morphToMany(Program::class,'programmable','programmables')
+            ->withTimestamps();
+    }
+
+    public function subjects()
+    {
+        return $this->morphToMany(Subject::class,'subjectable','subjectables')
+            ->withTimestamps();
+    }
+
+    public function grades()
+    {
+        return $this->morphToMany(Grade::class,'gradeable','gradeables')
+            ->withTimestamps();
     }
 
     public function classSection()
@@ -160,13 +207,31 @@ class Lesson extends Model
         return $this->morphMany(Permission::class,'permissible');
     }
     
-    public function discussion()
+    public function discussions()
     {
-        return $this->morphOne(Discussion::class,'discussionfor');
+        return $this->morphMany(Discussion::class,'discussionfor');
     }
     
     public function payments()
     {
         return $this->morphMany(Payment::class,'what');
+    }
+
+    public function prices()
+    {
+        return $this->morphMany(Price::class,'priceable');
+    }
+
+    public function scopeSearchItems($query,$search)
+    {
+        return $query->where(function($q) use ($search){
+            $q->where('title','like',"%$search%")
+                ->orWhere('description','like',"%$search%");
+        });
+    }
+
+    public function checkIfFreeOrIntro()
+    {
+        return $this->state === self::FREE || $this->state === self::INTRO;
     }
 }

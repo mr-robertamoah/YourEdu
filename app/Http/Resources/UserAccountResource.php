@@ -14,12 +14,25 @@ class UserAccountResource extends JsonResource
      */
     public function toArray($request)
     {
-        return [
-            'accountId' => $this->id,
-            'userId' => $this->user_id ? $this->user_id : $this->owner_id,
-            'name' => $this->profile ? $this->profile->name : $this->name,
-            'url' => $this->profile ? $this->profile->url : '',
-            'account' => getAccountString(get_class($this->resource)),
+        $type = class_basename_lower($this->resource);
+        $what = $type === 'profile'
+            ? $this->profileable : $this;
+        $data = [
+            'accountId' => $what->id,
+            'userId' => $what->user_id ? $what->user_id : $what->owner_id,
+            'account' => $type === 'profile' ?
+                class_basename_lower($this->profileable) :
+                $type,
         ];
+
+        if ($type === 'profile') {
+            $data['name'] = $this->name ? $this->name : $what->name;
+            $data['url'] = $this->url ? $this->url : '';
+        } else {
+            $data['name'] = $what->profile ? $what->profile->name : $what->name;
+            $data['url'] = $what->profile ? $what->profile->url : '';
+        }
+        
+        return $data;
     }
 }

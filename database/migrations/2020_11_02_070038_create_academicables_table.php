@@ -16,7 +16,7 @@ class CreateAcademicablesTable extends Migration
         Schema::create('academicables', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('academic_id');
-            $table->nullableMorphs('academicable'); // class
+            $table->nullableMorphs('academicable'); // class assessment
             $table->timestamps();
 
             $table->foreign('academic_id')->references('id')->on('academic_years')->cascadeOnDelete();

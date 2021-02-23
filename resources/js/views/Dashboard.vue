@@ -84,7 +84,7 @@
             v-if="editUserForm"
             @mainModalDisappear='closeEditUser'
         ></edit-user>
-        <create-class
+        <!-- <create-class
             :show="showCreateModal === 'class'"
             @closeCreateClass="closeCreateSomething('class')"
         ></create-class>
@@ -99,7 +99,7 @@
         <create-extracurriculum
             :show="showCreateExtracurriculumModal"
             @closeCreateExtracurriculum="closeCreateSomething('extracurriculum')"
-        ></create-extracurriculum>
+        ></create-extracurriculum> -->
         <account-modal
             :show="showAccountModal"
             v-if="showAccountModal"
@@ -180,7 +180,8 @@ import CreateLesson from '../components/forms/CreateLesson.vue';
                     account: this.dashboardAccount.account,
                     accountId: this.dashboardAccount.accountId
                 } : {
-                    account: 'user'
+                    account: 'user',
+                    accountId: this.getUser.id
                 }
             },
             computedSchool(){

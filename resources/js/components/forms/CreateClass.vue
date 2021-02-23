@@ -7,6 +7,7 @@
                     :mainOther="false"
                     :requests="false"
                     @mainModalDisappear='closeModal'
+                    class="modal-wrapper"
                 >
                     <template slot="main">
                         <welcome-form
@@ -18,12 +19,14 @@
                                     :message="alertMessage"
                                     :success="alertSuccess"
                                     :danger="alertDanger"
+                                    :lengthy="alertLengthy"
                                     :sticky="true"
                                     @hideAlert="clearAlert"
                                 ></auto-alert>
                                 <div class="loading" v-if="loading">
                                     <pulse-loader :loading="loading"></pulse-loader>
                                 </div>
+                                <div class="section">Class Info</div>
                                 <text-input
                                     :bottomBorder="true"
                                     placeholder="class name*"
@@ -38,10 +41,10 @@
                                 ></text-textarea>
 
                                 <div class="class-structure" 
-                                    v-if="!edit && computedAccount.account === 'facilitator'"
+                                    v-if="computedShowStructure"
                                 >
                                     <div class="message">
-                                        How do you want your class structured?
+                                        How do you want the class structured?
                                     </div>
                                     <div class="main">
                                         <radio-input
@@ -61,7 +64,7 @@
                                     </div>
                                 </div>
 
-                                <div class="attachments" v-if="data.grade.id">
+                                <div class="attachments" v-if="data.grade.id && computedShowGrades">
                                     <attachment-badge
                                         :attachment="data.grade"
                                         :hasClose="true"
@@ -69,6 +72,7 @@
                                     ></attachment-badge>
                                 </div>
                                 <post-attachment
+                                    v-if="computedShowGrades"
                                     :show="true"
                                     :hasSelect="true"
                                     mainSearchItem="grades"
@@ -76,75 +80,16 @@
                                     @clickedAttachmentSelection="gradeSelected"
                                     class="class-input"
                                 ></post-attachment>
-                                <main-select
-                                    class="other-input"
-                                    v-if="computedPossibleOwners.length > 1"
-                                    placeholder="select owner of this class"
-                                    backgroundColor='white'
-                                    :objects="computedPossibleOwners"
-                                    :value="data.owner.name"
-                                    @selection="ownerSelection"
-                                ></main-select>
-                                <div class="class-payment" 
-                                    v-if="computedAccount.account === 'school' ||
-                                        data.owner.account === 'school'"
-                                >
-                                    <pulse-loader
-                                        :loading="specificItemLoading"
-                                        size="10px"
-                                    ></pulse-loader>
-
-                                    <div class="message">
-                                        {{computedMessage}}
-                                    </div>
-                                    <academic-year-section-badge
-                                        :hasClose="false"
-                                        :section="computedAcademicYearSections[0]"
-                                        v-if="!edit && computedAcademicYearSections"
-                                    ></academic-year-section-badge>
-                                </div>
-
-                                <payment-types
-                                    v-if="computedPayment && !edit"
-                                    @paymentType="getPaymentType"
-                                    :type="paymentType"
-                                    :radioValue="data.type"
-                                    class="payment-types"
-                                ></payment-types>
 
                                 <main-select
                                     v-if="edit"
                                     :items="['pending','accepted','declined','suspended']"
                                     :value="data.state"
                                     backgroundColor="white"
-                                    @selection="classStateSelection"
+                                    @selection="stateSelection"
                                     class="other-input"
                                     placeholder="change state of class"
                                 ></main-select>
-                                <div class="feeable" 
-                                    v-if="data.type === 'fee'"
-                                >
-                                    <div class="message">
-                                        fee should be assigned to?
-                                    </div>
-                                    <div class="main">
-                                        <radio-input
-                                            name="academicYear"
-                                            label="current academic year"
-                                            radioValue="academicYear"
-                                            v-model="data.feeable"
-                                            class="radio-button"
-                                        ></radio-input>
-                                        <radio-input
-                                            name="academicYear"
-                                            label="current academic year section"
-                                            radioValue="academicYearSection"
-                                            v-model="data.feeable"
-                                            class="radio-button"
-                                        ></radio-input>
-                                    </div>
-                                </div>
-
                                 <main-checkbox
                                     v-if="computedCreator.account === 'facilitator'"
                                     v-model="data.facilitate"
@@ -165,19 +110,183 @@
                                     v-model="data.maximum"
                                     class="other-input"
                                 ></number-input>
+                                
+                                <div class="section" v-if="computedShowOwnership">Class Ownership</div>
+                                <main-select
+                                    class="other-input"
+                                    v-if="computedShowOwnership"
+                                    placeholder="select owner of this class"
+                                    backgroundColor='white'
+                                    :objects="computedPossibleOwners"
+                                    :value="data.owner.name"
+                                    @selection="ownerSelection"
+                                ></main-select>
+
+                                <div class="section"
+                                    v-if="computedHasSchoolAccount || computedHasStructure"
+                                >Class Attachments</div>
+                                <div class="attachment-heading"
+                                    v-if="computedHasStructure">
+                                    {{data.structure}}
+                                </div>
+                                <search-input
+                                    class="search-input"
+                                    v-if="computedHasStructure"
+                                    :searchPlaceholder="`search for ${data.structure}`"
+                                    @search="getSearchItemsText"
+                                ></search-input>
+                                <div class="class-payment course-classes-section"
+                                    v-if="computedHasStructure"
+                                >
+                                    <div
+                                        v-if="computedSpecificItemStructure.length"
+                                        class="class-wrapper"
+                                    >
+                                        <item-badge
+                                            v-for="(item,index) in computedSpecificItemStructure"
+                                            :key="index"
+                                            :item="item"
+                                            :type="item.type"
+                                            :hasRemove="inItemSelection(item)"
+                                            class="class-badge"
+                                            @clickedItem="itemSelected"
+                                            @clickedRemoveItem="removeItem"
+                                        ></item-badge>
+                                    </div>
+                                    <div class="no-data"
+                                        v-if="!specificItemLoadingStructure && 
+                                            !computedSpecificItemStructure.length">
+                                        {{`no ${data.structure} for this ${data.owner.account}`}}
+                                    </div>
+                                    <pulse-loader 
+                                        :loading="specificItemLoadingStructure"
+                                        size="12px"
+                                        class="loading"
+                                    ></pulse-loader>
+                                    <div class="get-more" 
+                                        @click="getSpecificAccountItemStructure"
+                                        v-if="computedShowGetMore"
+                                    >
+                                        get more
+                                    </div>
+                                </div>
+                                <div class="class-payment" 
+                                    v-if="computedHasSchoolAccount"
+                                >
+                                    <pulse-loader
+                                        :loading="specificItemLoading"
+                                        size="10px"
+                                    ></pulse-loader>
+
+                                    <div class="message">
+                                        {{computedMessage}}
+                                    </div>
+                                    <div class="academic-years">
+                                        <item-badge
+                                            v-for="(item,index) in computedAcademicYears"
+                                            :key="index"
+                                            :item="item"
+                                            type="year"
+                                            :hasRemove="inYearSelection(item)"
+                                            class="class-badge"
+                                            @clickedItem="yearSelected"
+                                            @clickedRemoveItem="removeYear"
+                                        ></item-badge>
+                                    </div>
+                                </div>
+                                
+                                <div class="section">Payments</div>                                
+                                <div class="attachments" 
+                                    v-if="data.mainPaymentData.length"
+                                >
+                                    <div
+                                        v-for="(item,index) in data.mainPaymentData"
+                                        :key="index"
+                                    >
+                                        <price-badge
+                                            v-if="item.type === 'price'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
+                                            class="payment-badge"
+                                        ></price-badge>
+                                        <subscription-badge
+                                            v-if="item.type === 'subscription'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
+                                            class="payment-badge"
+                                        ></subscription-badge>
+                                        <fee-badge
+                                            v-if="item.type === 'fee'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
+                                            class="payment-badge"
+                                        ></fee-badge>
+                                    </div>
+                                </div>
+                                
+                                <div class="attachment-heading" 
+                                    v-if="data.removedPaymentData.length"
+                                >
+                                    payment types to be removed
+                                </div>
+                                <div class="attachments danger" 
+                                    v-if="data.removedPaymentData.length"
+                                >
+                                    <div
+                                        v-for="(item,index) in data.removedPaymentData"
+                                        :key="index"
+                                    >
+                                        <price-badge
+                                            v-if="item.type === 'price'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
+                                            class="payment-badge"
+                                        ></price-badge>
+                                        <subscription-badge
+                                            v-if="item.type === 'subscription'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
+                                            class="payment-badge"
+                                        ></subscription-badge>
+                                        <fee-badge
+                                            v-if="item.type === 'fee'"
+                                            :data="item"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
+                                            class="payment-badge"
+                                        ></fee-badge>
+                                    </div>
+                                </div>
+                                <div class="attachment-heading" 
+                                    v-if="edit && data.paymentData"
+                                >
+                                    new payment types
+                                </div>
+                                <payment-types
+                                    v-if="computedShowPayment"
+                                    @paymentType="getPaymentType"
+                                    :type="paymentType"
+                                    :radioValue="data.type"
+                                    class="payment-types"
+                                    :sections="computedAcademicYearSections"
+                                    @paymentTypeError="error"
+                                ></payment-types>
+
+                                <div class="section" v-if="!edit">Discussion</div>
                                 <main-checkbox
                                     v-model="data.discussion"
+                                    v-if="!edit && !data.discussionData.title.length"
                                     label="automatically add a discussion?"
                                     class="class-input"
                                 ></main-checkbox>
                                 <!-- discussion preview -->
                                 <div class="discussion-preview"
-                                    v-if="data.discussionData.title"
+                                    v-if="data.discussionData.title.length"
                                 >
-                                    {{data.discussionData}}
                                     <item-badge
                                         type="discussion"
                                         :item="data.discussionData"
+                                        :hasRemove="true"
+                                        @clickedRemoveItem="clearDiscussionData"
                                     ></item-badge>
                                 </div>
                             </template>
@@ -221,7 +330,6 @@ import CreateDiscussion from './CreateDiscussion';
 import PriceBadge from '../PriceBadge';
 import FeeBadge from '../FeeBadge';
 import SubscriptionBadge from '../SubscriptionBadge';
-import AcademicYearSectionBadge from '../dashboard/AcademicYearSectionBadge';
 import PulseLoader from 'vue-spinner/src/PulseLoader';
 import { mapActions, mapGetters } from 'vuex';
 import { dates } from '../../services/helpers';
@@ -230,7 +338,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
     export default {
         components: {
             PulseLoader,
-            AcademicYearSectionBadge,
             CreateDiscussion,
             ItemBadge,
             PaymentTypes,
@@ -254,22 +361,39 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         data() {
             return {
                 hasMaxLearners: false,
+                selectedAcademicYears: [],
+                mainAcademicYears: [],
+                removedAcademicYears: [],
+                specificItemDetailsStructure: [],
+                specificItemLoadingStructure: false,
+                specificItemDetailsStructureNextPage: 0,
+                learners: 0,
             }
         },
         watch: {
-            data: {
-                deep: true,
-                handler(newValue,oldValue){
-
-                }
-            },
             'data.owner': {
                 handler(newValue) {
-                    if (newValue && newValue.account === 'school') {
+                    if (newValue && newValue.account === 'school' &&
+                        this.computedCreator.account !== 'school') {
                         this.specificItemDetails = []
                         this.specificItemDetailsNextPage = 0
-                        this.specificItem = 'academicYear'
                         this.getSpecificAccountItem()
+                    }
+                    if (newValue.account && this.computedShowStructure) {
+                        if (this.specificItemDetailsStructureNextPage !== 0) this.data.items = []
+                        this.debouncedSearchItems()
+                    }
+                }
+            },
+            'data.structure': {
+                handler(newValue,oldValue) {
+                    if (oldValue && oldValue.length) {
+                        this.data.removedItems = []
+                        this.data.removedItems.push(...this.data.items)
+                        if (this.specificItemDetailsStructureNextPage !== 0) this.data.items = []
+                    }
+                    if (newValue && newValue !== 'null' && this.data.owner.account) {                        
+                        this.debouncedSearchItems()
                     }
                 }
             },
@@ -291,40 +415,40 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             ...mapGetters(['dashboard/getAccountDetails','dashboard/getCurrentAccount',
                 'getUser']),
             computedMessage(){
-                return this.computedAccount.account !== 'school' || 
-                    this.computedAcademicYearSections ? '' :
-                    !this.computedAcademicYearSections.length ? 
-                        'You cannot use fee payment for this class because you do not have a current academic year section. If you desire to have a fee section, then please create a new academic year with a current section or add a new section to an existing academic year.' :
-                    this.computedAcademicYearSections.length ? 
-                        'You can use the fee section because you have a current academic year section' : ''
-            },
-            computedAcademicYearSections(){
-                if (!this.computedAcademicYear) {
-                    return null
+                if (this.data.owner.account === 'school' || 
+                    this.computedAccount.account === 'school') { 
+                    !this.computedAcademicYears.length ? 
+                        'The school does not have a current(present/future) academic year, Hence, you cannot use a fee payment type for this class. If you desire to have a fee, then please go back and create a current academic year (with sections).' :
+                    this.computedAcademicYears.length ? 
+                        'You can use the fee section after selecting some current academic years' : ''
                 }
-                let now = dates.toDate(new Date())
-                return this.computedAcademicYear.sections.filter(section=>{
-                        return dates.toDate(new Date(section.startDate)) < now && 
-                            dates.toDate(new Date(section.endDate)) > now
-                    })
+                return ''
             },
-            computedAcademicYear(){
+            computedSpecificItemStructure() {
+                return this.specificItemDetailsStructure
+            },
+            computedAcademicYearSections(){ //for selected academic years
+                let sections = []
+                this.selectedAcademicYears.forEach(year=>{
+                    sections.push(...year.sections)
+                })
+                return sections
+            },
+            computedShowGetMore() {
+                return this.specificItemDetailsStructureNextPage && this.specificItemDetailsStructureNextPage > 1 &&
+                    !this.specificItemLoadingStructure
+            },
+            computedAcademicYears(){
                 let academicYears = [],
-                    index,
                     now = dates.toDate(new Date())
                 if (this.computedAccount.account !== 'school') {
                     academicYears = this.specificItemDetails
                 } else {
                     academicYears = this["dashboard/getAccountDetails"].academicYears
                 }
-                index = academicYears.findIndex(year=>{
-                    return dates.toDate(new Date(year.startDate)) < now && 
-                        dates.toDate(new Date(year.endDate)) > now
+                return academicYears.filter(year=>{
+                    return dates.toDate(new Date(year.startDate)) < now 
                 })
-                if (index > -1) {
-                    return academicYears[index]
-                }
-                return null
             },
             computedPayment(){
                 if (this.computedAccount.account === 'school' ||
@@ -338,53 +462,161 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 }
                 return false
             },
+            computedShowStructure() {
+                return true //but work on hiding it if it has some resources like lessons etc
+            },
+            computedHasStructure() {
+                return this.data.structure && this.data.structure.length && 
+                    this.data.structure !== 'null'
+            },
+            computedShowGrades() {
+                return this.edit && this.learners > 0 ? false : true
+            },
+            computedHasSchoolAccount() {
+                return this.computedAccount.account === 'school' ||
+                    this.data.owner.account === 'school'
+            }
         },
         methods: {
             ...mapActions(['dashboard/createClass','dashboard/editClass',
                 'dashboard/getAccountSpecificItem']),
             closeModal() {
+                this.data.owner = {name: ''}
+                this.data.structure = ''
                 this.clearData()
+                this.clearExtraData()
                 this.$emit('closeCreateClass')
             },
-            getDiscussionData(data) {
-                this.data.discussionData.title = data.title
-                this.data.discussionData.preamble = data.preamble
-                this.data.discussionData.type = data.type
-                this.data.discussionData.restricted = data.restricted
-                this.data.discussionData.allowed = data.allowed
-                this.discussionFiles = data.files
+            initiateGetItems() {
+                this.specificItemDetailsStructure = []
+                this.specificItemDetailsStructureNextPage = 0
+                this.getSpecificAccountItemStructure()
             },
-            closeDiscussionModal() {
-                this.data.discussion = false
+            clearExtraData() {
+                this.mainAcademicYears = []
+                this.removedAcademicYears = []
+                this.specificItemLoadingStructure = false
+                this.learners = 0
+                if (this.data.owner.account) {
+                    this.selectedAcademicYears = []
+                    this.specificItemDetailsStructure = []
+                    this.specificItemDetailsStructureNextPage = 0
+                }
             },
             setData(data) {
                 this.data.name = data.name
                 this.data.classId = data.id
                 this.data.grades = data.grades
-                this.data.state = data.state.toLowerCase()
+                this.data.state = data.state?.toLowerCase()
                 this.data.description = data.description
+                this.data.structure = data.structure
                 if (data.maxLearners) {
                     this.data.maximum = `${data.maxLearners}`
                 }
                 this.hasMaxLearners = true
-                this.data.grade = data.grades.length ? 
+                this.data.items = []
+                this.data.mainItems = []
+                this.data.items.push(...data.items)
+                this.data.mainItems.push(...data.items)
+                this.selectedAcademicYears = []
+                this.mainAcademicYears = []
+                this.selectedAcademicYears.push(...data.academicYears)
+                this.mainAcademicYears.push(...data.academicYears)
+                this.data.mainPaymentData = []
+                if (data.subscriptions) this.data.mainPaymentData.push(...data.subscriptions)
+                if (data.prices) this.data.mainPaymentData.push(...data.prices)
+                if (data.fees) this.data.mainPaymentData.push(...data.fees)
+                this.data.facilitate = data.facilitators.findIndex(facilitator=>{
+                    return facilitator.userId === this.getUser.id
+                }) > -1
+                this.mainGrade = this.data.grade = data.grades.length ? 
                     data.grades[0] : {}
+                this.data.grades = data.grades
                 this.buttonText = 'edit'
+                this.data.owner = {
+                    name: data.ownedby.name,
+                    account: data.ownedby.account,
+                    accountId: data.ownedby.accountId,
+                }
+                this.learners = data.learners
+                this.checkDiscussion(data)
             },
-            clearAlert(){
-                this.alertMessage = ''
-                this.alertDanger = false
-                this.alertSuccess = false
+            //academic year
+            inYearSelection(data) {
+                let index = this.findYearIndex(data)
+                if (index > -1) {
+                    return true
+                }
+                return false
+            },
+            yearSelected(data) {
+                let index = this.findYearIndex(data)
+                if (index === -1) {
+                    this.selectedAcademicYears.push(data)
+                }
+            },
+            findYearIndex(data) {
+                return this.selectedAcademicYears.findIndex(cl=>{
+                    return cl.id === data.id && cl.type === data.type
+                })
+            },
+            removeYear(data) {
+                let index = this.findYearIndex(data)
+                if (index > -1) {
+                    this.selectedAcademicYears.splice(index,1)
+                }
+            },
+            removedYearsUpdate(data) {
+                let index = this.removedAcademicYears.findIndex(year=>{
+                    return data.type === year.type && data.id === year.id
+                })
+                if (index === -1) {
+                    this.data.removedAcademicYears.push(data)
+                }
+            },
+            //courses or subjects
+            inItemSelection(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    return true
+                }
+                return false
+            },
+            itemSelected(data) {
+                let index = this.findItemIndex(data)
+                if (index === -1) {
+                    this.data.items.push(data)
+                }
+            },
+            findItemIndex(data) {
+                return this.data.items.findIndex(cl=>{
+                    return cl.id === data.id && cl.type === data.type
+                })
+            },
+            removeItem(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    this.data.items.splice(index,1)
+                }
+            },
+            removedItemsUpdate(data) {
+                let index = this.data.removedItems.findIndex(cl=>{
+                    return data.type === cl.type && data.id === cl.id
+                })
+                if (index === -1) {
+                    this.data.removedItems.push(data)
+                }
             },
             async getSpecificAccountItem(){
-                if (this.specificItemDetailsNextPage === null) {
+                if (this.specificItemDetailsNextPage === null || this.specificItemLoading) {
                     return
                 }
                 let response,
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: this.specificItem
+                        item: 'academicYear',
+                        search: this.searchItemsText
                     }
 
                 this.specificItemLoading = true
@@ -394,7 +626,11 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.specificItemLoading = false
 
                 if (response.status) {
-                    this.specificItemDetails.push(...response.items)
+                    if (!this.specificItemDetailsNextPage) {
+                        this.specificItemDetails = response.items
+                    } else {
+                        this.specificItemDetails.push(...response.items)
+                    }
                     if (response.next) {
                         this.specificItemDetailsNextPage += 1
                     } else {
@@ -404,18 +640,35 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     console.log('response :>> ', response);
                 }
             },
-            classStateSelection(data){
-                this.data.state = data
-            },
-            ownerSelection(data){
-                this.data.owner = data
-                this.data.paymentData = null
-                this.data.type = 'free'
-                // this.paymentType = ''
-            },
-            getPaymentType(data){
-                this.data.type = data.type
-                this.data.paymentData = data.data
+            async getSpecificAccountItemStructure(){
+                if (this.specificItemDetailsStructureNextPage === null ||
+                    !this.data.structure) {
+                    return
+                }
+                let response,
+                    data = {
+                        account: this.data.owner.account,
+                        accountId: this.data.owner.accountId,
+                        item: this.data.structure,
+                        search: this.searchItemsText
+                    }
+
+                this.specificItemLoadingStructure = true
+                response = await this['dashboard/getAccountSpecificItem']({
+                    data, nextPage: this.specificItemDetailsStructureNextPage
+                })
+                this.specificItemLoadingStructure = false
+
+                if (response.status) {
+                    this.specificItemDetailsStructure.push(...response.items)
+                    if (response.next) {
+                        this.specificItemDetailsStructureNextPage += 1
+                    } else {
+                        this.specificItemDetailsStructureNextPage = null
+                    }
+                } else {
+                    console.log('response :>> ', response);
+                }
             },
             async clickedCreate() {
                 if (this.loading) return
@@ -437,10 +690,11 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                         } else if (this.data.type !== 'free' && 
                             this.data.paymentData === null) {
                             msg = 'Please enter the required data for the payment.'                    
-                        } else if (this.data.type === 'fee' && 
-                            !this.data.feeable.length) {
-                            msg = 'Please select between academic year and academic year section to which to assign the fee.'
-                        } else if (!this.data.structure.length) {
+                        } else if (this.data.type === 'fee' && !this.selectedAcademicYears.length) {
+                            msg = 'You need an academic year to use the fee payment type.'
+                        } else if ((!this.data.structure || !this.data.structure.length) &&
+                            (this.computedCreator.account === 'facilitator' ||
+                            !this['dashboard/getAccountDetails'].classStructure)) {
                             msg = 'Please choose how you would want to structure your class.'
                         }
                     }
@@ -456,45 +710,118 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 let response,
                     data = new FormData
                     
-                    data.append('name', this.data.name)
-                    data.append('description', this.data.description)
+                data.append('name', this.data.name)
+                data.append('structure', this.data.structure && this.data.structure.length ?
+                    this.data.structure : this['dashboard/getAccountDetails'].classStructure
+                )
+                data.append('description', this.data.description)
+                data.append('type', this.data.type)
+                data.append('paymentData', JSON.stringify(this.data.paymentData))
+                data.append('maxLearners', this.hasMaxLearners || 
+                    (this.data.maximum.length && this.data.maximum !== 'null') ? this.data.maximum :
+                    JSON.stringify(null)
+                )
+                data.append('gradeId', this.data.grade.id)
+    
+                // if (this.data.type === 'fee') {
+                    // if (!this.edit && !this.computedAcademicYearSections) {
+                    //     this.data.feeable = 'academicYear'
+                    // }
+                    // data.append('feeable', this.data.feeable)
+                    // data.append('feeableId', this.data.feeable === 'academicYear' ?
+                    //     this.computedAcademicYear.id : 
+                    //     this.computedAcademicYearSections[0].id)
+                    
+                // }
+                if (this.computedAccount.account === 'facilitator' ||
+                    this.computedAccount.account === 'professional') { 
+                    data.append('facilitate', JSON.stringify(this.data.facilitate))
+                }
+                if (this.data.owner.account === 'school' ||
+                    this.computedAccount.account === 'school') {
+                    data.append('academicYears',JSON.stringify(this.selectedAcademicYears.map(year=>{
+                        return {
+                            id: year.id,
+                            type: 'academicYear',
+                        }
+                    })))
+                }
+                data.append('items', JSON.stringify(this.data.items.map(cl=>{
+                    return {
+                        id: cl.id,
+                        type: cl.type
+                    }
+                })))
+                if (this.schoolAdmin) { 
+                    data.append('account', 'admin')
+                    data.append('accountId', this.schoolAdmin.id)
+                } else {
+                    data.append('account', this.computedAccount.account)
+                    data.append('accountId', this.computedAccount.accountId)
+                }
                 
                 if (this.edit) {
-                    if (this.computedAdmin) { 
-                        data.append('account', 'admin')
-                        data.append('accountId', this.computedAdmin.id)
-                    } else {
-                        data.append('account', this.computedAccount.account)
-                        data.append('accountId', this.computedAccount.accountId)
-                    }
-
-                    if (this.computedAccount.account === 'facilitator' ||
-                        this.computedAccount.account === 'professional') { 
-                        data.append('facilitate', JSON.stringify(this.data.facilitate))
-                    }
                     data.append('classId', this.data.classId)
                     data.append('state', this.data.state)
+                    data.append('main', JSON.stringify(this.computedCheckMain))
                     if (this.data.grades.length && 
                         this.data.grade.id !== this.data.grades[0].id) {                        
                         data.append('gradeId', this.data.grade.id)
                     }
-                    data.append('maxLearners', this.data.maximum.length && this.data.maximum !== 'null' ?
-                             this.data.maximum :
-                            JSON.stringify(null))
+                    data.append('removedPaymentData', JSON.stringify(
+                        this.data.removedPaymentData.map(payment=>{
+                            return {
+                                type: payment.type,
+                                id: payment.id
+                            }
+                        }
+                    )))
+                    if (this.data.grades.length && 
+                    this.data.grade.id !== this.data.grades[0].id) {
+                        data.append('removedGradeId', this.data.grades[0].id)
+                    }
+                    //for main attachments
+                    this.data.mainItems.forEach(mainCl=>{ //check if subject or course has been removed
+                        let index = this.data.items.findIndex(cl=>{
+                            return cl.type === mainCl.type && cl.id === mainCl.id
+                        })
+                        if (index === -1) {
+                            this.removedItemsUpdate(mainCl)
+                        }
+                        console.table(this.data.removedItems)
+                    })
+                    data.append('removedItems', JSON.stringify(this.data.removedItems.map(attachment=>{
+                        return {
+                            type: attachment.type,
+                            id: attachment.id
+                        }
+                    })))
+                    if (this.computedCreator.account === 'school') {
+                        //for academic years
+                        this.mainAcademicYears.forEach(mainYear=>{ //check if subject or course has been removed
+                            let index = this.selectedAcademicYears.findIndex(year=>{
+                                return year.type === mainYear.type && year.id === mainYear.id
+                            })
+                            if (index === -1) {
+                                this.removedYearsUpdate(mainYear)
+                            }
+                        })
+                        data.append('removedAcademicYears', JSON.stringify(this.removedAcademicYears.map(year=>{
+                            return {
+                                type: 'academicYear',
+                                id: year.id
+                            }
+                        })))
+                    }
 
                     response = await this['dashboard/editClass'](data)
                 } else {
-                    if (this.data.discussionData.title) {                        
+                    if (this.data.discussionData.title.length) {                        
                         data.append('discussionData', JSON.stringify(this.data.discussionData))
                         this.discussionFiles.forEach(file=>{
                             data.append('discussionFile[]', file)
                         })
                     }
-                    data.append('gradeId', this.data.grade.id)
-                    data.append('type', this.data.type)
-                    data.append('paymentData', JSON.stringify(this.data.paymentData))
-                    data.append('maxLearners', this.hasMaxLearners ? this.data.maximum :
-                            JSON.stringify(null))
                     if (this.computedAccount.account === 'facilitator') {                    
                         data.append('owner', this.data.owner.account ? 
                             this.data.owner.account : 
@@ -502,26 +829,9 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                         data.append('ownerId', this.data.owner.account ? 
                             this.data.owner.accountId : 
                             this.computedAccount.accountId)
-                        data.append('account', this.computedAccount.account)
-                        data.append('accountId', this.computedAccount.accountId)
-                        data.append('facilitate', JSON.stringify(this.data.facilitate))
                     } else if (this.computedAccount.account === 'school') {                  
                         data.append('owner', this.computedAccount.account)
                         data.append('ownerId', this.computedAccount.accountId)
-                        if (this.computedAccount.owner) {                        
-                            data.append('account', this.computedAccount.account)
-                            data.append('accountId', this.computedAccount.accountId)
-                        } else if (this.computedAdmin) {
-                            data.append('account', 'admin')
-                            data.append('accountId', this.computedAdmin.id)
-                        }
-    
-                        if (this.data.type === 'fee') {
-                            data.append('feeable', this.data.feeable)
-                            data.append('feeableId', data.feeable === 'academicYear' ?
-                                this.computedAcademicYear.id : 
-                                this.computedAcademicYearSections[0].id)
-                        }
                     }
 
                     response = await this['dashboard/createClass'](data)
@@ -533,52 +843,19 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.alertSuccess = true
                     this.alertMessage = `${this.data.name} was successfully ${action}`
                     if (this.edit) {
-                        this.$emit('classSuccessfullyEdited', response.classResource)
+                        if (this.computedCheckMain) this.$emit('classSuccessfullyEdited', response.classResource)
+                    } else {
+                        this.clearData()
+                        // this.clearExtraData()
                     }
-                    this.clearData()
+                    bus.$emit('updateClass',response.class)
                 } else {
-                    let action = this.edit ? 'editing' : 'creation'
-                    this.alertDanger = true
-                    this.alertMessage = `class ${action} was unsuccessful`
+                    this.responseErrorAlert(response.response)
                     console.log('response :>> ', response);
                 }
             },
-            clearData(){
-                this.data.name = ''
-                this.data.feeable = ''
-                this.data.feeableId = ''
-                this.data.type = 'free'
-                this.data.paymentData = null
-                this.data.description = ''
-                this.data.grade = {}
-                this.data.owner = {name: ''}
-                this.data.subjects = []
-                this.data.maximum = ''
-                this.data.facilitate = false
-                this.data.discussionData = {
-                        title: '',
-                        type: '',
-                        preamble: '',
-                        allowed: '',
-                        restricted: false,
-                    }
-                this.discussionFiles = []
-                this.data.discussion = false
-                this.hasMaxLearners = false
-            },
-            subjectSelected(data){
-                this.data.subjects.push(data.data)
-            },
             gradeSelected(data){
                 this.data.grade = data.data
-            },
-            removeSubject(data){
-                let index = this.data.subjects.findIndex(subject=>{
-                    return subject.id === data.id
-                })
-                if (index > -1) {
-                    this.data.subjects.splice(index,1)
-                }
             },
             removeGrade(data){
                 this.data.grade = {}
@@ -588,6 +865,10 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 </script>
 
 <style lang="scss" scoped>
+
+    .modal-wrapper{
+        z-index: 10005;
+    }
 
     .create-class-wrapper{
         position: relative;
@@ -604,8 +885,14 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $background-color-main;
+            border-bottom: 2px solid $color-main;
             border-radius: 0;
+        }
+
+        .search-input{
+            border: none;
+            border-bottom: 2px solid $color-main;
+            background: white;
         }
 
         .feeable{
@@ -633,6 +920,24 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             margin: 10px auto;
         }
 
+        .attachment-heading{
+            font-size: 12px;
+            color: gray;
+            text-align: center;
+        }
+
+        .attachments{
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        .attachments.danger{
+            background: red;
+            padding: 5px;
+        }
+
         .class-payment{
             
             .message{
@@ -642,6 +947,45 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             }
 
             .v-spinner{
+                text-align: center;
+            }
+        }
+
+        .course-classes-section{
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            .class-wrapper{
+                display: flex;
+                width: 90%;
+                margin: 10px auto;
+                align-items: center;
+                overflow: auto;
+
+                .class-badge{
+                    min-width: 150px;
+                }
+            }
+
+            .no-data{
+                font-size: 12px;
+                color: gray;
+            }
+
+            .get-more{
+                width: fit-content;
+                margin: 10px auto;
+                padding: 5px;
+                background: cadetblue;
+                color: white;
+                font-size: 12px;
+                border-radius: 10px;
+                cursor: pointer;
+            }
+
+            .loading{
                 text-align: center;
             }
         }

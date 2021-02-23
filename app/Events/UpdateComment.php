@@ -25,25 +25,25 @@ class UpdateComment implements ShouldBroadcastNow
     public function __construct($comment,$mainComment)
     {
         Debugbar::info($mainComment);
-        $this->commentArray['item'] = getAccountString($mainComment->commentable_type);
+        $this->commentArray['item'] = class_basename_lower($mainComment->commentable_type);
         $this->commentArray['itemId'] = $mainComment->commentable_id;
         if ($this->commentArray['item'] === 'post') {
-            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->postedby));
+            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->postedby));
             $this->commentArray['accountId'] = $mainComment->commentable->postedby->id;
         } else if ($this->commentArray['item'] === 'book' || 
             $this->commentArray['item'] === 'poem' || 
             $this->commentArray['item'] === 'activity') {
-            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->post->postedby));
+            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->post->postedby));
             $this->commentArray['accountId'] = $mainComment->commentable->post->postedby->id;
         } else if ($this->commentArray['item'] === 'comment' ||
             $this->commentArray['item'] === 'answer') {
             $this->commentArray['account'] = null;
             $this->commentArray['accountId'] = null;
         } else if ($this->commentArray['item'] === 'discussion') {
-            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->raisedby));
+            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->raisedby));
             $this->commentArray['accountId'] = $mainComment->commentable->raisedby->id;
         } else if ($this->commentArray['item'] === 'class') {
-            $this->commentArray['account'] = getAccountString(get_class($mainComment->commentable->ownedby));
+            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->ownedby));
             $this->commentArray['accountId'] = $mainComment->commentable->ownedby->id;
         }
         $this->commentArray['comment'] = $comment;

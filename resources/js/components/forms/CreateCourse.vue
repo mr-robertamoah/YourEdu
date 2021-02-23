@@ -7,6 +7,7 @@
                     :mainOther="false"
                     :requests="false"
                     @mainModalDisappear='closeModal'
+                    class="modal-wrapper"
                 >
                     <template slot="main">
                         <welcome-form
@@ -43,7 +44,7 @@
                                     :items="['pending','accepted','declined','suspended']"
                                     :value="data.state"
                                     backgroundColor="white"
-                                    @selection="courseStateSelection"
+                                    @selection="stateSelection"
                                     class="other-input"
                                     placeholder="change state of class"
                                 ></main-select>
@@ -54,9 +55,75 @@
                                     label="will you be a faciliatator in this course?"
                                     class="class-input"
                                 ></main-checkbox>
-                                
-                                <div class="section" 
-                                    v-if="computedShowOwnership">Course Ownership</div>
+                                <main-checkbox
+                                    v-if="computedShowSections"
+                                    v-model="hasSections"
+                                    label="does course have sections?"
+                                    class="class-input"
+                                ></main-checkbox>
+                                <main-checkbox
+                                    v-model="standAlone"
+                                    label="should be a stand alone course"
+                                    class="class-input"
+                                ></main-checkbox>
+                                <div class="attachment-heading">
+                                    Note: stand alone means this course cannot be added to programs or classes from the time it is so set.
+                                </div>
+
+                                <template v-if="edit">
+                                    <div class="attachment-heading"
+                                        v-if="mainSections.length"
+                                    >
+                                        current sections
+                                    </div>
+                                    <div class="attachments"
+                                        v-if="mainSections.length"
+                                    >
+                                        <item-badge
+                                            v-for="(item,index) in mainSections"
+                                            :key="index"
+                                            :item="item"
+                                            :hasRemove="true"
+                                            type="courseSection"
+                                            class="class-badge"
+                                            @clickedItem="selectedSections"
+                                            @clickedRemoveItem="removeSection(item,'main')"
+                                        ></item-badge>
+                                    </div>
+                                    <div class="attachment-heading"
+                                        v-if="removedSections.length"
+                                    >
+                                        sections to be removed
+                                    </div>
+                                    <div class="attachments danger"
+                                        v-if="removedSections.length"
+                                    >
+                                        <item-badge
+                                            v-for="(item,index) in removedSections"
+                                            :key="index"
+                                            :item="item"
+                                            :hasRemove="true"
+                                            type="courseSection"
+                                            class="class-badge"
+                                            @clickedRemoveItem="removeSection(item,'removed')"
+                                        ></item-badge>
+                                    </div>
+                                </template>
+                                <div class="attachment-heading"
+                                    v-if="edit && sections.length"
+                                >
+                                    new sections
+                                </div>
+                                <add-section
+                                    v-if="hasSections"
+                                    :editable="selectedSection"
+                                    @error="error"
+                                    @sectionAdded="getSections"
+                                    @editedSection="editedSection"
+                                    class="add-section"
+                                ></add-section>
+
+                                <div class="section" v-if="computedShowOwnership">Course Ownership</div>
                                 <main-select
                                     class="other-input"
                                     v-if="computedShowOwnership"
@@ -139,9 +206,19 @@
                                     class="class-input"
                                 ></post-attachment>
 
-                                <div class="class-payment course-classes-section" 
-                                    v-if="computedAccount.account === 'school' ||
-                                        data.owner.account === 'school'"
+                                <div class="attachment-heading p-1"
+                                    v-if="!standAlone && data.owner.account"
+                                >
+                                    {{computedSpecificItemType}}
+                                </div>
+                                <search-input
+                                    class="search-input"
+                                    v-if="!standAlone && data.owner.account"
+                                    searchPlaceholder="search for classes and programs"
+                                    @search="getSearchItemsText"
+                                ></search-input>
+                                <div class="class-payment course-classes-section"
+                                    v-if="!standAlone && data.owner.account"
                                 >
                                     <div
                                         v-if="computedSpecificItems.length"
@@ -158,6 +235,10 @@
                                             @clickedRemoveItem="removeClass"
                                         ></item-badge>
                                     </div>
+                                    <div class="no-data"
+                                        v-if="!specificItemLoading && !computedSpecificItems.length">
+                                        {{`no ${computedSpecificItemType} for this ${data.owner.account}`}}
+                                    </div>
                                     <pulse-loader 
                                         :loading="specificItemLoading"
                                         size="12px"
@@ -165,7 +246,7 @@
                                     ></pulse-loader>
                                     <div class="get-more" 
                                         @click="getSpecificAccountItem"
-                                        v-if="specificItemDetailsNextPage"
+                                        v-if="computedShowGetMore"
                                     >
                                         get more
                                     </div>
@@ -177,7 +258,9 @@
                                 >
                                     current payment types
                                 </div>
-                                <div class="attachments" v-if="data.mainPaymentData.length">
+                                <div class="attachments" 
+                                    v-if="data.mainPaymentData.length"
+                                >
                                     <div
                                         v-for="(item,index) in data.mainPaymentData"
                                         :key="index"
@@ -185,13 +268,13 @@
                                         <price-badge
                                             v-if="item.type === 'price'"
                                             :data="item"
-                                            @clickedRemovePrice="clickedRemovePayment(item,'main')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
                                             class="payment-badge"
                                         ></price-badge>
                                         <subscription-badge
                                             v-if="item.type === 'subscription'"
                                             :data="item"
-                                            @clickedRemoveSubscription="clickedRemovePayment(item,'main')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'main')"
                                             class="payment-badge"
                                         ></subscription-badge>
                                     </div>
@@ -212,29 +295,49 @@
                                         <price-badge
                                             v-if="item.type === 'price'"
                                             :data="item"
-                                            @clickedRemovePrice="clickedRemovePayment(item,'removed')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
                                             class="payment-badge"
                                         ></price-badge>
                                         <subscription-badge
                                             v-if="item.type === 'subscription'"
                                             :data="item"
-                                            @clickedRemoveSubscription="clickedRemovePayment(item,'removed')"
+                                            @clickedRemoveData="clickedRemovePayment(item,'removed')"
                                             class="payment-badge"
                                         ></subscription-badge>
                                     </div>
                                 </div>
                                 <div class="attachment-heading" 
-                                    v-if="edit && data.paymentData.length"
+                                    v-if="edit && data.paymentData"
                                 >
                                     new payment types
                                 </div>
                                 <payment-types
-                                    v-if="computedPayment && !edit"
+                                    v-if="computedShowPayment"
                                     @paymentType="getPaymentType"
                                     :type="paymentType"
                                     :radioValue="data.type"
                                     class="other-input"
+                                    @paymentTypeError="error"
                                 ></payment-types>
+
+                                <div class="section" v-if="!edit">Discussion</div>
+                                <main-checkbox
+                                    v-model="data.discussion"
+                                    v-if="!edit && !data.discussionData.title.length"
+                                    label="automatically add a discussion?"
+                                    class="class-input"
+                                ></main-checkbox>
+                                <!-- discussion preview -->
+                                <div class="discussion-preview"
+                                    v-if="data.discussionData.title.length"
+                                >
+                                    <item-badge
+                                        type="discussion"
+                                        :item="data.discussionData"
+                                        :hasRemove="true"
+                                        @clickedRemoveItem="clearDiscussionData"
+                                    ></item-badge>
+                                </div>
                             </template>
                             <template slot="buttons">
                                 <post-button
@@ -270,10 +373,10 @@ import PostAttachment from '../PostAttachment';
 import AutoAlert from '../AutoAlert';
 import PaymentTypes from '../PaymentTypes';
 import PriceBadge from '../PriceBadge';
-import FeeBadge from '../FeeBadge';
 import SubscriptionBadge from '../SubscriptionBadge';
 import ItemBadge from '../dashboard/ItemBadge';
 import CreateDiscussion from './CreateDiscussion';
+import AddSection from '../dashboard/AddSection';
 import PulseLoader from 'vue-spinner/src/PulseLoader';
 import { mapActions, mapGetters } from 'vuex'
 import {bus} from '../../app';
@@ -283,10 +386,10 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             PulseLoader,
             ItemBadge,
             SubscriptionBadge,
-            FeeBadge,
             PriceBadge,
             PaymentTypes,
             AutoAlert,
+            AddSection,
             CreateDiscussion,
             PostAttachment,
             TextInput,
@@ -301,20 +404,41 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         },
         data() {
             return {
-                
+                hasSections: false,
+                sections: [],
+                mainSections: [],
+                removedSections: [],
+                editedSections: [],
+                selectedSection: null,
+                standAlone: false,
             }
         },
         watch: {
             computedOwner: {
                 deep: true,
-                handler(newValue, oldValue){
-                    if (newValue.account === 'school') {
-                        this.specificItemDetails = []
-                        this.specificItem = ''
-                        this.specificItemDetailsNextPage = 0
-                        this.specificItem = 'class'
-                        this.getSpecificAccountItem()
+                handler(newValue){
+                    if (newValue && newValue.account) {
+                        this.debouncedSearchItems()
                     }
+                }
+            },
+            hasSections(newValue) {
+                if (!newValue && this.edit && this.mainSections.length) {
+                    this.removedSections.push(...this.mainSections)
+                    this.mainSections.forEach(section=>{
+                        this.editedSectionsUpdate(section, true)
+                    })
+                    this.mainSections = []
+                }
+            },
+            mainSections(newValue) {
+                if (newValue.length && this.edit && this.hasSections == false) {
+                    this.hasSections = true
+                }
+            },
+            standAlone(newValue) {
+                if (newValue) {
+                    
                 }
             },
         },
@@ -335,13 +459,30 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 'getUser']),
             computedOwner() {
                 return this.data.owner
+            },
+            computedSpecificItemType() {
+                return this.data.owner.account !== 'professional' ? 
+                    `classes and programs` : `programs`
+            },
+            computedShowSections() {
+                return true 
             }
         },
         methods: {
             ...mapActions(['dashboard/createCourse','dashboard/editCourse',
                 'dashboard/getAccountSpecificItem']),
+            getSections(sections) {
+                this.sections = sections
+            },
             closeModal() {
+                this.data.owner = {name: ''}
                 this.clearData()
+                this.sections = []
+                this.mainSections = []
+                this.removedSections = []
+                this.editedSections = []
+                this.hasSections = false
+                this.standAlone = false
                 this.$emit('closeCreateCourse')
             },
             setData(data) {
@@ -349,16 +490,42 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.data.courseId = data.id
                 this.data.state = data.state.toLowerCase()
                 this.data.description = data.description
+                this.standAlone = data.standAlone
+                if (!data.standAlone) {                    
+                    this.data.classes = []
+                    this.data.mainClasses = []
+                    this.data.classes.push(...data.classes)
+                    this.data.mainClasses.push(...data.classes)
+                }
+                this.data.mainAttachments = []
                 this.data.mainAttachments.push(...data.courses)
                 this.data.mainAttachments.push(...data.programs)
                 this.data.mainAttachments.push(...data.grades)
+                //sections
+                this.mainSections = []
+                this.mainSections.push(...data.sections)
+                if (data.sections.length) {
+                    this.hasSections = true
+                }
+                this.data.mainPaymentData = []
                 if (data.subscriptions) this.data.mainPaymentData.push(...data.subscriptions)
                 if (data.prices) this.data.mainPaymentData.push(...data.prices)
-                if (data.fees) this.data.mainPaymentData.push(...data.fees)
                 this.data.facilitate = data.facilitators.findIndex(facilitator=>{
                     return facilitator.userId === this.getUser.id
                 }) > -1
+                if (!this.data.facilitate) {                    
+                    this.data.facilitate = data.professionals.findIndex(professional=>{
+                        return professional.userId === this.getUser.id
+                    }) > -1
+                }
                 this.buttonText = 'edit'
+                this.data.owner = {
+                    name: data.ownedby.name,
+                    account: data.ownedby.account,
+                    accountId: data.ownedby.accountId,
+                }
+                this.checkDiscussion(data)
+                //todo hassections and sections and remove sections
             },
             //classes
             inClassesSelection(data) {
@@ -385,21 +552,67 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.data.classes.splice(index,1)
                 }
             },
-            courseStateSelection(data){
-                this.data.state = data
+            removedClassesUpdate(data) {
+                let index = this.data.removedClasses.findIndex(cl=>{
+                    return data.type === cl.type && data.id === cl.id
+                })
+                if (index === -1) {
+                    this.data.removedClasses.push(data)
+                }
             },
-            ownerSelection(data){
-                this.data.owner = data
-                this.data.paymentData = null
-                this.data.type = 'free'
+            //sections
+            editedSection(data) {
+                let index = this.mainSections.findIndex(section=>{
+                    return section.id === data.id
+                })
+                if (index > -1) {
+                    data.edited = true
+                    this.mainSections[index] = data
+                    this.editedSectionsUpdate(data)
+                }
+                this.selectedSection = null
+            },
+            selectedSections(data) {
+                this.selectedSection = data
+            },
+            findSectionIndex(data, type) {
+                let sections = type === 'main' ? this.mainSections : 
+                    type === 'removed' ? this.removedSections : this.sections
+                return sections.findIndex(section=>{
+                    return section.id === data.id 
+                })
+            },
+            removeSection(data, type) {
+                let index = this.findSectionIndex(data, type)
+                if (index > -1) {
+                    if (type === 'main') {
+                        this.mainSections.splice(index,1)
+                        this.removedSections.push(data)
+                        this.editedSectionsUpdate(data, true)
+                    } else if (type === 'removed') {
+                        this.removedSections.splice(index,1)
+                        this.mainSections.push(data)
+                        if (data.edited) {
+                            this.editedSectionsUpdate(data)
+                        }
+                    }
+                }
+            },
+            editedSectionsUpdate(data, del = false) {
+                let index = this.editedSections.findIndex(section=>{
+                    return data.id === section.id
+                })
+                if (!del && index === -1) {
+                    this.editedSections.push(data)
+                } else if (!del && index > -1) {
+                    this.editedSections[index].name = data.name
+                    this.editedSections[index].description = data.description
+                } else if (del && index > -1) {
+                    this.editedSections.splice(index,1)
+                }
             },
             attachmentSelection(data){
                 this.data.attachmentType = data
-            },
-            //payment
-            getPaymentType(data){
-                this.data.type = data.type
-                this.data.paymentData = data.data
             },
             async getSpecificAccountItem(){
                 if (this.specificItemDetailsNextPage === null) {
@@ -409,7 +622,9 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: this.specificItem
+                        item: 'class',
+                        secondItem: 'program',
+                        search: this.searchItemsText
                     }
 
                 this.specificItemLoading = true
@@ -419,7 +634,11 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.specificItemLoading = false
 
                 if (response.status) {
-                    this.specificItemDetails.push(...response.items)
+                    if (!this.specificItemDetailsNextPage) {
+                        this.specificItemDetails = response.items
+                    } else {
+                        this.specificItemDetails.push(...response.items)
+                    }
                     if (response.next) {
                         this.specificItemDetailsNextPage += 1
                     } else {
@@ -462,36 +681,38 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 let response,
                     data = new FormData
                     
-                    data.append('name', this.data.name)
-                    data.append('description', this.data.description)
-                    data.append('attachments', JSON.stringify(this.data.attachments.map(attachment=>{
-                        return {
-                            type: attachment.type.slice(0, attachment.type.length - 1),
-                            id: attachment.data.id
-                        }
-                    })))
+                data.append('name', this.data.name)
+                data.append('description', this.data.description)
+                data.append('attachments', JSON.stringify(this.data.attachments.map(attachment=>{
+                    return {
+                        type: attachment.type.slice(0, attachment.type.length - 1),
+                        id: attachment.data.id
+                    }
+                })))
+                data.append('standAlone', JSON.stringify(this.standAlone)) 
+                data.append('paymentData', JSON.stringify(this.data.paymentData)) 
+                data.append('sections', JSON.stringify(this.sections)) 
+                data.append('type', this.data.type)
 
-                if (!this.edit && this.data.owner.account === 'school') {  
-                    data.append('classes', JSON.stringify(this.data.classes.map(cl=>{
-                        return {
-                            id: cl.id
-                        }
-                    })))
+                data.append('classes', JSON.stringify(this.data.classes.map(cl=>{
+                    return {
+                        id: cl.id,
+                        type: cl.type
+                    }
+                })))
+                if (this.computedAccount.account === 'facilitator' ||
+                    this.computedAccount.account === 'professional') { 
+                    data.append('facilitate', JSON.stringify(this.data.facilitate))
+                }
+                if (this.schoolAdmin) { 
+                    data.append('adminId', this.schoolAdmin.id)
                 }
 
-                if (this.edit) {
-                    if (this.computedAdmin) { 
-                        data.append('account', 'admin')
-                        data.append('accountId', this.computedAdmin.id)
-                    } else {
-                        data.append('account', this.computedAccount.account)
-                        data.append('accountId', this.computedAccount.accountId)
-                    }
+                data.append('account', this.computedAccount.account)
+                data.append('accountId', this.computedAccount.accountId)
 
-                    if (this.computedAccount.account === 'facilitator' ||
-                        this.computedAccount.account === 'professional') { 
-                        data.append('facilitate', JSON.stringify(this.data.facilitate))
-                    }
+                if (this.edit) {
+                    data.append('main', JSON.stringify(this.computedCheckMain))
                     data.append('state', this.data.state)
                     data.append('courseId', this.data.courseId)
                     data.append('removedAttachments', JSON.stringify(this.data.removedAttachments.map(attachment=>{
@@ -500,6 +721,35 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             id: attachment.data.id
                         }
                     })))
+                    data.append('removedPaymentData', JSON.stringify(
+                        this.data.removedPaymentData.map(payment=>{
+                            return {
+                                type: payment.type,
+                                id: payment.id
+                            }
+                        }
+                    )))
+                    this.data.mainClasses.forEach(mainCl=>{ //check if class or program has been removed
+                        let index = this.data.classes.findIndex(cl=>{
+                            return cl.type === mainCl.type && cl.id === mainCl.id
+                        })
+                        if (index === -1) {
+                            this.removedClassesUpdate(mainCl)
+                        }
+                    })
+                    data.append('removedClasses', JSON.stringify(this.data.removedClasses.map(attachment=>{
+                        return {
+                            type: attachment.type,
+                            id: attachment.id
+                        }
+                    })))
+                    data.append('removedSections', JSON.stringify(this.removedSections.map(section=>{
+                        return {
+                            id: section.id
+                        }
+                    })))
+                    data.append('editedSections', JSON.stringify(this.editedSections))
+                    
                     response = await this['dashboard/editCourse'](data)
                 } else {
                     if (this.data.discussionData.title.length) {                        
@@ -508,8 +758,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             data.append('discussionFile[]', file)
                         })
                     }
-                    data.append('type', this.data.type)
-                    data.append('paymentData', JSON.stringify(this.data.paymentData))
                     if (this.computedAccount.account === 'facilitator' ||
                         this.computedAccount.account === 'professional') {                    
                         data.append('owner', this.data.owner.account ? 
@@ -518,19 +766,9 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                         data.append('ownerId', this.data.owner.account ? 
                             this.data.owner.accountId : 
                             this.computedAccount.accountId)
-                        data.append('account', this.computedAccount.account)
-                        data.append('accountId', this.computedAccount.accountId)
-                        data.append('facilitate', JSON.stringify(this.data.facilitate))
                     } else if (this.computedAccount.account === 'school') {                  
                         data.append('owner', this.computedAccount.account)
                         data.append('ownerId', this.computedAccount.accountId)
-                        if (this.computedAccount.owner) {                        
-                            data.append('account', this.computedAccount.account)
-                            data.append('accountId', this.computedAccount.accountId)
-                        } else if (this.computedAdmin) {
-                            data.append('account', 'admin')
-                            data.append('accountId', this.computedAdmin.id)
-                        }
                     }
 
                     response = await this['dashboard/createCourse'](data)
@@ -542,21 +780,32 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.alertSuccess = true
                     this.alertMessage = `${this.data.name} was successfully ${action}`
                     if (this.edit) {
-                        this.$emit('courseSuccessfullyEdited', response.courseResource)
+                        if (this.computedCheckMain) this.$emit('courseSuccessfullyEdited', response.courseResource)
+                    } else {
+                        this.clearData()
                     }
-                    this.clearData()
+                    bus.$emit('updateCourse',response.course)
                 } else {
-                    let action = this.edit ? 'editing' : 'creation'
-                    this.alertDanger = true
-                    this.alertMessage = `course ${action} was unsuccessful`
+                    this.responseErrorAlert(response.response)
                     console.log('response :>> ', response);
                 }
             },
+        },
+        responseErrorAlert(response) {
+            this.alertDanger = true
+            if (response?.data?.message) {
+                this.alertMessage = response?.data?.message
+            }  else {
+                this.alertMessage = `course ${this.edit ? 'editing' : 'creation'} was unsuccessful`
+            }
         },
     }
 </script>
 
 <style lang="scss" scoped>
+    .modal-wrapper{
+        z-index: 10005;
+    }
 
     .create-course-wrapper{
         position: relative;
@@ -573,8 +822,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $background-color-main;
+            border-bottom: 2px solid $color-main;
             border-radius: 0;
+        }
+
+        .add-section{
+            width: 90%;
+            margin: 10px auto;
         }
 
         .class-structure{
@@ -606,11 +860,17 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             text-align: center;
         }
 
+        .search-input{
+            border: none;
+            border-bottom: 2px solid $color-main;
+            background: white;
+        }
+
         .attachments{
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-wrap: nowrap;
             align-items: center;
+            overflow-y: auto;
         }
 
         .attachments.danger{
@@ -628,13 +888,26 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         }
 
         .course-classes-section{
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
 
             .class-wrapper{
                 display: flex;
-                flex-wrap: wrap;
                 width: 90%;
                 margin: 10px auto;
                 align-items: center;
+                overflow: auto;
+
+                .class-badge{
+                    min-width: 150px;
+                }
+            }
+
+            .no-data{
+                font-size: 12px;
+                color: gray;
             }
 
             .get-more{

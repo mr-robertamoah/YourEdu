@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\CourseData;
 use App\Events\DeleteCourseEvent;
 use App\Events\NewCourseEvent;
 use App\Events\UpdateCourseEvent;
@@ -13,6 +14,7 @@ use App\Http\Resources\UserAccountResource;
 use App\Notifications\CourseCreatedNotification;
 use App\Traits\ClassCourseTrait;
 use App\User;
+use App\YourEdu\Course;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -39,11 +41,11 @@ class CourseService
 
     public function courseAliasCreate($courseId,$account,$accountId,$name,$description)
     {
-        $mainCourse = getAccountObject('course',$courseId);
+        $mainCourse = getYourEduModel('course',$courseId);
         if (is_null($mainCourse)) {
             throw new AccountNotFoundException("course not found with id {$courseId}");
         }
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
@@ -60,7 +62,7 @@ class CourseService
 
     public function courseDelete($courseId,$id)
     {
-        $course = getAccountObject('course',$courseId);
+        $course = getYourEduModel('course',$courseId);
         if (is_null($course)) {
             throw new AccountNotFoundException("course not found with id {$courseId}");
         }
@@ -74,127 +76,184 @@ class CourseService
         return 'successful';
     }
     
-    // for actual courses with lessons
-    public function createCourse($account,$accountId,$id,$courseData)
+    public function createCourse(CourseData $courseData)
     {
-        $mainAccount = getAccountObject($account,$accountId);
+        ray($courseData)->green();
+        $mainAccount = getYourEduModel($courseData->account,$courseData->accountId);
         if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
+            throw new AccountNotFoundException("{$courseData->account} not found with id {$courseData->accountId}");
         }
 
-        if ($mainAccount->user_id !== $id) {
+        if (!$this->checkAccountOwnership($mainAccount,$courseData->userId)) {
             throw new CourseException("you do not own this account");
         }
 
         $course = $mainAccount->addedCourses()->create([
-            'name' => $courseData['name'],
-            'state' => $courseData['owner'] === 'school' && 
-                ($account !== 'admin' || $account !== 'school') 
+            'name' => $courseData->name,
+            'state' => $courseData->owner === 'school' && 
+                ($courseData->account !== 'admin' && $courseData->account !== 'school') 
                 ? 'PENDING' : 'ACCEPTED',
-            'description' => $courseData['description'],
+            'description' => $courseData->description,
+            'stand_alone' => $courseData->standAlone,
         ]);
 
         if (is_null($course)) {
             throw new CourseException("course creation failed");
         }
 
-        if ($account === $courseData['owner'] && $accountId === $courseData['ownerId']) {
+        if ($courseData->account === $courseData->owner && $courseData->accountId === $courseData->ownerId) {
             $mainOwner = $mainAccount;
         } else {
-            $mainOwner = getAccountObject($courseData['owner'],$courseData['ownerId']);
+            $mainOwner = getYourEduModel($courseData->owner,$courseData->ownerId);
             if (is_null($mainOwner)) {
-                throw new AccountNotFoundException("{$courseData['owner']} not found with id {$courseData['ownerId']}");
+                throw new AccountNotFoundException("{$courseData->owner} not found with id {$courseData->ownerId}");
             }
         }        
 
         $course->ownedby()->associate($mainOwner);
         $course->save();
 
-        if ($courseData['facilitate']) {
-            self::courseAttachItem($course->id,$mainAccount,'facilitate');
-        }
-
-        //attachments like courses programs grades
-        $this->createAttachments(
-            $course,
-            $mainAccount,
-            $courseData['attachments'],
-            $courseData['facilitate']
+        $course = $this->itemCreateUpdateMethodParts(
+            course: $course,
+            mainAccount: $mainAccount,
+            courseData: $courseData,
+            method: __METHOD__
         );
-
-        //for classes we may attach course to
-        if (is_array($courseData['classes'])) {
-            foreach ($courseData['classes'] as $cl) {
-                $actualClass = getAccountObject('class',$cl->id);
-                if (!is_null($actualClass)) {                
-                    $actualClass->courses()->attach($course->id);
-                    $actualClass->save();
-                }
-            }
-        } else {
-            $courseData['classes'] = [];
-        }
-
-        //set payment information
-        $this->setPayment(
-            item: $course,
-            addedby: $mainAccount,
-            paymentType: $courseData['type'],
-            paymentData: $courseData['paymentData'],
-        );
-
-        //create auto discussion 
-        if ($courseData['discussionData']) {
-            $discussion = (new DiscussionService())->createDiscussion(
-                $account,
-                $accountId,
-                $courseData['discussionData']->title,
-                $courseData['discussionData']->preamble,
-                $courseData['discussionData']->restricted,
-                $courseData['discussionData']->type,
-                $courseData['discussionData']->allowed,
-                $courseData['discussionFiles'],
-                null
-            );
-            $discussion->discussionfor()->associate($course);
-            $discussion->save();
-        }
-
-        //track school activities
-        if ($account === 'admin') {
-            (new ActivityTrackService())->createActivityTrack(
-                $course,$mainOwner,$mainAccount,__METHOD__
-            );
-        }
 
         if ($course->state === 'PENDING') { //it is only pending if it belongs to school and it is created by a non owner or non admin
-            $userIds = array_filter(getAdminIds($mainOwner),function($userId) use ($id){
-                return $userId !== $id;
+            $userIds = array_filter($mainOwner->getAdminIds(),function($id) use ($courseData){
+                return $id !== $courseData->userId;
             });
+            $name = $mainOwner->name ?? $mainAccount->company_name;
             Notification::send(User::whereIn('id',$userIds)->get(), 
                 new CourseCreatedNotification(
                     new UserAccountResource($mainAccount),
                     "created a course with the name: {$course->name}, 
-                    for {$mainOwner->name}. Please go to dashboard to approve or otherwise."
+                    for {$name}. Please go to dashboard to approve or otherwise."
                 )
             );
         }
 
-        if ($courseData['owner'] === 'school') {
+        if ($courseData->owner === 'school') {
             broadcast(new NewCourseEvent([
-                'account' => $courseData['owner'],
-                'accountId' => $courseData['ownerId'],
-                'classes' => $courseData['classes'],
+                'account' => $courseData->owner,
+                'accountId' => $courseData->ownerId,
+                'classes' => $course->classes->toArray(),
                 'course' => new CourseResource($course),
             ]))->toOthers();
         }
 
         return $course;
     }
+
+    private function itemCreateUpdateMethodParts
+    (
+        Course $course,
+        $mainAccount,
+        CourseData $courseData,
+        $method
+    )
+    {
+        //attachments like courses programs grades
+        $this->createAttachments(
+            $course,
+            $mainAccount,
+            $courseData->attachments,
+            $courseData->facilitate
+        );
+
+        //for classes and programs to which we may attach course
+        if (!$course->stand_alone) {            
+            $this->createMainAttachments(
+                attachments: $courseData->classes,
+                method: 'courses',
+                itemId: $course->id,
+                userId: $courseData->userId
+            );
+        }
+
+        //set payment information
+        $this->setPayment(
+            item: $course,
+            addedby: $mainAccount,
+            paymentType: $courseData->type,
+            paymentData: $courseData->paymentData,
+        );
+
+        //create auto discussion 
+        $this->createAutoDiscussion(
+            item: $course,
+            itemData: $courseData,
+        );
+
+        //create sections
+        $course = $this->createCourseSections(
+            course: $course,
+            courseData: $courseData
+        );
+
+        //track school activities
+        if ($courseData->account === 'admin') {
+            (new ActivityTrackService())->createActivityTrack(
+                $course,$course->ownedby,$mainAccount,$method
+            );
+        } else if ($courseData->account === 'facilitator' || $courseData->account === 'professional') {
+            //update course relations
+            if ($courseData->facilitate) { //facilitate
+                self::courseAttachItem($course->id,$mainAccount,'facilitate');
+            } else {
+                self::courseUnattachItem($course->id,$mainAccount);
+            }
+        }
+
+        return $course->refresh();
+    }
+
+    private function createCourseSections(Course $course, CourseData $courseData)
+    {
+        forEach($courseData->sections as $section) {
+            $course->courseSections()->create([
+                'name' => $section->name,
+                'description' => $section->description,
+            ]);
+        }
+
+        return $course->refresh();
+    }
+
+    private function removeCourseSections(Course $course,CourseData $courseData)
+    {
+        if (!is_array($courseData->removedSections)) return $course;
+        forEach($courseData->removedSections as $section) {
+            $courseSection = getYourEduModel('courseSection',$section->id);
+            if (is_null($courseSection)) {
+                throw new AccountNotFoundException("course section with id {$section->id} not found");
+            }
+            if ($courseSection->lessons->count()) {
+                throw new CourseException("Please you cannot delete course section with {$section->id} because it has lessons. First delete the lessons and then continue.");
+            }
+            $courseSection->delete();
+        }
+
+        return $course->refresh();
+    }
+
+    private function editCourseSections(Course $course, CourseData $courseData)
+    {
+        if (!is_array($courseData->editedSections)) return $course;
+        forEach($courseData->editedSections as $section) {
+            $course->courseSections()->where('id', $section->id)->first()?->update([
+                'name' => $section->name,
+                'description' => $section->description,
+            ]);
+        }
+
+        return $course->refresh();
+    }
     
     public function getCourse($courseId)
     {
-        $course = getAccountObject('course',$courseId);
+        $course = getYourEduModel('course',$courseId);
         if (is_null($course)) {
             throw new AccountNotFoundException("course not found with id {$courseId}");
         }
@@ -207,135 +266,160 @@ class CourseService
         
     }
     
-    public function updateCourse($account,$accountId,$courseId,$userId,$courseData)
+    public function updateCourse(CourseData $courseData)
     {
+        ray($courseData)->green();
         //check account
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($courseData->account,$courseData->accountId);
         if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("$account not found with id {$courseId}");
+            throw new AccountNotFoundException("$courseData->account not found with id {$courseData->courseId}");
+        }
+
+        if (!$this->checkAccountOwnership($mainAccount,$courseData->userId)) {
+            throw new CourseException("you do not own this account");
         }
         //check course
-        $course = getAccountObject('course',$courseId);
+        $course = getYourEduModel('course',$courseData->courseId);
         if (is_null($course)) {
-            throw new AccountNotFoundException("course not found with id {$courseId}");
+            throw new AccountNotFoundException("course not found with id {$courseData->courseId}");
         }
 
         //check authorization
-        $this->checkCourseAuthorization($course,$userId);
+        $this->checkCourseAuthorization($course,$courseData->userId);
 
         //update course attributes
         $course->update([
-            'name' => $courseData['name'],
-            'state' => Str::upper($courseData['state']),
-            'description' => $courseData['description'],
+            'name' => $courseData->name,
+            'state' => Str::upper($courseData->state),
+            'description' => $courseData->description,
         ]);
 
-        //update course relations
-        if ($courseData['facilitate']) { //facilitate
-            self::courseAttachItem($courseId,$mainAccount,'facilitate');
+        $course = $this->itemCreateUpdateMethodParts(
+            course: $course,
+            mainAccount: $mainAccount,
+            courseData: $courseData,
+            method: __METHOD__
+        );
+        
+        //for classes and programs from which we may detach course
+        if (!$course->stand_alone) {            
+            $this->removeMainAttachments(
+                attachments: $courseData->removedClasses,
+                method: 'courses',
+                itemId: $course->id,
+            );
         } else {
-            self::courseUnattachItem($courseId,$mainAccount);
+            $this->removeAllMainAttachments($course);
         }
 
-        $this->createAttachments( //attachments like courses programs grades
-            $course,
-            $mainAccount,
-            $courseData['attachments'],
-            $courseData['facilitate']
-        );  
+        $this->removeAttachments( //remove attachments
+            item: $course,
+            account: ($courseData->account === 'facilitator' || $courseData->account === 'professional') ? $mainAccount : null,
+            facilitate: $courseData->facilitate,
+            attachments: $courseData->removedAttachments,
+        );
 
-        //track school activities
-        if ($account === 'admin') {
-            (new ActivityTrackService())->createActivityTrack(
-                $course,$course->ownedby,$mainAccount,__METHOD__
-            );
-        }   
+        //set payment information
+        $this->removePayment(
+            item: $course,
+            paymentData: $courseData->removedPaymentData,
+        );
+
+        //remove sections
+        $course = $this->removeCourseSections(
+            course: $course,
+            courseData: $courseData
+        );
+
+        //edit sections
+        $course = $this->editCourseSections(
+            course: $course,
+            courseData: $courseData
+        );
 
         //broadcast
-        $ownedby = $course->ownedby;
-        $classes = $course->classes;
-
-        if (getAccountString($course) === 'school') {            
-            broadcast(new UpdateCourseEvent([
-                'account' => getAccountString($ownedby),
-                'accountId' => $ownedby->id,
-                'classes' => $classes,
-                'courseId' => $courseId,
-            ]))->toOthers();
-        }   
+        $this->broadcastUpdate($course);
 
         //return course
         return $course;
     }
 
+    /**
+     * this is to help remove course from all classes or programs 
+     */
+    private function removeAllMainAttachments(Course $course)
+    {
+        $course->programs()->detach();
+        $course->classes()->detach();
+    }
+
     public function checkCourseAuthorization($course,$userId)
     {
         if (!$this->checkAuthorization($course,$userId)) {
+            ray('enters');
             throw new CourseException("You are not authorized to edit or delete the course with id {$course->id}");
         }
     }
 
-    public function deleteCourse($courseId,$userId,$adminId,$action)
+    public function deleteCourse(CourseData $courseData)
     {
-        $course = getAccountObject('course',$courseId);
+        ray($courseData)->green();
+        $course = getYourEduModel('course',$courseData->courseId);
         if (is_null($course)) {
-            throw new AccountNotFoundException("course not found with id {$courseId}");
+            throw new AccountNotFoundException("course not found with id {$courseData->courseId}");
         }
 
-        $this->checkCourseAuthorization($course,$userId);
+        $this->checkCourseAuthorization($course,$courseData->userId);
 
-        if ($adminId) {
-            $admin = getAccountObject('admin',$adminId);
+        if ($courseData->adminId) {
+            $admin = getYourEduModel('admin',$courseData->adminId);
             (new ActivityTrackService())->createActivityTrack(
                 $course,$course->ownedby,$admin,__METHOD__
             );
         }
-        $ownedby = $course->ownedby;
-        $classes = $course->classes;
 
-        if ($action === 'undo') {
-            return $this->changeState($ownedby,$classes,$course,'accepted');
-        } else if($action === 'delete') {
+        if ($courseData->action === 'undo') {
+            return $this->changeState($course,'accepted');
+        } else if($courseData->action === 'delete') {
             //check if someone has subsribed or paid or used by a program
             if ($this->paymentMadeFor($course) || $this->usedByAnother($course)) {
-                return $this->changeState($ownedby,$classes,$course,'deleted');
+                return $this->changeState($course,'deleted');
             } else {
-                $course->delete();
                 
                 broadcast(new DeleteCourseEvent([
-                    'account' => getAccountString($ownedby),
-                    'accountId' => $ownedby->id,
-                    'classes' => $classes,
-                    'courseId' => $courseId,
+                    'account' => class_basename_lower($course->ownedby),
+                    'accountId' => $course->ownedby->id,
+                    'classes' => $course->classes,
+                    'courseId' => $courseData->courseId,
                 ]))->toOthers();
 
+                $course->delete();
                 return null;
             }
         }
     }
 
-    private function broadcastUpdate($ownedby,$classes,$course)
+    private function broadcastUpdate($course)
     {
         broadcast(new UpdateCourseEvent([
-            'account' => getAccountString($ownedby),
-            'accountId' => $ownedby->id,
-            'classes' => $classes,
+            'account' => class_basename_lower($course->ownedby),
+            'accountId' => $course->ownedby->id,
+            'classes' => $course->classes->toArray(),
             'course' => new DashboardCourseResource($course),
         ]))->toOthers();
     }
 
     private function paymentMadeFor($course)
     {
-        return true;
         if (
-            $course->whereHas('payments')
+            $course->has('payments')
                 ->orWhereHas('programs',function($query) {
-                    $query->whereHas('payments');
+                    $query->has('payments');
                 })
                 ->orWhereHas('classes',function($query) {
-                    $query->whereHas('payments');
+                    $query->has('payments');
                 })
-                ->first()
+                ->count()
         ) {
             return true;
         }
@@ -353,10 +437,15 @@ class CourseService
 
     public static function courseAttachItem($courseId,$item,$activity)
     {
+        if ($item::class === 'App\\YourEdu\\Program') {
+            $method = 'coursesService';
+        } else {
+            $method = 'courses';
+        }
         if (is_null(
-            $item->courses->where('id',$courseId)->first()
+            $item->$method->where('id',$courseId)->first()
         )) {
-            $item->courses()->attach($courseId,['activity' => Str::upper($activity)]);
+            $item->$method()->attach($courseId,['activity' => Str::upper($activity)]);
             $item->save();
         }
     }

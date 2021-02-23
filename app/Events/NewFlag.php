@@ -36,10 +36,10 @@ class NewFlag implements ShouldBroadcastNow
         $account = null;
         $accountId = null;
         if ($this->flagArray->type === 'comment') {
-            $account = getAccountString($this->flagArray->flag->flaggable->commentedby_type);
+            $account = class_basename_lower($this->flagArray->flag->flaggable->commentedby_type);
             $accountId = $this->flagArray->flag->flaggable->commentedby_id;
         } else if ($this->flagArray->type === 'post') {
-            $account = getAccountString($this->flagArray->flag->flaggable->postedby_type);
+            $account = class_basename_lower($this->flagArray->flag->flaggable->postedby_type);
             $accountId = $this->flagArray->flag->flaggable->postedby_id;
         }
         return [

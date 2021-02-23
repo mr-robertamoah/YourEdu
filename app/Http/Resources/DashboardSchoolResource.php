@@ -14,6 +14,14 @@ class DashboardSchoolResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'about' => $this->about,
+            'classStructrue' => $this->class_structrue,
+            'role' => $this->role,
+            'UserId' => $this->owner_id,
+            'name' => $this->company_name,
+            'hasFreeResources' => $this->hasFreeResources(),
+        ];
     }
 }

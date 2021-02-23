@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Contracts\PaymentTypeContract;
+use App\Exceptions\AccountNotFoundException;
 use Illuminate\Support\Str;
 
-class PriceService
+class PriceService extends PaymentTypeContract
 {   
-    public static function setPrice($item,$priceData,$ownedby)
+    public static function set($item,$priceData,$ownedby)
     {
         //the owned by is actually added by
         $price = $item->prices()->create([
@@ -18,8 +20,14 @@ class PriceService
         $price->save();
     }
 
-    public static function __callStatic($method, $arguments)
+    public static function unset($item,$priceId)
     {
-        self::$method(...$arguments);
+        $price = getYourEduModel('price', $priceId);
+        if (is_null($price)) {
+            throw new AccountNotFoundException("price not found with id {$priceId}");
+        }
+
+        $price->priceable()->dissociate($item);
+        $price->delete();
     }
 }

@@ -2,8 +2,10 @@
     <div class="dashboard-sub-section-wrapper"
         :class="{full}"
     >
-        <div class="top" @click="clickedIcon">
-            <div class="icon">
+        <div class="top" @click.self="clickedIcon">
+            <div class="icon"
+                @click="clickedIcon"
+            >
                 <font-awesome-icon 
                     :icon="['fa','plus']"
                     v-if="!full"
@@ -13,18 +15,34 @@
                     v-if="full"
                 ></font-awesome-icon>
             </div>
-            <div class="text">
+            <div class="text"
+                @click="clickedIcon"
+            >
                 {{subText}}
             </div>
+            <dashboard-action-button
+                text="view more"
+                icon=""
+                v-if="computedShowViewMore"
+                @click="clickedDashboardActionButton"
+                class="action-button"
+            ></dashboard-action-button>
         </div>
         <div class="body" v-if="full">
             <slot name="body"></slot>
+        </div>
+        <div class="bottom" v-if="full">
+            <slot name="bottom"></slot>
         </div>
     </div>
 </template>
 
 <script>
+import DashboardActionButton from './DashboardActionButton';
     export default {
+        components: {
+            DashboardActionButton,
+        },
         props: {
             subText: {
                 type: String,
@@ -34,10 +52,27 @@
                 type: Boolean,
                 default: false
             },
+            hasViewMore: {
+                type: Boolean,
+                default: true
+            },
+            viewLength: { //minimum which determines if the button to view more should be available
+                type: Number,
+                default: 0
+            },
+            itemsLength: {
+                type: Number,
+                default: 1
+            },
         },
         data() {
             return {
                 full: false,
+            }
+        },
+        computed: {
+            computedShowViewMore() {
+                return this.hasViewMore && this.full && this.itemsLength > this.viewLength
             }
         },
         methods: {
@@ -45,6 +80,12 @@
                 if (!this.inactive) {
                     this.full =  !this.full
                 }
+            },
+            clickedDashboardActionButton(data) {
+                this.$emit('clickedDashboardActionButton',{
+                    type: data.text,
+                    subText: this.subText
+                })
             }
         },
     }
@@ -78,6 +119,9 @@
         .body{
             max-width: 600px;
             margin: 0 auto;
+            padding: 10px;
+            max-height: 500px;
+            overflow-y: auto;
         }
 
         .bottom{
@@ -88,8 +132,6 @@
     .dashboard-sub-section-wrapper.full{
         min-height: 100px;
         background: mintcream;
-        max-height: 500px;
-        overflow-y: auto;
         
         .top{
             color: black;
@@ -101,6 +143,10 @@
     .dashboard-sub-section-wrapper{
 
         .top{
+
+            .action-button{
+                margin: 0 5px 0 auto;
+            }
 
             .icon{
                 font-size: 16px;

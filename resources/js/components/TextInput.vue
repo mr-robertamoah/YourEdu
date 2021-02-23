@@ -169,6 +169,8 @@ $buttonColor : rgba(2, 104, 90, .6);
                 border: none;
                 border-radius: $border-radius;
                 font-size: 16px;
+                font-weight: 500;
+                color: black;
 
                 &:focus,
                 &:active{
@@ -177,7 +179,7 @@ $buttonColor : rgba(2, 104, 90, .6);
             }
 
             .form-control{
-                // min-width: 90%;
+                box-shadow: none;
                 margin: 0 !important;
             }
 

@@ -87,17 +87,17 @@ const mutations = {
             state.accountDetails.ownedClasses.splice(index,1,data)
         }
     },
-    REMOVE_CLASS(state,courseId){
+    REMOVE_CLASS(state,classId){
         let index = state.accountDetails.classes.findIndex(c=>{
-            return c.id == courseId
+            return c.id == classId
         })
         if (index > -1) {
             state.accountDetails.classes.splice(index,1)
         }
     },
-    REMOVE_OWNED_CLASS(state,courseId){
+    REMOVE_OWNED_CLASS(state,classId){
         let index = state.accountDetails.ownedClasses.findIndex(c=>{
-            return c.id == courseId
+            return c.id == classId
         })
         if (index > -1) {
             state.accountDetails.ownedClasses.splice(index,1)
@@ -179,6 +179,287 @@ const mutations = {
         })
         if (index > -1) {
             state.accountDetails.ownedCourses.splice(index,1)
+        }
+    },
+    //programs
+    ADD_NEW_PROGRAM(state,data){
+        state.accountDetails.programs.unshift(data)
+    },
+    ADD_NEW_OWNED_PROGRAM(state,data){
+        state.accountDetails.ownedPrograms.unshift(data)
+    },
+    UPDATE_PROGRAM(state,data){
+        let index = state.accountDetails.programs.findIndex(c=>{
+            return c.id === data.id
+        })
+        if (index > -1) {
+            state.accountDetails.programs.splice(index,1,data)
+        }
+    },
+    UPDATE_OWNED_PROGRAM(state,data){
+        let index = state.accountDetails.ownedPrograms.findIndex(c=>{
+            return c.id === data.id
+        })
+        if (index > -1) {
+            state.accountDetails.ownedPrograms.splice(index,1,data)
+        }
+    },
+    REMOVE_PROGRAM(state,programId){
+        let index = state.accountDetails.programs.findIndex(c=>{
+            return c.id == programId
+        })
+        if (index > -1) {
+            state.accountDetails.programs.splice(index,1)
+        }
+    },
+    REMOVE_OWNED_PROGRAM(state,programId){
+        let index = state.accountDetails.ownedPrograms.findIndex(c=>{
+            return c.id == programId
+        })
+        if (index > -1) {
+            state.accountDetails.ownedPrograms.splice(index,1)
+        }
+    },
+    //programs
+    ADD_NEW_LESSON_TO_LESSONS(state,data){
+        if (state.accountDetails.account === 'facilitator' ||
+            state.accountDetails.account === 'professional') {
+            state.accountDetails.lessons.unshift(data.lesson)
+        }
+    },
+    ADD_NEW_LESSON_TO_ITEMS(state,data){
+        let index
+        data.items.forEach(item=>{ //items are the courses and subjects with classes
+            //for facilitating 
+            //for onwership
+            if (item.type === 'course') {
+                index = state.accountDetails.courses.findIndex(course=>{
+                    return course.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.courses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.courses[index].lessons += 1
+                }
+                if (data.owner) {
+                    index = state.accountDetails.ownedCourses.findIndex(course=>{
+                        return course.id === item.id
+                    })
+                    if (index > -1 &&
+                        state.accountDetails.ownedCourses[index].hasOwnProperty('lessons')) {
+                        state.accountDetails.ownedCourses[index].lessons += 1
+                    }
+                }
+            } else if (item.type === 'class') {
+                index = state.accountDetails.classes.findIndex(cl=>{
+                    return cl.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.classes[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.classes[index].lessons += 1
+                }
+                if (data.owner) {
+                    index = state.accountDetails.ownedClasses.findIndex(cl=>{
+                        return cl.id === item.id
+                    })
+                    if (index > -1 &&
+                        state.accountDetails.ownedClasses[index].hasOwnProperty('lessons')) {
+                        state.accountDetails.ownedClasses[index].lessons += 1
+                    }
+                }
+            } else if (item.type === 'subject' && item.classId) {
+                index = state.accountDetails.classes.findIndex(cl=>{
+                    return cl.id === item.classId
+                })
+                if (index > -1 &&
+                    state.accountDetails.classes[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.classes[index].lessons += 1
+                }
+                if (data.owner) {
+                    index = state.accountDetails.ownedClasses.findIndex(cl=>{
+                        return cl.id === item.classId
+                    })
+                    if (index > -1 &&
+                        state.accountDetails.ownedClasses[index].hasOwnProperty('lessons')) {
+                        state.accountDetails.ownedClasses[index].lessons += 1
+                    }
+                }
+            } else if (item.type === 'courseSection' && item.courseId) {
+                index = state.accountDetails.classes.findIndex(cl=>{
+                    return cl.id === item.courseId
+                })
+                if (index > -1 &&
+                    state.accountDetails.courses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.courses[index].lessons += 1
+                }
+                if (data.owner) {
+                    index = state.accountDetails.ownedClasses.findIndex(cl=>{
+                        return cl.id === item.courseId
+                    })
+                    if (index > -1 &&
+                        state.accountDetails.ownedCourses[index].hasOwnProperty('lessons')) {
+                        state.accountDetails.ownedCourses[index].lessons += 1
+                    }
+                }
+            } else if (item.type === 'extracurriculum') {
+                index = state.accountDetails.extracurriculums.findIndex(extracurriculum=>{
+                    return extracurriculum.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.extracurriculums[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.extracurriculums[index].lessons += 1
+                }
+                if (data.owner) {
+                    index = state.accountDetails.extracurriculums.findIndex(extracurriculum=>{
+                        return extracurriculum.id === item.id
+                    })
+                    if (index > -1 &&
+                        state.accountDetails.extracurriculums[index].hasOwnProperty('lessons')) {
+                        state.accountDetails.extracurriculums[index].lessons += 1
+                    }
+                }
+            }
+        })
+    },
+    UPDATE_LESSON(state,data){
+        // let index = state.accountDetails.programs.findIndex(c=>{
+        //     return c.id === data.id
+        // })
+        // if (index > -1) {
+        //     state.accountDetails.programs.splice(index,1,data)
+        // }
+    },
+    UPDATE_ACCOUNT_LESSON(state,data){
+        if (state.accountDetails.account === 'facilitator' ||
+            state.accountDetails.account === 'professional') {
+            let index = state.accountDetails.lessons.findIndex(lesson=>{
+                return data.id === lesson.id
+            })
+            if (index > -1) {
+                state.accountDetails.lessons.splice(index,1,data)
+            }
+        }
+    },
+    REMOVE_LESSON(state,lessonId){
+        let index = state.accountDetails.lessons.findIndex(c=>{
+            return c.id == lessonId
+        })
+        if (index > -1) {
+            state.accountDetails.lessons.splice(index,1)
+        }
+    },
+    REMOVE_ACCOUNT_LESSON(state,data){
+        if (state.accountDetails.account === 'facilitator' ||
+            state.accountDetails.account === 'professional') {
+            let index = state.accountDetails.lessons.findIndex(lesson=>{
+                return lesson.id === data.lessonId
+            })
+            if (index > -1) {
+                state.accountDetails.lessons.splice(index,1)
+            }
+        }
+        data.items.forEach(item=>{
+            if (item.type === 'course') {
+                index = state.accountDetails.courses.findIndex(course=>{
+                    return course.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.courses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.courses[index].lessons -= 1
+                }
+                index = state.accountDetails.ownedCourses.findIndex(course=>{
+                    return course.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.ownedCourses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.ownedCourses[index].lessons -= 1
+                }
+            } else if (item.type === 'class') {
+                index = state.accountDetails.classes.findIndex(cl=>{
+                    return cl.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.classes[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.classes[index].lessons -= 1
+                }
+                index = state.accountDetails.ownedClasses.findIndex(cl=>{
+                    return cl.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.ownedClasses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.ownedClasses[index].lessons -= 1
+                }
+            } else if (item.type === 'subject' && item.classId) {
+                index = state.accountDetails.classes.findIndex(cl=>{
+                    return cl.id === item.classId
+                })
+                if (index > -1 &&
+                    state.accountDetails.classes[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.classes[index].lessons -= 1
+                }
+                index = state.accountDetails.ownedClasses.findIndex(cl=>{
+                    return cl.id === item.classId
+                })
+                if (index > -1 &&
+                    state.accountDetails.ownedClasses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.ownedClasses[index].lessons -= 1
+                }
+            } else if (item.type === 'courseSection' && item.courseId) {
+                index = state.accountDetails.classes.findIndex(cl=>{
+                    return cl.id === item.courseId
+                })
+                if (index > -1 &&
+                    state.accountDetails.courses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.courses[index].lessons -= 1
+                }
+                index = state.accountDetails.ownedClasses.findIndex(cl=>{
+                    return cl.id === item.courseId
+                })
+                if (index > -1 &&
+                    state.accountDetails.ownedCourses[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.ownedCourses[index].lessons -= 1
+                }
+            } else if (item.type === 'extracurriculum') {
+                index = state.accountDetails.extracurriculums.findIndex(extracurriculum=>{
+                    return extracurriculum.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.extracurriculums[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.extracurriculums[index].lessons -= 1
+                }
+                index = state.accountDetails.extracurriculums.findIndex(extracurriculum=>{
+                    return extracurriculum.id === item.id
+                })
+                if (index > -1 &&
+                    state.accountDetails.extracurriculums[index].hasOwnProperty('lessons')) {
+                    state.accountDetails.extracurriculums[index].lessons -= 1
+                }
+            }
+        })
+    },
+    //collaboration
+    ADD_COLLABORATION(state, collaboration) {
+        if (state.accountDetails.hasOwnProperty('collaborations')) {
+            state.accountDetails.collaborations.unshift(collaboration)
+        }
+    },
+    UPDATE_COLLABORATION(state, collaboration) {
+        if (state.accountDetails.hasOwnProperty('collaborations')) {
+            let index = state.accountDetails.collaborations.findIndex(collabo=>{
+                return collabo.id === collaboration.id
+            })
+            if (index > -1) {
+                state.accountDetails.collaborations.splice(index,1,collaboration)
+            }
+        }
+    },
+    REMOVE_COLLABORATION(state, collaborationId) {
+        if (state.accountDetails.hasOwnProperty('collaborations')) {
+            let index = state.accountDetails.collaborations.findIndex(collabo=>{
+                return collabo.id === collaborationId
+            })
+            if (index > -1) {
+                state.accountDetails.collaborations.splice(index,1)
+            }
         }
     },
     ///

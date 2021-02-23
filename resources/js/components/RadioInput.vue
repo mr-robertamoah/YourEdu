@@ -1,5 +1,5 @@
 <template>
-    <div class="check-input-wrapper">
+    <div class="check-input-wrapper" :class="{checked: value === radioValue}">
         <input type="radio"
             :value="radioValue"
             @change="inputRadioMethod"
@@ -7,7 +7,7 @@
             :name="name"
             :id="id"
         >
-        <label :for="id">{{label}}</label>
+        <label class="label" :for="id">{{label}}</label>
     </div>
 </template>
 
@@ -44,24 +44,38 @@
                     this.inputRadio = ''
                 }
             },
-            value(newValue) {
-                if (newValue === this.inputRadio) {
-                    this.$refs.radioinput.checked = true
-                } else {
-                    this.$refs.radioinput.checked = false
+            value: {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue === this.radioValue && this.$refs.radioinput) {
+                        this.$refs.radioinput.checked = true
+                    } else if (this.$refs.radioinput) {
+                        this.$refs.radioinput.checked = false
+                    }
                 }
             }
         },
         methods: {
             inputRadioMethod() {
                 this.inputRadio = this.$refs.radioinput.value
-                console.log(this.inputRadio);
+                // console.log(this.inputRadio);
             }
         },
     }
 </script>
 
 <style lang="scss" scoped>
+@mixin label-after() {
+    border-radius: 11px;
+    width: 12px;
+    height: 12px;
+    position: absolute;
+    top: 12px;
+    left: 9px;
+    content: '';
+    display: block;
+    background: $color-main;
+}
 
     .check-input-wrapper{
         position: relative;
@@ -92,23 +106,31 @@
         }
 
         input[type='radio']:checked + label::after{
-            border-radius: 11px;
-            width: 12px;
-            height: 12px;
-            position: absolute;
-            top: 12px;
-            left: 9px;
-            content: '';
-            display: block;
-            background: $background-color-main;
+            @include label-after()
         }
 
-        input[type='radio']:checked + label{
-            color: $background-color-main;
+        input[type='radio']:checked + label,
+        .checked.label{
+            color: $color-main;
         }
 
         input[type='radio']:checked + label::before{
-            border-color: $background-color-main;
+            border-color: $color-main;
+        }
+    }
+
+    .checked{
+
+        label{
+            color: $color-main;
+
+            &::before{
+                border-color: $color-main;
+            }
+
+            &::after{
+                @include label-after()
+            }
         }
     }
 </style>

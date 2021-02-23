@@ -15,8 +15,9 @@ class CreateLinksTable extends Migration
     {
         Schema::create('links', function (Blueprint $table) {
             $table->id();
-            $table->morphs('addedby'); // facilitator professional school 
-            $table->string('link');
+            $table->morphs('addedby'); // facilitator professional school lesson
+            $table->string('name')->nullable();
+            $table->longText('link');
             $table->string('description')->nullable();
             $table->morphs('linkable'); // lesson lessonrequirement
             $table->softDeletes();

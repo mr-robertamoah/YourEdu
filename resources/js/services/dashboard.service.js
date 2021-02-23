@@ -81,7 +81,6 @@ const DashboadService = {
         }
     },
     async fetchItem(data){
-        console.log('data :>> ', data);
         let {item, itemId} = data
         try {
             let response = await ApiService.get(`api/${item}/${itemId}`)
@@ -207,6 +206,37 @@ const DashboadService = {
             return error.response
         }
     },
+    //program
+    async createProgram(data){
+        try {
+            let response = await ApiService.post(`api/program/create/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async deleteProgram(data){
+        try {
+            let response = await ApiService.post(`api/program/delete/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async updateProgram(data){
+        try {
+            let response = await ApiService.post(`api/program/update/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
     //course
     async createCourse(data){
         try {
@@ -231,6 +261,37 @@ const DashboadService = {
     async updateCourse(data){
         try {
             let response = await ApiService.post(`api/course/update/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    //lesson
+    async createLesson(data){
+        try {
+            let response = await ApiService.post(`api/lesson/create`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async deleteLesson(data){
+        try {
+            let response = await ApiService.post(`api/lesson/delete`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async updateLesson(data){
+        try {
+            let response = await ApiService.post(`api/lesson/update`,data)
 
             return response
         } catch (error) {
@@ -269,6 +330,37 @@ const DashboadService = {
             return error.response
         }
     },
+    //extracurriculum
+    async createCollaboration(data){
+        try {
+            let response = await ApiService.post(`api/collaboration/create`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async deleteCollaboration(data){
+        try {
+            let response = await ApiService.post(`api/collaboration/delete`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async updateCollaboration(data){
+        try {
+            let response = await ApiService.post(`api/collaboration/update`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
     //
     async createAccountAttachments(data){
         try {
@@ -293,7 +385,32 @@ const DashboadService = {
     async getAccountSpecificItem(main){
         let {nextPage, data} = main
         try {
-            let response = await ApiService.get(`api/dashboard/account/item?page=${nextPage}`,data)
+            let response = 
+                await ApiService.get(`api/dashboard/account/item?page=${nextPage}`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async getAccountItems(main){ //to help view more of an item
+        let {nextPage, data} = main
+        try {
+            let response = 
+                await ApiService.get(`api/dashboard/account/items?page=${nextPage}`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async getItemDetails(data){ //to help view details of an item in a modal
+        let {type, id} = data
+        try {
+            let response = 
+                await ApiService.get(`api/dashboard/${type}/${id}`)
 
             return response
         } catch (error) {

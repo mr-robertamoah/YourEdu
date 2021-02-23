@@ -18,8 +18,12 @@ class CreateAnswersTable extends Migration
             $table->nullableMorphs('answerable'); // riddle question
             $table->unsignedBigInteger('work_id')->nullable();
             $table->unsignedBigInteger('possible_answer_id')->nullable();
-            $table->string('answer')->nullable();
+            $table->json('possible_answer_ids')->nullable();
+            $table->longText('answer')->nullable();
             $table->nullableMorphs('answeredby'); // parent learner facilitator professional 
+            $table->enum('answer_type',[
+                'TRUE_FALSE,LONG_ANSWER,SHORT_ANSWER,IMAGE,VIDEO,AUDIO,
+                OPTION,NUMBER','FLOW','ARRANGE'])->nullable();
             $table->softDeletes();
             $table->timestamps();
 

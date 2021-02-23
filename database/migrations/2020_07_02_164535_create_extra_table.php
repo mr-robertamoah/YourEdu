@@ -18,7 +18,7 @@ class CreateExtraTable extends Migration
             $table->unsignedBigInteger('extracurriculum_id');
             $table->nullableMorphs('extracurriculumable'); // school class group learner facilitator professional collaboration
             $table->boolean('resource')->default(false);
-            $table->enum('activity',['FACILITATE','TAKE','OFFER'])->nullable();
+            $table->enum('activity',['FACILITATE','TAKE','OFFER','FREE','INTRO'])->nullable();
             $table->timestamps();
 
 

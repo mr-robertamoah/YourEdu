@@ -21,7 +21,21 @@ export default {
                 str += '\n'
                 str += `description: ${this.data.description}`
             }
+            if (this.data.academicYears) {
+                str += '\n' + `${this.data.academicYears.length} academic years`
+            }
+            if (this.data.sections) {
+                str += '\n' + `${this.data.sections.length} academic year sections`
+            }
             return str
         }
+    },
+    methods: {
+        clickedRemoveData() {
+            this.$emit('clickedRemoveData',this.data)
+        },
+        clickedData() {
+            this.$emit('clickedData',this.data)
+        },
     },
 }

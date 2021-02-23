@@ -36,6 +36,7 @@ class AcademicYear extends Model
 
     public function classes()
     {
-        return $this->hasMany(ClassModel::class);
+        return $this->morphedByMany(ClassModel::class,'academicable','academicables','academic_id')
+            ->withTimestamps();
     }
 }

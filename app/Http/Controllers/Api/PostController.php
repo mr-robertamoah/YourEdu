@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\DiscussionPostResource;
 use App\Http\Resources\PostResource;
 use App\Services\Attachment;
+use App\Services\FileService;
+use App\Services\QuestionData;
 use App\Services\QuestionService;
 use App\User;
 use App\YourEdu\Discussion;
@@ -30,7 +32,7 @@ class PostController extends Controller
         $post = null;
         $type = null;
         $file = null;
-        $account = getAccountObject($request->account, $request->account_id);
+        $account = getYourEduModel($request->account, $request->account_id);
 
         DB::beginTransaction();
         try {
@@ -64,16 +66,11 @@ class PostController extends Controller
                     'file' => 'nullable|file',
                     'fileType' => 'nullable|string',
                 ]);
-
-                if ($request->hasFile('file')) {
-                    $fileDetails = getFileDetails($request->file('file'));
-                    
-                    $file = accountCreateFile(
-                        $account, 
-                        $fileDetails,
-                        $post
-                    );
-                }
+                $this->uploadPostRelatedFile(
+                    account: $account,
+                    item: $post,
+                    file: $request->file('file')
+                );
             }
 
             $input = [];
@@ -170,8 +167,11 @@ class PostController extends Controller
                         'previewFile' => 'nullable|file',
                         'previewFileType' => 'nullable|string',
                     ]);
-
-                    $type = (new QuestionService)->createQuestion($request, $post, $account,'post');
+                    $typeData = QuestionData::createFromRequest($request);
+                    $typeData->questionable = $post;
+                    $typeData->questionedby = $account;
+                    $typeData->state = 'PENDING';
+                    $type = (new QuestionService)->createQuestion($typeData);
                 }  else if ($request->type === 'lesson') {
                     $request->validate([
                         'title' => 'required|string',
@@ -194,13 +194,10 @@ class PostController extends Controller
                     if ($request->hasFile('previewFile')) {
 
                         foreach ($request->file('previewFile') as $previewFile) {
-                            
-                            $fileDetails = getFileDetails($previewFile);
-    
-                            $file = accountCreateFile(
-                                $account, 
-                                $fileDetails,
-                                $type
+                            $this->uploadPostRelatedFile(
+                                account: $account,
+                                item: $type,
+                                file: $previewFile
                             );
                         }
                     }
@@ -306,7 +303,7 @@ class PostController extends Controller
     {
         $mainPost = Post::find($post);
         
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
 
         if($mainAccount->user_id !== auth()->id()){
             return response()->json([
@@ -478,15 +475,11 @@ class PostController extends Controller
 
             if ($type) {
 
-                if ($request->hasFile('previewFile')) {
-                    $fileDetails = getFileDetails($request->file('previewFile'));
-
-                    accountCreateFile(
-                        $mainAccount, 
-                        $fileDetails,
-                        $type
-                    );
-                }
+                $this->uploadPostRelatedFile(
+                    account: $mainAccount,
+                    item: $type,
+                    file: $request->file('previewFile')
+                );
             } else {
                 DB::rollback();
                 return response()->json([
@@ -510,6 +503,17 @@ class PostController extends Controller
             'message' => 'successful',
             'post' => $postResource,
         ]);
+    }
+
+    private function uploadPostRelatedFile($file,$account,$item)
+    {
+        if (is_null($file)) return
+
+        FileService::accountCreateFile(
+            $account, 
+            FileService::getFileDetails($file),
+            $item
+        );
     }
 
     public function postDelete($post, $account, $accountId)
@@ -561,7 +565,7 @@ class PostController extends Controller
 
     public function postsGet($account, $accountId)
     {
-        $mainAccount = getAccountObject($account, $accountId);
+        $mainAccount = getYourEduModel($account, $accountId);
 
         if (!$mainAccount) {
             return response()->json([

@@ -2,20 +2,23 @@
 
 namespace App\Services;
 
+use App\Exceptions\AccessDeniedException;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\DashboardException;
+use App\Exceptions\PaymentTypeException;
 use App\Http\Resources\BanBroadcastResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\BanNotification;
 use App\Notifications\SchoolGeneralNotification;
 use App\User;
 use App\YourEdu\Admin;
+use App\YourEdu\ClassModel;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Learner;
 use App\YourEdu\ParentModel;
 use App\YourEdu\Professional;
 use App\YourEdu\School;
-use \Debugbar;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 
 class DashboardService
@@ -27,7 +30,7 @@ class DashboardService
     {
         $mainAccount =  $this->checkAccount($account,$accountId);
 
-        $admin = getAccountObject('admin',$adminId);
+        $admin = getYourEduModel('admin',$adminId);
         if (is_null($admin)) {
             throw new AccountNotFoundException("administrator not found with id {$adminId}");
         }
@@ -44,7 +47,7 @@ class DashboardService
         if ($account === 'user') {
             $user = $mainAccount;
         } else if ($account === 'school') {
-            $user =User::whereIn('id',getAdminIds($mainAccount))->get();
+            $user =User::whereIn('id',$mainAccount->getAdminIds())->get();
         } else {
             $user = $mainAccount->user;
         }
@@ -62,7 +65,7 @@ class DashboardService
     {
         $mainAccount = $this->checkAccount($account,$accountId);
 
-        $admin = getAccountObject('admin',$adminId);
+        $admin = getYourEduModel('admin',$adminId);
         if (is_null($admin)) {
             throw new AccountNotFoundException("administrator not found with id {$adminId}");
         }
@@ -105,11 +108,11 @@ class DashboardService
 
         foreach ($attahcments as $attachment) {
             if ($attachment->type === 'subjects') {
-                if (!is_null(getAccountObject('subject',$attachment->id))) {
+                if (!is_null(getYourEduModel('subject',$attachment->id))) {
                     SubjectService::subjectAttachItem($attachment->id,$mainAccount,$activity);
                 }
             } else if ($attachment->type === 'grades') {
-                if (!is_null(getAccountObject('grade',$attachment->id))) {
+                if (!is_null(getYourEduModel('grade',$attachment->id))) {
                     GradeService::gradeAttachItem($attachment->id,$mainAccount);
                 }
             }
@@ -155,7 +158,7 @@ class DashboardService
 
     public function itemGet($item,$itemId)
     {
-        $mainItem = getAccountObject($item,$itemId);
+        $mainItem = getYourEduModel($item,$itemId);
         if (is_null($mainItem)) {
             throw new AccountNotFoundException("{$item} not found with id {$itemId}");
         }
@@ -230,7 +233,7 @@ class DashboardService
 
     private function checkAccount($account, $accountId)
     {
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
@@ -239,7 +242,7 @@ class DashboardService
 
     public function getSectionItemData($item,$itemId)
     {
-        $mainItem = getAccountObject($item,$itemId);
+        $mainItem = getYourEduModel($item,$itemId);
         if (is_null($mainItem)) {
             throw new AccountNotFoundException("{$item} not found with id {$itemId}");
         }
@@ -247,18 +250,140 @@ class DashboardService
         return $mainItem;
     }
 
-    public function getAccountSpecificItem($account,$accountId,$item,$userId)
+    /**
+     * this helps us get the items like classes, courses, extracurriculums, etc 
+     * for facilitators, professionals, schools
+     */
+    public function getAccountSpecificItem($account,$accountId,$item)
     {
         $mainAccount = $this->checkAccount($account,$accountId);
+        if (is_null($mainAccount)) {
+            throw new AccountNotFoundException("$account not found with id $accountId");
+        }
+        if ($item['for'] === 'lesson') {
+            $data = new Collection();
+            $data = $data->merge($mainAccount->ownedCourses()
+                ->searchItems($item['search'])->get()
+            );
+            if ($item['two'] === 'extracurriculums') {
+                $data = $data->merge(
+                    $mainAccount->ownedExtracurriculums()->searchItems($item['search'])->get()
+                );
+            }
+            if ($item['three'] === 'classes') {
+                $query = ClassModel::query();
+                $query->where('ownedby_type',$mainAccount::class)
+                    ->where('ownedby_id',$mainAccount->id);
+                if ($account === 'school') {     
+                    $query->runningAcademicYears(); 
+                }
+                $data = $data->merge(
+                    $query->hasCoursesOrSubjects()->searchItems($item['search'])->get()
+                );
+            }
+            return paginate($data->sortByDesc('updated_at'), self::PAGINATION_LENGTH);
+        } else if ($item['one'] === 'class') {
+            $data = new Collection();
+            $query = ClassModel::query();
+            $query->where('ownedby_type',$mainAccount::class)
+                ->where('ownedby_id',$mainAccount->id);
+            if ($account === 'school') {     
+                $query->runningAcademicYears(); 
+            }
+            $data = $data->merge($query->searchItems($item['search'])->get());
 
-        if ($item === 'class') {
-            return $mainAccount->ownedClasses()->whereHas('academicYear',function($query) {
-                $query
-                    ->whereDate('start_date','<',now())
-                    ->whereDate('end_date','>=',now());
-            })->paginate(self::PAGINATION_LENGTH);
-        } else if ($item === 'academicYear') {
+            return paginate($data->sortByDesc('updated_at'), self::PAGINATION_LENGTH);
+        } else if ($item['one'] === 'courses') {
+            $data = new Collection();
+            $data = $data->merge(
+                $mainAccount->ownedCourses()->searchItems($item['search'])->get()
+            );
+            
+            if ($item['two'] === 'extracurriculums') {
+                $data = $data->merge(
+                    $mainAccount->ownedExtracurriculums()->searchItems($item['search'])->get()
+                );
+            }
+            return paginate($data->sortByDesc('updated_at'), self::PAGINATION_LENGTH);
+        }  else if ($item['one'] === 'subjects') {
+            return paginate(SubjectService::getSubjects(),self::PAGINATION_LENGTH);
+        } else if ($item['one'] === 'academicYear') {
             return $mainAccount->currentAcademicYears()->paginate(self::PAGINATION_LENGTH);
+        }
+    }
+
+    /**
+     * this helps to view more of a type of item (class, lesson, course)
+     * belonging to or added by an account (facilitator, professional, school)
+     */
+    public function getAccountItems($account,$accountId,$item,$search)
+    {
+        $mainAccount = getYourEduModel($account,$accountId);
+        if (is_null($mainAccount)) {
+            throw new AccountNotFoundException("{$account} with id {$accountId} was not found");
+        }
+
+        $data = new Collection();
+        if ($item === 'lessons') {
+            $data = $mainAccount->ownedLessons()->searchItems($search)->get();
+            if ($account === 'facilitator' || $account === 'professional') {
+                $data = $data->merge($mainAccount->addedLessons()->searchItems($search)->get());
+            }
+        } else {
+            $method = 'owned' . strtoupper(substr($item,0,1)) . substr($item,1);
+            $data = $mainAccount->$method;
+        }
+        return paginate($data->unique()->sortByDesc('updated_at'), 2);
+    }
+
+    public function getItemDetails($item,$itemId,$authId)
+    {   
+        $mainItem = getYourEduModel($item,$itemId);
+        if (is_null($mainItem)) {
+            throw new AccountNotFoundException("{$item} with id {$itemId} not found.");
+        }
+
+        //if fails authId then check if item has any payment type
+        if (!$authId) {
+            if ($mainItem->hasPaymentTypes()) {
+                throw new PaymentTypeException(
+                    message: "Sorry, this ${$item} is not for free",
+                    item: $mainItem
+                );
+            }
+            if ($item === 'lesson' && !$mainItem->checkIfFreeOrIntro()) {
+                throw new PaymentTypeException(
+                    message: "Sorry, this ${$item} is not for free",
+                    item: $mainItem
+                );
+            }
+        } else if ($authId && !$mainItem->hasAccess($authId)) {
+            throw new AccessDeniedException(
+                message: "Sorry, you do not have access to this ${$item}.",
+                item: $mainItem
+            );
+        }
+
+        return $mainItem;
+    }
+
+    public function search
+    (
+        $account,
+        $accountId,
+        $search,
+        $searchType,
+        $for
+    )
+    {
+        if ($for === 'collaboration') {
+            return ProfileService::profileAccountsSearch(
+                search: $search,
+                searchType: $searchType,
+                searcherAccount: $account,
+                searcherAccountId: $accountId,
+                for: $for,
+            );
         }
     }
 }

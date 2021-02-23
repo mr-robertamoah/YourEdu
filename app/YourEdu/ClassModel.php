@@ -2,18 +2,19 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AssessmentTrait;
 use App\Traits\DashboardItemTrait;
-use App\Traits\NotOwnedByTrait;
+use App\Traits\NotOwnedbyTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassModel extends Model
 {
     //
-    use SoftDeletes, NotOwnedByTrait, DashboardItemTrait;
+    use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait;
 
     protected $fillable = [
-        'name','state','description','academic_id','max_learners','structure'
+        'name','state','description','max_learners','structure'
     ];
 
     public function profile(){
@@ -80,12 +81,17 @@ class ClassModel extends Model
         return $this->morphMany(Price::class,'priceable');
     }
 
+    public function subscriptions()
+    {
+        return $this->morphMany(Subscription::class,'subscribable');
+    }
+
     public function collaboration()
     {
         return $this->morphOne(Collaboration::class,'collaborationable');
     }
 
-    public function academicYear()
+    public function academicYears()
     {
         return $this->morphToMany(AcademicYear::class,'academicable','academicables',null,'academic_id');
     }
@@ -98,13 +104,19 @@ class ClassModel extends Model
     public function subjects()
     {
         return $this->morphToMany(Subject::class,'subjectable','subjectables')
+                ->withPivot(['activity'])->withTimestamps();
+    }
+
+    public function programs()
+    {
+        return $this->morphToMany(Program::class,'programmable','programmables')
                 ->withTimestamps();
     }
 
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
-            ->withPivot(['resource','activity'])->withTimestamps();
+        return $this->morphedByMany(Extracurriculum::class,'classable','classables','class_id')
+            ->withTimestamps();
     }
 
     public function fees()
@@ -118,7 +130,8 @@ class ClassModel extends Model
 
     public function lessons()
     {
-        return $this->morphMany(Lesson::class,'lessonable');
+        return $this->morphedByMany(Lesson::class,'classable','classables','class_id')
+            ->withPivot(['activity','subject_id'])->withTimestamps();
     }
 
     public function reports()
@@ -149,5 +162,22 @@ class ClassModel extends Model
     public function discussions()
     {
         return $this->morphMany(Discussion::class,'discussionfor');
+    }
+
+    public function scopeRunningAcademicYears($query)
+    {
+        return $query->whereHas('academicYears',function($q) {
+            $q->whereDate('start_date','<',now());
+                // ->whereDate('end_date','>=',now());
+        });
+    }
+
+    public function scopeHasCoursesOrSubjects($query)
+    {
+        return $query->has('courses')
+            ->orWhereHas('subjects',function($q){
+                ray($q);
+                $q->where('activity','OFFER');
+            });
     }
 }

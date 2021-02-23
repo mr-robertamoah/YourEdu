@@ -9,6 +9,8 @@ class Link extends Model
 {
     //
     use SoftDeletes;
+
+    protected $fillable = ['name','description','link'];
     
     public function addedby()
     {

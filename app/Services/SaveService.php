@@ -15,12 +15,12 @@ class SaveService
 {
     public function saveCreate($account,$accountId,$item, $itemId,$id,$adminId)
     {
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
 
-        $mainItem = getAccountObject($item,$itemId);
+        $mainItem = getYourEduModel($item,$itemId);
         if (is_null($mainItem)) {
             throw new AccountNotFoundException("{$item} not found with id {$itemId}");
         }
@@ -33,7 +33,7 @@ class SaveService
         $save->save();
         
         if ($adminId) {
-            $admin = getAccountObject('admin',$adminId);
+            $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
                 (new ActivityTrackService())->createActivityTrack(
                     $save,$save->savedby,$admin,__METHOD__
@@ -46,7 +46,7 @@ class SaveService
 
     public function saveDelete($saveId,$id,$adminId)
     {        
-        $save = getAccountObject('save',$saveId);
+        $save = getYourEduModel('save',$saveId);
         if (is_null($save)) {
             throw new AccountNotFoundException("save not found with id {$saveId}");
         }
@@ -55,7 +55,7 @@ class SaveService
         }
         
         if ($adminId) {
-            $admin = getAccountObject('admin',$adminId);
+            $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
                 (new ActivityTrackService())->createActivityTrack(
                     $save,$save->savedby,$admin, __METHOD__

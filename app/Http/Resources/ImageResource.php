@@ -16,6 +16,7 @@ class ImageResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'type' => 'image',
             'name' => $this->name,
             'state' => $this->pivot ? $this->pivot->state : null,
             'url' => asset("assets/{$this->path}"),

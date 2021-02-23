@@ -19,7 +19,6 @@ class FacilitatorService
      */
     public function sendFacilitatingRequest(Facilitator $facilitator,$sender,$requestDetails)
     {
-        Debugbar::info('sendFacilitatingRequest');
         $request = $sender->requestsSent()->create([
             'state' => 'PENDING'
         ]);
@@ -29,10 +28,14 @@ class FacilitatorService
         $data['salary'] = $requestDetails['salary'];
         if (count($requestDetails['files'])) {
             foreach ($requestDetails['files'] as $requestFile) {
-                $file = accountCreateFile($sender,$requestFile,$request);
+                $file = FileService::createAndAttachFiles(
+                    account: $sender,
+                    file: $requestFile,
+                    item: $request
+                );
                 $data['file'][] = [
                     'id' => $file->id, 
-                    'type' => getAccountString(get_class($file))
+                    'type' => class_basename_lower(get_class($file))
                 ];
             }
         }

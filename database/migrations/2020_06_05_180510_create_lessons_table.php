@@ -17,7 +17,7 @@ class CreateLessonsTable extends Migration
             $table->id();
             $table->nullableMorphs('ownedby'); //school facilitator professional group collaboration
             $table->morphs('addedby'); //delivered by collaboration facilitator professional
-            $table->nullableMorphs('lessonable'); //post class course extracurriculum
+            $table->nullableMorphs('lessonable'); //post 
             $table->unsignedBigInteger('previous_lesson_id')->nullable();
             $table->string('title');
             $table->string('description')->nullable();

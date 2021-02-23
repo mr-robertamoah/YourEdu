@@ -14,7 +14,7 @@
         >
             {{computedItem}}
         </div>
-        <div class="description" v-if="computedDescription.length"
+        <div class="description" v-if="computedDescription && computedDescription.length"
             @click="clickedItem"
         >
             {{computedDescription}}
@@ -54,28 +54,48 @@ import { dates, strings } from '../../services/helpers'
         },
         computed: {
             computedItem() {
-                return !this.item ? null : this.type === 'class' ? 
+                return !this.item ? null : this.type === 'class' ||
+                    this.type === 'course' || this.type === 'subject' ||
+                    this.type === 'program' || this.type === 'year' ||
+                    this.type === 'section' || this.item.name ? 
                     this.item.name : this.type === 'discussion' ? 
                     this.item.title : ''
             },
             computedDescription() {
                 let str = ''
-                if (this.type === 'class'){
+                if (this.type === 'class' && this.item.description){
                     str = this.item.description
-                } else if (this.type === 'discussion') {
+                } else if (this.type === 'discussion' && this.item.preamble) {
                     str = this.item.preamble
+                } else if (this.item.description) {
+                    str = this.item.description
                 }
-                return strings.content(str)
+                return strings.content(str,30)
             },
             computedDetails() {
-                return !this.item ? null : this.type === 'class' ? 
+                return !this.item ? null : this.type === 'class' || this.type === 'course' ? 
                     `${this.item.learners} learners, ${this.item.lessons} lessons` : 
                     this.type === 'discussion' ? 
-                    `type: ${this.item.type}, allowed: ${this.item.allowed}` : ''
+                    `type: ${this.item.type}, allowed: ${this.item.allowed}` : 
+                    this.type === 'subject' && this.item.rationale ? 
+                    `rationale: ${strings.content(this.item.rationale)}` : 
+                    this.type === 'program' ? `${this.item.courses} courses` : 
+                    this.type === 'year' || this.type === 'section' ? this.computedDates : ''
             },
             computedCreatedAt() {
                 return this.item && this.item.createdAt ? 
                     dates.dateReadable(this.item.createdAt) : null
+            },
+            computedDates() { //start and end dates
+                let str = ''
+                if (this.item.startDate) {
+                    str += `start date: ${dates.dateReadable(this.item.startDate)}`
+                }
+                if (this.item.endDate) {
+                    if (str.length) str += '\n'
+                    str += `end date: ${dates.dateReadable(this.item.endDate)}`
+                }
+                return str
             },
         },
         methods: {
@@ -110,17 +130,11 @@ import { dates, strings } from '../../services/helpers'
         color: gray;
         cursor: pointer;
         border-radius: 5px;
-        min-width: 150px;
+        min-width: 100px;
         max-width: 45%;
 
         .close{
-            font-size: 14px;
-            color: red;
-            position: absolute;
-            top: 0;
-            right: 0;
-            cursor: pointer;
-            padding: 5px 5px 10px 10px;
+            @include small-close()
         }
         
         .created{

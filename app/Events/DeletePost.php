@@ -34,7 +34,7 @@ class DeletePost implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = getAccountString($this->postInfo['account']);
+        $account = class_basename_lower($this->postInfo['account']);
         return [
             new Channel('youredu.home'),
             new Channel("youredu.{$account}.{$this->postInfo['accountId']}")

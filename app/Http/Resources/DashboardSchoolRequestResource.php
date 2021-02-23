@@ -46,7 +46,7 @@ class DashboardSchoolRequestResource extends JsonResource
             }
             if (Arr::has($unserializedData,'file')) {             
                 foreach ($unserializedData['file'] as $file) {
-                    $files[] = getAccountObject($file['type'],$file['id']);
+                    $files[] = getYourEduModel($file['type'],$file['id']);
                 }
                 $data['file'] = ImageResource::collection($files);
             }

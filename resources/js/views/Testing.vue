@@ -1,10 +1,12 @@
 <template>
-    <video-audio-chat
-    ></video-audio-chat>
+    <number-input
+        label="percent share"
+        prepend="%"
+    ></number-input>
 </template>
 
 <script>
-import VideoAudioChat from '../components/chat/VideoAudioChat'
+import NumberInput from '../components/NumberInput'
 
     export default {
         data() {
@@ -14,7 +16,7 @@ import VideoAudioChat from '../components/chat/VideoAudioChat'
             }
         },
         components: {
-            VideoAudioChat,
+            NumberInput,
         },
         methods: {
             clickedTesting(){

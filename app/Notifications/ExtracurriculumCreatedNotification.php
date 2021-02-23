@@ -16,7 +16,7 @@ class ExtracurriculumCreatedNotification extends Notification
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(private $accont, private $message)
     {
         //
     }
@@ -29,7 +29,7 @@ class ExtracurriculumCreatedNotification extends Notification
      */
     public function via($notifiable)
     {
-        return ['mail'];
+        return ['database','broadcast'];
     }
 
     /**
@@ -55,7 +55,8 @@ class ExtracurriculumCreatedNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            //
+            'message' => $this->message,
+            'account' => $this->account,
         ];
     }
 }

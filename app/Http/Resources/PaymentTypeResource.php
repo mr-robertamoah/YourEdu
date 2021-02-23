@@ -23,7 +23,7 @@ class PaymentTypeResource extends JsonResource
             'description' => $this->description,
         ];
 
-        $data['type'] = getAccountString($this->resource);
+        $data['type'] = class_basename_lower($this->resource);
         if ($data['type'] === 'subscription') {
             $data['period'] = $this->period;
         }

@@ -38,7 +38,9 @@ const actions = {
                 next: response.data.links.next,
                 nextPage: data.nextPage
             }
-            commit('GET_COMMENTS_SUCCESS',commentsData)
+            if (!data.notSection) {                
+                commit('GET_COMMENTS_SUCCESS',commentsData)
+            }
             return commentsData
         } else {
             return {status: false, response}
@@ -185,7 +187,8 @@ const actions = {
             if (data.get('account') === data.get('owner') ||
                 (data.get('account') === 'admin' && data.get('owner') === 'school')) {
                 commit('ADD_NEW_OWNED_CLASS',response.data.class)
-            } else {
+            } 
+            if (data.get('facilitate')) {
                 commit('ADD_NEW_CLASS',response.data.class)
             }
             return {status: true}
@@ -199,10 +202,15 @@ const actions = {
         if (response.data.message === 'successful') {
             if (response.data.class) {
                 commit('UPDATE_OWNED_CLASS',response.data.class)
+                return {status: true, data: response.data.class, action: 'update'}
             } else {
                 commit('REMOVE_OWNED_CLASS',data.classId)
+                if (data.hasAttribute) {
+                    commit('REMOVE_CLASS',data.classId)
+                }
+                return {status: true, data: response.data.class, action: 'delete'}
             }
-            return {status: true}
+            // return {status: true}
         } else {
             return {status: false, response}
         }
@@ -214,6 +222,7 @@ const actions = {
             commit('UPDATE_OWNED_CLASS',response.data.class)
             return {
                 status: true,
+                class: response.data.class,
                 classResource: response.data.classResource
             }
         } else {
@@ -241,6 +250,77 @@ const actions = {
             commit('REMOVE_CLASS',data.classId)
         }  
     },
+    //program
+    async createProgram({commit},data){
+        let response = await DashboardService.createProgram(data)
+
+        if (response.data.message === 'successful') {
+            if (data.get('account') === data.get('owner') ||
+                (data.get('account') === 'admin' && data.get('owner') === 'school')) {
+                commit('ADD_NEW_OWNED_PROGRAM',response.data.program)
+            } 
+            if (data.get('facilitate')) {
+                commit('ADD_NEW_PROGRAM',response.data.program)
+            }
+            return {status: true}
+        } else {
+            return {status: false, response}
+        }
+    },
+    async deleteProgram({commit},data){
+        let response = await DashboardService.deleteProgram(data)
+
+        if (response.data.message === 'successful') {
+            if (response.data.program) {
+                commit('UPDATE_OWNED_PROGRAM',response.data.program)
+                return {status: true, data: response.data.program, action: 'update'}
+            } else {
+                commit('REMOVE_OWNED_PROGRAM',data.programId)
+                if (data.hasAttribute) {
+                    commit('REMOVE_PROGRAM',data.programId)
+                }
+                return {status: true, data: response.data.program, action: 'delete'}
+            }
+            // return {status: true}
+        } else {
+            return {status: false, response}
+        }
+    },
+    async editProgram({commit},data){
+        let response = await DashboardService.updateProgram(data)
+
+        if (response.data.message === 'successful') {
+            commit('UPDATE_OWNED_PROGRAM',response.data.program)
+            return {
+                status: true,
+                program: response.data.program,
+                programResource: response.data.programResource
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
+    addProgram({commit},data){
+        if (data.owner) {
+            commit('ADD_NEW_OWNED_PROGRAM',data.program)
+        } else {
+            commit('ADD_NEW_PROGRAM',data.program)
+        }            
+    },
+    updateProgram({commit},data){
+        if (data.owner) {
+            commit('UPDATE_OWNED_PROGRAM',data.program)
+        } else {
+            commit('UPDATE_PROGRAM',data.program)
+        }  
+    },
+    removeProgram({commit},data){
+        if (data.owner) {
+            commit('REMOVE_OWNED_PROGRAM',data.programId)
+        } else {
+            commit('REMOVE_PROGRAM',data.programId)
+        }  
+    },
     //course
     async createCourse({commit},data){
         let response = await DashboardService.createCourse(data)
@@ -249,7 +329,8 @@ const actions = {
             if (data.get('account') === data.get('owner') ||
                 (data.get('account') === 'admin' && data.get('owner') === 'school')) {
                 commit('ADD_NEW_OWNED_COURSE',response.data.course)
-            } else {
+            } 
+            if (data.get('facilitate')) {
                 commit('ADD_NEW_COURSE',response.data.course)
             }
             return {status: true}
@@ -263,10 +344,14 @@ const actions = {
         if (response.data.message === 'successful') {
             if (response.data.course) {
                 commit('UPDATE_OWNED_COURSE',response.data.course)
+                return {status: true, data: response.data.course, action: 'update'}
             } else {
                 commit('REMOVE_OWNED_COURSE',data.courseId)
+                if (data.hasAttribute) {
+                    commit('REMOVE_COURSE',data.courseId)
+                }
+                return {status: true, data: response.data.course, action: 'delete'}
             }
-            return {status: true}
         } else {
             return {status: false, response}
         }
@@ -278,6 +363,7 @@ const actions = {
             commit('UPDATE_OWNED_COURSE',response.data.course)
             return {
                 status: true,
+                course: response.data.course,
                 courseResource: response.data.courseResource
             }
         } else {
@@ -305,6 +391,73 @@ const actions = {
             commit('REMOVE_COURSE',data.courseId)
         }  
     },
+    //lesson
+    async createLesson({commit},data){
+        let response = await DashboardService.createLesson(data)
+
+        if (response.data.message === 'successful') {
+            commit('ADD_NEW_LESSON_TO_ITEMS',{ //for facilitating ones and owned ones
+                lesson: response.data.lesson,
+                items: JSON.parse(data.get('items')),
+                owner: data.get('account') === data.get('owner')
+            })
+            commit('ADD_NEW_LESSON_TO_LESSONS',{ //for the lessons part
+                lesson: response.data.lesson,
+            })
+            return {status: true}
+        } else {
+            return {status: false, response}
+        }
+    },
+    async deleteLesson({commit},{items,data}){
+        let response = await DashboardService.deleteLesson(data)
+
+        if (response.data.message === 'successful') {
+            if (response.data.lesson) {
+                commit('UPDATE_ACCOUNT_LESSON',response.data.lesson)
+                return {status: true, data: response.data.lesson, action: 'update'}
+            } else {
+                commit('REMOVE_ACCOUNT_LESSON',{items, lessonId: data.lessonId})
+                if (data.hasAttribute) {
+                    commit('REMOVE_LESSON',data.lessonId)
+                }
+                return {status: true, data: response.data.lesson, action: 'delete'}
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
+    async editLesson({commit},data){
+        let response = await DashboardService.updateLesson(data)
+
+        if (response.data.message === 'successful') {
+            commit('UPDATE_ACCOUNT_LESSON',response.data.lesson)
+            return {
+                status: true,
+                lesson: response.data.lesson,
+                lessonResource: response.data.lessonResource,
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
+    addLesson({commit},data){
+        if (data.owner) {
+            commit('ADD_NEW_OWNED_LESSON',data.lesson)
+        } else {
+            commit('ADD_NEW_LESSON',data.lesson)
+        }            
+    },
+    updateLesson({commit},data){
+        commit('UPDATE_ACCOUNT_LESSON',data.lesson)
+    },
+    removeLesson({commit},data){
+        if (data.owner) {
+            commit('REMOVE_OWNED_LESSON',data.lessonId)
+        } else {
+            commit('REMOVE_LESSON',data.lessonId)
+        }  
+    },
     //extracurriculum
     async createExtracurriculum({commit},data){
         let response = await DashboardService.createExtracurriculum(data)
@@ -313,7 +466,8 @@ const actions = {
             if (data.get('account') === data.get('owner') ||
                 (data.get('account') === 'admin' && data.get('owner') === 'school')) {
                 commit('ADD_NEW_OWNED_EXTRACURRICULUM',response.data.extracurriculum)
-            } else {
+            } 
+            if (data.get('facilitate')) {
                 commit('ADD_NEW_EXTRACURRICULUM',response.data.extracurriculum)
             }
             return {status: true}
@@ -327,10 +481,14 @@ const actions = {
         if (response.data.message === 'successful') {
             if (response.data.extracurriculum) {
                 commit('UPDATE_OWNED_EXTRACURRICULUM',response.data.extracurriculum)
+                return {status: true, data: response.data.extracurriculum, action: 'update'}
             } else {
                 commit('REMOVE_OWNED_EXTRACURRICULUM',data.extracurriculumId)
+                if (data.hasAttribute) {
+                    commit('REMOVE_EXTRACURRICULUM',data.extracurriculumId)
+                }
+                return {status: true, data: response.data.extracurriculum, action: 'delete'}
             }
-            return {status: true}
         } else {
             return {status: false, response}
         }
@@ -342,6 +500,7 @@ const actions = {
             commit('UPDATE_OWNED_EXTRACURRICULUM',response.data.extracurriculum)
             return {
                 status: true,
+                extracurriculum: response.data.extracurriculum,
                 extracurriculumResource: response.data.extracurriculumResource
             }
         } else {
@@ -368,6 +527,49 @@ const actions = {
         } else {
             commit('REMOVE_EXTRACURRICULUM',data.extracurriculumId)
         }  
+    },
+    //collaboration
+    async createCollaboration({commit},data){
+        let response = await DashboardService.createCollaboration(data)
+
+        if (response.data.message === 'successful') {
+            commit('ADD_COLLABORATION',response.data.collaboration)
+            return {status: true}
+        } else {
+            return {status: false, response}
+        }
+    },
+    async deleteCollaboration({commit},data){
+        let response = await DashboardService.deleteCollaboration(data)
+
+        if (response.data.message === 'successful') {
+            commit('REMOVE_COLLABORATION',data.collaborationId)
+            return {status: true}
+        } else {
+            return {status: false, response}
+        }
+    },
+    async editCollaboration({commit},data){
+        let response = await DashboardService.updateCollaboration(data)
+
+        if (response.data.message === 'successful') {
+            commit('UPDATE_COLLABORATION',response.data.collaboration)
+            return {
+                status: true,
+                collaboration: response.data.collaboration,
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
+    addCollaboration({commit},data){
+        commit('ADD_COLLABORATION',data.collaboration)
+    },
+    updateCollaboration({commit},data){
+        commit('UPDATE_COLLABORATION',data.collaboration)
+    },
+    removeCollaboration({commit},data){
+        commit('REMOVE_COLLABORATION',data.collaborationId)
     },
     //
     async createAccountAttachments({},data){
@@ -496,7 +698,32 @@ const actions = {
         } else {
             return {status: false, response}
         }
-    }
+    },
+    async getAccountItems({},data) {
+        let response = await DashboardService.getAccountItems(data)
+
+        if (response.data.data) {
+            return {
+                status: true,
+                items: response.data.data,
+                next: response.data.links.next
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
+    async getItemDetails({}, data) {
+        let response = await DashboardService.getItemDetails(data)
+
+        if (response.data.message === 'successful') {
+            return {
+                status: true,
+                item: response.data.item,
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
 }
 
 export default actions

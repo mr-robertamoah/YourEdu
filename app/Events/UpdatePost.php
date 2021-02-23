@@ -33,7 +33,7 @@ class UpdatePost implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = getAccountString($this->post->postedby_type);
+        $account = class_basename_lower($this->post->postedby_type);
         $accountId = $this->post->postedby_id;
         return [
             new Channel('youredu.home'),

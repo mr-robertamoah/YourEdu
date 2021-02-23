@@ -16,7 +16,7 @@ class DashboardItemResource extends JsonResource
     {
         //this should be used for the details of dashboard items
         $data = [];
-        $data['type'] = getAccountString($this->resource);
+        $data['type'] = class_basename_lower($this->resource);
         $data['id'] = $this->id;
 
         if ($data['type'] === 'class') {      
@@ -32,28 +32,95 @@ class DashboardItemResource extends JsonResource
             $data['facilitators'] = UserAccountResource::collection($this->facilitators);
             $data['learners'] = UserAccountResource::collection($this->learners);
             $data['sections'] = $this->sections;
+            $data['structure'] = $this->structure;
             $data['collaborations'] = $this->collaborations;
-            $data['academicYear'] = DashboardAcademicYearResource::collection($this->academicYear);
-            $data['discussions'] = $this->discussions;
-            $data['fees'] = $this->fees;
-            $data['subjects'] = SubjectResource::collection($this->subjects);
+            $data['academicYears'] = AcademicYearResource::collection($this->academicYears);
+            $data['discussions'] = DiscussionResource::collection($this->discussions);
+            $data['fees'] = PaymentTypeResource::collection($this->fees);
+            $data['subscriptions'] = PaymentTypeResource::collection($this->subscriptions);
+            $data['prices'] = PaymentTypeResource::collection($this->prices);
+            // $data['subjects'] = DashboardAttachmentResource::collection($this->subjects);
+            $data['programs'] = DashboardAttachmentResource::collection(
+                $this->programs()->hasNoOwner()->get()
+            );
             $data['extracurriculums'] = $this->extracurriculums;
+            $data['items'] = $this->subjects;
+            $data['items'] = $data['items']->merge($this->courses()->hasOwner()->get());
+            $data['items'] = DashboardItemMiniResource::collection($data['items']);
         } else if ($data['type'] === 'course') {      
             $data['name'] = $this->name;
             $data['state'] = $this->state;
+            $data['standAlone'] = $this->stand_alone;
             $data['addedby'] = new UserAccountResource($this->addedby);
             $data['ownedby'] = new UserAccountResource($this->ownedby);
             $data['description'] = $this->description;
             $data['grades'] = DashboardAttachmentResource::collection($this->grades);
             $data['courses'] = DashboardAttachmentResource::collection($this->courses);
-            $data['programs'] = DashboardAttachmentResource::collection($this->programs);
+            $data['programs'] = DashboardAttachmentResource::collection(
+                $this->programs()->hasNoOwner()->get()
+            );
+            $data['classes'] = $this->classes;
+            $data['classes'] = $data['classes']->merge($this->programs()->hasOwner()->get());
+            $data['classes'] = DashboardItemMiniResource::collection($data['classes']);
             $data['lessons'] = LessonResource::collection($this->lessons);
             $data['facilitators'] = UserAccountResource::collection($this->facilitators);
             $data['learners'] = UserAccountResource::collection($this->learners);
             $data['parents'] = UserAccountResource::collection($this->parents);
             $data['professionals'] = UserAccountResource::collection($this->professionals);
             $data['collaborations'] = $this->collaborations;
-            $data['discussions'] = $this->discussions;
+            $data['discussions'] = DiscussionResource::collection($this->discussions);
+            $data['prices'] = PaymentTypeResource::collection($this->prices);
+            $data['sections'] = DashboardItemMiniResource::collection($this->courseSections);
+            $data['subscriptions'] = PaymentTypeResource::collection($this->subscriptions);
+        } else if ($data['type'] === 'program') {      
+            $data['name'] = $this->name;
+            $data['state'] = $this->state;
+            $data['addedby'] = new UserAccountResource($this->addedby);
+            $data['ownedby'] = new UserAccountResource($this->ownedby);
+            $data['description'] = $this->description;
+            $data['attachments'] = $this->grades;
+            $data['attachments'] = $data['attachments']->merge(
+                $this->courses()->hasNoOwner()->get()
+            );
+            $data['attachments'] = $data['attachments']->merge(
+                $this->programs()->hasNoOwner()->get()
+            );
+            $data['attachments'] = DashboardAttachmentResource::collection($data['attachments']);
+            $courses = $this->courses()->withCount('lessons')->hasOwner()->get();
+            $data['courses'] = DashboardItemMiniResource::collection($courses);
+            $data['extracurriculums'] = DashboardItemMiniResource::collection($this->extracurriculums);
+            $data['lessons'] = $courses->sum('lessons_count');
+            $data['facilitators'] = UserAccountResource::collection($this->facilitators);
+            $data['professionals'] = UserAccountResource::collection($this->professionals);
+            $data['learners'] = UserAccountResource::collection($this->learners);
+            $data['collaborations'] = $this->collaborations;
+            $data['discussions'] = DiscussionResource::collection($this->discussions);
+            $data['prices'] = PaymentTypeResource::collection($this->prices);
+            $data['subscriptions'] = PaymentTypeResource::collection($this->subscriptions);
+        } else if ($data['type'] === 'extracurriculum') {      
+            $data['name'] = $this->name;
+            $data['state'] = $this->state;
+            $data['addedby'] = new UserAccountResource($this->addedby);
+            $data['ownedby'] = new UserAccountResource($this->ownedby);
+            $data['description'] = $this->description;
+            $data['classes'] = $this->classes;
+            $data['classes'] = $data['classes']->merge($this->programs()->hasOwner()->get());
+            $data['classes'] = DashboardItemMiniResource::collection($data['classes']);
+            $data['attachments'] = $this->grades;
+            $data['attachments'] = $data['attachments']->merge(
+                $this->courses()->hasNoOwner()->get()
+            );
+            $data['attachments'] = $data['attachments']->merge(
+                $this->programs()->hasNoOwner()->get()
+            );
+            $data['attachments'] = DashboardAttachmentResource::collection($data['attachments']);
+            $data['lessons'] = LessonResource::collection($this->lessons);
+            $data['facilitators'] = UserAccountResource::collection($this->facilitators);
+            $data['learners'] = UserAccountResource::collection($this->learners);
+            $data['parents'] = UserAccountResource::collection($this->parents);
+            $data['professionals'] = UserAccountResource::collection($this->professionals);
+            $data['collaborations'] = $this->collaborations;
+            $data['discussions'] = DiscussionResource::collection($this->discussions);
             $data['prices'] = PaymentTypeResource::collection($this->prices);
             $data['subscriptions'] = PaymentTypeResource::collection($this->subscriptions);
         } else if ($data['type'] === 'school') {    
@@ -159,6 +226,23 @@ class DashboardItemResource extends JsonResource
             $data['answeredby_name'] = $this->answeredby->name;
             $data['answerable_type'] = $this->answerable_type;
             $data['answerable_id'] = $this->answerable_id;
+        } else if ($data['type'] === 'lesson') { 
+            $data['id'] = $this->id;
+            $data['title'] = $this->title;
+            $data['state'] = $this->state;
+            $data['ownedby'] = new UserAccountResource($this->ownedby);
+            $data['addedby'] = new UserAccountResource($this->addedby);
+            $data['description'] = $this->description;
+            $data['prices'] = PaymentTypeResource::collection($this->prices);
+            $data['items'] = $this->classes;
+            $data['items'] = $data['items']->merge($this->courseSections);
+            $data['items'] = $data['items']->merge($this->courses()->hasOwner()->get());
+            $data['items'] = DashboardItemMiniResource::collection($data['items']);
+            $data['discussions'] = DiscussionResource::collection($this->discussions);
+            $data['images'] = ImageResource::collection($this->images);
+            $data['videos'] = VideoResource::collection($this->videos);
+            $data['audios'] = AudioResource::collection($this->audios);
+            $data['files'] = FileResource::collection($this->files);
         }
 
         $data['created_at'] = $this->created_at;

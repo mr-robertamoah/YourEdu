@@ -25,6 +25,14 @@ class AcademicYearSection extends Model
         return $this->belongsTo(AcademicYear::class);
     }
 
+    public function assessments()
+    {
+        return $this->belongsToMany(
+            related: Assessment::class,
+            foreignPivotKey: 'section_id'
+        )->withTimestamps();
+    }
+
     public function classes()
     {
         return $this->belongsToMany(ClassModel::class,'academic_section_class','academic_year_section_id','class_id')
@@ -34,11 +42,6 @@ class AcademicYearSection extends Model
     public function fees()
     {
         return $this->hasMany(Fee::class);
-    }
-
-    public function assessments()
-    {
-        return $this->hasMany(Assessment::class,'academic_year_section_id');
     }
 
     public function reports()

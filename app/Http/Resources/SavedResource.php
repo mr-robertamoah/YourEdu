@@ -24,21 +24,21 @@ class SavedResource extends JsonResource
             $data['full_name'] = $this->user->full_name;
         }
         if (!is_null($this->postedby)) {
-            $data['postedby_type'] = getAccountString($this->postedby_type);
+            $data['postedby_type'] = class_basename_lower($this->postedby_type);
             $data['postedby_id'] = $this->postedby_id;
             $data['name'] = $this->postedby->profile->name;
             $data['url'] = $this->postedby->profile->url;
             $data['content'] = $this->content;
         }
         if (!is_null($this->commentedby)) {
-            $data['commentedby_type'] = getAccountString($this->commentedby_type);
+            $data['commentedby_type'] = class_basename_lower($this->commentedby_type);
             $data['commentedby_id'] = $this->commentedby_id;
             $data['name'] = $this->commentedby->profile->name;
             $data['url'] = $this->commentedby->profile->url;
             $data['comment'] = $this->body;
         }
         if (!is_null($this->answeredby)) {
-            $data['answeredby_type'] = getAccountString($this->answeredby_type);
+            $data['answeredby_type'] = class_basename_lower($this->answeredby_type);
             $data['answeredby_id'] = $this->answeredby_id;
             $data['name'] = $this->answeredby->profile->name;
             $data['answer'] = $this->answer;

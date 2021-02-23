@@ -16,7 +16,7 @@ class SchoolService
     public function createAcademicYear($schoolId, $name, $startDate, 
         $endDate, $description, $sections, $userId, $account, $accountId)
     {
-        $school = getAccountObject('school',$schoolId);
+        $school = getYourEduModel('school',$schoolId);
         if (is_null($school)) {
             throw new AccountNotFoundException("school not found with id $schoolId");
         }
@@ -36,9 +36,9 @@ class SchoolService
         ]);
 
         if ($school->owner_id === $userId) {
-            $academicYear->addedby()->associate(getAccountObject('user',$userId));
+            $academicYear->addedby()->associate(getYourEduModel('user',$userId));
         } else {
-            $addedby = getAccountObject($account,$accountId);
+            $addedby = getYourEduModel($account,$accountId);
             if (is_null($addedby)) {
                 throw new SchoolException("account($account) trying to add an academic year, was not found with id $accountId");
             } else {
@@ -64,17 +64,17 @@ class SchoolService
     public function createAcademicYearSection($schoolId,$academicYearId,$name,$promotion,
         $startDate,$endDate,$userId)
     {
-        $school = getAccountObject('school',$schoolId);
+        $school = getYourEduModel('school',$schoolId);
         if (is_null($school)) {
             throw new AccountNotFoundException("school not found with id $schoolId");
         }
 
-        $academicYear = getAccountObject('academicYear',$academicYearId);
+        $academicYear = getYourEduModel('academicYear',$academicYearId);
         if (is_null($academicYear)) {
             throw new AccountNotFoundException("academic year not found with id $academicYearId");
         }
 
-        if (!in_array($userId,getAdminIds($school))) {
+        if (!in_array($userId,$school->getAdminIds())) {
             throw new SchoolException("you are not authorized to add an academic year section.");
         }
 

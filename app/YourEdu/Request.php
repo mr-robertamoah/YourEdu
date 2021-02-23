@@ -11,6 +11,10 @@ class Request extends Model
     //
     use SoftDeletes;
 
+    const PENDING = 'PENDING';
+    const ACCEPTED = 'ACCEPTED';
+    const DECLINED = 'DECLINED';
+
     protected $fillable = ['state','data'];
 
     public function price()

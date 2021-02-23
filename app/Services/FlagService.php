@@ -18,7 +18,7 @@ class FlagService
 {
     public function flagDelete($flagId,$id)
     {
-        $flag = getAccountObject('flag',$flagId);
+        $flag = getYourEduModel('flag',$flagId);
         if (is_null($flag)) {
             throw new AccountNotFoundException("flag not found with id {$flagId}");
         }
@@ -58,12 +58,12 @@ class FlagService
 
     public function flagCreate($account,$accountId,$item, $itemId,$reason,$id)
     {
-        $mainAccount = getAccountObject($account,$accountId);
+        $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
 
-        $mainItem = getAccountObject($item,$itemId);
+        $mainItem = getYourEduModel($item,$itemId);
         if (is_null($mainItem)) {
             throw new AccountNotFoundException("{$item} not found with id {$itemId}");
         }

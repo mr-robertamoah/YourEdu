@@ -16,7 +16,7 @@ class DashboardSchoolAccountResource extends JsonResource
     {
         return [
             'accountId' => $this->id,
-            'account' => getAccountString($this->resource),
+            'account' => class_basename_lower($this->resource),
             'userId' => $this->user_id,
             'name' => $this->name,
         ];

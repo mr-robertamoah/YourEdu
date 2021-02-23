@@ -15,7 +15,7 @@ class AccountActivitiesResource extends JsonResource
     public function toArray($request)
     {
         $data = [];
-        $data['activity'] = getAccountString($this->resource);
+        $data['activity'] = class_basename_lower($this->resource);
         $data['activityId'] = $this->id;
 
         if ($data['activity'] === 'post') {
@@ -24,7 +24,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);
         } else if ($data['activity'] === 'comment') {
-            $data['item'] = getAccountString($this->commentable_type);
+            $data['item'] = class_basename_lower($this->commentable_type);
             $data['itemId'] = $this->commentable_id;
             $data['comment'] = $this->body;            
         } else if ($data['activity'] === 'discussion') {
@@ -37,7 +37,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);     
         } else if ($data['activity'] === 'message') {
-            $data['item'] = getAccountString($this->messageable_type);
+            $data['item'] = class_basename_lower($this->messageable_type);
             $data['itemId'] = $this->messageable_id;
             $data['message'] = $this->message;
             $data['state'] = $this->state;
@@ -45,7 +45,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);            
         } else if ($data['activity'] === 'answer') {
-            $data['item'] = getAccountString($this->answerable_type);
+            $data['item'] = class_basename_lower($this->answerable_type);
             $data['itemId'] = $this->answerable_id;
             $data['possible_answer'] = $this->possible_answer_id;
             $data['answer'] = $this->answer;
@@ -53,7 +53,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);
         } else if ($data['activity'] === 'question') {
-            $data['item'] = getAccountString($this->questionable_type);
+            $data['item'] = class_basename_lower($this->questionable_type);
             $data['itemId'] = $this->questionable_id;
             $data['question'] = $this->question;
             $data['state'] = $this->state;
@@ -63,7 +63,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);          
         } else if ($data['activity'] === 'riddle') {
-            $data['item'] = getAccountString($this->riddleable_type);
+            $data['item'] = class_basename_lower($this->riddleable_type);
             $data['itemId'] = $this->riddleable_id;
             $data['riddle'] = $this->riddle;
             $data['author'] = $this->author;
@@ -73,7 +73,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);          
         } else if ($data['activity'] === 'poem') {
-            $data['item'] = getAccountString($this->poemable_type);
+            $data['item'] = class_basename_lower($this->poemable_type);
             $data['itemId'] = $this->poemable_id;
             $data['author'] = $this->author;
             $data['title'] = $this->title;
@@ -83,7 +83,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);          
         } else if ($data['activity'] === 'lesson') {
-            $data['item'] = getAccountString($this->lessonable_type);
+            $data['item'] = class_basename_lower($this->lessonable_type);
             $data['itemId'] = $this->lessonable_id;
             $data['description'] = $this->description;
             $data['title'] = $this->title;
@@ -91,7 +91,7 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);          
         } else if ($data['activity'] === 'activity') {
-            $data['item'] = getAccountString($this->activityfor_type);
+            $data['item'] = class_basename_lower($this->activityfor_type);
             $data['itemId'] = $this->activityfor_id;
             $data['description'] = $this->description;
             $data['published'] = $this->published;
@@ -99,11 +99,11 @@ class AccountActivitiesResource extends JsonResource
             $data['videos'] = VideoResource::collection($this->videos);
             $data['audios'] = AudioResource::collection($this->audios);          
         } else if ($data['activity'] === 'like') {
-            $data['item'] = getAccountString($this->likeable_type);
+            $data['item'] = class_basename_lower($this->likeable_type);
             $data['itemId'] = $this->likeable_id;            
         } else if ($data['activity'] === 'flag') {
             $data['reason'] = $this->reason;
-            $data['item'] = getAccountString($this->flaggable_type);
+            $data['item'] = class_basename_lower($this->flaggable_type);
             $data['itemId'] = $this->flaggable_id;
             $data['status'] = $this->status;
         }

@@ -17,8 +17,14 @@ class CreateAssessmentSectionsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('assessment_id');
             $table->string('name');
-            $table->string('instruction')->nullable();
-            $table->string('help')->nullable();
+            $table->text('instruction')->nullable();
+            $table->smallInteger('position')->nullable();
+            $table->mediumInteger('max_questions')->nullable();
+            $table->boolean('auto_mark')->default(false);
+            $table->boolean('random')->default(false);
+            $table->enum('answer_type',[
+                'TRUE_FALSE,LONG_ANSWER,SHORT_ANSWER,IMAGE,VIDEO,AUDIO,
+                OPTION,NUMBER','FLOW','ARRANGE'])->nullable();
             $table->softDeletes();
             $table->timestamps();
 

@@ -501,7 +501,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $background-color-main;
+            border-bottom: 2px solid $color-main;
             border-radius: 0;
         }
 

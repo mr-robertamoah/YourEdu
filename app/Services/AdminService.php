@@ -39,10 +39,14 @@ class AdminService
         $data['adminDetails'] = $adminDetails;
         if (count($fileDetails)) {
             foreach ($fileDetails as $requestFile) {
-                $file = accountCreateFile($sender,$requestFile,$request);
+                $file = FileService::createAndAttachFiles(
+                    account: $sender,
+                    file: $requestFile,
+                    item: $request
+                );
                 $data['file'][] = [
                     'id' => $file->id, 
-                    'type' => getAccountString(get_class($file))
+                    'type' => class_basename_lower($file)
                 ];
             }
         }
@@ -67,7 +71,7 @@ class AdminService
     public static function adminRequestResponse(string $requestId,string $action,
         string $accountType,int $id,string $type)
     {
-        $request = getAccountObject('request',$requestId);
+        $request = getYourEduModel('request',$requestId);
         if (is_null($request)) {
             throw new AccountNotFoundException("request was not found with id {$requestId}");
         }

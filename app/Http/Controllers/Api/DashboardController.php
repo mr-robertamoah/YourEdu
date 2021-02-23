@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\AcademicYearResource;
 use App\Http\Resources\AcademicYearSectionResource;
 use App\Http\Resources\AccountActivitiesResource;
+use App\Http\Resources\DashboardAccountItemResource;
 use App\Http\Resources\DashboardAccountResource;
 use App\Http\Resources\DashboardAdminResource;
 use App\Http\Resources\DashboardAttachmentResource;
@@ -232,13 +233,62 @@ class DashboardController extends Controller
             $items = (new DashboardService())->getAccountSpecificItem(
                 $request->account,
                 $request->accountId,
-                $request->item,
-                auth()->id()
+                [
+                    'one' => $request->item,
+                    'two' => $request->secondItem,
+                    'three' => $request->thirdItem,
+                    'for' => $request->for,
+                    'search' => $request->search,
+                ],
             );
 
             return DashboardItemMiniResource::collection($items);
         } catch (\Throwable $th) {
             throw $th;
         }
+    }
+
+    public function search(Request $request)
+    {
+        $accounts = (new DashboardService)
+            ->search(
+                search: $request->search,
+                searchType: $request->searchType,
+                account: $request->account,
+                accountId: $request->accountId,
+                for: $request->for,
+            );
+
+        return UserAccountResource::collection($accounts);
+    }
+
+    public function getAccountItems(Request $request)
+    {
+        try {
+            $items = (new DashboardService())->getAccountItems(
+                $request->account,
+                $request->accountId,
+                $request->item,
+                $request->search,
+            );
+
+            return DashboardAccountItemResource::collection($items);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function getItemDetails($item,$itemId) 
+    {
+        $mainItem = (new DashboardService())->getItemDetails(
+            $item,
+            $itemId,
+            auth()->id()
+        );
+
+        return response()->json([
+            'message' => 'successful',
+            'item' => new DashboardItemResource($mainItem)
+        ]);
     }
 }

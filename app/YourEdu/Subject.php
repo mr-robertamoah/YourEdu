@@ -44,8 +44,8 @@ class Subject extends Model
 
     public function classes()
     {
-        return $this->belongsToMany(Subject::class,'class_subject','subject_id','class_id')
-                ->withTimestamps();
+        return $this->morphedByMany(ClassModel::class,'subjectable','subjectables')
+            ->withPivot(['activity'])->withTimestamps();
     }
 
     public function grades(){

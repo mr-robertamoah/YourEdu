@@ -164,15 +164,16 @@ import InfiniteLoader from 'vue-infinite-loading'
                 return this['dashboard/getActivities'] 
             },
             computedAccounts() {
-                return this.account.username ? this.account.profiles.map(el=>{
-                    return  {
-                        name: el.profile_name ? el.profile_name : 'no name',
-                        url: el.profile_url ? el.profile_url: '',
-                        profile: el.profile ? el.profile : '',
-                        account: el.account_type,
-                        accountId: el.account_id,
-                    }
-                 }) : null
+                return this.account.username && !this.account.hasOwnProperty('level') ? 
+                    this.account.profiles.map(el=>{
+                        return  {
+                            name: el.profile_name ? el.profile_name : 'no name',
+                            url: el.profile_url ? el.profile_url: '',
+                            profile: el.profile ? el.profile : '',
+                            account: el.account_type,
+                            accountId: el.account_id,
+                        }
+                    }) : null
             },
         },
         methods: {

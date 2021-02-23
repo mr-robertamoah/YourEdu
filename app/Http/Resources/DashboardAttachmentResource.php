@@ -16,7 +16,7 @@ class DashboardAttachmentResource extends JsonResource
     public function toArray($request)
     {
         $data = [];
-        $data['type'] = getAccountString($this->resource);
+        $data['type'] = class_basename_lower($this->resource);
         // Debugbar::info($this->resource);
         if ($data['type'] === 'subject') {
             $data['data']['id'] = $this->id;
@@ -40,6 +40,15 @@ class DashboardAttachmentResource extends JsonResource
             $data['data']['name'] = $this->name;
             $data['data']['description'] = $this->description;
             $data['data']['aliases'] = SubjectAliasResource::collection($this->aliases);
+        } else if ($data['type'] === 'class' ||
+            $data['type'] === 'program') {
+            $data['data']['id'] = $this->id;
+            $data['data']['name'] = $this->name;
+            $data['data']['description'] = $this->description;
+            $data['data']['learners'] = $this->learners->count();
+            $data['data']['lessons'] = $this->lessons->count();
+            $data['data']['createdAt'] = $this->created_at;
+            $data['data']['updatedAt'] = $this->updated_at;
         }
 
         $data['type'] = $data['type'] . 's';
