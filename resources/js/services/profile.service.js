@@ -922,7 +922,7 @@ const ProfileService = {
         let {otherData, formData} = data
         try {
             let response = await ApiService
-                .post(`/api/post/${otherData.postId}/${otherData.account}/${otherData.accountId}`,
+                .post(`/api/post/${otherData.postId}`,
                     formData
                 )
     
@@ -934,7 +934,8 @@ const ProfileService = {
     async postDelete(data){
         let {account,accountId, postId} = data
         try {
-            let response = await ApiService.delete(`/api/post/${postId}/${account}/${accountId}`)
+            let response = await ApiService
+                .delete(`/api/post/${postId}`,{account, accountId})
     
             return response
         } catch (error) {

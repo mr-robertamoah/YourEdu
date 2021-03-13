@@ -2,21 +2,21 @@
 
 namespace App\Services;
 
-use App\DTOs\CommissionData;
+use App\DTOs\CommissionDTO;
 use App\Exceptions\CommissionException;
 use App\YourEdu\Commission;
 use Illuminate\Database\Eloquent\Model;
 
 class CommissionService 
 {
-    public function createCommission(CommissionData $commissionData): Commission
+    public function createCommission(CommissionDTO $commissionDTO): Commission
     {
-        $this->checkCommissionAllowance($commissionData);
-        $commission = $commissionData->ownedby->commissions()->create([
-            'percent' => $commissionData->percentageOwned
+        $this->checkCommissionAllowance($commissionDTO);
+        $commission = $commissionDTO->ownedby->commissions()->create([
+            'percent' => $commissionDTO->percentageOwned
         ]);
 
-        $commission->for()->associate($commissionData->for);
+        $commission->for()->associate($commissionDTO->for);
 
         $commission->save();
         return $commission;
@@ -24,65 +24,65 @@ class CommissionService
 
     public static function updateCommissionPercentage
     (
-        CommissionData $commissionData,
+        CommissionDTO $commissionDTO,
     ) : Commission
     {
-        $commission = (new static)->getCommission($commissionData);
+        $commission = (new static)->getCommission($commissionDTO);
         if (is_null($commission)) {
-            $account = class_basename_lower($commissionData->ownedby);
+            $account = class_basename_lower($commissionDTO->ownedby);
 
             static::throwCommissionError(
-                $commissionData->for,
-                "commission percent update failed for {$account} with id {$commissionData->ownedby?->id}."
+                $commissionDTO->for,
+                "commission percent update failed for {$account} with id {$commissionDTO->ownedby?->id}."
             );
         }
         static::checkCommissionAllowanceForUpdate(
-            $commissionData,
+            $commissionDTO,
             $commission->percent
         );
-        $commission->percent = $commissionData->percentageOwned;
+        $commission->percent = $commissionDTO->percentageOwned;
         $commission->save();
         
         return $commission;
     }
 
-    private function getCommission(CommissionData $commissionData)
+    private function getCommission(CommissionDTO $commissionDTO)
     {
-        return $commissionData->ownedby?->getCommission(
-            $commissionData->for
+        return $commissionDTO->ownedby?->getCommission(
+            $commissionDTO->for
         );
     }
 
     public function deleteCommission
     (
-        CommissionData $commissionData,
+        CommissionDTO $commissionDTO,
     ) : bool
     {
-        $commission = $this->getCommission($commissionData);
+        $commission = $this->getCommission($commissionDTO);
         
         return $commission?->delete();
     }
 
-    public static function checkCommissionAllowance(CommissionData $commissionData)
+    public static function checkCommissionAllowance(CommissionDTO $commissionDTO)
     {
-        if ($commissionData->for->doesntHaveCommissionAllowance(
-                $commissionData->percentageOwned
+        if ($commissionDTO->for->doesntHaveCommissionAllowance(
+                $commissionDTO->percentageOwned
             )) {
-            static::throwCommissionError($commissionData->for);
+            static::throwCommissionError($commissionDTO->for);
         }
     }
 
     public static function checkCommissionAllowanceForUpdate
     (
-        CommissionData $commissionData,
+        CommissionDTO $commissionDTO,
         $currentPercent
     )
     {
-        if ($commissionData->for->doesntHaveCommissionAllowanceForUpdate(
-                $commissionData->percentageOwned, $currentPercent
+        if ($commissionDTO->for->doesntHaveCommissionAllowanceForUpdate(
+                $commissionDTO->percentageOwned, $currentPercent
             )) {
             static::throwCommissionError(
-                $commissionData->for,
+                $commissionDTO->for,
                 "changing the percentage share from {$currentPercent} to {$commissionData->percentageOwned} will make total commsions exceed 100%."
             );
         }

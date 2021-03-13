@@ -15,11 +15,11 @@ class CreateActivitiesTable extends Migration
     {
         Schema::create('activities', function (Blueprint $table) {
             $table->id();
-            $table->morphs('owned'); // facilitator professional school parent learner member group collaboration
-            $table->nullableMorphs('activityby'); //facilitator learner parent school professional
+            $table->nullableMorphs('owned'); // facilitator professional school parent learner member group collaboration
+            $table->nullableMorphs('addedby'); //facilitator learner parent school professional
             $table->nullableMorphs('activityfor'); //lesson post
             $table->text('description')->nullable();
-            $table->timestamp('published')->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

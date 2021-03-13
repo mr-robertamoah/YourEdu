@@ -1,17 +1,24 @@
 <?php
 
-namespace App\Services;
+namespace App\DTOs;
 
-class AssessmentSectionData
+use App\YourEdu\Assessment;
+use App\YourEdu\AssessmentSection;
+use Illuminate\Database\Eloquent\Model;
+
+class AssessmentSectionDTO
 {
-    public string | null $sectionId;
+    public string | null $assessmentSectionId;
     public string | null $name;
     public string | null $instruction;
     public string | null $answerType;
     public int | null $position;
     public int | null $maxQuestions;
-    public bool $random;
-    public bool $autoMark;
+    public ?AssessmentSection $assessmentSection = null;
+    public ?Assessment $assessment = null;
+    public ?Model $addedby = null;
+    public bool $random = false;
+    public bool $autoMark = false;
     public array $questions = [];
     public array $removedQuestions = [];
     public array $editedQuestions = [];
@@ -22,15 +29,14 @@ class AssessmentSectionData
 
         foreach ($dataArray as $data) {
             $sections[] = static::createFromData(
-                sectionId: $data->sectionId ?? null,
+                assessmentSectionId: $data->assessmentSectionId ?? null,
                 name: $data->name ?? null,
                 instruction: $data->instruction ?? null,
                 position: $data->position ?? null,
-                autoMark: $data->autoMark ?? null,
+                autoMark: $data->autoMark ?? false,
                 maxQuestions: $data->maxQuestions ?? null,
-                random: $data->random ?? null,
-                answerType: $data->answerType ? 
-                    strtoupper($data->answerType) : null,
+                random: $data->random ?? false,
+                answerType: $data->answerType ?? '',
                 questions: $data->questions ?? [],
                 removedQuestions: $data->removedQuestions ?? [],
                 editedQuestions: $data->editedQuestions ?? [],
@@ -42,7 +48,7 @@ class AssessmentSectionData
 
     public static function createFromData
     (
-        $sectionId = null, 
+        $assessmentSectionId = null, 
         $name = null, 
         $position = null,
         $maxQuestions = null,
@@ -57,18 +63,37 @@ class AssessmentSectionData
     {
         $static = new static();
 
-        $static->sectionId = $sectionId;
+        $static->assessmentSectionId = $assessmentSectionId;
         $static->name = $name;
         $static->position = $position;
         $static->maxQuestions = $maxQuestions;
         $static->instruction = $instruction;
         $static->autoMark = $autoMark;
         $static->random = $random;
-        $static->answerType = $answerType ? strtoupper($answerType) : null;
-        $static->questions = QuestionData::createFromArray($questions);
-        $static->removedQuestions = QuestionData::createFromArray($removedQuestions);
-        $static->editedQuestions = QuestionData::createFromArray($editedQuestions);
+        $static->answerType = strlen($answerType) ? 
+            strtoupper($answerType) : "SHORT_ANSWER";
+        $static->questions = QuestionDTO::createFromArray($questions);
+        $static->removedQuestions = QuestionDTO::createFromArray($removedQuestions);
+        $static->editedQuestions = QuestionDTO::createFromArray($editedQuestions);
 
         return $static;
+    }
+
+    public function withAssessment(Assessment $assessment)
+    {
+        $clone = clone $this;
+
+        $clone->assessment = $assessment;
+
+        return $clone;
+    }
+
+    public function withAddedby(Model $addedby)
+    {
+        $clone = clone $this;
+
+        $clone->addedby = $addedby;
+
+        return $clone;
     }
 }

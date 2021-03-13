@@ -734,7 +734,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                 data.answerId = markDetails.answerId
                 data.questionId = markDetails.questionId
                 data.score = markDetails.score
-                data.score_over = markDetails.scoreOver
+                data.scoreOver = markDetails.scoreOver
                 data.remark = markDetails.remark
 
                 response = await this['profile/sendChatMark']({
@@ -1427,9 +1427,9 @@ import InfiniteLoading from 'vue-infinite-loading'
                 formData.append('account', this.getActiveProfile.params.account)
                 formData.append('accountId', this.getActiveProfile.params.accountId)
                 formData.append('chattingUserId',userId)
-                formData.append('question', data.question)
+                formData.append('body', data.question)
                 formData.append('published', new Date().toDateString())
-                formData.append('score', data.score ? data.score : null)
+                formData.append('scoreOver', data.score ? data.score : null)
                 if (data.file && data.file.length) {
                     formData.append('file', data.file[0])
                 }

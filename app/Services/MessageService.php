@@ -91,7 +91,7 @@ class MessageService
                 throw new MessageException("you are not authorized to delete this message");
             }
 
-            deleteYourEduFiles($message);
+            deleteYourEduItemFiles($message);
             $message->setTouchedRelations([]);
             $message->timestamps = false;
             $message->delete();

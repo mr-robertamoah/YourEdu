@@ -219,7 +219,6 @@ class DashboardController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'successful',
-                // 'attachment' => DashboardAttachmentResource::collection($attachments)
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -227,10 +226,10 @@ class DashboardController extends Controller
         }
     }
 
-    public function getAccountSpecificItem(Request $request)
+    public function getAccountSpecificItems(Request $request)
     {
         try {
-            $items = (new DashboardService())->getAccountSpecificItem(
+            $items = (new DashboardService())->getAccountSpecificItems(
                 $request->account,
                 $request->accountId,
                 [

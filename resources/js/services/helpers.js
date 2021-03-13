@@ -119,6 +119,9 @@ const strings = {
             }
         }
     },
+    capitalize(string) {
+        `${string.slice(0,1).toUpperCase()}${string.slice(1)}`
+    },
     getNumberString(int) {
         switch (int) {
             case 1:
@@ -152,6 +155,70 @@ const strings = {
                 return 'ten'
                 break;        
             default:
+                break;
+        }
+    },
+    getNumberLetter(int) {
+        switch (int) {
+            case 1:
+                return 'a'
+            case 2:
+                return 'b'
+            case 3:
+                return 'c'
+            case 4:
+                return 'd'
+            case 5:
+                return 'e'
+            case 6:
+                return 'f'
+            case 7:
+                return 'g'
+            case 8:
+                return 'h'
+            case 9:
+                return 'i'
+            case 10:
+                return 'j'  
+            case 11:
+                return 'k'
+            case 12:
+                return 'l'
+            case 13:
+                return 'm'
+            case 14:
+                return 'n'
+            case 15:
+                return 'o'
+            case 16:
+                return 'p'
+            case 17:
+                return 'q'
+            case 18:
+                return 'r'
+            case 19:
+                return 'q'
+            case 20:
+                return 't'
+            case 20:
+                return 'u'
+            case 21:
+                return 'v'
+            case 22:
+                return 'w'
+            case 23:
+                return 'x'
+            case 24:
+                return 'y'
+            case 25:
+                return 'z'
+            default:
+                if (int > 25 && int <= 50) {
+                    return `a${this.getNumberLetter(int - 25)}`                    
+                }
+                if (int > 50 && int <= 75) {
+                    return `b${this.getNumberLetter(int - 50)}`                    
+                }
                 break;
         }
     },

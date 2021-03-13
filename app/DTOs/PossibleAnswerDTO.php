@@ -2,10 +2,11 @@
 
 namespace App\DTOs;
 
-class PossibleAnswerData
+class PossibleAnswerDTO
 {
     public string | null $possibleAnswerId;
     public string | null $option;
+    public int | null $position;
 
     public static function createFromArray(array $dataArray) : array
     {
@@ -15,6 +16,7 @@ class PossibleAnswerData
             $possibleAnswers[] = static::createFromData(
                 possibleAnswerId: $data->possibleAnswerId ?? null,
                 option: $data->option ?? null,
+                position: $data->position ?? null,
             );
         }
 
@@ -25,12 +27,14 @@ class PossibleAnswerData
     (
         $possibleAnswerId = null, 
         $option = null,
+        $position = null,
     )
     {
         $static = new static();
 
         $static->possibleAnswerId = $possibleAnswerId;
         $static->option = $option;
+        $static->position = $position;
 
         return $static;
     }

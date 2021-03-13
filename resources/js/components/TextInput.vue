@@ -6,10 +6,10 @@
             :class="{error:error,bottomborder:bottomBorder,
             noborder:noBorder,sm:sm}"
         >
-            <input :type="inputType" 
+            <input type="text" 
                 :placeholder="placeholder" 
-                @input="change" 
-                @keyup="checkInput" 
+                v-model="inputValue" 
+                @keyup.enter="sendText" 
                 :max="inputMax"
                 :min="inputMin"
                 class="form-control"
@@ -23,7 +23,6 @@
                 @click="iconChange">
                 <font-awesome-icon
                     :icon="icon"
-                    @uploadedFiles="inputFiles"
                 >
                 </font-awesome-icon>
             </div>
@@ -50,10 +49,6 @@
                 type: Boolean,
                 default: false
             },
-            noBorder: {
-                type: Boolean,
-                default: false
-            },
             sm: {
                 type: Boolean,
                 default: false
@@ -66,9 +61,13 @@
                 type: Boolean,
                 default: false
             },
-            inputType: {
+            inputmode: {
                 type: String,
-                default: 'text'
+                default: ''
+            },
+            pattern: {
+                type: String,
+                default: ''
             },
             inputMax: {
                 type: Number,
@@ -99,50 +98,34 @@
         },
         data() {
             return {
-                inputFiles: [],
                 inputValue: '',
-                inputmode: '',
-                pattern: '',
             }
         },
         watch: {
             inputValue(newValue,oldValue) {
-                if (this.inputType === 'text' && this.hasMax) {
-                    if (newValue.length > this.inputMax) {
-                        this.inputValue = oldValue
-                        this.$refs.textinput.value = oldValue
-                    } else {
-                        this.$refs.textinput.value = newValue
-                    }
-                } else {
-                    this.$refs.textinput.value = newValue
-                }               
+                if (this.hasMax && (newValue.length > this.inputMax)) {
+                    this.inputValue = oldValue
+                    this.$emit('input', oldValue)
+                    return
+                }    
+                this.$emit('input', newValue)
             },
             value: {
                 immediate:true,
                 handler(newValue){
-                    this.inputValue = newValue
-                    if (this.$refs.textinput) this.$refs.textinput.value = newValue
+                    if (newValue !== this.inputValue) {
+                        this.inputValue = newValue   
+                    }
                 }
             },
         },
         methods: {
-            checkInput(event) {
-                if (this.inputType === 'number') {
-                    if (event.target.value < this.inputMin) {
-                        event.target.value = this.inputMin
-                    } else if (event.target.value > this.inputMax) {
-                        event.target.value = this.inputMax
-                    }
-                }
-            },
-            change($event) {
-                this.inputValue = this.$refs.textinput.value
-                this.$emit('input', this.$refs.textinput.value)
-            },
             iconChange() {
                 this.$emit('iconChange')
-            }
+            },
+            sendText() {
+                this.$emit('keyupenter', this.inputValue)
+            },
         },
     }
 </script>

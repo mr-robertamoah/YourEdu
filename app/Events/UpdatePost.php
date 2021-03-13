@@ -11,7 +11,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class UpdatePost implements ShouldBroadcastNow
+class UpdatePost implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -33,8 +33,8 @@ class UpdatePost implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = class_basename_lower($this->post->postedby_type);
-        $accountId = $this->post->postedby_id;
+        $account = class_basename_lower($this->post->addedby_type);
+        $accountId = $this->post->addedby_id;
         return [
             new Channel('youredu.home'),
             new Channel("youredu.{$account}.{$accountId}")

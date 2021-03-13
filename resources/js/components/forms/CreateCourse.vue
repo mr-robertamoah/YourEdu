@@ -327,7 +327,7 @@
                                     label="automatically add a discussion?"
                                     class="class-input"
                                 ></main-checkbox>
-                                <!-- discussion preview -->
+                                
                                 <div class="discussion-preview"
                                     v-if="data.discussionData.title.length"
                                 >
@@ -822,7 +822,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $color-main;
+            border-bottom: 2px solid $color-primary;
             border-radius: 0;
         }
 
@@ -862,7 +862,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 
         .search-input{
             border: none;
-            border-bottom: 2px solid $color-main;
+            border-bottom: 2px solid $color-primary;
             background: white;
         }
 

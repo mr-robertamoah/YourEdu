@@ -5,6 +5,8 @@ namespace App\YourEdu;
 use App\Traits\AccountTrait;
 use App\Traits\DashboardItemTrait;
 use App\User;
+use Database\Factories\SchoolFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -12,7 +14,7 @@ class School extends Model
 {
     //
 
-    use SoftDeletes, AccountTrait, DashboardItemTrait;
+    use SoftDeletes, AccountTrait, DashboardItemTrait, HasFactory;
 
     protected $fillable = [
         'owner_id','company_name', 'role', 'class_structure', 'types', 'about'
@@ -193,12 +195,6 @@ class School extends Model
         return $this->morphMany(Curriculum::class,'curriculable');
     }
 
-    // public function curriculaInUse()
-    // {
-    //     return $this->morphToMany(Curriculum::class,'curriculumable','curriculumables')
-    //             ->withTimestamps();
-    // }
-
     public function ownedPrograms()
     {
         return $this->morphMany(Program::class,'ownedby');
@@ -307,9 +303,9 @@ class School extends Model
         return $this->morphMany(Mark::class,'markedby');
     }
 
-    public function assessments()
+    public function addedAssessments()
     {
-        return $this->morphMany(Assessment::class,'assessmentby');
+        return $this->morphMany(Assessment::class,'addedby');
     }
 
     public function reports()
@@ -437,9 +433,9 @@ class School extends Model
         return $this->morphMany(Poem::class,'addedby');
     }
 
-    public function activities()
+    public function activitiesAdded()
     {
-        return $this->morphMany(Activity::class,'activityby');
+        return $this->morphMany(Activity::class,'addedby');
     }
 
     public function riddlesAdded()
@@ -454,7 +450,7 @@ class School extends Model
 
     public function posts()
     {
-        return $this->morphMany(Post::class,'postedby');
+        return $this->morphMany(Post::class,'addedby');
     }
 
     public function attachments()
@@ -484,7 +480,7 @@ class School extends Model
 
     public function questionsAdded()
     {
-        return $this->morphMany(Question::class,'questionedby');
+        return $this->morphMany(Question::class,'addedby');
     }
 
     public function activitiesOwned()
@@ -530,6 +526,10 @@ class School extends Model
             $query->where('user_id',$id);
         }]);
     }
-
+    
+    protected static function newFactory()
+    {
+        return SchoolFactory::new();
+    }
     
 }

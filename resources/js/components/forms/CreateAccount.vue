@@ -285,7 +285,7 @@
                                     ></main-select>
 
                                     <date-picker
-                                        placeHolder="date of birth"
+                                        placeholder="date of birth"
                                         @datePicked="dobPicked"
                                         :bottomBorder="true"
                                         class="date-picker"
@@ -1211,7 +1211,7 @@ import { dates } from '../../services/helpers'
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $color-main;
+            border-bottom: 2px solid $color-primary;
             border-radius: 0;
         }
 
@@ -1306,7 +1306,7 @@ import { dates } from '../../services/helpers'
                 border: none;
 
                 .icon{
-                    color: $color-main;
+                    color: $color-primary;
                     margin-right: 10px;
                 }
 

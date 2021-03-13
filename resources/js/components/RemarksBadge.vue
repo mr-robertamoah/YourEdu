@@ -15,7 +15,7 @@
                     </div>
                     <div class="bottom">
                         <div class="remark">{{`remark: ${mark.remark}`}}</div>
-                        <div class="mark">{{`${mark.score}/${mark.score_over}`}}</div>
+                        <div class="mark">{{`${mark.score}/${mark.scoreOver}`}}</div>
                     </div>
                 </div>
                 <div class="loading">

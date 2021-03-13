@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\CourseData;
+use App\DTOs\CourseDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CourseCreateRequest;
 use App\Http\Requests\CreateCourseRequest;
@@ -102,7 +102,7 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             $course = (new CourseService())->createCourse(
-                CourseData::createFromRequest($request)
+                CourseDTO::createFromRequest($request)
             );
 
             DB::commit();
@@ -145,7 +145,7 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             $course = (new CourseService())->updateCourse(
-                CourseData::createFromRequest($request)
+                CourseDTO::createFromRequest($request)
             );
 
             DB::commit();

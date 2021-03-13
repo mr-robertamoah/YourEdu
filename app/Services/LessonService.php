@@ -2,8 +2,7 @@
 
 namespace App\Services;
 
-use App\DTOs\LessonData;
-use App\DTOs\LinkData;
+use App\DTOs\LessonDTO;
 use App\Events\DeleteLessonEvent;
 use App\Events\NewLessonEvent;
 use App\Events\UpdateLessonEvent;
@@ -13,6 +12,8 @@ use App\Http\Resources\DashboardLessonResource;
 use App\Http\Resources\LessonResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\LessonCreatedNotification;
+use App\Notifications\LessonDeletedNotification;
+use App\Notifications\LessonUpdatedNotification;
 use App\Traits\ClassCourseTrait;
 use App\User;
 use App\YourEdu\Lesson;
@@ -23,270 +24,95 @@ class LessonService
 {
     use ClassCourseTrait;
 
-    /**
-     * this helps to determine which state to set when creating lesson
-     */
-    private function returnState($account,$owner,$main)
+    public function __construct(private int $lessonFileTypeMax = 1) 
     {
-        if (!$main) return null;
-        return $owner === 'school' && 
-            ($account !== 'admin' && $account !== 'school') 
-            ? 'PENDING' : 'ACCEPTED';
+
     }
-    
-    public function createLesson(LessonData $lessonData) //main determines if lesson is for post or not
+
+    public function createLesson(LessonDTO $lessonDTO)
     {
-        $mainAccount = getYourEduModel($lessonData->account,$lessonData->accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$lessonData->account} not found with id {$lessonData->accountId}");
-        }
-        ray($mainAccount,$lessonData)->green();
-        if (!$this->checkAccountOwnership($mainAccount,$lessonData->userId)) {
-            throw new LessonException("you do not own this account");
-        }
+        $lessonDTO = $this->setLessonAddedby($lessonDTO);
 
-        $lesson = $mainAccount->addedLessons()->create([
-            'title' => $lessonData->title,
-            'state' => $this->returnState($lessonData->owner,$lessonData->account,$lessonData->main),
-            'description' => $lessonData->description,
-        ]);
+        $this->checkAccountOwnership($lessonDTO->addedby,$lessonDTO);
 
-        if (is_null($lesson)) {
-            throw new LessonException("lesson creation failed");
-        }
+        $lesson = $this->createOrUpdateLesson($lessonDTO, 'create');
 
-        if ($lessonData->account === $lessonData->owner && $lessonData->accountId === $lessonData->ownerId) {
-            $mainOwner = $mainAccount;
-        } else {
-            $mainOwner = getYourEduModel($lessonData->owner,$lessonData->ownerId);
-            if ($lessonData->main && is_null($mainOwner)) {
-                throw new AccountNotFoundException("{$lessonData->owner} not found with id {$lessonData->ownerId}");
-            }
-        }        
+        $lessonDTO = $lessonDTO->withLesson($lesson);
 
-        $lesson->ownedby()->associate($mainOwner);
-        $lesson->save();
+        $lessonDTO = $this->setLessonOwnedby($lessonDTO);
+        
+        $this->checkLessonFiles($lesson, $lessonDTO);
 
-        if ($lessonData->main) {
-            
-            $lesson = $this->itemCreateUpdateMethodParts(
-                lesson: $lesson,
-                mainAccount: $mainAccount,
-                lessonData: $lessonData
-            );
+        $lesson = $this->attachLessonToOwnedby($lesson, $lessonDTO);
 
-            if ($lessonData->owner === 'school') { //it is only pending if it belongs to school and it is created by a non owner or non admin
-                $userIds = array_filter($mainOwner->getAdminIds(),
-                    function($id) use ($lessonData){
-                        return $id !== $lessonData->userId;
-                    }
-                );
-                $name = $mainOwner->name ?? $mainAccount->company_name;
-                Notification::send(User::whereIn('id',$userIds)->get(), 
-                    new LessonCreatedNotification(
-                        new UserAccountResource($mainAccount),
-                        "created a lesson with the name: {$lesson->title}, 
-                        for {$name}. Please go to dashboard to approve or otherwise."
-                    )
-                );
+        $lesson = $this->attachLessonToItem($lesson, $lessonDTO);
 
-                broadcast(new NewLessonEvent([
-                    'account' => $lessonData->owner,
-                    'accountId' => $lessonData->ownerId,
-                    'classes' => $lesson->classes->toArray(),
-                    'extracurriculums' => $lesson->extracurriculums->toArray(),
-                    'courseSections' => $lesson->courseSections->toArray(),
-                    'courses' => $lesson->courses()->hasOwner()->get()->toArray(),
-                    'lesson' => new LessonResource($lesson),
-                ]))->toOthers();
-            }
-        }
+        $this->createAttachments(
+            $lesson,
+            $lesson->addedby,
+            $lessonDTO->attachments,
+            true
+        );
+
+        $lesson = $this->addFiles($lesson, $lessonDTO);
+
+        $lesson = $this->createLinks($lesson,$lessonDTO->links);
+
+        $lesson = $this->addMainLessonDetails($lesson, $lessonDTO);
+
+        $this->notifySchoolAdmins($lesson, $lessonDTO);
+
+        $this->broadcastNewLesson($lesson, $lessonDTO);
+
+        $this->trackAdminActivity($lesson, $lessonDTO, __METHOD__);
 
         return $lesson;
     }
 
-    private function itemCreateUpdateMethodParts
+    private function checkLessonFiles
     (
-        $lesson,
-        $mainAccount,
-        LessonData $lessonData,
+        Lesson $lesson,
+        LessonDTO $lessonDTO
     )
     {
-        //attachments like lessons programs grades
-        $this->createAttachments(
+        $lessonFilesDTO = FileService::countPossibleItemFiles(
             $lesson,
-            $mainAccount,
-            $lessonData->attachments,
-            true
+            $lessonDTO
         );
 
-        //for classes and courses to which we may attach lesson
-        $lesson = $this->createMainAttachments(
-            attachments: $lessonData->items,
-            method: 'lessons',
-            lesson: $lesson,
-            userId: $lessonData->userId,
-            activity: $lessonData->intro ? 'INTRO' : ($lessonData->free ? 
-                'FREE' : null)
-        );
-
-        //set payment information
-        $this->setPayment(
-            item: $lesson,
-            addedby: $mainAccount,
-            paymentType: $lessonData->type,
-            paymentData: $lessonData->paymentData,
-        );
-
-        //create auto discussion 
-        $this->createAutoDiscussion(
-            item: $lesson,
-            itemData: $lessonData
-        );
-
-        //lesson files
-        $this->addFiles(
-            lesson: $lesson,
-            account: $mainAccount,
-            files: $lessonData->files
-        );
-
-        $this->createLinks($mainAccount,$lesson,$lessonData->links);
-
-        return $lesson->refresh();
-    }
-
-    private function removeMainAttachments
-    (
-        array $attachments,
-        string $method,
-        Lesson $lesson
-    )
-    {
-        foreach ($attachments as $attachment) {
-            if (property_exists($attachment,"classId")) {
-                $class = getYourEduModel('class',$attachment->classId);
-            } else {
-                $class = null;
-            }
-            $attachable = getYourEduModel($attachment->type, $attachment->id);
-            if (!is_null($class) && $class->$method->where('id',$lesson->id)->count() > 0) {
-                $class->$method()->detach($lesson->id);
-            } else if ($attachable->$method->where('id',$lesson->id)->count() > 0) {
-                $attachable->$method()->detach($lesson->id);
-            }
-        }
-
-        return $lesson->refresh();
-    }
-
-    private function createMainAttachments
-    (
-        array $attachments,
-        $method,
-        Lesson $lesson, //lesson
-        $userId,
-        $activity
-    )
-    {
-        foreach ($attachments as $attachment) {
-            if (property_exists($attachment,"classId")) {
-                $class = getYourEduModel('class',$attachment->classId);
-            } else {
-                $class = null;
-            }
-            $attachable = getYourEduModel($attachment->type, $attachment->id);
-            if (is_null($attachable)) {
-                throw new AccountNotFoundException("{$attachment->type} with id {$attachment->id} not found.");
-            }
-            if (!is_null($class)) {
-                if ($this->doesntAlreadyHaveLesson($class,$lesson)) {
-                    if ($activity === 'INTRO') $this->doesntHaveIntro($class);
-                    
-                    $class->$method()->attach($lesson->id,[
-                        'activity'=>$activity,
-                        'subject_id' => $attachment->id
-                    ]);
-                }
-            } else {
-                if ($this->doesntAlreadyHaveLesson($attachable,$lesson)) {
-                    if ($activity === 'INTRO') $this->doesntHaveIntro($attachable);
-                    if ($attachment->type === 'courseSection') {
-                        ray($attachable,'course section')->green();
-                        $attachable->$method()->attach($lesson->id,[
-                            'lesson_number' => $attachable->lessons->last()?->lesson_number + 1
-                        ]);
-                    } else {
-                        ray($attachable,'not in course')->green();
-                        $attachable->$method()->attach($lesson->id,[
-                            'activity' => $activity
-                        ]);
-                    }
-                }
-            }
-        }
-
-        return $lesson->refresh();
-    }
-
-    private function doesntAlreadyHaveLesson($item,$lesson)
-    {
-        ray($item->lessons->where('id',$lesson->id)->count())->green();
-        if ($item->lessons->where('id',$lesson->id)->count() > 0) {
-            return false;
-        }
-        return true;
-    }
-
-    private function doesntHaveIntro($item) 
-    {
-        if ($item->lessons()->where('activity','INTRO')->count() > 0) {
-            $itemType = class_basename_lower($item);
-            throw new LessonException("there is already an introductory lesson for {$itemType} with id {$item->id}");
-        }
-    }
-
-    private function addFiles(Lesson $lesson,$account,array $files,)
-    {
-        foreach ($files as $file) {
-            FileService::createAndAttachFiles(
-                file: $file,
-                account: $account,
-                item: $lesson
+        if ($lessonFilesDTO->totalFiles() < 1) {
+            $this->throwLessonException(
+                message: "a lesson should have at least one file (image, video or audio)",
+                data: $lessonDTO
             );
         }
 
-        return $lesson->refresh();
-    }
+        if ($lessonFilesDTO->imagesCount > $this->lessonFileTypeMax) {
+            $this->throwLessonException(
+                message: "lesson's images cannot be more than {$this->lessonFileTypeMax}",
+                data: $lessonDTO
+            );
+        }
 
-    private function createLinks($account,$lesson, $links)
-    {
-        if (is_array($links)) {
-            foreach ($links as $link) {
-                $link->linkable = $lesson;
-                $link->addedby = $account;
-                LinkService::createLink($link);
-            }
+        if ($lessonFilesDTO->videosCount > $this->lessonFileTypeMax) {
+            $this->throwLessonException(
+                message: "lesson's videos cannot be more than {$this->lessonFileTypeMax}",
+                data: $lessonDTO
+            );
         }
-    }
-    
-    private function editLinks(array $links)
-    {
-        foreach ($links as $link) {
-            LinkService::editLink($link);
-        }
-    }
-    
-    private function deleteLinks(array $links)
-    {
-        foreach ($links as $link) {
-            LinkService::deleteLink($link);
-        }
-    }
 
-    private function deleteFiles(array $files,Lesson $lesson) {
-        foreach ($files as $file) {
-            FileService::deleteAndUnattachFilesFromObject($file,$lesson);
+        if ($lessonFilesDTO->audiosCount > $this->lessonFileTypeMax) {
+            $this->throwLessonException(
+                message: "lesson's audios cannot be more than {$this->lessonFileTypeMax}",
+                data: $lessonDTO
+            );
+        }
+
+        if ($lessonFilesDTO->filesCount > $this->lessonFileTypeMax) {
+            $this->throwLessonException(
+                message: "lesson's files cannot be more than {$this->lessonFileTypeMax}",
+                data: $lessonDTO
+            );
         }
     }
     
@@ -305,133 +131,584 @@ class LessonService
         
     }
     
-    public function updateLesson(LessonData $lessonData)
+    public function updateLesson(LessonDTO $lessonDTO)
     {
-        ray($lessonData)->green();
-        //check account
-        $mainAccount = getYourEduModel($lessonData->account,$lessonData->accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("$lessonData->account not found with id {$lessonData->lessonId}");
-        }
 
-        if (!$this->checkAccountOwnership($mainAccount,$lessonData->userId)) {
-            throw new LessonException("you do not own this account");
-        }
-        //check lesson
-        $lesson = getYourEduModel('lesson',$lessonData->lessonId);
-        if (is_null($lesson)) {
-            throw new AccountNotFoundException("lesson not found with id {$lessonData->lessonId}");
-        }
+        $lessonDTO = $this->setLessonAddedby($lessonDTO);
 
-        //check authorization
-        $this->checkLessonAuthorization($lesson,$lessonData->userId);
+        $this->checkAccountOwnership($lessonDTO->addedby,$lessonDTO);
 
-        //update lesson attributes
-        $lesson->update([
-            'title' => $lessonData->title,
-            'state' => Str::upper($lessonData->state),
-            'description' => $lessonData->description,
-        ]);
+        $lesson = $this->createOrUpdateLesson($lessonDTO, 'update');
+
+        $lessonDTO = $lessonDTO->withLesson($lesson);
+
+        $lessonDTO = $this->setLessonOwnedby($lessonDTO);
+
+        $this->checkLessonFiles($lesson, $lessonDTO);
         
-        $this->itemCreateUpdateMethodParts(
-            lesson: $lesson,
-            mainAccount: $mainAccount,
-            lessonData: $lessonData,
+        $this->createAttachments(
+            $lesson,
+            $lesson->addedby,
+            $lessonDTO->attachments,
+            true
         );
 
-        //for classes and programs from which we may detach lesson
+        $this->removeAttachments( 
+            item: $lesson,
+            account: (
+                $lesson->addedby->accountType === 'facilitator' || 
+                $lesson->addedby->accountType === 'professional'
+            ) ? $lesson->addedby : null,
+            facilitate: false,
+            attachments: $lessonDTO->removedAttachments,
+        );
+
+        $lesson = $this->addFiles($lesson, $lessonDTO);
+
+        $this->deleteFiles(
+            files: $lessonDTO->removedFiles, 
+            lesson: $lesson
+        );
+
+        $lesson = $this->createLinks($lesson,$lessonDTO->links);
+
+        $this->editLinks($lessonDTO->editedLinks);
+
+        $this->deleteLinks($lessonDTO->removedLinks);
+
+        $lesson = $this->addMainLessonDetails($lesson, $lessonDTO);
+
+        $this->notifySchoolAdmins($lesson, $lessonDTO, 'updated');
+
+        $this->broadcastUpdate($lesson, $lessonDTO);
+
+        $this->trackAdminActivity($lesson, $lessonDTO, __METHOD__);
+
+        return $lesson;
+    }
+
+    private function trackAdminActivity
+    (
+        Lesson $lesson, 
+        LessonDTO $lessonDTO, 
+        $method
+    )
+    {
+        if (!$lessonDTO->adminId) {
+            return ;
+        }
+
+        if (!$lessonDTO->main) {
+            return;
+        }
+
+        (new ActivityTrackService)->trackActivity(
+            $lesson,
+            $lesson->ownedby,
+            $lesson->addedby,
+            $method
+        );
+    }
+
+    public function checkLessonAuthorization($lesson,$lessonDTO)
+    {
+        if (!$lessonDTO->main) {
+            return;
+        }
+        
+        if ($this->doesntHaveAuthorization($lesson,$lessonDTO->userId)) {
+            return;
+        }
+
+        $this->throwLessonException(
+            message: "You are not authorized to edit or delete the lesson with id {$lesson->id}"
+        );
+    }
+
+    public function deleteLesson(LessonDTO $lessonDTO)
+    {
+        $lesson = $this->getLessonModel($lessonDTO);
+
+        $this->checkLessonAuthorization($lesson,$lessonDTO);
+
+        $this->trackAdminActivity($lesson, $lessonDTO, __METHOD__);
+
+        if ($lessonDTO->action === 'undo') {
+            return $this->changeState($lesson,'accepted');
+        }
+
+        if ($lessonDTO->main && $this->paymentMadeFor($lesson)) {
+            return $this->changeState($lesson,'deleted');
+        }
+
+        $this->deleteLessonLinks($lesson);
+
+        $this->deleteLessonFiles($lesson);
+        
+        $lesson->delete();
+        
+        $this->broadcastDelete($lesson, $lessonDTO);
+
+        return null;
+    }
+
+    private function deleteLessonLinks
+    (
+        Lesson $lesson
+    ) : Lesson
+    {
+        $lesson->links->each(function($link) {
+            $link->delete();
+        });
+        return $lesson->refresh();
+    }
+
+    private function deleteLessonFiles
+    (
+        Lesson $lesson,
+    ) : Lesson
+    {
+        FileService::deleteYourEduItemFiles(
+            item: $lesson
+        );
+
+        return $lesson->refresh();
+    }
+
+    /**
+     * this helps to determine which state to set when creating lesson
+     */
+    private function getState($account,$owner,$main)
+    {
+        if (!$main) return null;
+        return $owner === 'school' && 
+            ($account !== 'admin' && $account !== 'school') 
+            ? 'PENDING' : 'ACCEPTED';
+    }
+
+    private function throwLessonException
+    (
+        string $message, 
+        $data = null
+    )
+    {
+        throw new LessonException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    private function createOrUpdateLesson
+    (
+        LessonDTO $lessonDTO,
+        string $method
+    ) : Lesson
+    {
+        $data = [
+            'title' => $lessonDTO->title,
+            'state' => $lessonDTO->state,
+            'age_group' => $lessonDTO->state,
+            'description' => $lessonDTO->description,
+            'published_at' => $lessonDTO->publishedAt?->toDateTimeString(),
+        ];
+
+        $lesson = null;
+
+        if ($method === 'create') {
+            $lesson = $lessonDTO->addedby->addedLessons()
+                ->create($data);
+        }
+        
+        if ($method === 'update') {
+            $lesson = $this->getLessonModel($lessonDTO);
+
+            $this->checkLessonAuthorization($lesson,$lessonDTO);
+
+            $lesson?->update($data);
+        }
+        
+        if (is_null($lesson)) {
+            $this->throwLessonException(
+                message: "failed to {$method} lesson.",
+                data: $lessonDTO
+            );
+        }
+        
+        return $lesson->refresh();
+    }
+
+    private function setLessonAddedby(LessonDTO $lessonDTO) : LessonDTO
+    {
+        if ($lessonDTO->addedby) {
+            return $lessonDTO;
+        }
+
+        if (!$lessonDTO->main) {
+            return $lessonDTO;
+        }
+
+        $addedby = getYourEduModel(
+            $lessonDTO->account,
+            $lessonDTO->accountId
+        );
+
+        if (is_null($addedby)) {
+            $this->throwLessonException(
+                message: "{$lessonDTO->account} not found with id {$lessonDTO->accountId}",
+                data: $lessonDTO
+            );
+        }
+
+        $lessonDTO = $lessonDTO->withAddedby($addedby);
+        
+        return $lessonDTO;
+    }
+
+    private function setLessonOwnedby(LessonDTO $lessonDTO) : LessonDTO
+    {
+        if ($lessonDTO->account === $lessonDTO->owner && $lessonDTO->accountId === $lessonDTO->ownerId) {
+            $lessonDTO->ownedby = $lessonDTO->addedby;
+        } else {
+            $lessonDTO->ownedby = getYourEduModel($lessonDTO->owner,$lessonDTO->ownerId);
+            if ($lessonDTO->main && is_null($lessonDTO->ownedby)) {
+                $this->throwLessonException(
+                    message: "{$lessonDTO->owner} not found with id {$lessonDTO->ownerId}",
+                    data: $lessonDTO
+                );
+            }
+        }  
+
+        return $lessonDTO;
+    }
+    
+    private function attachLessonToOwnedby
+    (
+        Lesson $lesson,
+        LessonDTO $lessonDTO
+    ) : Lesson
+    {
+        $lesson->ownedby()->associate($lessonDTO->ownedby);
+        $lesson->save();
+
+        return $lesson->refresh();
+    }
+    
+    private function attachLessonToItem
+    (
+        Lesson $lesson,
+        LessonDTO $lessonDTO
+    ) : Lesson
+    {
+        $lesson->lessonable()->associate($lessonDTO->lessonable);
+        $lesson->save();
+
+        return $lesson->refresh();
+    }
+
+    private function addMainLessonDetails
+    (
+        Lesson $lesson,
+        LessonDTO $lessonDTO
+    ) : Lesson
+    {
+        
+        if (!$lessonDTO->main) {
+            return $lesson;
+        }
+
+        $lesson = $this->createMainAttachments(
+            attachments: $lessonDTO->items,
+            method: 'lessons',
+            lesson: $lesson,
+            activity: $lessonDTO->intro ? 'INTRO' : ($lessonDTO->free ? 
+                'FREE' : null)
+        );
+
         $lesson = $this->removeMainAttachments(
-            attachments: $lessonData->removedItems,
+            attachments: $lessonDTO->removedItems,
             method: 'lessons',
             lesson: $lesson,
         );
 
-        $this->removeAttachments( //remove attachments
+        $this->setPayment(
             item: $lesson,
-            account: ($lessonData->account === 'facilitator' || $lessonData->account === 'professional') ? $mainAccount : null,
-            facilitate: false,
-            attachments: $lessonData->removedAttachments,
+            addedby: $lesson->addedby,
+            paymentType: $lessonDTO->type,
+            paymentData: $lessonDTO->paymentData,
         );
 
-        //set payment information
         $this->removePayment(
             item: $lesson,
-            paymentData: $lessonData->removedPaymentData,
+            paymentData: $lessonDTO->removedPaymentData,
         );
 
-        //files
-        $this->deleteFiles(
-            files: $lessonData->removedFiles, 
-            lesson: $lesson
+        $this->createAutoDiscussion(
+            item: $lesson,
+            itemData: $lessonDTO
         );
 
-        //track school activities
-        if ($lessonData->account === 'admin') {
-            (new ActivityTrackService())->createActivityTrack(
-                $lesson,$lesson->ownedby,$mainAccount,__METHOD__
+        return $lesson->refresh();
+    }
+
+    private function broadcastNewLesson($lesson, $lessonDTO)
+    {
+        if (!$lessonDTO->main) {
+            return;
+        }
+
+        broadcast(new NewLessonEvent([
+            'account' => $lessonDTO->owner,
+            'accountId' => $lessonDTO->ownerId,
+            'classes' => $lesson->classes->toArray(),
+            'extracurriculums' => $lesson->extracurriculums->toArray(),
+            'courseSections' => $lesson->courseSections->toArray(),
+            'courses' => $lesson->courses()->hasOwner()->get()->toArray(),
+            'lesson' => new LessonResource($lesson),
+        ]))->toOthers();
+    }
+
+    private function notifySchoolAdmins
+    (
+        $lesson, 
+        $lessonDTO, 
+        $type = 'created'
+    )
+    {
+        if (!$lessonDTO->main) {
+            return;
+        }
+
+        if ($lessonDTO->ownedby?->accountType !== 'school') {
+            return;
+        }
+
+        $userIds = array_filter($lessonDTO->ownedby->getAdminIds(),
+            function($id) use ($lessonDTO){
+                return (int) $id !== $lessonDTO->userId;
+            }
+        );
+
+        $notification = $this->getSchoolNotification($lesson, $lessonDTO, $type);
+
+        if (is_null($notification)) {
+            return;
+        }
+
+        Notification::send(
+            User::whereIn('id',$userIds)->get(), 
+            $notification
+        );
+    }
+
+    private function getSchoolNotification
+    (
+        Lesson $lesson,
+        LessonDTO $lessonDTO,
+        string $type
+    )
+    {
+        $name = $lessonDTO->ownedby->company_name;
+
+        if ($type === 'created') {                
+            $notification = new LessonCreatedNotification(
+                new UserAccountResource($lessonDTO->addedby),
+                "created a lesson with the name: {$lesson->title}, 
+                for {$name}. Please go to dashboard to approve or otherwise."
             );
         }
 
-        //links
-        $this->editLinks($lessonData->editedLinks);
-        $this->deleteLinks($lessonData->removedLinks);
+        if ($type === 'updated') {                
+            $notification = new LessonUpdatedNotification(
+                new UserAccountResource($lessonDTO->addedby),
+                "updated a lesson with the name: {$lesson->title}, for {$name}."
+            );
+        }
 
-        //broadcast     
-        $this->broadcastUpdate($lesson);
+        if ($type === 'deleted') {                
+            $notification = new LessonDeletedNotification(
+                new UserAccountResource($lessonDTO->addedby),
+                "deleted a lesson with the name: {$lesson->title}, for {$name}."
+            );
+        }
 
-        //return lesson
+        if (!isset($notification)) {
+            return null;
+        }
+        
+        return $notification;
+    }
+
+    private function removeMainAttachments
+    (
+        array $attachments,
+        string $method,
+        Lesson $lesson
+    )
+    {
+        foreach ($attachments as $attachment) {
+            if (property_exists($attachment,"classId")) {
+                $attachable = getYourEduModel('class',$attachment->classId);
+            }
+
+            if (!isset($attachable)) {
+                $attachable = getYourEduModel($attachment->type, $attachment->id);
+            }
+            
+            if ($attachable->$method->where('id',$lesson->id)->count() > 0) {
+                $attachable->$method()->detach($lesson->id);
+            }
+        }
+
+        return $lesson->refresh();
+    }
+
+    private function getModel($account, $accountId)
+    {
+        $model = getYourEduModel($account, $accountId);
+        if (is_null($model)) {
+            throw new AccountNotFoundException("{$account} with id {$accountId} not found.");
+        }
+
+        return $model;
+    }
+
+    private function getLessonModel(LessonDTO $lessonDTO)
+    {
+        if ($lessonDTO->lesson) {
+            return $lessonDTO->lesson;
+        }
+
+        $lesson = getYourEduModel('lesson', $lessonDTO->lessonId);
+        if (is_null($lesson)) {
+            throw new AccountNotFoundException("lesson with id {$lessonDTO->lessonId} not found.");
+        }
+
         return $lesson;
     }
 
-    public function checkLessonAuthorization($lesson,$userId)
+    private function createMainAttachments
+    (
+        array $attachments,
+        $method,
+        Lesson $lesson,
+        $activity
+    )
     {
-        if (!$this->checkAuthorization($lesson,$userId)) {
-            throw new LessonException("You are not authorized to edit or delete the lesson with id {$lesson->id}");
+        foreach ($attachments as $attachment) {
+
+            if (property_exists($attachment,"classId")) {
+                $attachable = getYourEduModel('class',$attachment->classId);
+            }
+
+            if (!isset($attachable)) {
+                $attachable = $this->getModel($attachment->type, $attachment->id);
+            }
+
+            if ($activity === 'INTRO') {
+                $this->checkForLessonIntro($attachable);
+            }
+
+            if ($this->alreadyHasLesson($attachable,$lesson)) {
+                return $lesson;
+            }
+
+            if ($attachment->type === 'courseSection') {
+                
+                $attachable->$method()->attach($lesson->id,[
+                    'lesson_number' => $attachable->lessons->last()?->lesson_number + 1
+                ]);
+                
+                return $lesson->refresh();
+            } 
+            
+            if (class_basename_lower($attachable) === 'class') {
+
+                $attachable->$method()->attach($lesson->id,[
+                    'activity'=>$activity,
+                    'subject_id' => $attachment->id
+                ]);
+
+                return $lesson->refresh();
+            } 
+                
+            $attachable->$method()->attach($lesson->id,[
+                'activity' => $activity
+            ]);
+        }
+
+        return $lesson->refresh();
+    }
+
+    private function alreadyHasLesson($item,$lesson)
+    {
+        if ($item->lessons->where('id',$lesson->id)->count() > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    private function checkForLessonIntro($item) 
+    {
+        if ($item->lessons()->where('activity','INTRO')->count() > 0) {
+            $itemType = class_basename_lower($item);
+            $this->throwLessonException("there is already an introductory lesson for {$itemType} with id {$item->id}");
         }
     }
 
-    public function deleteLesson(LessonData $lessonData)
+    private function addFiles(Lesson $lesson,LessonDTO $lessonDTO,)
     {
-        $lesson = getYourEduModel('lesson',$lessonData->lessonId);
-        if (is_null($lesson)) {
-            throw new AccountNotFoundException("lesson not found with id {$lessonData->lessonId}");
-        }
-
-        $this->checkLessonAuthorization($lesson,$lessonData->userId);
-
-        if ($lessonData->adminId) {
-            $admin = getYourEduModel('admin',$lessonData->adminId);
-            (new ActivityTrackService())->createActivityTrack(
-                $lesson,$lesson->ownedby,$admin,__METHOD__
+        foreach ($lessonDTO->files as $file) {
+            FileService::createAndAttachFiles(
+                file: $file,
+                account: $lesson->addedby,
+                item: $lesson
             );
         }
 
-        if ($lessonData->action === 'undo') {
-            return $this->changeState($lesson,'accepted');
-        } else if($lessonData->action === 'delete') {
-            //check if someone has subsribed or paid or used by a program
-            if ($this->paymentMadeFor($lesson)) {
-                return $this->changeState($lesson,'deleted');
-            } else {
-                
-                broadcast(new DeleteLessonEvent([
-                    'account' => class_basename_lower($lesson->ownedby),
-                    'accountId' => $lesson->ownedby->id,
-                    'classes' => $lesson->classes->toArray(),
-                    'courses' => $lesson->courses()->hasOwner()->get()->toArray(),
-                    'courseSections' => $lesson->courseSections->toArray(),
-                    'extracurriculums' => $lesson->extracurriculums->toArray(),
-                    'lessonId' => $lessonData->lessonId,
-                ]))->toOthers();
+        return $lesson->refresh();
+    }
 
-                $lesson->delete();
-                return null;
-            }
+    private function createLinks($lesson, $links)
+    {
+        if (!is_array($links)) return $lesson;
+
+        foreach ($links as $link) {
+            $link->linkable = $lesson;
+            $link->addedby = $lesson->addedby;
+            LinkService::createLink($link);
+        }
+
+        return $lesson->refresh();
+    }
+    
+    private function editLinks(array $links)
+    {
+        foreach ($links as $link) {
+            LinkService::editLink($link);
+        }
+    }
+    
+    private function deleteLinks(array $links)
+    {
+        foreach ($links as $link) {
+            LinkService::deleteLink($link);
         }
     }
 
-    private function broadcastUpdate($lesson)
+    private function deleteFiles(array $files,Lesson $lesson) {
+        foreach ($files as $file) {
+            FileService::deleteAndUnattachFiles($file,$lesson);
+        }
+
+        return $lesson->refresh();
+    }
+
+    private function broadcastUpdate($lesson, $lessonDTO)
     {
+        if (!$lessonDTO->main) {
+            return;
+        }
+
         broadcast(new UpdateLessonEvent([
             'account' => class_basename_lower($lesson->ownedby),
             'accountId' => $lesson->ownedby->id,
@@ -443,9 +720,25 @@ class LessonService
         ]))->toOthers();
     }
 
+    private function broadcastDelete($lesson, $lessonDTO)
+    {
+        if (!$lessonDTO->main) {
+            return;
+        }
+
+        broadcast(new DeleteLessonEvent([
+            'account' => class_basename_lower($lesson->ownedby),
+            'accountId' => $lesson->ownedby->id,
+            'classes' => $lesson->classes->toArray(),
+            'courses' => $lesson->courses()->hasOwner()->get()->toArray(),
+            'courseSections' => $lesson->courseSections->toArray(),
+            'extracurriculums' => $lesson->extracurriculums->toArray(),
+            'lessonId' => $lessonDTO->lessonId,
+        ]))->toOthers();
+    }
+
     private function paymentMadeFor($lesson)
     {
-        // return true;
         if (
             $lesson->has('payments')
                 ->whereHas('courses',function($query) {

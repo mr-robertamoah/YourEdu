@@ -122,8 +122,8 @@ class FlagService
 
     private function getFlaggedPosts()
     {
-        return Post::with(['questions','activities','riddles','postedby.flags',
-            'poems.poemSections','books','postedby.profile.images',
+        return Post::with(['questions','activities','riddles','addedby.flags',
+            'poems.poemSections','books','addedby.profile.images',
             'files','audios','videos'])
             ->whereHas('flags',function(Builder $query){
                 $query->where('user_id', auth()->id());

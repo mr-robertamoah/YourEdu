@@ -5,7 +5,7 @@ namespace App\DTOs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class CollaborationData
+class CollaborationDTO
 {
     public string | null $collaborationId;
     public string | null $name;

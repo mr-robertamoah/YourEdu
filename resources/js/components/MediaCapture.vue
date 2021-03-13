@@ -247,13 +247,11 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
                         devices.forEach(device=>{
                             let option = document.createElement("option")
 
-                            if (device.kind === 'videoinput' &&
-                                (this.type === 'video' || this.type === 'image')) {
-                                this.devices.push(device)
-                            } else if (device.kind === 'audioinput' &&
-                                this.type === 'audio') {
+                            if (device.kind.includes(this.type)) {
                                 this.devices.push(device)
                             }
+
+                            //add details to option and append to parent
                         })
                     })
             },

@@ -93,12 +93,35 @@ trait AccountTrait
         if ($this->accountType !== 'school') {
             return [];
         }
+        
         $fromUserIds = $this->admins->pluck('user_id')->toArray();
-        if (!in_array($this->owner->id,$fromUserIds)) {        
-            $fromUserIds[] = $this->owner->id;
+        
+        if (in_array($this->owner->id,$fromUserIds)) {        
+            return $fromUserIds;
         }
     
+        $fromUserIds[] = $this->owner->id;
         return $fromUserIds;
+    }
+
+    public function getParentIds() : array
+    {
+        return $this->parents->pluck('user_id')->toArray();
+    }
+    
+    public function authorizedIds() : array
+    {
+        if ($this->accountType === 'school') {
+            return $this->getAdminIds();
+        }
+        
+        if ($this->accountType === 'learner') {
+            $ids = $this->getParentIds();
+            array_push($ids, $this->user_id);
+            return $ids;
+        }
+    
+        return [$this->user_id];
     }
 
     public function notifyUser($notification)

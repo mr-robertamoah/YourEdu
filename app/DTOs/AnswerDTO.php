@@ -4,7 +4,7 @@ namespace App\DTOs;
 
 use Illuminate\Database\Eloquent\Model;
 
-class AnswerData
+class AnswerDTO
 {
     public string | null $answerId;
     public string | null $answer;

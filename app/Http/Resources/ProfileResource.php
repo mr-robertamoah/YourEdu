@@ -29,7 +29,7 @@ class ProfileResource extends JsonResource
                 VideoResource::collection($this->videos()->where('state','PUBLIC')->latest()->take(4)->get())
             ),
             'images' => $this->when(
-                $this->images()->exists(),
+                $this->images->count(),
                 ImageResource::collection($this->images()->where('state','PUBLIC')
                     ->where('thumbnail', 0)->latest()->take(4)->get())
             ),

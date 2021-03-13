@@ -21,25 +21,19 @@ use \Debugbar;
  */
 trait ClassCourseTrait
 {
-    private function checkAuthorization($item,$userId)
+    private function doesntHaveAuthorization($item,$userId)
     {
-        if (class_basename_lower($item->ownedby) === 'school') {
-            if (in_array($userId,$item->ownedby->getAdminIds()) || 
-                $item->ownedby->owner_id === $userId) {
-                return true;
-            }
-            if ($item::class === 'App\\YourEdu\\Lesson' &&
-                $item->addedby->user_id === $userId) {
-                return true;
-            }
-            return false;
-        } else {
-            if ($item->ownedby->user_id === $userId) {
-                return true;
-            } else {
-                return false;
-            }
+        $ids = $item->ownedby ? $item->ownedby->authorizedIds() : [];
+
+        if ($item::class === 'App\\YourEdu\\Lesson') {
+            $ids[] = $item->addedby->user_id;
         }
+
+        if (!in_array($userId, $ids)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -241,13 +235,20 @@ trait ClassCourseTrait
     
     abstract private function paymentMadeFor($item);
 
-    private function checkAccountOwnership($account,$userId)
+    private function checkAccountOwnership($account,$dto)
     {
-        if (($account->user_id && $account->user_id !== (int) $userId) ||
-            ($account->owner_id && $account->owner_id !== (int) $userId)) {
-            return false; //not owner
+        if ($account->accountType === 'school') {
+            $accountUserId = $account->owner_id;
+        } else {
+            $accountUserId = $account->user_id;
         }
-        return true; 
+
+        if ($accountUserId !== $dto->userId) {
+            throw new AccountNotFoundException(
+                message: "you do not own this account",
+                data: $dto
+            );
+        }
     }
 
     /**
@@ -256,7 +257,6 @@ trait ClassCourseTrait
      */
     private function createMainAttachments($attachments,$method,$itemId,$userId,$activity = null)
     {
-        Debugbar::info($attachments);
         if (is_array($attachments)) {
             foreach ($attachments as $attachment) {
                 $actualItem = getYourEduModel($attachment->type,$attachment->id); //work in this,must be programs and classes

@@ -3,7 +3,7 @@
         <div class="label" v-if="label.length">
             {{label}}
         </div>
-        <div class="main-section"
+        <div class="main"
             :class="{error,bottomBorder,
             noBorder,sm}"
         >
@@ -43,6 +43,10 @@
                 type: Boolean,
                 default: true
             },
+            hasMin: {
+                type: Boolean,
+                default: true
+            },
             sm: {
                 type: Boolean,
                 default: false
@@ -78,25 +82,31 @@
         },
         data() {
             return {
-                inputNumber: "0"
+                inputNumber: ""
             }
         },
         watch: {
             inputNumber(newValue){
-                if (newValue < this.inputMin) {
+
+                if (String(newValue).length && this.hasMin && newValue < this.inputMin) {
                     this.inputNumber = `${this.inputMin}`
                     return
-                } else if (this.hasMax && newValue > this.inputMax) {
+                } 
+
+                if (String(newValue).length && this.hasMax && newValue > this.inputMax) {
                     this.inputNumber = `${this.inputMax}`
                     return
                 }
+
                 this.$emit('numberinput', newValue)
                 this.$emit('input', newValue)
             },
             value:{
                 immediate: true,
                 handler(newValue){
-                    this.inputNumber = newValue
+                    if (this.inputNumber != newValue) {
+                        this.inputNumber = newValue                        
+                    }
                 }
             }
         },
@@ -104,10 +114,8 @@
             checkInput(event) {
                 if (event.target.value < this.inputMin) {
                     this.inputNumber = `${this.inputMin}`
-                    // this.$emit('numberinput',`${event.target.value}`)
                 } else if (this.hasMax && event.target.value > this.inputMax) {
                     this.inputNumber = `${this.inputMax}`
-                    // this.$emit('numberinput',`${event.target.value}`)
                 }
             },
         },
@@ -137,7 +145,7 @@ $buttonColor : rgba(2, 104, 90, .6);
             min-width: fit-content;
         }
 
-        .main-section{
+        .main{
             display: flex;
             width: 100%;
             justify-content: center;

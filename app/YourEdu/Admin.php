@@ -3,13 +3,15 @@
 namespace App\YourEdu;
 
 use App\User;
+use Database\Factories\AdminFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Admin extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
         'user_id','name','role','level','title','description'
@@ -146,12 +148,12 @@ class Admin extends Model
 
     public function questionsAdded()
     {
-        return $this->morphMany(Question::class,'questionedby');
+        return $this->morphMany(Question::class,'addedby');
     }
 
     public function activitiesAdded()
     {
-        return $this->morphMany(Activity::class,'activityby');
+        return $this->morphMany(Activity::class,'addedby');
     }
     
     public function addedImages()
@@ -172,5 +174,10 @@ class Admin extends Model
     public function addedAudio()
     {
         return $this->morphMany(Audio::class,'addedby');
+    }
+    
+    protected static function newFactory()
+    {
+        return AdminFactory::new();
     }
 }

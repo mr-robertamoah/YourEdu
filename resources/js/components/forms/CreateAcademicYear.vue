@@ -32,7 +32,7 @@
                             ></text-input>
 
                             <date-picker
-                                :placeHolder="computedStartDate"
+                                :placeholder="computedStartDate"
                                 @datePicked="getStartDate"
                                 :bottomBorder="true"
                                 class="date-picker"
@@ -45,7 +45,7 @@
                             ></date-picker>
                             
                             <date-picker
-                                :placeHolder="computedEndDate"
+                                :placeholder="computedEndDate"
                                 @datePicked="getEndDate"
                                 :bottomBorder="true"
                                 class="date-picker"
@@ -107,7 +107,7 @@
                                 ></text-input>
 
                                 <date-picker
-                                    :placeHolder="computedSectionStartDate"
+                                    :placeholder="computedSectionStartDate"
                                     @datePicked="getSectionStartDate"
                                     :bottomBorder="true"
                                     class="date-picker"
@@ -120,7 +120,7 @@
                                 ></date-picker>
                                 
                                 <date-picker
-                                    :placeHolder="computedSectionEndDate"
+                                    :placeholder="computedSectionEndDate"
                                     @datePicked="getSectionEndDate"
                                     :bottomBorder="true"
                                     class="date-picker"
@@ -501,7 +501,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $color-main;
+            border-bottom: 2px solid $color-primary;
             border-radius: 0;
         }
 

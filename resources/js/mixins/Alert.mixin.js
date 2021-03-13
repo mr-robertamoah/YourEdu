@@ -8,13 +8,20 @@ export default {
             alertMessage: '',
             alertDanger: false,
             alertSuccess: false,
+            alertLengthy: false,
         }
     },
     methods: {
         clearAlert() {
             this.alertSuccess = false
             this.alertDanger = false
+            this.alertLengthy = false
             this.alertMessage = ''
+        },
+        setErrorAlert(data) {
+            this.alertDanger = true
+            this.alertLengthy = data.lengthy
+            this.alertMessage = data.message
         },
         responseErrorAlert(response) {
             this.alertDanger = true

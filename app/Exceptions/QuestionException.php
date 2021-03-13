@@ -2,16 +2,20 @@
 
 namespace App\Exceptions;
 
+use App\Services\FileService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
 class QuestionException extends Exception
 {
-    //
-    public function __construct($message,$code = 0, private $data = null) 
+    public function __construct
+    (
+        $message,
+        $code = 0, 
+        private $data = null,
+        private $deleteFiles = false
+    ) 
     {
-        $this->data = $data;
-
         parent::__construct($message,$code);
     }
     
@@ -22,6 +26,11 @@ class QuestionException extends Exception
     */
    public function report()
    {
+        if ($this->deleteFiles && $this->data?->question) {
+            FileService::deleteAllRelatedFilesBeforeRollback(
+                $this->data?->question
+            );
+        }
         Log::alert($this->getMessage(), [
            'data' => $this->data]);
    }
@@ -36,7 +45,6 @@ class QuestionException extends Exception
    {
        return response()->json([
            'message' => $this->getMessage(),
-           'data' => $this->data
        ], 422);
    }
 }

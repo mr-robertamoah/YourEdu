@@ -219,7 +219,7 @@ $buttonBackground : rgba(2, 104, 90, .6);
 }
 
 .section-main{
-    background-color: $color-main;
+    background-color: $color-primary;
     width: 60%;
     min-height: 70vh * 0.65;
     border-radius: 0 2vw 2vw 0;

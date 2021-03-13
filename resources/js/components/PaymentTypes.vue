@@ -624,7 +624,7 @@ import TextTextarea from './TextTextarea.vue';
         }
 
         .input{
-            border: 2px solid $color-main;
+            border: 2px solid $color-primary;
         }
     }
 </style>

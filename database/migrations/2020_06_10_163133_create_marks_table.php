@@ -26,7 +26,7 @@ class CreateMarksTable extends Migration
             $table->timestamps();
 
 
-            $table->foreign('answer_id')->references('id')->on('answers')->cascadeOnDelete();
+            // $table->foreign('answer_id')->references('id')->on('answers')->cascadeOnDelete();
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }

@@ -1,13 +1,24 @@
 <template>
-    <div class="text-textarea-wrapper"
-            :class="{error:error,bottomborder:bottomBorder}">
-        <textarea 
-            :placeholder="placeholder" 
-            @input="change"
-            :value="value"
-            class="form-control"
-            :class="{transparent: ttaClass === 'transparent'}"
-        ></textarea>
+    <div class="text-textarea-wrapper">
+        <div class="main"
+            :class="{error:error,bottomborder:bottomBorder}"
+        >
+            <textarea 
+                :placeholder="placeholder" 
+                @input="change"
+                :value="value"
+                class="form-control"
+                :class="{transparent: ttaClass === 'transparent'}"
+            ></textarea>
+        </div>
+        <div class="prepend" 
+            v-if="prepend.length"
+            @click="clickedPrepend"
+        >
+            <font-awesome-icon
+                :icon="['fa',prepend]"
+            ></font-awesome-icon>
+        </div>
     </div>
 </template>
 
@@ -15,6 +26,10 @@
     export default {
         props: {
             placeholder: {
+                type: String,
+                default: ''
+            },
+            prepend: {
                 type: String,
                 default: ''
             },
@@ -60,7 +75,10 @@
         methods: {
             change($event) {
                 this.$emit('input',$event.target.value)
-            }
+            },
+            clickedPrepend() {
+                this.$emit('clickedPrepend')
+            },
         },
     }
 </script>
@@ -71,7 +89,20 @@ $border-color-main: rgba(22, 233, 205, 1);
 $border-color-error:rgba(201, 6, 6, 0.9);
 
     .text-textarea-wrapper{
-        width: auto;
+        display: flex;
+        width: 100%;
+        align-items: center;
+        background-color: white;
+
+        .prepend{
+            min-width: fit-content;
+            margin-left: 10px;
+            padding: 10px;
+        }
+
+        .main{
+            width: 100%;
+        }
 
         textarea{
             border: none;

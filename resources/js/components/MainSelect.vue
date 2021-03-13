@@ -76,9 +76,11 @@
                 if (newValue) {                    
                     if (this.items.length) {
                         this.$emit('selection',newValue)
+                        this.$emit('input',newValue)
                     } else {
                         let index = this.findObjectIndex(newValue)
                         if (index > -1) {
+                            this.$emit('input', this.objects[index])
                             this.$emit('selection', this.objects[index])
                         }
                     }

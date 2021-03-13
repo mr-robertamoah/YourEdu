@@ -24,7 +24,9 @@ class UpdateAssessmentRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'name' => "required|string",
+            'account' => "required|string",
+            'accountId' => "required"
         ];
     }
 }

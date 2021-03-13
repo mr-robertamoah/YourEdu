@@ -17,11 +17,7 @@ const ApiService = {
     },
 
     get(resource,params = null){
-        if (params) {
-            return axios.get(resource,{params})
-        } else {
-            return axios.get(resource)
-        }
+        return axios.get(resource,{params})
     },
 
     post(resource,data, hasMultipart = false){
@@ -47,8 +43,8 @@ const ApiService = {
         return axios.put(resource,data)
     },
 
-    delete(resource){
-        return axios.delete(resource)
+    delete(resource, data = null){
+        return axios.delete(resource, {data})
     },
 
     custom(data){

@@ -2,16 +2,18 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\BookFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Book extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
-        'title', 'author', 'about', 'published'
+        'title', 'author_names', 'about', 'published_at'
     ];
 
     // protected $touches = [
@@ -19,7 +21,7 @@ class Book extends Model
     // ];
 
     protected $casts = [
-        'published' => 'datetime',
+        'published_at' => 'datetime',
     ];
 
     public function authoredby()
@@ -73,6 +75,11 @@ class Book extends Model
     public function comments()
     {
         return $this->morphMany(Comment::class,'commentable');
+    }
+    
+    protected static function newFactory()
+    {
+        return BookFactory::new();
     }
 
 }

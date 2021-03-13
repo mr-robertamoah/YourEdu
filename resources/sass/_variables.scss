@@ -22,7 +22,9 @@ $cyan: #6cb2eb;
 //colors
 $background-color-other: rgba(22, 233, 205, 0.233);
 $background-color-main-light: rgba(22, 233, 205, 0.65);
-$color-main: rgb(22,233,205);
+$color-primary: rgb(22,233,205);
+$color-secondary: rgb(165,42,42);
+$modal-background: aliceblue;
 $dashboard-section-second-background-color:whitesmoke;
 
 //mixins
@@ -73,4 +75,8 @@ $dashboard-section-second-background-color:whitesmoke;
     width: 100%;
     padding: 10px;
     overflow-x: auto;
+}
+
+@mixin normal-box-shadow($pixels: 1px) {    
+    box-shadow: 0 0 $pixels gray;
 }

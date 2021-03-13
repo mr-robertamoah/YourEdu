@@ -22,11 +22,11 @@ class Member extends Model
 
     public function questionsAdded()
     {
-        return $this->morphMany(Question::class,'questionedby');
+        return $this->morphMany(Question::class,'addedby');
     }
 
     public function activitiesAdded()
     {
-        return $this->morphMany(Activity::class,'activityby');
+        return $this->morphMany(Activity::class,'addedby');
     }
 }

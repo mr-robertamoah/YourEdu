@@ -9,7 +9,7 @@
         >
             {{computedCreatedAt}}
         </div>
-        <div class="body" v-if="computedItem.length"
+        <div class="body" v-if="computedItem && computedItem.length"
             @click="clickedItem"
         >
             {{computedItem}}
@@ -54,7 +54,7 @@ import { dates, strings } from '../../services/helpers'
         },
         computed: {
             computedItem() {
-                return !this.item ? null : this.type === 'class' ||
+                return !this.item ? '' : this.type === 'class' ||
                     this.type === 'course' || this.type === 'subject' ||
                     this.type === 'program' || this.type === 'year' ||
                     this.type === 'section' || this.item.name ? 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AnswerController;
+use App\Http\Controllers\Api\AssessmentController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClassController;
@@ -110,6 +111,10 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/lesson/create', [LessonController::class,'createLesson']);
     Route::post('/lesson/delete', [LessonController::class,'deleteLesson']);
     Route::post('/lesson/update', [LessonController::class,'updateLesson']);
+    
+    Route::post('/assessment', [AssessmentController::class,'createAssessment']);
+    Route::delete('/assessment/{assessmentId}', [AssessmentController::class,'deleteAssessment']);
+    Route::put('/assessment/{assessmentId}', [AssessmentController::class,'updateAssessment']);
 
     Route::post('/collaboration/create', [CollaborationController::class,'createCollaboration']);
     Route::post('/collaboration/delete', [CollaborationController::class,'deleteCollaboration']);
@@ -128,7 +133,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/dashboard/users', [DashboardController::class,'getUsers']);
     Route::get('/dashboard/admins', [DashboardController::class,'getAdmins']);
     Route::get('/dashboard/account', [DashboardController::class,'getAccountDetails']);
-    Route::get('/dashboard/account/item', [DashboardController::class,'getAccountSpecificItem']);
+    Route::get('/dashboard/account/specific/items', [DashboardController::class,'getAccountSpecificItems']);
     Route::get('/dashboard/account/items', [DashboardController::class,'getAccountItems']);
     Route::get('/dashboard/item/data', [DashboardController::class,'getSectionItemData']);
     Route::post('/dashboard/school/academicyear', [DashboardController::class,'createAcademicYear']);
@@ -201,11 +206,11 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/deleteinfo', [ProfileController::class,'profileDeleteInfo']);
     Route::post('/profile/{profile}/uploadfile', [ProfileController::class,'profileUploadFile']);
     
-    Route::post('/post', [PostController::class,'postCreate']);
-    Route::post('/post/{post}/{account}/{accountId}', [PostController::class,'postEdit'])
-    ->middleware(['CheckAccount','OwnPost']);
-    Route::delete('/post/{post}/{account}/{accountId}', [PostController::class,'postDelete'])
-    ->middleware(['CheckAccount','OwnPost']);
+    Route::post('/post', [PostController::class,'createPost']);
+    Route::post('/post/{postId}', [PostController::class,'updatePost'])
+    ->middleware(['CheckAccount']);
+    Route::delete('/post/{postId}', [PostController::class,'deletePost'])
+    ->middleware(['CheckAccount']);
     
     Route::post('/follow/{account}/{accountId}',[FollowController::class,'follow'])
     ->middleware(['CheckAccount']);

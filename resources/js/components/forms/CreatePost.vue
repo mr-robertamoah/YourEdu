@@ -16,9 +16,9 @@
                     
                     <div class="form-edit" v-if="computedAuthor">
                         <text-input
-                            placeholder="author"  
+                            placeholder="author names"  
                             :bottomBorder="true"
-                            v-model="inputAuthor"></text-input>
+                            v-model="inputAuthorNames"></text-input>
                     </div>
                     <div class="form-edit" v-if="computedBody">
                         <main-textarea type="text" 
@@ -103,7 +103,7 @@
                             :flatPickrConfig="flatPickrConfig"
                             :bottomBorder="true"
                             :value="inputEditPublished"
-                            :placeHolder="inputPublishedPlaceholder"
+                            :placeholder="inputPublishedPlaceholder"
                             @datePicked="datePicked"></date-picker>
                     </div>
 
@@ -185,11 +185,16 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             return {
                 textareaContent: '',
                 inputContent: null,
-                flatPickrConfig: {},
+                flatPickrConfig: {
+                    minDate: 'today',
+                    dateFormat: 'F j, Y H:i',
+                    enableTime: true,
+                    maxDate: new Date().fp_incr(14)
+                },
                 inputTitle: '',
                 inputAbout: '',
                 inputDescription: '',
-                inputAuthor: '',
+                inputAuthorNames: '',
                 inputPublished: '',
                 inputPublishedPlaceholder: 'select a date to publish',
                 inputEditPublished: '',
@@ -248,7 +253,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         if (newValue.typeName === 'book') {
                             this.inputTitle = newValue.type[0].title
                             this.inputAbout = newValue.type[0].about
-                            this.inputAuthor = newValue.type[0].author
+                            this.inputAuthorNames = newValue.type[0].authorNames
                             // this.inputEditPublished = new Date(newValue.type[0].published).toDateString().slice(4)
                         } else if (newValue.typeName === 'poem') {
                             this.inputTitle = newValue.type[0].title
@@ -256,17 +261,17 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                             this.poemSectionsObject = newValue.type[0].sections
                             this.editPoemSections = this.edit ? true : false
                             this.poemSections = newValue.type[0].sections.length - 1
-                            this.inputAuthor = newValue.type[0].author
+                            this.inputAuthorNames = newValue.type[0].authorNames
                             // this.inputEditPublished = new Date(newValue.type[0].published).toDateString().slice(4)
                         } else if (newValue.typeName === 'riddle') {
-                            this.inputAuthor = newValue.type[0].author
-                            this.inputRiddle = newValue.type[0].riddle
+                            this.inputAuthorNames = newValue.type[0].authorNames
+                            this.inputRiddle = newValue.type[0].body
                             // this.inputEditPublished = new Date(newValue.type[0].published).toDateString().slice(4)
                         } else if (newValue.typeName === 'activity') {
                             this.inputDescription = newValue.type[0].description
                             // this.inputEditPublished = new Date(newValue.type[0].published).toDateString().slice(4)
                         } else if (newValue.typeName === 'question') {
-                            this.inputQuestion = newValue.type[0].question
+                            this.inputQuestion = newValue.type[0].body
                             // this.inputEditPublished = new Date(newValue.type[0].published).toDateString().slice(4)
                         } else {
 
@@ -275,15 +280,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                 },
                 deep: true
             },
-        },
-        created () {
-            this.flatPickrConfig = {
-                minDate: 'today',
-                dateFormat: 'F j, Y',
-                altFormat: "F j, Y",
-                maxDate: new Date().fp_incr(14)
-                // defaultDate:['1990-01-01']
-            }
         },
         computed: {
             computedBody(){
@@ -381,7 +377,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                     } else {
                         data = {
                             title: this.inputTitle,
-                            author: this.inputAuthor,
+                            authorNames: this.inputAuthorNames,
                             about: this.inputAbout,
                             published: this.inputPublished,
                             file: this.inputFile,
@@ -414,7 +410,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         }
                         data = {
                             title: this.inputTitle,
-                            author: this.inputAuthor,
+                            authorNames: this.inputAuthorNames,
                             about: this.inputAbout,
                             sections: sections,
                             published: this.inputPublished,
@@ -445,8 +441,8 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         error = true
                     } else {
                         data = {
-                            question: this.inputQuestion,
-                            score: this.inputScore,
+                            body: this.inputQuestion,
+                            scoreOver: this.inputScore,
                             published: this.inputPublished,
                             file: this.inputFile,
                         }
@@ -485,9 +481,9 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                         error = true
                     } else {
                         data = {
-                            author: this.inputAuthor,
-                            riddle: this.inputRiddle,
-                            score: this.inputScore,
+                            authorNames: this.inputAuthorNames,
+                            body: this.inputRiddle,
+                            scoreOver: this.inputScore,
                             published: this.inputPublished,
                             file: this.inputFile,
                         }

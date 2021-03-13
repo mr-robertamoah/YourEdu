@@ -39,8 +39,8 @@ class NewSave implements ShouldBroadcastNow
             $account = class_basename_lower($this->saveArray->save->saveable->commentedby_type);
             $accountId = $this->saveArray->save->saveable->commentedby_id;
         } else if ($this->saveArray->type === 'post') {
-            $account = class_basename_lower($this->saveArray->save->saveable->postedby_type);
-            $accountId = $this->saveArray->save->saveable->postedby_id;
+            $account = class_basename_lower($this->saveArray->save->saveable->addedby_type);
+            $accountId = $this->saveArray->save->saveable->addedby_id;
         } else if ($this->saveArray->type === 'answer') {
             $account = class_basename_lower($this->saveArray->save->saveable->answeredby_type);
             $accountId = $this->saveArray->save->saveable->answeredby_id;

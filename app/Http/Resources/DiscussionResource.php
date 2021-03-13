@@ -19,7 +19,7 @@ class DiscussionResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } 
         if ($this->videos()->exists()) {

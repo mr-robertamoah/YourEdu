@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\QuestionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Question extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
     
     const IMAGE = 'IMAGE';
     const VIDEO = 'VIDEO';
@@ -20,12 +22,13 @@ class Question extends Model
     const TRUE_FALSE = 'TRUE_FALSE';
     const LONG_ANSWER = 'LONG_ANSWER';
     const SHORT_ANSWER = 'SHORT_ANSWER';
+    const FILE = 'FILE';
 
-    const int MIN_NUMBER_OF_OPTIONS = 0;
+    const MIN_NUMBER_OF_OPTIONS = 0;
 
     protected $fillable = [
-        'question', 'state','published','user_deletes','updated_at',
-        'hint','position'
+        'body', 'state','published_at','user_deletes','updated_at',
+        'hint','position', 'score_over'
     ];
 
     protected $touches = [
@@ -33,11 +36,13 @@ class Question extends Model
     ];
 
     protected $casts = [
-        'user_deletes' => 'json'
+        'user_deletes' => 'json',
+        'published_at' => 'datetime',
+        'correct_possible_answers' => 'array',
     ];
 
 
-    public function questionedby(){
+    public function addedby(){
         return $this->morphTo();
     }
 
@@ -58,25 +63,25 @@ class Question extends Model
     public function files()
     {
         return $this->morphToMany(File::class,'fileable')
-        ->withPivot(['state'])->withTimestamps();
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function audios()
     {
         return $this->morphToMany(Audio::class,'audioable')
-        ->withPivot(['state'])->withTimestamps();
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function videos()
     {
         return $this->morphToMany(Video::class,'videoable')
-        ->withPivot(['state'])->withTimestamps();
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function images()
     {
         return $this->morphToMany(Image::class,'imageable')
-        ->withPivot(['state'])->withTimestamps();
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function comments()
@@ -92,6 +97,25 @@ class Question extends Model
             $this->answer_type !== self::TRUE_FALSE;
     }
 
+    public function isTrueOrFalseOptionAnswerType()
+    {
+        return $this->answer_type === self::OPTION ||
+            $this->answer_type === self::TRUE_FALSE;
+    }
+
+    public function isArrangeFlowAnswerType()
+    {
+        return $this->answer_type === self::FLOW ||
+            $this->answer_type !== self::ARRANGE;
+    }
+
+    public function getPossibleAnswerId($option = '') : int
+    {
+        return $this->possibleAnswers()
+            ->where('option', $option)
+            ->first()?->id;
+    }
+
     public function doesntHaveOptionalAnswers()
     {
         return $this->possibleAnswers->count() < 1;
@@ -100,5 +124,10 @@ class Question extends Model
     public function doesntHaveRequiredNumberOfOptionalAnswers()
     {
         return $this->possibleAnswers->count() < self::MIN_NUMBER_OF_OPTIONS;
+    }
+    
+    protected static function newFactory()
+    {
+        return QuestionFactory::new();
     }
 }

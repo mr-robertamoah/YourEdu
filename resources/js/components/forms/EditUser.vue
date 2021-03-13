@@ -50,7 +50,7 @@
                                                 dateFormat: 'F j, Y',
                                                 altFormat: 'F j, Y',
                                             }"
-                                    :placeHolder="computedDob"
+                                    :placeholder="computedDob"
                                     @datePicked="dobPicked"
                                     :bottomBorder="true"
                                 ></date-picker>
@@ -281,13 +281,13 @@ import { dates } from '../../services/helpers'
                     return el.question === item
                 })
                 
-                console.log(a[0].possible_answers)
-                if (a[0].possible_answers.length > 0) {
+                console.log(a[0].possibleAnswers)
+                if (a[0].possibleAnswers.length > 0) {
                     this.showAnswerList = true
                     this.showAnswerText = false
 
                     this.secretQuestionId = a[0].id
-                    this.possibleAnswers = a[0].possible_answers
+                    this.possibleAnswers = a[0].possibleAnswers
                 } else {
                     this.showAnswerText = true
                     this.showAnswerList = false

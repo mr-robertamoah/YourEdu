@@ -15,7 +15,7 @@ class CreatePostsTable extends Migration
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('postedby'); // facilitator learner school parent professional
+            $table->nullableMorphs('addedby'); // facilitator learner school parent professional
             // $table->nullableMorphs('postable'); //book question riddle activity
             $table->longText('content')->nullable();
             $table->softDeletes();

@@ -5,19 +5,15 @@ namespace App\DTOs;
 use App\Contracts\ItemDataContract;
 use Illuminate\Http\Request;
 
-class ClassData implements ItemDataContract
+class ProgramDTO implements ItemDataContract
 {
     public string | null $name;
     public bool | null $facilitate;
     public array | null $items;
     public array | null $removedItems;
-    public string | null $classId;
-    public string | null $gradeId;
-    public string | null $removedGradeId;
-    public int | null $maxLearners;
-    public array | null $academicYears;
-    public array | null $removedAcademicYears;
-    public string | null $structure;
+    public array | null $attachments;
+    public array | null $removedAttachments;
+    public string | null $programId;
     public object | null $discussionData;
     public array | null $discussionFiles;
     public string | null $action;
@@ -33,20 +29,11 @@ class ClassData implements ItemDataContract
     public array | null $removedPaymentData;
     public int | null $userId;
 
-
     public static function createFromRequest(Request $request)
     {
         $self = new static();
 
-        $self->classId = $request->classId;
-        $self->structure = $request->structure;
-        $self->gradeId = $request->gradeId;
-        $self->removedGradeId = $request->removedGradeId;
-        $self->removedAcademicYears = is_null($request->removedAcademicYears) ? [] : 
-            json_decode($request->removedAcademicYears);
-        $self->academicYears = is_null($request->academicYears) ? [] : 
-            json_decode($request->academicYears);
-        $self->maxLearners = json_decode($request->maxLearners);
+        $self->programId = $request->programId;
         $self->adminId = $request->adminId;
         $self->action = $request->action;
         $self->name = $request->name;
@@ -59,18 +46,15 @@ class ClassData implements ItemDataContract
         $self->state = $request->state;
         $self->type = $request->type;
         $self->facilitate = json_decode($request->facilitate);
-        $self->items = is_null($request->items) ? [] : 
-            json_decode($request->items);
-        $self->removedItems = is_null($request->removedItems) ? [] : 
-            json_decode($request->removedItems);
-        $self->removedPaymentData = is_null($request->removedPaymentData) ? [] : 
-            json_decode($request->removedPaymentData);
-        $self->paymentData = is_null($request->paymentData) ? [] : 
-            json_decode($request->paymentData);
+        $self->items = json_decode($request->items);
+        $self->removedItems = json_decode($request->removedItems);
+        $self->attachments = json_decode($request->attachments);
+        $self->removedAttachments = json_decode($request->removedAttachments);
+        $self->removedPaymentData = json_decode($request->removedPaymentData);
+        $self->paymentData = json_decode($request->paymentData);
         $self->discussionData = json_decode($request->discussionData);
-        $self->discussionFiles = !$request->hasFile('discussionFile') ? [] : 
-            $request->file('discussionFile');
-        
+        $self->discussionFiles = $request->file('discussionFile');
+
         return $self;
     }
 }

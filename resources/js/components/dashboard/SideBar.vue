@@ -305,7 +305,7 @@ import { mapGetters } from 'vuex'
     .side-bar-wrapper{
         position: fixed;
         width: 200px;
-        background-color:$color-main;
+        background-color:$color-primary;
         height: 100vh;
         z-index: 100;
         transition: width 1s ease-in-out;
@@ -386,7 +386,7 @@ import { mapGetters } from 'vuex'
                 position: relative;
 
                 &:hover{
-                    background-color:$color-main;
+                    background-color:$color-primary;
                     box-shadow: 0 0 2px rgba(105, 105, 105, .8);
                     transition: all .5s ease-in-out;                    
 
@@ -447,7 +447,7 @@ import { mapGetters } from 'vuex'
                         justify-content: space-around;
                         align-items: center;
                         padding: 10px;
-                        background-color: $color-main;
+                        background-color: $color-primary;
                         margin: 0 0 5px 5px;
                         border-radius: 10px;
 
@@ -574,7 +574,7 @@ import { mapGetters } from 'vuex'
                 display: flex;
 
                 &:hover{ 
-                    background-color:$color-main;
+                    background-color:$color-primary;
                     box-shadow: 0 0 2px rgba(105, 105, 105, .8);
                     transition: all .5s ease-in-out;
                     

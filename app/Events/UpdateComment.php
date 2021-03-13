@@ -28,13 +28,13 @@ class UpdateComment implements ShouldBroadcastNow
         $this->commentArray['item'] = class_basename_lower($mainComment->commentable_type);
         $this->commentArray['itemId'] = $mainComment->commentable_id;
         if ($this->commentArray['item'] === 'post') {
-            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->postedby));
-            $this->commentArray['accountId'] = $mainComment->commentable->postedby->id;
+            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->addedby));
+            $this->commentArray['accountId'] = $mainComment->commentable->addedby->id;
         } else if ($this->commentArray['item'] === 'book' || 
             $this->commentArray['item'] === 'poem' || 
             $this->commentArray['item'] === 'activity') {
-            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->post->postedby));
-            $this->commentArray['accountId'] = $mainComment->commentable->post->postedby->id;
+            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->post->addedby));
+            $this->commentArray['accountId'] = $mainComment->commentable->post->addedby->id;
         } else if ($this->commentArray['item'] === 'comment' ||
             $this->commentArray['item'] === 'answer') {
             $this->commentArray['account'] = null;

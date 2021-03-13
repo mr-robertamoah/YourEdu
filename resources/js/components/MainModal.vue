@@ -157,7 +157,6 @@ import FadeRight from "./transitions/FadeRight";
 
 <style lang="scss" scoped>
 $wrapper-background: rgba(102, 51, 153, .2);
-$modal-background: aliceblue;
 $modal-width: 60%;
 $modal-height: 70vh;
 $modal-margin-width: (100% - $modal-width)/2;

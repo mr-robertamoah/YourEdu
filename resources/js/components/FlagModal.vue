@@ -139,7 +139,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
                     let flagIndex = this.flags.findIndex(flag=>{
                         if (main.item === 'comment' && flag.hasOwnProperty('commentedby_type')) {
                             return flag.id === main.itemId
-                        } else if (main.item === 'post' && flag.hasOwnProperty('postedby_type')) {
+                        } else if (main.item === 'post' && flag.hasOwnProperty('addedby_type')) {
                             return flag.id === main.itemId
                         } else if (main.item === 'answer' && flag.hasOwnProperty('answeredby_type')) {
                             return flag.id === main.itemId

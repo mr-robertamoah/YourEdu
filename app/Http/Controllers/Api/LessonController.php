@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\LessonData;
+use App\DTOs\LessonDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateLessonRequest;
 use App\Http\Requests\UpdateLessonRequest;
@@ -19,7 +19,7 @@ class LessonController extends Controller
         try {
             DB::beginTransaction();
             $lesson = (new LessonService())->createLesson(
-                LessonData::createFromRequest($request, true)
+                LessonDTO::createFromRequest($request, true)
             );
 
             DB::commit();
@@ -38,7 +38,7 @@ class LessonController extends Controller
         try {
             DB::beginTransaction();
             $lesson = (new LessonService())->updateLesson(
-                LessonData::createFromRequest($request, true)
+                LessonDTO::createFromRequest($request, true)
             );
 
             DB::commit();

@@ -28,7 +28,7 @@ class DashboardService
     public function banningAccount($action,$account,$accountId,$adminId,$authId,
         $banId = null,$state = null,$type = null,$dueDate = null)
     {
-        $mainAccount =  $this->checkAccount($account,$accountId);
+        $mainAccount =  $this->getModel($account,$accountId);
 
         $admin = getYourEduModel('admin',$adminId);
         if (is_null($admin)) {
@@ -63,7 +63,7 @@ class DashboardService
 
     public function getAccountActivities($account,$accountId,$adminId)
     {
-        $mainAccount = $this->checkAccount($account,$accountId);
+        $mainAccount = $this->getModel($account,$accountId);
 
         $admin = getYourEduModel('admin',$adminId);
         if (is_null($admin)) {
@@ -94,7 +94,7 @@ class DashboardService
 
     public function attachAccount($account,$accountId,$attahcments)
     {
-        $mainAccount =  $this->checkAccount($account,$accountId);
+        $mainAccount =  $this->getModel($account,$accountId);
 
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("$account not found with id {$accountId}");
@@ -121,12 +121,12 @@ class DashboardService
 
     public function unattachAccount($account,$accountId,$item,$itemId)
     {
-        $mainAccount =  $this->checkAccount($account,$accountId);
+        $mainAccount =  $this->getModel($account,$accountId);
 
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("$account not found with id {$accountId}");
         }
-        $mainItem =  $this->checkAccount($item,$itemId);
+        $mainItem =  $this->getModel($item,$itemId);
 
         if (is_null($mainItem)) {
             throw new AccountNotFoundException("$item not found with id {$itemId}");
@@ -183,7 +183,7 @@ class DashboardService
 
     public function getUsersOrAdmins($account,$accountId,$userId,$type)
     {
-        $mainAccount = $this->checkAccount($account,$accountId);
+        $mainAccount = $this->getModel($account,$accountId);
 
         if ($mainAccount->user_id !== $userId) {
             throw new DashboardException("you do not own {$account} account with id {$accountId}");
@@ -208,7 +208,7 @@ class DashboardService
 
     public function getAccountDetails(string $account,$accountId,$id,$owner)
     {
-        $mainAccount = $this->checkAccount($account,$accountId);
+        $mainAccount = $this->getModel($account,$accountId);
 
         if ($owner) {            
             $this->verifyAccess($mainAccount,$id);
@@ -231,7 +231,7 @@ class DashboardService
         }
     }
 
-    private function checkAccount($account, $accountId)
+    private function getModel($account, $accountId)
     {
         $mainAccount = getYourEduModel($account,$accountId);
         if (is_null($mainAccount)) {
@@ -254,12 +254,10 @@ class DashboardService
      * this helps us get the items like classes, courses, extracurriculums, etc 
      * for facilitators, professionals, schools
      */
-    public function getAccountSpecificItem($account,$accountId,$item)
+    public function getAccountSpecificItems($account,$accountId,$item)
     {
-        $mainAccount = $this->checkAccount($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("$account not found with id $accountId");
-        }
+        $mainAccount = $this->getModel($account,$accountId);
+        
         if ($item['for'] === 'lesson') {
             $data = new Collection();
             $data = $data->merge($mainAccount->ownedCourses()

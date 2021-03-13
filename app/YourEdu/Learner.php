@@ -4,6 +4,8 @@ namespace App\YourEdu;
 
 use App\Traits\AccountTrait;
 use App\User;
+use Database\Factories\LearnerFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -11,7 +13,7 @@ class Learner extends Model
 {
     //
 
-    use SoftDeletes, AccountTrait;
+    use SoftDeletes, AccountTrait, HasFactory;
 
     protected $fillable = [
         'user_id','name'
@@ -46,7 +48,7 @@ class Learner extends Model
 
     public function activitiesAdded()
     {
-        return $this->morphMany(Activity::class,'activityby');
+        return $this->morphMany(Activity::class,'addedby');
     }
 
     public function followings(){
@@ -267,7 +269,7 @@ class Learner extends Model
 
     public function questionsAdded()
     {
-        return $this->morphMany(Question::class,'questionedby');
+        return $this->morphMany(Question::class,'addedby');
     }
 
     public function booksAuthored()
@@ -280,12 +282,12 @@ class Learner extends Model
         return $this->morphMany(Book::class,'addedby');
     }
 
-    public function lessonsAdded()
+    public function addedLessons()
     {
         return $this->morphMany(Lesson::class,'addedby');
     }
 
-    public function lessonsOwned()
+    public function ownedLessons()
     {
         return $this->morphMany(Lesson::class,'ownedby');
     }
@@ -330,9 +332,14 @@ class Learner extends Model
         return $this->morphMany(Discussion::class,'raisedby');
     }
 
+    public function addedAssessments()
+    {
+        return $this->morphMany(Assessment::class,'addedby');
+    }
+
     public function posts()
     {
-        return $this->morphMany(Post::class,'postedby');
+        return $this->morphMany(Post::class,'addedby');
     }
 
     public function expressionsAdded()
@@ -370,5 +377,9 @@ class Learner extends Model
         return $this->morphMany(Message::class,'toable');
     }
     
+    protected static function newFactory()
+    {
+        return LearnerFactory::new();
+    }
 
 }

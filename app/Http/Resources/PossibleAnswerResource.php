@@ -17,6 +17,7 @@ class PossibleAnswerResource extends JsonResource
         return [
             'id' => $this->id,
             'option' => $this->option,
+            'position' => $this->position,
             'state' => $this->state,
         ];
     }

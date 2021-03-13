@@ -567,8 +567,8 @@ import { dates, strings } from '../services/helpers'
                     this.answer.min_score.toFixed(2) : 0
             },
             computedScoreOver(){
-                return this.answer && this.answer.score_over ? 
-                    `${this.answer.score_over}` : 10
+                return this.answer && this.answer.scoreOver ? 
+                    `${this.answer.scoreOver}` : 10
             },
             computedMarkings(){ //for the total marks issued
                 return this.answer && this.answer.marks ? 
@@ -1159,7 +1159,7 @@ import { dates, strings } from '../services/helpers'
                 data.remark = this.remark
                 data.state = this.state
                 data.score = this.score
-                data.score_over = this.computedScoreOver
+                data.scoreOver = this.computedScoreOver
 
                 let response = await this['profile/createMark'](data)
 

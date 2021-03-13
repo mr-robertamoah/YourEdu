@@ -24,7 +24,8 @@ class DeleteAssessmentRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'account' => "required|string",
+            'accountId' => "required"
         ];
     }
 }

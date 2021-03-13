@@ -19,7 +19,7 @@ class DeleteProgramEvent
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(private array $programData)
     {
         //
     }

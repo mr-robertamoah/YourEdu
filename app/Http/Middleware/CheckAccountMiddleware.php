@@ -68,12 +68,6 @@ class CheckAccountMiddleware
 
         }
         
-            
-        // if ($main->user_id !== auth()->id()) {
-        //     return response()->json([
-        //         'message' => "unsuccessful. you do not own this account."
-        //     ]);
-        // }
         return $next($request);
     }
 }

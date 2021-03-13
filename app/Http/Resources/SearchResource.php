@@ -37,11 +37,11 @@ class SearchResource extends JsonResource
             $data['follows'] = FollowResource::collection(
                 $this->profileable->follows()->whereNotNull('user_id')->get());
         }
-        if (!is_null($this->postedby)) {
-            $data['postedby_type'] = class_basename_lower($this->postedby_type);
-            $data['postedby_id'] = $this->postedby_id;
-            $data['name'] = $this->postedby->profile->name;
-            $data['url'] = $this->postedby->profile->url;
+        if (!is_null($this->addedby)) {
+            $data['addedby_type'] = class_basename_lower($this->addedby_type);
+            $data['addedby_id'] = $this->addedby_id;
+            $data['name'] = $this->addedby->profile->name;
+            $data['url'] = $this->addedby->profile->url;
         }
         $data['content'] = $this->when($this->content,$this->content);
         if (!is_null($this->questions) && count($this->questions)) {

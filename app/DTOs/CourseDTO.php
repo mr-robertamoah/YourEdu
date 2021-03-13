@@ -5,7 +5,7 @@ namespace App\DTOs;
 use App\Contracts\ItemDataContract;
 use Illuminate\Http\Request;
 
-class CourseData implements ItemDataContract
+class CourseDTO implements ItemDataContract
 {
     public string | null $courseId;
     public string | null $name;

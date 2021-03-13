@@ -19,7 +19,7 @@ class AnswerResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -38,7 +38,7 @@ class AnswerResource extends JsonResource
             'answer' => $this->answer,
             'likes' => LikeResource::collection($this->likes),
             'flags' => FlagResource::collection($this->flags),
-            'score_over' => $this->answerable->score_over,
+            'scoreOver' => $this->answerable->score_over,
             'avg_score' => $this->marks()->avg('score'),
             'max_score' => $this->marks()->max('score'),
             'min_score' => $this->marks()->min('score'),

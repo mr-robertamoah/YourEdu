@@ -24,7 +24,10 @@ class CreateAssessmentRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'name' => "required|string",
+            'assessmentSections' => 'required',
+            'account' => "required|string",
+            'accountId' => "required"
         ];
     }
 }

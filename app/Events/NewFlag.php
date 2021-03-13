@@ -39,8 +39,8 @@ class NewFlag implements ShouldBroadcastNow
             $account = class_basename_lower($this->flagArray->flag->flaggable->commentedby_type);
             $accountId = $this->flagArray->flag->flaggable->commentedby_id;
         } else if ($this->flagArray->type === 'post') {
-            $account = class_basename_lower($this->flagArray->flag->flaggable->postedby_type);
-            $accountId = $this->flagArray->flag->flaggable->postedby_id;
+            $account = class_basename_lower($this->flagArray->flag->flaggable->addedby_type);
+            $accountId = $this->flagArray->flag->flaggable->addedby_id;
         }
         return [
             new Channel('youredu.home'),

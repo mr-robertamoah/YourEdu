@@ -19,9 +19,9 @@ class CreatePoemsTable extends Migration
             $table->nullableMorphs('authoredby'); // learner facilitator professional parent
             $table->nullableMorphs('poemable');  //lesson post
             $table->string('title'); 
-            $table->string('author')->nullable();
+            $table->string('author_names')->nullable();
             $table->text('about')->nullable();
-            $table->timestamp('published')->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

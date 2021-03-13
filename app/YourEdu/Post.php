@@ -3,20 +3,22 @@
 namespace App\YourEdu;
 
 use App\User;
+use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Post extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
         'content'
     ];
 
-    public function postedby(){
+    public function addedby(){
         return $this->morphTo();
     }
 
@@ -105,28 +107,53 @@ class Post extends Model
     public function questions(){
         return $this->morphMany(Question::class,'questionable');
     }
+    
+    public function allFiles()
+    {
+        $files = [];
+
+        array_push($files, ...$this->images);
+        array_push($files, ...$this->videos);
+        array_push($files, ...$this->audios);
+        array_push($files, ...$this->files);
+
+        return $files;
+    }
+
+    public function hasNoTypes()
+    {
+        $count = 0;
+        $count += $this->questions?->count();
+        $count += $this->lessons?->count();
+        $count += $this->activities?->count();
+        $count += $this->poems?->count();
+        $count += $this->riddles?->count();
+        $count += $this->books?->count();
+
+        return $count === 0;
+    }
 
     public function scopeDoesntHaveType($query)
     {
-        return $query->whereDoesntHave('activities')
-            ->whereDoesntHave('questions')
-            ->whereDoesntHave('poems')
-            ->whereDoesntHave('riddles')
-            ->whereDoesntHave('books');
+        return $query->doesntHave('activities')
+            ->doesntHave('questions')
+            ->doesntHave('poems')
+            ->doesntHave('riddles')
+            ->doesntHave('books');
     }
 
     public function scopeHasPublished($query)
     {
         return $query->whereDoesntHave('activities',function(Builder $query){
-            $query->where('published','>',now());
+            $query->where('published_at','>',now());
         })->whereDoesntHave('questions',function(Builder $query){
-            $query->where('published','>',now());
+            $query->where('published_at','>',now());
         })->whereDoesntHave('poems',function(Builder $query){
-            $query->where('published','>',now());
+            $query->where('published_at','>',now());
         })->whereDoesntHave('riddles',function(Builder $query){
-            $query->where('published','>',now());
+            $query->where('published_at','>',now());
         })->whereDoesntHave('books',function(Builder $query){
-            $query->where('published','>',now());
+            $query->where('published_at','>',now());
         });
     }
 
@@ -152,7 +179,7 @@ class Post extends Model
         'activities.files','activities.audios','riddles.images','riddles.videos',
         'riddles.files','riddles.audios','poems.images','poems.videos',
         'poems.files','poems.audios','books.images','books.videos','books.files',
-        'books.audios','postedby.profile']);
+        'books.audios','addedby.profile']);
     }
 
     public function scopeHasPostTypes($query)
@@ -196,17 +223,17 @@ class Post extends Model
         }
 
         return $query->when(request()->has('mine'), function(Builder $query){
-            $query->whereHasMorph('postedby','*',function(Builder $query){
+            $query->whereHasMorph('addedby','*',function(Builder $query){
                 $query->where('user_id', (int)request()->user);
             });
         })->when(request()->has('followings'), function(Builder $query){
-            $query->whereHasMorph('postedby','*',function(Builder $query){
+            $query->whereHasMorph('addedby','*',function(Builder $query){
                 $query->whereHas('follows',function(Builder $query){
                     $query->where('user_id',(int)request()->user);
                 });
             });
         })->when(request()->has('followers'), function(Builder $query){
-            $query->whereHasMorph('postedby','*',function(Builder $query){
+            $query->whereHasMorph('addedby','*',function(Builder $query){
                 $query->whereHas('followings',function(Builder $query){
                     $query->where('followed_user_id',(int)request()->user);
                 });
@@ -217,5 +244,10 @@ class Post extends Model
                     ->where('attachedwith_id', $id);
             });
         });
+    }
+
+    protected static function newFactory()
+    {
+        return PostFactory::new();
     }
 }

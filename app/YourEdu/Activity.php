@@ -2,27 +2,25 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\ActivityFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Activity extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
-        'description', 
+        'description', 'published_at'
     ];
-
-    // protected $touches = [
-    //     'activityby'
-    // ];
 
     protected $casts = [
-        'published' => 'datetime'
+        'published_at' => 'datetime'
     ];
 
-    public function activityby()
+    public function addedby()
     {
         return $this->morphTo();
     }
@@ -58,6 +56,38 @@ class Activity extends Model
     public function comments()
     {
         return $this->morphMany(Comment::class,'commentable');
+    }
+    
+    public function allFiles()
+    {
+        $files = [];
+
+        array_push($files, ...$this->images);
+        array_push($files, ...$this->videos);
+        array_push($files, ...$this->audios);
+        array_push($files, ...$this->files);
+
+        return $files;
+    }
+
+    public function doesntHaveFiles()
+    {
+        $count = 0;
+
+        $count += $this->files->count();
+
+        $count += $this->audios->count();
+
+        $count += $this->videos->count();
+
+        $count += $this->images->count();
+
+        return $count < 1;
+    }
+
+    protected static function newFactory()
+    {
+        return ActivityFactory::new();
     }
 
 }

@@ -323,7 +323,7 @@ import { bus } from '../../app';
 
                 .search-input{
                     border: none;
-                    border-bottom: 2px solid $color-main;
+                    border-bottom: 2px solid $color-primary;
                     background: inherit;
                     width: 100%;
                 }

@@ -74,7 +74,7 @@
     left: 9px;
     content: '';
     display: block;
-    background: $color-main;
+    background: $color-primary;
 }
 
     .check-input-wrapper{
@@ -111,21 +111,21 @@
 
         input[type='radio']:checked + label,
         .checked.label{
-            color: $color-main;
+            color: $color-primary;
         }
 
         input[type='radio']:checked + label::before{
-            border-color: $color-main;
+            border-color: $color-primary;
         }
     }
 
     .checked{
 
         label{
-            color: $color-main;
+            color: $color-primary;
 
             &::before{
-                border-color: $color-main;
+                border-color: $color-primary;
             }
 
             &::after{

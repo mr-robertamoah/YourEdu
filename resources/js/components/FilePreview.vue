@@ -95,60 +95,16 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
             file: {
                 immediate: true,
                 handler(newValue){
-                    let fileReader = new FileReader
-                    if (this.$refs.preview) {
-                        this.$refs.preview.innerHTML = ''
+                    if (!newValue) {
+                        return
                     }
-                    fileReader.addEventListener("load",function(){
-                        if (newValue.type.includes('image')) {
-                            let el = document.createElement('img')
-                            el.setAttribute('id','img')
-                            if (this.type === 'normal') {
-                                this.$refs.preview.appendChild(el)
-                                el.style.width = '100%'
-                                el.style.height = '100%'
-                                el.style.objectFit = 'contain'
-                                el.style.objectPosition = 'center'
-                            } else {
-                                this.$refs.circlepreview.appendChild(el)
-                                el.style.width = 'inherit'
-                                el.style.height = 'inherit'
-                                el.style.borderRadius = 'inherit'
-                            }
-                            el.src = fileReader.result
-                        } else if (newValue.type.includes('video')) {
-                            let el = document.createElement('video')
-                            el.setAttribute('id','video')
-                            el.setAttribute('controls','true')
-                            el.setAttribute('controlslist','nodownload')
-                            el.style.width = '100%'
-                            el.style.height = '100%'
-                            el.style.objectFit = 'contain'
-                            el.style.objectPosition = 'center'
-                            this.$refs.preview.appendChild(el)
-                            el.src = fileReader.result
-                        } else if (newValue.type.includes('audio')) {
-                            let el = document.createElement('audio')
-                            el.setAttribute('id','audio')
-                            el.setAttribute('controls','true')
-                            el.setAttribute('controlslist','nodownload')
-                            el.style.width = '75%'
-                            this.$refs.preview.appendChild(el)
-                            el.src = fileReader.result
-                        } else if (newValue.type.includes('application')) {
-                            let el = document.createElement('div')
-                            el.className = 'application'
-                            el.innerText = newValue.name
-                            this.$refs.preview.appendChild(el)
-                        } else {
-                            this.message = `${newValue.name} is not acceptable`
-                        }
-                    }.bind(this))
-                    
-                    if (newValue) {
-                        fileReader.readAsDataURL(newValue)
+
+                    if (newValue.url) {
+                        this.showFile(newValue)
+                        return
                     }
-                    
+
+                    this.readFile(newValue)                    
                 }
             }
         },
@@ -163,7 +119,104 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                 this.$refs.preview.innerHTML = ''
 
                 this.$emit('removeFile')
-            }
+            },
+            showFile(file) {
+                if (this.$refs.preview) {
+                    this.$refs.preview.innerHTML = ''
+                }
+
+                if (file.type.includes('image')) {
+                    let el = document.createElement('img')
+                    el = this.setImageAttributes(el)
+                } else if (file.type.includes('video')) {
+                    let el = document.createElement('video')
+                    el = this.setVideoAttributes(el)
+                } else if (file.type.includes('audio')) {
+                    let el = document.createElement('audio')
+                    el = this.setAudioAttributes(el)
+                } else if (file.type.includes('file')) {
+                    let el = document.createElement('div')
+                    el = this.setFileAttributes(el, file)
+                } else {
+                    this.message = `${newValue.name} is not a valid file`
+                }
+
+                if (!el) {
+                    return
+                }
+                this.$refs.preview.appendChild(el)
+            },
+            setImageAttributes(el) {
+                el.setAttribute('id','img')
+                el.style.width = '100%'
+                el.style.height = '100%'
+                el.style.objectFit = 'contain'
+                el.style.objectPosition = 'center'
+                return el
+            },
+            setVideoAttributes(el) {
+                el.setAttribute('id','video')
+                el.setAttribute('controls','true')
+                el.setAttribute('controlslist','nodownload')
+                el.style.width = '100%'
+                el.style.height = '100%'
+                el.style.objectFit = 'contain'
+                el.style.objectPosition = 'center'
+                return el
+            },
+            setAudioAttributes(el) {
+                el.setAttribute('id','audio')
+                el.setAttribute('controls','true')
+                el.setAttribute('controlslist','nodownload')
+                el.style.width = '75%'
+                return el
+            },
+            setFileAttributes(el, file) {
+                el.className = 'application'
+                el.innerText = file.name
+                return el
+            },
+            readFile(file) {
+                
+                let fileReader = new FileReader
+                if (this.$refs.preview) {
+                    this.$refs.preview.innerHTML = ''
+                }
+                fileReader.addEventListener("load",function(){
+                    if (file.type.includes('image')) {
+                        let el = document.createElement('img')
+                        if (this.type === 'normal') {
+                            el = this.setImageAttributes(el)
+                            this.$refs.preview.appendChild(el)
+                        } else {
+                            el.style.width = 'inherit'
+                            el.style.height = 'inherit'
+                            el.style.borderRadius = 'inherit'
+                            el.setAttribute('id','img')
+                            this.$refs.circlepreview.appendChild(el)
+                        }
+                        el.src = fileReader.result
+                    } else if (file.type.includes('video')) {
+                        let el = document.createElement('video')
+                        el = this.setVideoAttributes(el)
+                        this.$refs.preview.appendChild(el)
+                        el.src = fileReader.result
+                    } else if (file.type.includes('audio')) {
+                        let el = document.createElement('audio')
+                        el = this.setAudioAttributes(el)
+                        this.$refs.preview.appendChild(el)
+                        el.src = fileReader.result
+                    } else if (file.type.includes('application')) {
+                        let el = document.createElement('div')
+                        el = this.setFileAttributes(el, file)
+                        this.$refs.preview.appendChild(el)
+                    } else {
+                        this.message = `${file.name} is not acceptable`
+                    }
+                }.bind(this))
+                
+                fileReader.readAsDataURL(file)
+            },
         },
     }
 </script>
@@ -215,7 +268,7 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
             justify-content: center;
             align-items: center;
             margin-left: auto;
-            background-color: $color-main;
+            background-color: $color-primary;
 
             .inner-circle{
                 width: 130px;

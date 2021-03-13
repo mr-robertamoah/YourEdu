@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\CollaborationData;
+use App\DTOs\CollaborationDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateCollaborationRequest;
 use App\Http\Requests\DeleteCollaborationRequest;
@@ -21,7 +21,7 @@ class CollaborationController extends Controller
         try {
             DB::beginTransaction();
             $collaboration = (new CollaborationService())->createCollaboration(
-                CollaborationData::createFromRequest($request, true)
+                CollaborationDTO::createFromRequest($request, true)
             );
 
             DB::commit();
@@ -40,7 +40,7 @@ class CollaborationController extends Controller
         try {
             DB::beginTransaction();
             $collaboration = (new CollaborationService())->updateCollaboration(
-                CollaborationData::createFromRequest($request, true)
+                CollaborationDTO::createFromRequest($request, true)
             );
 
             DB::commit();

@@ -5,15 +5,21 @@ namespace App\YourEdu;
 use App\Contracts\DashboardItemContract;
 use App\Traits\AssessmentTrait;
 use App\Traits\DashboardItemTrait;
+use Database\Factories\LessonFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Lesson extends DashboardItemContract
 {
     //
-    use SoftDeletes, DashboardItemTrait, AssessmentTrait;
+    use SoftDeletes, DashboardItemTrait, AssessmentTrait, HasFactory;
 
     protected $fillable = [
-        'title', 'description', 'ageGroup', 'state'
+        'title', 'description', 'age_group', 'state', 'published_at'
+    ];
+
+    protected $casts = [
+        'published_at' => 'datetime'
     ];
 
     public function addedby()
@@ -233,5 +239,22 @@ class Lesson extends DashboardItemContract
     public function checkIfFreeOrIntro()
     {
         return $this->state === self::FREE || $this->state === self::INTRO;
+    }
+    
+    public function allFiles()
+    {
+        $files = [];
+
+        array_push($files, ...$this->images);
+        array_push($files, ...$this->videos);
+        array_push($files, ...$this->audios);
+        array_push($files, ...$this->files);
+
+        return $files;
+    }
+    
+    protected static function newFactory()
+    {
+        return LessonFactory::new();
     }
 }

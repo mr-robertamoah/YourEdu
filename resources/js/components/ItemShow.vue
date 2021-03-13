@@ -62,7 +62,7 @@ import { mapGetters } from 'vuex'
         computed: {
             ...mapGetters(['getUser']),
             computedItemType() {
-                return this.data.hasOwnProperty('postedby_type') ? 
+                return this.data.hasOwnProperty('addedby_type') ? 
                     'post' : 
                     this.data.hasOwnProperty('answeredby_type') ? 
                     'answer' : 
@@ -70,8 +70,8 @@ import { mapGetters } from 'vuex'
                     'comment' : ''
             },
             computedAccountType() {
-                return this.data.hasOwnProperty('postedby_type') ? 
-                    strings.getAccount(this.data.postedby_type) : 
+                return this.data.hasOwnProperty('addedby_type') ? 
+                    strings.getAccount(this.data.addedby_type) : 
                     this.data.hasOwnProperty('answeredby_type') ? 
                     strings.getAccount(this.data.answeredby_type) : 
                     this.data.hasOwnProperty('commentedby_type') ? 
@@ -83,9 +83,8 @@ import { mapGetters } from 'vuex'
                 return strings.content(text, 200)
             },
             message(data){
-                return data.question && data.question.length ? this.shortenText(data.question) : 
-                    data.poem ? this.shortenText(data.poem) : 
-                    data.riddle ? this.shortenText(data.riddle) :
+                return data.poem ? this.shortenText(data.poem) : 
+                    data.body ? this.shortenText(data.body) :
                     data.comment ? this.shortenText(data.comment) :
                     data.content ? this.shortenText(data.content) :
                     data.answer ? this.shortenText(data.answer) : ''

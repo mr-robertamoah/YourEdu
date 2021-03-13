@@ -1063,15 +1063,15 @@ const mutations = {
             isActivity = data.post.typeName === 'activity' ? true : false
 
         followerIndex = data.userFollowers.findIndex(follower=>{
-            return follower.followedby_type === data.post.postedby_type &&
-                follower.followedby_id === data.post.postedby_id
+            return follower.followedby_type === data.post.addedby_type &&
+                follower.followedby_id === data.post.addedby_id
         })
         if (followerIndex > -1) {
             isFollower = true
         }
         followingIndex = data.userFollowings.findIndex(following=>{
-            return following.followable_type === data.post.postedby_type &&
-                following.followable_id === data.post.postedby_id
+            return following.followable_type === data.post.addedby_type &&
+                following.followable_id === data.post.addedby_id
         })
         if (followingIndex > -1) {
             isFollowing = true
@@ -1149,15 +1149,15 @@ const mutations = {
             isActivity = data.post.typeName === 'activity' ? true : false
 
         followerIndex = data.userFollowers.findIndex(follower=>{
-            return follower.followedby_type === data.post.postedby_type &&
-                follower.followedby_id === data.post.postedby_id
+            return follower.followedby_type === data.post.addedby_type &&
+                follower.followedby_id === data.post.addedby_id
         })
         if (followerIndex > -1) {
             isFollower = true
         }
         followingIndex = data.userFollowings.findIndex(following=>{
-            return following.followable_type === data.post.postedby_type &&
-                following.followable_id === data.post.postedby_id
+            return following.followable_type === data.post.addedby_type &&
+                following.followable_id === data.post.addedby_id
         })
         if (followingIndex > -1) {
             isFollowing = true

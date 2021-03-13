@@ -20,7 +20,7 @@ class MessageQuestionResource extends JsonResource
         $files = null;
         $data = [];
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -47,8 +47,8 @@ class MessageQuestionResource extends JsonResource
             $data['score_over'] = $this->score_over;
             $data['possibleAnswers'] = PossibleAnswerResource::collection($this->possibleAnswers);
             $data['answers'] = AnswerResource::collection($this->answers()->latest()->get());
-            $data['user_id'] = $this->questionedby->user_id;
-            $data['name'] = $this->questionedby->name;
+            $data['user_id'] = $this->addedby->user_id;
+            $data['name'] = $this->addedby->name;
         } else {
             $data['conversationId'] = $this->conversation_id;
             $data['message'] = $this->message;

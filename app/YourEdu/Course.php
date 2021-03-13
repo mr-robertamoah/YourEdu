@@ -5,6 +5,8 @@ namespace App\YourEdu;
 use App\Traits\AssessmentTrait;
 use App\Traits\DashboardItemTrait;
 use App\Traits\NotOwnedbyTrait;
+use Database\Factories\CourseFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Course extends Model
 {
     //
-    use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait;
+    use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait, HasFactory;
 
     protected $fillable = [
         'name','description', 'state', 'stand_alone'
@@ -172,5 +174,8 @@ class Course extends Model
         return $this->morphMany(Payment::class,'what');
     }
 
-
+    protected static function newFactory()
+    {
+        return CourseFactory::new();
+    }
 }

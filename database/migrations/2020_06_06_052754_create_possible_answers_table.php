@@ -18,6 +18,7 @@ class CreatePossibleAnswersTable extends Migration
             $table->nullableMorphs('question'); // question secretquestion
             $table->string('option');
             $table->enum('state',['WRONG','CORRECT'])->nullable();
+            $table->smallInteger('position')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

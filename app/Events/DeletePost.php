@@ -11,20 +11,20 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DeletePost implements ShouldBroadcastNow
+class DeletePost implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $postInfo;
+    public $postDTO;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($postInfo)
+    public function __construct($postDTO)
     {
         //
-        $this->postInfo = $postInfo;
+        $this->postDTO = $postDTO;
     }
 
     /**
@@ -34,10 +34,9 @@ class DeletePost implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = class_basename_lower($this->postInfo['account']);
         return [
             new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$this->postInfo['accountId']}")
+            new Channel("youredu.{$this->postDTO->account}.{$this->postDTO->accountId}")
         ];
     }
     
@@ -48,6 +47,6 @@ class DeletePost implements ShouldBroadcastNow
     
     public function broadcastWith()
     {
-        return $this->postInfo;
+        return $this->postDTO;
     }
 }

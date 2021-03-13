@@ -21,7 +21,7 @@ use App\Services\ConversationService;
 use App\Services\FileService;
 use App\Services\MarkService;
 use App\Services\MessageService;
-use App\Services\QuestionData;
+use App\DTOs\QuestionDTO;
 use App\Services\QuestionService;
 use App\YourEdu\Answer;
 use App\YourEdu\Conversation;
@@ -69,9 +69,11 @@ class ConversationController extends Controller
             if ($request->item === 'message') {
                 $mainItem = (new MessageService())
                     ->deleteMessage($id,$request->itemId,$request->action);
-            } else if ($request->item === 'quesiton') {
+            } else if ($request->item === 'question') {
                 $mainItem = (new QuestionService())
-                    ->deleteQuestion($id,$request->itemId,$request->action);
+                    ->deleteQuestion(QuestionDTO::createFromData(
+                        
+                    ));
             }
             
             DB::commit();
@@ -81,12 +83,12 @@ class ConversationController extends Controller
                 return response()->json([
                     'message' => 'successful'
                 ]);
-            } else if ($request->action === 'self') {
-                return response()->json([
-                    'message' => 'successful',
-                    'chatItem' => new MessageQuestionResource($mainItem)
-                ]);
             }
+
+            return response()->json([
+                'message' => 'successful',
+                'chatItem' => new MessageQuestionResource($mainItem)
+            ]);
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
@@ -206,11 +208,11 @@ class ConversationController extends Controller
 
         try {
             DB::beginTransaction();
-            $questionData = QuestionData::createFromRequest($request);
-            $questionData->questionable = $conversation;
-            $questionData->questionedby = $account;
-            $questionData->state = 'SENT';
-            $question = (new QuestionService)->createQuestion($questionData);
+            $questionDTO = QuestionDTO::createFromRequest($request);
+            $questionDTO->questionable = $conversation;
+            $questionDTO->addedby = $account;
+            $questionDTO->state = 'SENT';
+            $question = (new QuestionService)->createQuestion($questionDTO);
             
             if ($request->has('file')) {
                 //account has uploaded a file and that file is attached to a question

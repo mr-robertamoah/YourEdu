@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\DTOs\LinkData;
+use App\DTOs\LinkDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\YourEdu\Link;
 
 class LinkService
 {
-    public static function createLink(LinkData $link) : Link | null
+    public static function createLink(LinkDTO $link) : Link | null
     {
         if (is_null($link->addedby)) {
             return null;
@@ -25,7 +25,7 @@ class LinkService
         return $newLink;
     }
     
-    public static function editLink(LinkData $link) : Link | null
+    public static function editLink(LinkDTO $link) : Link | null
     {
         $newLink = Link::find($link->id);
         if (is_null($newLink)) {
@@ -41,7 +41,7 @@ class LinkService
         return $newLink;
     }
     
-    public static function deleteLink(LinkData $link) : Link | null
+    public static function deleteLink(LinkDTO $link) : bool
     {
         $newLink = Link::find($link->id);
         if (is_null($newLink)) {

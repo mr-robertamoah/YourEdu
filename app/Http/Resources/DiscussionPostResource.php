@@ -21,7 +21,7 @@ class DiscussionPostResource extends JsonResource
         $files = null;
         $data = [];
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } 
         if ($this->videos()->exists()) {
@@ -48,7 +48,7 @@ class DiscussionPostResource extends JsonResource
         $data['comments'] = CommentResource::collection($this->comments()
             ->orderby('updated_at','desc')->take(1)->get());
 
-        if ($this->postedby) {
+        if ($this->addedby) {
             $type = null;
             $typeName = null;
             if ($this->books()->exists()) {
@@ -74,10 +74,7 @@ class DiscussionPostResource extends JsonResource
             $data['content'] = $this->content;
             $data['type'] = $type;
             $data['typeName'] = $typeName;
-            $data['postedby_id'] = $this->postedby_id;
-            $data['postedby_type'] = $this->postedby_type;
-            $data['postedby'] = $this->postedby->name;
-            $data['profile_url'] = $this->postedby->profile->url;
+            $data['addedby'] = new UserAccountResource($this->addedby);
             $data['comments_number'] = $this->comments()->count();
         } else {
             $data['title'] = $this->title;

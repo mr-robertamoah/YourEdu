@@ -16,7 +16,9 @@ import { faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, faTrash,
         faPen, faBookmark, faPaperclip, faHome, faEllipsisH, faEllipsisV, faLongArrowAltLeft,
         faGrin,faMicrophone,faVideo, faCamera, faPaperPlane, faImage, faMusic, faFilm,
         faArrowCircleRight, faQuestionCircle, faCameraRetro, faInfoCircle, faPencilAlt, 
-        faBell, faUsers, faChevronUp, faCircle, faPause, faTrashRestore} from "@fortawesome/free-solid-svg-icons"
+        faBell, faUsers, faChevronUp, faCircle, faPause, faTrashRestore, faLongArrowAltDown, 
+        faFile, faHandRock,
+} from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { BootstrapVue } from 'bootstrap-vue'
 import AppNav from './components/Nav.vue'
@@ -40,7 +42,8 @@ library.add(faUserCircle, faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpl
     faPaperclip, faHome,faEllipsisH, faEllipsisV,faLongArrowAltLeft,faGrin,faPaperPlane,
     faImage,faMusic,faFilm,faArrowCircleRight, faQuestionCircle,faCameraRetro,faInfoCircle,
     faPencilAlt,faBell,faUsers,faChevronUp,faCircle,faMicrophoneAltSlash,faPause,faTrashRestore,
-    );
+    faLongArrowAltDown, faFile,faHandRock
+);
 
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);

@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Services;
+namespace App\DTOs;
 
-class ModelData
+class ModelDTO
 {
     public string | null $item;
     public string | null $itemId;
-
 
     public static function createFromArray(array $dataArray) : array
     {

@@ -14,12 +14,13 @@ class Assessment extends Model
 
     protected $fillable = [
         'name', 'description', 'total_mark','duration',
-        'publish_date','due_date'
+        'published_at','due_at', 'type', 'restricted'
     ];
 
     protected $casts = [
-        'publish_date' => 'datetime',
-        'due_date' => 'datetime',
+        'published_at' => 'datetime',
+        'restricted' => 'bool',
+        'due_at' => 'datetime',
     ];
 
     public function works()
@@ -122,6 +123,20 @@ class Assessment extends Model
     public function doesntHaveAssessmentSections()
     {
         return $this->assessmentSections->count() < 1;
+    }
+
+    public function notRemovingAllSections(array $sections)
+    {
+        $assessmentSectionIds = $this->assessmentSections->pluck('id')->toArray();
+
+        return count(
+            array_filter($sections, function($section) use ($assessmentSectionIds) {
+                return in_array(
+                    $section->assessmentSectionId,
+                    $assessmentSectionIds
+                );
+            })
+        ) < $this->assessmentSections->count();
     }
 
     protected static function newFactory()

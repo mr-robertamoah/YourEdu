@@ -1053,7 +1053,7 @@ import { mapActions, mapGetters } from 'vuex'
 </script>
 
 <style lang="scss" scoped>
-// $color-main: rgba(127,255,212,1.0);
+// $color-primary: rgba(127,255,212,1.0);
 // $local-color-main: whitesmoke;
 
     .home-wrapper{
@@ -1061,7 +1061,7 @@ import { mapActions, mapGetters } from 'vuex'
         background: $dashboard-section-second-background-color;
 
         .home-top{
-            background: $color-main;
+            background: $color-primary;
             width: 100%;
             margin: 0;
             position: sticky;

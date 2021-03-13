@@ -1072,7 +1072,7 @@ import { mapGetters, mapActions } from 'vuex'
 
     $profile-main-color: rgba(127, 255, 212, .9);
     $profile-picture-main-width: 140px;
-    $profile-picture-color: $color-main;
+    $profile-picture-color: $color-primary;
     $profile-font-main: 1.5vw;
     $profile-font-increase3: $profile-font-main + ($profile-font-main * 0.333);
     $profile-font-decrease3: $profile-font-main - ($profile-font-main * 0.333);

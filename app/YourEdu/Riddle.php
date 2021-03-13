@@ -2,20 +2,22 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\RiddleFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Riddle extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
-        'author', 'riddle', 'published'
+        'author_names', 'body', 'published_at'
     ];
 
     protected $casts = [
-        'published' => 'datetime',
+        'published_at' => 'datetime',
     ];
 
     // protected $touches = [
@@ -63,5 +65,10 @@ class Riddle extends Model
     {
         return $this->morphToMany(Audio::class,'audioable')
         ->withPivot(['state'])->withTimestamps();
+    }
+    
+    protected static function newFactory()
+    {
+        return RiddleFactory::new();
     }
 }

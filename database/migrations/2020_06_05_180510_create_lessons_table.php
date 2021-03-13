@@ -21,8 +21,9 @@ class CreateLessonsTable extends Migration
             $table->unsignedBigInteger('previous_lesson_id')->nullable();
             $table->string('title');
             $table->string('description')->nullable();
-            $table->string('ageGroup')->nullable();
+            $table->string('age_group')->nullable();
             $table->enum('state',['PENDING','DECLINED','ACCEPTED','DELETED'])->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
@@ -30,7 +31,7 @@ class CreateLessonsTable extends Migration
             $table->foreign('previous_lesson_id')->references('id')->on('lessons')->cascadeOnDelete();
             // $table->foreign('structure_id')->references('id')->on('curriculum_structures')->cascadeOnDelete();
             // $table->foreign('course_id')->references('id')->on('courses')->cascadeOnDelete();
-            $table->foreign('class_id')->references('id')->on('class_models')->cascadeOnDelete();
+            // $table->foreign('class_id')->references('id')->on('class_models')->cascadeOnDelete();
             // $table->foreign('class_section_id')->references('id')->on('class_sections')->cascadeOnDelete();
         });
     }

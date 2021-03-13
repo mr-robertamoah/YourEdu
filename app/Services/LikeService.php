@@ -28,7 +28,7 @@ class LikeService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $like,$like->likedby,$admin,__METHOD__
                 );
             }
@@ -78,7 +78,7 @@ class LikeService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $like,$like->likedby,$admin,__METHOD__
                 );
             }

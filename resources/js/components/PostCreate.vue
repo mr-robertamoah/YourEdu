@@ -194,23 +194,28 @@
             <div class="post-bottom">
                 <post-button buttonText="L" 
                     @click="formType = 'lesson'"
+                    :active="formType === 'lesson'"
                     titleText="share a lesson"></post-button>
                 <post-button buttonText="B" 
                     @click="formType = 'book'"
+                    :active="formType === 'book'"
                     titleText="post a book"></post-button>
                 <post-button buttonText="R" 
                     @click="formType = 'riddle'"
                     titleText="post a riddle"
+                    :active="formType === 'riddle'"
                 ></post-button>
                 <post-button buttonText="P" 
                     @click="formType = 'poem'"
+                    :active="formType === 'poem'"
                     titleText="post a poem"></post-button>
                 <post-button buttonText="Q" 
                     @click="formType = 'question'"
+                    :active="formType === 'question'"
                     titleText="post a question"></post-button>
                 <post-button buttonText="A" 
                     @click="formType = 'activity'"
-                    :active="true"
+                    :active="formType === 'activity'"
                     titleText="post an activity"></post-button>
             </div>
             <div class="attachments-section">
@@ -332,7 +337,7 @@ import {mapActions, mapGetters} from 'vuex'
                 previewType: '',
                 uploadType: '',
                 account: '',
-                account_id: null,
+                accountId: null,
                 showLessonModal: false,
                 showPostButton: false,
                 showAddAttachments: false,
@@ -413,11 +418,11 @@ import {mapActions, mapGetters} from 'vuex'
                     } else if (this.previewType === 'poem') {
                         return this.mainPreviewData.sections[0]
                     } else if (this.previewType === 'question') {
-                        return this.mainPreviewData.question
+                        return this.mainPreviewData.body
                     } else if (this.previewType === 'activity') {
                         return this.mainPreviewData.description
                     } else if (this.previewType === 'riddle') {
-                        return this.mainPreviewData.riddle
+                        return this.mainPreviewData.body
                     } else if (this.previewType === 'lesson') {
                         return strings.content(this.mainPreviewData.description)
                     }
@@ -477,13 +482,13 @@ import {mapActions, mapGetters} from 'vuex'
                 this.textareaContent = ''
                 this.file = null
                 this.account = ''
-                this.account_id = ''
+                this.accountId = ''
                 this.showPostButton = false
                 this.postAttachments = []
                 this.removePreview()
             },
             clickedProfile(data){
-                this.account_id = data.accountId
+                this.accountId = data.accountId
                 this.account = data.account
                 this.showProfiles = false
                 this.createPost()
@@ -518,10 +523,10 @@ import {mapActions, mapGetters} from 'vuex'
                     }, 5000);
                 } else if (this.computedProfiles.length === 1 && this.$route.name === "home") {
                     this.account = this.computedProfiles[0].params.account_type
-                    this.account_id = this.computedProfiles[0].params.account_id
+                    this.accountId = this.computedProfiles[0].params.accountId
                     this.createPost()
                 } else {
-                    this.account_id = null
+                    this.accountId = null
                     this.createPost()
                 }
             },
@@ -539,42 +544,41 @@ import {mapActions, mapGetters} from 'vuex'
             },
             async createPost(){
                 this.loading = true
-                let fileType = ''
                 let formData = new FormData
 
                 if (this.file) {
                     formData.append('file', this.file)
-                    formData.append('fileType', files.fileType(this.file))
                 } else {
                     if (this.previewType !== '') {
                         formData.append('type', this.previewType)
                         if (this.mainPreviewData && this.mainPreviewData.file &&
                             this.mainPreviewData.file.length > 0 || 
                             this.previewType !== 'lesson') {
-                            formData.append('previewFile', this.mainPreviewData.file[0])
-                            formData.append('previewFileType', files.fileType(this.mainPreviewData.file[0]))
+                            this.mainPreviewData.file.forEach(file=>{
+                                if (file) formData.append('typeFiles[]', file)
+                            })
                         }
                     } 
                     
                     if (this.previewType === 'book') {
                         formData.append('title', this.mainPreviewData.title)
-                        formData.append('author', this.mainPreviewData.author)
+                        formData.append('authorNames', this.mainPreviewData.authorNames)
                         formData.append('about', this.mainPreviewData.about)
                         formData.append('published', this.mainPreviewData.published)
                     } else if (this.previewType === 'poem') {
                         formData.append('title', this.mainPreviewData.title)
-                        formData.append('author', this.mainPreviewData.author)
+                        formData.append('authorNames', this.mainPreviewData.authorNames)
                         formData.append('about', this.mainPreviewData.about)
                         formData.append('sections', JSON.stringify(this.mainPreviewData.sections))
                         formData.append('published', this.mainPreviewData.published)
                     } else if (this.previewType === 'riddle') {
-                        formData.append('author', this.mainPreviewData.author)
-                        formData.append('riddle', this.mainPreviewData.riddle)
-                        formData.append('score', this.mainPreviewData.score)
+                        formData.append('authorNames', this.mainPreviewData.authorNames)
+                        formData.append('body', this.mainPreviewData.body)
+                        formData.append('scoreOver', this.mainPreviewData.scoreOver)
                         formData.append('published', this.mainPreviewData.published)
                     } else if (this.previewType === 'question') {
-                        formData.append('question', this.mainPreviewData.question)
-                        formData.append('score', this.mainPreviewData.score)
+                        formData.append('body', this.mainPreviewData.body)
+                        formData.append('scoreOver', this.mainPreviewData.scoreOver)
                         if (this.mainPreviewData.hasOwnProperty('possibleAnswers')) { 
                             formData.append('possibleAnswers', JSON.stringify(this.mainPreviewData.possibleAnswers))
                         }
@@ -589,7 +593,7 @@ import {mapActions, mapGetters} from 'vuex'
                         if (this.mainPreviewData.file && this.mainPreviewData.file.length) {
                             this.mainPreviewData.file.forEach(file=>{
                                 if (file) {
-                                    formData.append('previewFile[]', file)
+                                    formData.append('typeFiles[]', file)
                                 }
                             })
                         }
@@ -606,12 +610,12 @@ import {mapActions, mapGetters} from 'vuex'
                     })))
                 }
 
-                if (this.account_id) {
+                if (this.accountId) {
                     formData.append('account', this.account)
-                    formData.append('account_id', this.account_id)
+                    formData.append('accountId', this.accountId)
                 } else {
                     formData.append('account', this.$route.params.account)
-                    formData.append('account_id', this.$route.params.accountId)
+                    formData.append('accountId', this.$route.params.accountId)
                 }
 
                 formData.append('content', this.textareaContent)                
@@ -777,10 +781,10 @@ import {mapActions, mapGetters} from 'vuex'
                 }
 
                 .post-top-main{
-                    min-width: 70%;
                     display: flex;
                     justify-content: flex-end;
                     align-items: center;
+                    margin-left: auto;
 
                     .icons{
                         margin-right: 10px;

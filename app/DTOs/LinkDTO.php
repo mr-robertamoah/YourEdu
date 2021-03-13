@@ -4,7 +4,7 @@ namespace App\DTOs;
 
 use Illuminate\Database\Eloquent\Model;
 
-class LinkData
+class LinkDTO
 {
     public int | null $id;
     public string | null $name;
@@ -40,7 +40,7 @@ class LinkData
         if (is_null($linkArray)) return [];
         $links = [];
         foreach ($linkArray as $link) {
-            $links[] = (new LinkData)(
+            $links[] = (new LinkDTO)(
                 name: $link->name,
                 description: $link->description,
                 link: $link->link,

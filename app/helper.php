@@ -45,6 +45,7 @@ use App\YourEdu\Program;
 use App\YourEdu\Question;
 use App\YourEdu\Read;
 use App\YourEdu\Request;
+use App\YourEdu\Riddle;
 use App\YourEdu\Save;
 use App\YourEdu\School;
 use App\YourEdu\Subject;
@@ -68,6 +69,10 @@ function class_basename_lower(Model | string $class)
     
     if ($class instanceof Model) {        
         $string = class_basename($class);
+    }
+
+    if (str_contains($string,'Model')) {
+        $string = strstr($string, 'Model', true);
     }
 
     return strtolower(substr($string,0,1)) . substr($string,1);
@@ -144,6 +149,8 @@ function getYourEduModel($accountText, $accountTextId): Model | null
         $account = Answer::find($accountTextId);
     } else if ($accountText === 'poem') {
         $account = Poem::find($accountTextId);
+    } else if ($accountText === 'riddle') {
+        $account = Riddle::find($accountTextId);
     } else if ($accountText === 'activity') {
         $account = Activity::find($accountTextId);
     } else if ($accountText === 'book') {

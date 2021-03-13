@@ -23,11 +23,11 @@ class SavedResource extends JsonResource
             $data['username'] = $this->user->username;
             $data['full_name'] = $this->user->full_name;
         }
-        if (!is_null($this->postedby)) {
-            $data['postedby_type'] = class_basename_lower($this->postedby_type);
-            $data['postedby_id'] = $this->postedby_id;
-            $data['name'] = $this->postedby->profile->name;
-            $data['url'] = $this->postedby->profile->url;
+        if (!is_null($this->addedby)) {
+            $data['addedby_type'] = class_basename_lower($this->addedby_type);
+            $data['addedby_id'] = $this->addedby_id;
+            $data['name'] = $this->addedby->profile->name;
+            $data['url'] = $this->addedby->profile->url;
             $data['content'] = $this->content;
         }
         if (!is_null($this->commentedby)) {
@@ -70,7 +70,7 @@ class SavedResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);

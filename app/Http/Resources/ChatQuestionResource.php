@@ -19,7 +19,7 @@ class ChatQuestionResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -33,8 +33,8 @@ class ChatQuestionResource extends JsonResource
             'id' => $this->id,
             'question' => $this->question,
             'questionableId' => $this->questionable_id,
-            'user_id' => $this->questionedby->user_id,
-            'name' => $this->questionedby->name,
+            'user_id' => $this->addedby->user_id,
+            'name' => $this->addedby->name,
             'state' => $this->state,
             'score_over' => $this->score_over,
             'sections' => $this->poemSections,

@@ -19,7 +19,7 @@ class QuestionResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -31,15 +31,15 @@ class QuestionResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'question' => $this->question,
+            'body' => $this->body,
             'questionId' => $this->questionable_id,
             'state' => $this->state,
-            'score_over' => $this->score_over,
+            'scoreOver' => $this->score_over,
             'sections' => $this->poemSections,
-            'published' => $this->published,
+            'publishedAt' => $this->published_at,
             'updated_at' => $this->updated_at,
             'state' => $this->state,
-            'possible_answers' => PossibleAnswerResource::collection($this->possibleAnswers),
+            'possibleAnswers' => PossibleAnswerResource::collection($this->possibleAnswers),
             'answers_number' => $this->answers()->count(),
             'answers' => $this->answers()->latest(),
             'images' => $images,

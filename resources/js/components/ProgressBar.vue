@@ -33,7 +33,7 @@
 
 
         .progress-bar{
-            background-color: $color-main;
+            background-color: $color-primary;
         }
     }
 </style>

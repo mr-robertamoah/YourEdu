@@ -39,7 +39,7 @@ class AttachmentService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $attachment,$attachment->attachedby,$admin,__METHOD__
                 );
             }
@@ -70,7 +70,7 @@ class AttachmentService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $mainAttachment,$mainAttachment->attachedby,$admin,__METHOD__
                 );
             }
@@ -83,10 +83,15 @@ class AttachmentService
             'itemId' => $mainAttachment->attachable_id
         ];
     }
-    //attach an attachment to something(post) by an account
-    public function attach($account, $attachable, $attach, $note = null)
+
+    /**
+     * attach an attachment to something(post) by an account
+     * 
+    */
+    public function attach($account, $attachable, $attach = null, $note = null)
     {
-        //account is attaching attach to attachable
+        if (is_null($attach)) return null;
+        
         $attachment = $account->attachments()->create([
             'note' => $note
         ]);
@@ -101,6 +106,21 @@ class AttachmentService
         }
 
         return $attachment;
+    }
+
+    /**
+     * attach an attachment to something(post) by an account
+     * 
+    */
+    public function detach($attachable, $attach = null)
+    {
+        if (is_null($attach)) return null;
+        
+        $attachable->attachments()
+            ->where('attachedwith_type', $attach::class)
+            ->where('attachedwith_id', $attach->id)
+            ->first()
+            ?->delete();
     }
 
     //create an attachment

@@ -1299,7 +1299,7 @@ import { strings } from '../../services/helpers';
 
         .search-input{
             border: none;
-            border-bottom: 2px solid $color-main;
+            border-bottom: 2px solid $color-primary;
             background: white;
         }
 

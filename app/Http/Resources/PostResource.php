@@ -41,7 +41,7 @@ class PostResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -61,10 +61,7 @@ class PostResource extends JsonResource
             'comments_number' => $this->comments()->count(),
             'comments' => CommentResource::collection($this->comments()
                 ->orderby('updated_at','desc')->take(1)->get()),
-            'postedby' => $this->postedby->name,
-            'postedby_type' => $this->postedby_type,
-            'postedby_id' => $this->postedby_id,
-            'profile_url' => $this->postedby->profile->url,
+            'addedby' => new UserAccountResource($this->addedby),
             'flags' => FlagResource::collection($this->flags),
             'saves' => SaveResource::collection($this->beenSaved),
             'attachments' => PostAttachmentResource::collection($this->attachments),

@@ -15,6 +15,7 @@ class DashboardItemMiniResource extends JsonResource
     public function toArray($request)
     {
         if (is_array($this->resource)) return $this->resource;
+
         $data = [];
         $data['type'] =  class_basename_lower($this->resource);
         $data['id'] = $this->id;

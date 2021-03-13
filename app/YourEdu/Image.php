@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\ImageFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Image extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
     
     protected $fillable = [
         'path', 'mime', 'size','name'
@@ -103,5 +105,10 @@ class Image extends Model
     public function permissions()
     {
         return $this->morphMany(Permission::class,'permissible');
+    }
+
+    protected static function newFactory()
+    {
+        return ImageFactory::new();
     }
 }

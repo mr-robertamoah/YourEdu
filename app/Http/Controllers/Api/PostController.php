@@ -2,258 +2,49 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\DeletePost;
-use App\Events\NewPost;
-use App\Events\UpdatePost;
+use App\DTOs\PostDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DiscussionPostResource;
 use App\Http\Resources\PostResource;
-use App\Services\Attachment;
-use App\Services\FileService;
-use App\Services\QuestionData;
-use App\Services\QuestionService;
-use App\User;
+use App\Http\Requests\CreatePostRequest;
+use App\Http\Requests\DeletePostRequest;
+use App\Http\Requests\UpdatePostRequest;
+use App\Services\PostService;
 use App\YourEdu\Discussion;
 use App\YourEdu\Post;
-use Carbon\Carbon;
 use \Debugbar;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
-    //
-
-    public function postCreate(Request $request)
+    public function createPost(CreatePostRequest $request)
     {
-        $user = auth()->user();
-        $post = null;
-        $type = null;
-        $file = null;
-        $account = getYourEduModel($request->account, $request->account_id);
-
         DB::beginTransaction();
-        try {
-            if($account){
-                $request->validate([
-                    'content' => 'nullable|string',
-                ]);
-                if ($account->user_id === $user->id) {
-                    $post = $account->posts()->create([
-                        'content' => $request->content,
-                    ]);
-                } else {
-                    return response()->json([
-                        'message' => "The {$request->account} account does'nt belong to you."
-                    ], 422);
-                }
-            } else {
-                DB::rollback();
-                return response()->json([
-                    'message' => "{$request->account} does'nt exist."
-                ], 422);
-            }
+        
+        $post = (new PostService)->createPost(
+            PostDTO::createFromRequest($request)
+        );
 
-            if (!$post) {
-                DB::rollback();
-                return response()->json([
-                    'message' => 'post creation unsuccessful'
-                ], 422);
-            } else {
-                $request->validate([
-                    'file' => 'nullable|file',
-                    'fileType' => 'nullable|string',
-                ]);
-                $this->uploadPostRelatedFile(
-                    account: $account,
-                    item: $post,
-                    file: $request->file('file')
-                );
-            }
+        DB::commit();
 
-            $input = [];
-            if ($request->has('type')) {
-
-                if ($request->type === 'book') {
-                    $request->validate([
-                        'title' => 'required|string',
-                        'author' => 'nullable|string',
-                        'about' => 'nullable|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-
-                    $input['title'] = $request->title;
-                    $input['author'] = $request->author;
-                    $input['about'] = $request->about;
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    $type = $account->booksAdded()->create($input);
-                    $type->bookable()->associate($post);
-                    $type->save();
-                    
-                } else if ($request->type === 'riddle') {
-                    $request->validate([
-                        'riddle' => 'required|string',
-                        'score' => 'nullable',
-                        'author' => 'nullable|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-
-                    $input['author'] = $request->author;
-                    $input['riddle'] = $request->riddle;
-
-                    if ((int)$request->score > 100) {
-                        $input['score_over'] = 100;
-                    } else if (is_null($request->score) || (int)$request->score < 5) {
-                        $input['score_over'] = 5;
-                    } else {
-                        $input['score_over'] = (int) $request->score;
-                    }
-
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    // $type = $post->riddles()->create($input); 
-                    $type = $account->riddlesAdded()->create($input);
-                    $type->riddleable()->associate($post);
-                    $type->save();
-                } else if ($request->type === 'poem') {
-                    $request->validate([
-                        'title' => 'required|string',
-                        'author' => 'nullable|string',
-                        'about' => 'nullable|string',
-                        'sections' => 'required|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-
-                    $input['title'] = $request->title;
-                    $input['author'] = $request->author;
-                    $input['about'] = $request->about;
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    // $type = $post->riddles()->create($input); 
-                    $type = $account->poemsAdded()->create($input);
-                    $type->poemable()->associate($post);
-                    $type->save();
-                    $sections = json_decode($request->sections);
-                    foreach ($sections as $key => $section) {
-                        $type->poemSections()->create([
-                            'body' => $section
-                        ]);
-                    }
-                } else if ($request->type === 'activity') {
-                    $request->validate([
-                        'description' => 'nullable|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'required|file',
-                        'previewFileType' => 'required|string',
-                    ]);
-
-                    $input['description'] = $request->description;
-                    $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                    $type = $account->activitiesAdded()->create($input);
-                    $type->activityfor()->associate($post);
-                    $type->save();
-                } else if ($request->type === 'question') {
-                    $request->validate([
-                        'question' => 'required|string',
-                        'score' => 'nullable',
-                        'possibleAnswers' => 'nullable|string',
-                        'published' => 'nullable|date',
-                        'previewFile' => 'nullable|file',
-                        'previewFileType' => 'nullable|string',
-                    ]);
-                    $typeData = QuestionData::createFromRequest($request);
-                    $typeData->questionable = $post;
-                    $typeData->questionedby = $account;
-                    $typeData->state = 'PENDING';
-                    $type = (new QuestionService)->createQuestion($typeData);
-                }  else if ($request->type === 'lesson') {
-                    $request->validate([
-                        'title' => 'required|string',
-                        'description' => 'nullable|string',
-                        'ageGroup' => 'nullable|string',
-                        'previewFile.*' => 'nullable|file',
-                    ]);
-
-                    $input['description'] = $request->description;
-                    $input['title'] = $request->title;
-                    $input['ageGroup'] = $request->ageGroup;  
-                    $type = $account->lessonsAdded()->create($input);
-                    $type->ownedby()->associate($account);
-                    $type->lessonable()->associate($post);
-                    $type->save();
-                }
-
-                if ($type) {
-
-                    if ($request->hasFile('previewFile')) {
-
-                        foreach ($request->file('previewFile') as $previewFile) {
-                            $this->uploadPostRelatedFile(
-                                account: $account,
-                                item: $type,
-                                file: $previewFile
-                            );
-                        }
-                    }
-                } else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful',
-                        'post' => $post,
-                    ]);
-                }
-            }
-            
-            if ($request->has('attachments')) {
-                foreach (json_decode($request->attachments) as $attachment) {
-                    Attachment::attach($account,$post,$attachment->attachable,$attachment->attachableId);
-                }
-            }
-
-            DB::commit();
-            $post = Post::with(['questions.images','questions.videos',
-            'questions.audios','questions.files','activities.images','activities.videos',
-            'activities.files','activities.audios','riddles.images','riddles.videos',
-            'riddles.files','riddles.audios','poems.images','poems.videos',
-            'poems.files','poems.audios','books.images','books.videos','books.files',
-            'books.audios','postedby.profile'])->find($post->id);
-            Debugbar::info($post);
-            $postResource = new PostResource($post);
-            broadcast(new NewPost($postResource))->toOthers();
-            return response()->json([
-                'message' => 'successful',
-                'post' => $postResource,
-            ]);
-        } catch (\Throwable $th) {
-            if($file){
-                Storage::delete($file->path);
-            }
-            DB::rollback();
-            // return response()->json([
-            //     'message' => 'unsuccessful',
-            //     'post' => $post,
-            //     'type' => $type,
-            // ]);
-            throw $th;
-        }
-
+        return response()->json([
+            'message' => 'successful',
+            'post' => new PostResource($post),
+        ]);
     }
 
     public function getUserPosts(Request $request)
     {
+        ray($request)->green();
         $parentsLearnerUserIds = [];
-        $learner = User::find(auth()->id())->learner;
+        $learner = auth()->user()->learner;
         try {
             if ($learner && $learner->parents) {
                 $parentsLearnerUserIds = $learner->parents->pluck('user_id');
+                $parentsLearnerUserIds[] = $learner->user_id;
             }
-            $parentsLearnerUserIds [] = auth()->id();
 
             $items = Post::with(['books'=>function(MorphMany $query){
                     $query->with(['images','videos','audios','files','comments']);
@@ -273,7 +64,7 @@ class PostController extends Controller
                 'images','videos','audios','files','comments','flags','attachments',
                 'beenSaved','messages','raisedby.profile','requests.requestfrom'])
                 ->get());
-            Debugbar::info($items);            
+                           
             return DiscussionPostResource::collection(paginate($items->sortByDesc('updated_at'), 5));            
         } catch (\Throwable $th) {
             // return response()->json([
@@ -299,246 +90,32 @@ class PostController extends Controller
         }
     }
 
-    public function postEdit(Request $request,$post, $account, $accountId)
+    public function updatePost(UpdatePostRequest $request)
     {
-        $mainPost = Post::find($post);
-        
-        $mainAccount = getYourEduModel($account,$accountId);
-
-        if($mainAccount->user_id !== auth()->id()){
-            return response()->json([
-                'message' => 'unsuccessful. you do not own this account'
-            ]);
-        }
-
-        $request->validate([
-            'content' => 'nullable|string'
-        ]);
-
         DB::beginTransaction();
-        $mainPost->update([
-            'content' => $request->content
-        ]);
 
-        $input = [];
-        if ($request->has('type')) {
-
-            if ($request->type === 'book') {
-                $request->validate([
-                    'title' => 'required|string',
-                    'author' => 'nullable|string',
-                    'about' => 'nullable|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['title'] = $request->title;
-                $input['author'] = $request->author;
-                $input['about'] = $request->about;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $mainAccount->booksAdded()->where('id',$request->typeId)->first();
-                if ($type) {
-                    $type->update($input);
-                }
-            } else if ($request->type === 'riddle') {
-                $request->validate([
-                    'riddle' => 'required|string',
-                    'author' => 'nullable|string',
-                    'score' => 'nullable',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['author'] = $request->author;
-                $input['riddle'] = $request->riddle;
-
-                if ((int)$request->score > 100) {
-                    $input['score_over'] = 100;
-                } else if (is_null($request->score) || (int)$request->score < 5) {
-                    $input['score_over'] = 5;
-                } else {
-                    $input['score_over'] = (int) $request->score;
-                }
-
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $mainAccount->riddlesAdded()->where('id',$request->typeId)->first();
-                if ($type) {
-                    $type->update($input);
-                }
-            } else if ($request->type === 'poem') {
-                $request->validate([
-                    'title' => 'required|string',
-                    'author' => 'nullable|string',
-                    'about' => 'nullable|string',
-                    'sections' => 'required|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['title'] = $request->title;
-                $input['author'] = $request->author;
-                $input['about'] = $request->about;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString(); 
-                $type = $mainAccount->poemsAdded()->where('id',$request->typeId)->type();
-                if ($type) {
-                    $type->update($input);
-                } else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful. poem was not found'
-                    ]);
-                }
-                $sections = json_decode($request->sections);
-                foreach ($sections as $key => $section) {
-                    $poemSection = $type->poemSections()->where('id',$section->id)->first();
-                    if($poemSection){
-                        $poemSection->update([
-                            'body' => $section->body
-                        ]);
-                    } else {
-                        DB::rollback();
-                        return response()->json([
-                            'message' => 'unsuccessful. poem section was not found'
-                        ]);
-                    }
-                }
-            } else if ($request->type === 'activity') {
-                $request->validate([
-                    'description' => 'nullable|string',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'required|file',
-                    'previewFileType' => 'required|string',
-                ]);
-
-                $input['description'] = $request->description;
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString();  
-                $type = $mainAccount->activitiesAdded()->where('id',$request->typeId)->furst();
-                if ($type) {
-                    $type->update($input);
-                } else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful. activity was not found'
-                    ]);
-                }
-            } else if ($request->type === 'question') {
-                $request->validate([
-                    'question' => 'required|string',
-                    'score' => 'nullable',
-                    'published' => 'nullable|date',
-                    'previewFile' => 'nullable|file',
-                    'previewFileType' => 'nullable|string',
-                ]);
-
-                $input['question'] = $request->question;
-
-                if ((int)$request->score > 100) {
-                    $input['score_over'] = 100;
-                } else if (is_null($request->score) || (int)$request->score < 5) {
-                    $input['score_over'] = 5;
-                } else {
-                    $input['score_over'] = (int) $request->score;
-                }
-
-                $input['state'] = 'PENDING';
-                $input['published'] = Carbon::parse($request->published)->toDateTimeString(); 
-                $type = $mainAccount->questionsAdded()->where('id',$request->typeId)->first();
-                if ($type) {
-                    $type->update($input);
-                }  else {
-                    DB::rollback();
-                    return response()->json([
-                        'message' => 'unsuccessful. question was not found'
-                    ]);
-                }
-
-                $oldPossibleAnswers = $type->possibleAnswers;
-                
-                if ($request->has('possibleAnswers') && 
-                    !is_null($request->possibleAnswers)) {
-                    $possibleAnswers = json_decode($request->possibleAnswers);
-
-                    if ($oldPossibleAnswers) {
-                        $oldPossibleAnswers->forceDelete();
-                    }
-
-                    foreach ($possibleAnswers as $key => $possibleAnswer) {
-                        $type->possibleAnswers()->create([
-                            'option' => $possibleAnswer->option,
-                        ]);
-                    }
-                }
-            } 
-
-            if ($type) {
-
-                $this->uploadPostRelatedFile(
-                    account: $mainAccount,
-                    item: $type,
-                    file: $request->file('previewFile')
-                );
-            } else {
-                DB::rollback();
-                return response()->json([
-                    'message' => 'unsuccessful',
-                    'post' => $mainPost,
-                ]);
-            }
-        }
+        $post = (new PostService)->updatePost(
+            PostDTO::createFromRequest($request)
+        );
 
         DB::commit();
-        $mainPost = Post::with(['questions.images','questions.videos',
-        'questions.audios','questions.files','activities.images','activities.videos',
-        'activities.files','activities.audios','riddles.images','riddles.videos',
-        'riddles.files','riddles.audios','poems.images','poems.videos',
-        'poems.files','poems.audios','books.images','books.videos','books.files',
-        'books.audios','postedby.profile'])->find($mainPost->id);
-        Debugbar::info($mainPost);
-        $postResource = new PostResource($mainPost);
-        broadcast(new UpdatePost($postResource))->toOthers();
+        
         return response()->json([
             'message' => 'successful',
-            'post' => $postResource,
+            'post' => new PostResource($post),
         ]);
     }
 
-    private function uploadPostRelatedFile($file,$account,$item)
+    public function deletePost(DeletePostRequest $request)
     {
-        if (is_null($file)) return
-
-        FileService::accountCreateFile(
-            $account, 
-            FileService::getFileDetails($file),
-            $item
+        ray($request)->green();
+        (new PostService)->deletePost(
+            PostDTO::createFromRequest($request)
         );
-    }
-
-    public function postDelete($post, $account, $accountId)
-    {
-        $mainPost = Post::find($post);
-        Debugbar::info($mainPost);
-        
-        try {
-                
-            $mainPost->delete();
-
-            broadcast(new DeletePost([
-                'postId' => $post,
-                'account' => $account,
-                'accountId' => $accountId,
-            ]))->toOthers();
-            return response()->json([
-                'message' => "successful"
-            ]);
-        } catch (\Throwable $th) {
-            throw $th;
-            return response()->json([
-                'message' => "unsuccessful"
-            ]);
-        }
+                   
+        return response()->json([
+            'message' => "successful"
+        ]);
     }
 
     public function postGet($post)
@@ -549,7 +126,7 @@ class PostController extends Controller
             'activities.files','activities.audios','riddles.images','riddles.videos',
             'riddles.files','riddles.audios','poems.images','poems.videos',
             'poems.files','poems.audios','books.images','books.videos','books.files',
-            'books.audios','postedby.profile','lessons.images','lessons.videos',
+            'books.audios','addedby.profile','lessons.images','lessons.videos',
             'lessons.files','lessons.audios'])->find($post);
 
         if (!$item) {
@@ -579,7 +156,7 @@ class PostController extends Controller
             'activities.files','activities.audios','riddles.images','riddles.videos',
             'riddles.files','riddles.audios','poems.images','poems.videos',
             'poems.files','poems.audios','books.images','books.videos','books.files',
-            'books.audios','postedby.profile','lessons.images','lessons.videos',
+            'books.audios','addedby.profile','lessons.images','lessons.videos',
             'lessons.files','lessons.audios'])->get();
         
         $items = $items->merge($mainAccount->discussions()->notSocial()->with([

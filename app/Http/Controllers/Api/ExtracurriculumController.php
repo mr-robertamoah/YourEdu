@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\ExtracurriculumData;
+use App\DTOs\ExtracurriculumDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExtracurriculumCreateRequest;
 use App\Http\Resources\DashboardExtracurriculumResource;
@@ -21,7 +21,7 @@ class ExtracurriculumController extends Controller
             DB::beginTransaction();
             
             $extracurriculum = (new ExtracurriculumService())->createExtracurriculum(
-                ExtracurriculumData::createFromRequest($request)
+                ExtracurriculumDTO::createFromRequest($request)
             );
 
             DB::commit();
@@ -67,7 +67,7 @@ class ExtracurriculumController extends Controller
         try {
             DB::beginTransaction();
             $extracurriculum = (new ExtracurriculumService())->updateExtracurriculum(
-                ExtracurriculumData::createFromRequest($request)
+                ExtracurriculumDTO::createFromRequest($request)
             );
 
             DB::commit();
@@ -88,7 +88,7 @@ class ExtracurriculumController extends Controller
         try {
             DB::beginTransaction();
             $extracurriculum = (new ExtracurriculumService())->deleteExtracurriculum(
-                ExtracurriculumData::createFromRequest($request)
+                ExtracurriculumDTO::createFromRequest($request)
             );
 
             DB::commit();

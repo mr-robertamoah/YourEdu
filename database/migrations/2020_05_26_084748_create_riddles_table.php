@@ -18,11 +18,10 @@ class CreateRiddlesTable extends Migration
             $table->nullableMorphs('addedby'); // learner facilitator professional parent school
             $table->nullableMorphs('authoredby'); // learner facilitator professional parent
             $table->nullableMorphs('riddleable'); // post lesson
-            // $table->string('title'); 
-            $table->string('author')->nullable();
-            $table->text('riddle')->nullable();
+            $table->string('author_names')->nullable();
+            $table->text('body')->nullable();
             $table->mediumInteger('score_over')->nullable();
-            $table->timestamp('published')->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -38,7 +38,7 @@
                     @click="clickedShowPostPreview">
                     <div class="answer"
                         :key="key"
-                        v-for="(answer,key) in type.possible_answers"
+                        v-for="(answer,key) in type.possibleAnswers"
                     >
                         {{answer.option}}
                     </div>
@@ -174,7 +174,7 @@ import PostButton from './PostButton'
             },
             computedPossibleAnswers(){
                 if (this.type.hasOwnProperty('possible_answers') &&
-                    this.type.possible_answers.length) {
+                    this.type.possibleAnswers.length) {
                     return this.disabled ? true : !this.typeMediaFull ? false : true
                 }
                 return false
@@ -195,8 +195,8 @@ import PostButton from './PostButton'
                             return false
                         }
                     } else if (this.typeName === 'question') {
-                        if (this.type.question && this.type.question.length) {
-                            this.typeValue = this.typeMediaFull ? this.type.question :  strings.content(this.type.question)
+                        if (this.type.body && this.type.body.length) {
+                            this.typeValue = this.typeMediaFull ? this.type.body :  strings.content(this.type.body)
                         } else {
                             return false
                         }
@@ -207,8 +207,8 @@ import PostButton from './PostButton'
                             return false
                         }
                     } else if (this.typeName === 'riddle') {
-                        if (this.type.riddle && this.type.riddle.length) {
-                            this.typeValue =  this.typeMediaFull ? this.type.riddle : strings.content(this.type.riddle)
+                        if (this.type.body && this.type.body.length) {
+                            this.typeValue =  this.typeMediaFull ? this.type.body : strings.content(this.type.body)
                         } else {
                             return false
                         }
@@ -238,8 +238,8 @@ import PostButton from './PostButton'
                         typeName: this.typeName,
                         postId: this.post.id,
                         owner: {
-                            account: strings.getAccount(this.post.postedby_type),
-                            accountId: this.post.postedby_id
+                            account: strings.getAccount(this.post.addedby_type),
+                            accountId: this.post.addedby_id
                         }
                     }, 
                     type: 'posttype'

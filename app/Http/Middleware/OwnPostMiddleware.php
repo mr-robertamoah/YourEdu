@@ -16,9 +16,7 @@ class OwnPostMiddleware
      */
     public function handle($request, Closure $next)
     {
-        $mainPost = null;
-        // return $request->route('post');
-        $mainPost = Post::find($request->route('post'));
+        $mainPost = Post::find($request->route('postId'));
         
         if(!$mainPost){
             return response()->json([
@@ -26,7 +24,7 @@ class OwnPostMiddleware
             ],401);
         }
 
-        if($mainPost->postedby->user_id !== auth()->id()){
+        if($mainPost->addedby->user_id !== auth()->id()){
             return response()->json([
                 'message' => "unsuccessful. you do not own this post."
             ],401);

@@ -10,6 +10,8 @@ class Work extends Model
     //
     use SoftDeletes;
 
+    protected $table = 'work';
+
     public function assessment()
     {
         return $this->belongsTo(Assessment::class);

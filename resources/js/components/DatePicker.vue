@@ -4,7 +4,7 @@
         <flat-pickr class="form-control"
             v-model="datePicked"
             :config="flatPickrConfig"
-            :placeholder="placeHolder"
+            :placeholder="placeholder"
         >
         </flat-pickr>
     </div>
@@ -37,7 +37,7 @@ import 'flatpickr/dist/flatpickr.css';
                 type: String,
                 default: ''
             },
-            placeHolder: {
+            placeholder: {
                 type: String,
                 default: ''
             },
@@ -50,6 +50,7 @@ import 'flatpickr/dist/flatpickr.css';
         watch: {
             datePicked(newValue) {
                 this.$emit('datePicked', newValue)
+                this.$emit('input', newValue)
             },
             value:{
                 immediate: true,
@@ -57,7 +58,7 @@ import 'flatpickr/dist/flatpickr.css';
                     this.datePicked = newValue
                 }
             },
-            placeHolder:{
+            placeholder:{
                 immediate: true,
                 handler(newValue){
                     if (new Date(newValue).toString() != 'Invalid Date') {

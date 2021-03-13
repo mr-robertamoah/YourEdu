@@ -19,7 +19,7 @@ class ActivityResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -32,7 +32,7 @@ class ActivityResource extends JsonResource
         return [
             'id' => $this->id,
             'description' => $this->description,
-            'published' => $this->published,
+            'publishedAt' => $this->published_at,
             'comments_number' => $this->comments()->count(),
             'images' => $images,
             'videos' => $videos,

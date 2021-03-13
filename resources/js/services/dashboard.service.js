@@ -386,7 +386,7 @@ const DashboadService = {
         let {nextPage, data} = main
         try {
             let response = 
-                await ApiService.get(`api/dashboard/account/item?page=${nextPage}`,data)
+                await ApiService.get(`api/dashboard/account/specific/items?page=${nextPage}`,data)
 
             return response
         } catch (error) {

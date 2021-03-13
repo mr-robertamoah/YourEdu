@@ -162,7 +162,7 @@ class DashboardItemResource extends JsonResource
             $data['type'] = $type;
             $data['typeName'] = $typeName;
             $data['content'] = $this->content;
-            if ($this->images()->exists()) {
+            if ($this->images->count()) {
                 $data['images'] = ImageResource::collection($this->images);
             }
             if ($this->videos()->exists()) {
@@ -178,15 +178,15 @@ class DashboardItemResource extends JsonResource
             $data['comments_number'] = $this->comments()->count();
             $data['comments'] = CommentResource::collection($this->comments()
                 ->orderby('updated_at','desc')->take(1)->get());
-            $data['postedby'] = $this->postedby->name;
-            $data['postedby_type'] = $this->postedby_type;
-            $data['postedby_id'] = $this->postedby_id;
-            $data['profile_url'] = $this->postedby->profile->url;
+            $data['addedby'] = $this->addedby->name;
+            $data['addedby_type'] = $this->addedby_type;
+            $data['addedby_id'] = $this->addedby_id;
+            $data['profile_url'] = $this->addedby->profile->url;
             $data['flags'] = FlagResource::collection($this->flags);
             $data['saves'] = SaveResource::collection($this->beenSaved);
             $data['attachments'] = PostAttachmentResource::collection($this->attachments);
         } else if ($data['type'] === 'comment') {
-            if ($this->images()->exists()) {
+            if ($this->images->count()) {
                 $data['images'] = ImageResource::collection($this->images);
             }
             if ($this->videos()->exists()) {

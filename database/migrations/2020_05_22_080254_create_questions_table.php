@@ -15,18 +15,19 @@ class CreateQuestionsTable extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('questionedby'); // facilitator professional parent learner member
+            $table->nullableMorphs('addedby'); // facilitator professional parent learner member
             $table->nullableMorphs('questionable'); // conversation assessmentsection post discussion message
-            $table->text('question');
+            $table->text('body');
             $table->enum('state',['PENDING','ANSWERED','COMPLETE','SEEN','SENT','RECEIVED'])->nullable();
-            $table->timestamp('published')->nullable();
             $table->mediumInteger('score_over')->nullable();
             $table->text('hint')->nullable();
             $table->smallInteger('position')->nullable();
             $table->enum('answer_type',[
-                'TRUE_FALSE,LONG_ANSWER,SHORT_ANSWER,IMAGE,VIDEO,AUDIO,
-                OPTION,NUMBER','FLOW','ARRANGE'])->nullable();
+                'TRUE_FALSE','LONG_ANSWER','SHORT_ANSWER','IMAGE','VIDEO','AUDIO',
+                'OPTION','NUMBER','FLOW','ARRANGE'])->nullable();
             $table->json('user_deletes')->nullable();
+            $table->json('correct_possible_answers')->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

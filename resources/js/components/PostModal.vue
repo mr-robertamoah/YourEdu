@@ -51,8 +51,7 @@
                     ></answer-single>
                 </div>
                 <div class="post-preview"
-                    v-if="(type === 'posttype' || 
-                        computedPostTypeName !== 'post') && !postLoading"
+                    v-if="computedShowPostType"
                 >
                     <post-preview
                         :type="computedPostType"
@@ -83,7 +82,7 @@
                         </template>
                         <template v-if="showAnswerList">
                             <main-list
-                                :itemList="data.type.possible_answers"
+                                :itemList="data.type.possibleAnswers"
                                 @listItemSelected="listItemSelected"
                                 @clickedListButton="clickedListButton"
                                 :edit="answerListEdit"
@@ -429,10 +428,10 @@ import { strings } from '../services/helpers';
             computedPossibleAnswers(){
                 if (this.data && this.data.typeName === 'question' && this.type === 'posttype' &&
                     this.data.type.hasOwnProperty('possible_answers')) {
-                    return this.data.type.possible_answers
+                    return this.data.type.possibleAnswers
                 } else if (this.item && this.item.typeName === 'question' &&
                     this.item.type.hasOwnProperty('possible_answers')) {
-                    return this.item.type.possible_answers
+                    return this.item.type.possibleAnswers
                 }
                 return []
             },
@@ -447,6 +446,10 @@ import { strings } from '../services/helpers';
             },
             computedOwner(){
                 return this.data ? this.data.owner : null
+            },
+            computedShowPostType() {
+                return this.type && this.computedPostTypeName && 
+                    !this.postLoading
             },
         },
         methods: {
@@ -940,7 +943,7 @@ import { strings } from '../services/helpers';
                 this.inputAnswerList = data
             },
             clickedAnswer(){
-                if (this.data.type.possible_answers.length) {
+                if (this.data.type.possibleAnswers.length) {
                     this.showAnswerList = true
                 } else {
                     this.showAnswerText = false

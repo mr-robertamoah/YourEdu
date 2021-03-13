@@ -29,7 +29,7 @@ class CreateAnswersTable extends Migration
 
 
             // $table->foreign('work_id')->references('id')->on('work')->cascadeOnDelete();
-            $table->foreign('possible_answer_id')->references('id')->on('possible_answers')->cascadeOnDelete();
+            // $table->foreign('possible_answer_id')->references('id')->on('possible_answers')->cascadeOnDelete();
         });
     }
 

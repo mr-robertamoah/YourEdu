@@ -124,7 +124,7 @@ import { strings } from '../services/helpers';
                     let saveIndex = this.saves.findIndex(save=>{
                         if (main.item === 'comment' && save.hasOwnProperty('commentedby_type')) {
                             return save.id === main.itemId
-                        } else if (main.item === 'post' && save.hasOwnProperty('postedby_type')) {
+                        } else if (main.item === 'post' && save.hasOwnProperty('addedby_type')) {
                             return save.id === main.itemId
                         } else if (main.item === 'answer' && save.hasOwnProperty('answeredby_type')) {
                             return save.id === main.itemId

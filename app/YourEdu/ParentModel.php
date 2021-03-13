@@ -4,13 +4,15 @@ namespace App\YourEdu;
 
 use App\Traits\AccountTrait;
 use App\User;
+use Database\Factories\ParentFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ParentModel extends Model
 {
     //
-    use SoftDeletes, AccountTrait;
+    use SoftDeletes, AccountTrait, HasFactory;
 
     protected $fillable = [
         'user_id','name',
@@ -57,7 +59,7 @@ class ParentModel extends Model
 
     public function activitiesAdded()
     {
-        return $this->morphMany(Activity::class,'activityby');
+        return $this->morphMany(Activity::class,'addedby');
     }
 
     public function follows(){
@@ -155,9 +157,9 @@ class ParentModel extends Model
         return $this->morphMany(Mark::class,'markedby');
     }
 
-    public function assessments()
+    public function addedAssessments()
     {
-        return $this->morphMany(Assessment::class,'assessmentby');
+        return $this->morphMany(Assessment::class,'addedby');
     }
 
     public function admissionsSent()
@@ -264,7 +266,7 @@ class ParentModel extends Model
 
     public function questionsAdded()
     {
-        return $this->morphMany(Question::class,'questionedby');
+        return $this->morphMany(Question::class,'addedby');
     }
 
     public function riddlesAuthored()
@@ -279,7 +281,7 @@ class ParentModel extends Model
 
     public function posts()
     {
-        return $this->morphMany(Post::class,'postedby');
+        return $this->morphMany(Post::class,'addedby');
     }
 
     public function expressionsAdded()
@@ -335,5 +337,10 @@ class ParentModel extends Model
     public function messagesReceived()
     {
         return $this->morphMany(Message::class,'toable');
+    }
+    
+    protected static function newFactory()
+    {
+        return ParentFactory::new();
     }
 }

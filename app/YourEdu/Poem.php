@@ -2,16 +2,18 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\PoemFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Poem extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
-        'title', 'author', 'about', 'published'
+        'title', 'author_names', 'about', 'published_at'
     ];
 
     // protected $touches = [
@@ -19,7 +21,7 @@ class Poem extends Model
     // ];
 
     protected $casts = [
-        'published' => 'datetime'
+        'published_at' => 'datetime'
     ];
 
     public function addedby()
@@ -68,5 +70,41 @@ class Poem extends Model
     public function comments()
     {
         return $this->morphMany(Comment::class,'commentable');
+    }
+
+    public function doenstHaveSections()
+    {
+        return $this->poemSections->count() < 1;
+    }
+
+    public function notRemovingAllSections(array $sections)
+    {
+        $poemSectionIds = $this->poemSections->pluck('id')->toArray();
+
+        return count(
+            array_filter($sections, function($section) use ($poemSectionIds) {
+                return in_array(
+                    $section->poemSectionId,
+                    $poemSectionIds
+                );
+            })
+        ) < $this->poemSections->count();
+    }
+    
+    public function allFiles()
+    {
+        $files = [];
+
+        array_push($files, ...$this->images);
+        array_push($files, ...$this->videos);
+        array_push($files, ...$this->audios);
+        array_push($files, ...$this->files);
+
+        return $files;
+    }
+    
+    protected static function newFactory()
+    {
+        return PoemFactory::new();
     }
 }

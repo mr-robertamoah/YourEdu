@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\LinkFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Link extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = ['name','description','link'];
     
@@ -20,5 +22,10 @@ class Link extends Model
     public function linkable()
     {
         return $this->morphTo();
+    }
+
+    protected static function newFactory()
+    {
+        return LinkFactory::new();
     }
 }

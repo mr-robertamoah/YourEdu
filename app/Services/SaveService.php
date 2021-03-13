@@ -35,7 +35,7 @@ class SaveService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $save,$save->savedby,$admin,__METHOD__
                 );
             }
@@ -57,7 +57,7 @@ class SaveService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $save,$save->savedby,$admin, __METHOD__
                 );
             }
@@ -92,7 +92,7 @@ class SaveService
     private function getSavedPosts()
     {
         return Post::with(['questions','activities','riddles','beenSaved',
-            'poems.poemSections','books','postedby.profile.images',
+            'poems.poemSections','books','addedby.profile.images',
             'files','audios','videos'])
             ->whereHas('beenSaved',function(Builder $query){
                 $query->where('user_id', auth()->id());

@@ -15,13 +15,15 @@ class CreateAssessmentsTable extends Migration
     {
         Schema::create('assessments', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('addedby'); // school facilitator professional parent
+            $table->nullableMorphs('addedby'); // learner school facilitator professional parent
             $table->string('name');
             $table->text('description')->nullable();
             $table->float('total_mark')->nullable();
             $table->integer('duration')->nullable();
-            $table->timestamp('publish_date')->nullable();
-            $table->timestamp('due_date')->nullable();
+            $table->timestamp('published_at')->nullable();
+            $table->timestamp('due_at')->nullable();
+            $table->boolean('restricted');
+            $table->enum('type',['PUBLIC','PRIVATE']);
             $table->softDeletes();
             $table->timestamps();
         });

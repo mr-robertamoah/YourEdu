@@ -36,6 +36,10 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
         },
         methods: {
             clickedAction() {
+                if (this.active) {
+                    this.$emit('clickedAction', '')
+                    return 
+                }
                 this.$emit('clickedAction', this.text)
             }
         },

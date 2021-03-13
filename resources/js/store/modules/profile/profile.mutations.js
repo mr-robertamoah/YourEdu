@@ -312,14 +312,14 @@ const mutations = {
     NEW_POST(state,post){
         // let oldPost = state.posts[0]
         // if (oldPost.isDiscussion &&
-        //     oldPost.raisedby_id === post.postedby_id &&
-        //     oldPost.raisedby_type === post.postedby_type) {
+        //     oldPost.raisedby_id === post.addedby_id &&
+        //     oldPost.raisedby_type === post.addedby_type) {
         //     state.posts.unshift(post)
         //     return
         // }
         // if (oldPost.isPost &&
-        //     oldPost.postedby_id === post.postedby_id &&
-        //     oldPost.postedby_type === post.postedby_type) {
+        //     oldPost.addedby_id === post.addedby_id &&
+        //     oldPost.addedby_type === post.addedby_type) {
         //     }
         state.posts.unshift(post)
     },

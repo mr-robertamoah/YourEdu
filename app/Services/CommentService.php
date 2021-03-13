@@ -54,7 +54,7 @@ class CommentService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $comment,$mainAccount,$admin,__METHOD__
                 );
             }
@@ -105,7 +105,7 @@ class CommentService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $comment,$mainAccount,$admin,__METHOD__
                 );
             }
@@ -129,11 +129,11 @@ class CommentService
         $account = null;
         $accountId = null;
         if ($item === 'post') {
-            $account = class_basename_lower(get_class($comment->commentable->postedby));
-            $accountId = $comment->commentable->postedby->id;
+            $account = class_basename_lower(get_class($comment->commentable->addedby));
+            $accountId = $comment->commentable->addedby->id;
         } else if ($item === 'book' || $item === 'poem' || $item === 'activity') {
-            $account = class_basename_lower(get_class($comment->commentable->post->postedby));
-            $accountId = $comment->commentable->post->postedby->id;
+            $account = class_basename_lower(get_class($comment->commentable->post->addedby));
+            $accountId = $comment->commentable->post->addedby->id;
         } else if ($item === 'discussion') {
             $account = class_basename_lower(get_class($comment->commentable->raisedby));
             $accountId = $comment->commentable->raisedby->id;
@@ -148,7 +148,7 @@ class CommentService
         if ($adminId) {
             $admin = getYourEduModel('admin',$adminId);
             if (!is_null($admin)) {
-                (new ActivityTrackService())->createActivityTrack(
+                (new ActivityTrackService())->trackActivity(
                     $comment,$comment->commentedby,$admin,__METHOD__
                 );
             }
@@ -179,19 +179,19 @@ class CommentService
         $commentableOwner = null;
         $rollback = false;
         if ($item === 'post') {
-            $commentableOwner = $commentable->postedby;
+            $commentableOwner = $commentable->addedby;
         } else if ($item === 'discussion') {
             $commentableOwner = $commentable->raisedby;
         } else if ($item === 'activity') {
-            $commentableOwner = $commentable->post->postedby;
+            $commentableOwner = $commentable->post->addedby;
         } else if ($item === 'book') {
-            $commentableOwner = $commentable->post->postedby;
+            $commentableOwner = $commentable->post->addedby;
         } else if ($item === 'riddle') {
-            $commentableOwner = $commentable->post->postedby;
+            $commentableOwner = $commentable->post->addedby;
         } else if ($item === 'question') {
-            $commentableOwner = $commentable->post->postedby;
+            $commentableOwner = $commentable->post->addedby;
         } else if ($item === 'poem') {
-            $commentableOwner = $commentable->post->postedby;
+            $commentableOwner = $commentable->post->addedby;
         } else if ($item === 'comment') {
             $commentableOwner = $commentable->commentedby;
         } else if ($item === 'request') {

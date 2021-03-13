@@ -870,6 +870,36 @@
                             account.account === 'professional'">
                             <dashboard-sub-section
                                 @clickedDashboardActionButton="clickedDashboardActionButton" 
+                                subText="assessments"
+                            >
+                                <template slot="body">
+                                    <div class="sub-main">
+                                        <dashboard-section-account
+                                            class="dashboard-section-account"
+                                            v-for="(assessment,index) in computedAccountAssessments"
+                                            :key="index"
+                                            type="assessment"
+                                            :account="assessment"
+                                            @clickedDashboardActionButton="clickedDashboardActionButton"
+                                        >                                            
+                                        </dashboard-section-account>
+                                        <div class="no-ward" v-if="!computedAccountAssessments || !computedAccountAssessments.length">
+                                            no assessments
+                                        </div>
+                                    </div>
+                                </template>
+                                <template slot="bottom">
+                                    <dashboard-action-button
+                                        class="add-another"
+                                        text="add assessment"
+                                        icon="plus"
+                                        :data="null"
+                                        @click="clickedDashboardActionButton"
+                                    ></dashboard-action-button>
+                                </template>
+                            </dashboard-sub-section>
+                            <dashboard-sub-section
+                                @clickedDashboardActionButton="clickedDashboardActionButton" 
                                 subText="lessons"
                             >
                                 <template slot="body">
@@ -1292,11 +1322,20 @@
             @classSuccessfullyEdited="successfullyEdited"
         ></create-class>
         
+        <create-assessment
+            :show="showCreateModal === 'assessment'"
+            @closeCreateAssessment="closeCreateModal"
+            :editable="mainSectionData"
+            :main="true"
+            :mainSection="mainSection"
+            :schoolAdmin="computedSchoolAdmin"
+            :edit="createModalEdit === 'assessment'"
+        ></create-assessment>
+        
         <create-lesson
             :show="showCreateModal === 'lesson'"
             @createLessonDisappear="closeCreateModal"
             :editable="mainSectionData"
-            :main="true"
             :mainSection="mainSection"
             :edit="createModalEdit === 'lesson'"
             @classSuccessfullyEdited="successfullyEdited"
@@ -1489,6 +1528,7 @@ import FadeRight from '../transitions/FadeRight'
 import EditProfile from '../forms/EditProfile'
 import ActionButton from '../ActionButton'
 import CreateClass from '../forms/CreateClass'
+import CreateAssessment from '../forms/CreateAssessment'
 import CreateProgram from '../forms/CreateProgram'
 import CreateCourse from '../forms/CreateCourse'
 import CreateCollaboration from '../forms/CreateCollaboration'
@@ -1546,6 +1586,7 @@ import {bus} from '../../app';
             CommentSingle,
             InfiniteLoader,
             CreateProgram,
+            CreateAssessment,
             CreateClass,
             CreateLesson,
             CreateExtracurriculum,
@@ -1811,6 +1852,12 @@ import {bus} from '../../app';
                     this.computedAccountDetails.account === 'professional') &&
                     this.computedAccountDetails.lessons ? 
                     this.computedAccountDetails.lessons : []
+            },
+            computedAccountAssessments() {
+                return (this.computedAccountDetails.account === 'facilitator' ||
+                    this.computedAccountDetails.account === 'professional') &&
+                    this.computedAccountDetails.assessments ? 
+                    this.computedAccountDetails.assessments : []
             },
             computedParents(){
                 
@@ -2173,31 +2220,11 @@ import {bus} from '../../app';
                 } else if (data.text === 'add subject') {
                     this.attachmentType = data.text.slice(4)
                     this.showAttachmentModal = true
-                } else if (data.text === 'add class') {
-                    // this.$emit('clickedPostButton',{type: this.type, data: 'create class'})
+                } else if (data.text.includes('add')) {
                     this.createModalEdit = ''
-                    this.showCreateModal = 'class'
-                    bus.$emit('classOwnership')
-                } else if (data.text === 'add course') {
-                    this.createModalEdit = ''
-                    this.showCreateModal = 'course'
-                    bus.$emit('courseOwnership') ///to set the ownership of the course
-                } else if (data.text === 'add lesson') {
-                    this.createModalEdit = ''
-                    this.showCreateModal = 'lesson'
-                    bus.$emit('lessonOwnership')
-                } else if (data.text === 'add extracurriculum') {
-                    this.createModalEdit = ''
-                    this.showCreateModal = 'extracurriculum'
-                    bus.$emit('extracurriculumOwnership')
-                } else if (data.text === 'add program') {
-                    this.createModalEdit = ''
-                    this.showCreateModal = 'program'
-                    bus.$emit('programOwnership')
-                } else if (data.text === 'add collaboration') {
-                    this.createModalEdit = ''
-                    this.showCreateModal = 'collaboration'
-                    bus.$emit('collaborationOwnership')
+                    let item = data.text.slice(4)
+                    this.showCreateModal = item
+                    bus.$emit(`${item}Ownership`)
                 }
             },
             attachmentSuccess(data){
@@ -2972,7 +2999,7 @@ $background-color-section: white;
             position: fixed;
             top: 0;
             z-index: 1;
-            background: $color-main;
+            background: $color-primary;
 
             .youredu{
 
@@ -3328,7 +3355,7 @@ $background-color-section: white;
             bottom: 0;
             padding: 10px;
             width: 100%;
-            background: $color-main;
+            background: $color-primary;
         }
     }
 

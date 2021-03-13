@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\DTOs\CollaborationData;
-use App\DTOs\CommissionData;
+use App\DTOs\CollaborationDTO;
+use App\DTOs\CommissionDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\CollaborationException;
 use App\Http\Resources\DashboardCollaborationResource;
@@ -15,18 +15,18 @@ use Illuminate\Support\Collection;
 
 class CollaborationService
 {
-    public function createCollaboration(CollaborationData $collaborationData)
+    public function createCollaboration(CollaborationDTO $collaborationDTO)
     {
-        $collaborationData->addedby = $this->getModel(
-            $collaborationData->account,
-            $collaborationData->accountId,
+        $collaborationDTO->addedby = $this->getModel(
+            $collaborationDTO->account,
+            $collaborationDTO->accountId,
         );
 
         $collaboration = $this->addCollaboration(
-            $collaborationData->addedby,$collaborationData
+            $collaborationDTO->addedby,$collaborationDTO
         );
 
-        $collaboration = $this->addCollaborators($collaboration,$collaborationData);
+        $collaboration = $this->addCollaborators($collaboration,$collaborationDTO);
 
         $this->notifyPendingCollaborators($collaboration);
 
@@ -84,10 +84,10 @@ class CollaborationService
     private function addCollaborators
     (
         Collaboration $collaboration,
-        CollaborationData $collaborationData
+        CollaborationDTO $collaborationDTO
     ) : Collaboration
     {
-        foreach ($collaborationData->collaborators as $collaboratorDetails) {
+        foreach ($collaborationDTO->collaborators as $collaboratorDetails) {
 
             $collaborator = getYourEduModel($collaboratorDetails->account,$collaboratorDetails->accountId);
             if (is_null($collaborator)) {
@@ -117,7 +117,7 @@ class CollaborationService
     )
     {
         (new CommissionService)->createCommission(
-            CommissionData::createFromData(
+            CommissionDTO::createFromData(
                 for: $collaboration,
                 ownedby: $collaborator,
                 percentageOwned: $share
@@ -156,49 +156,49 @@ class CollaborationService
     private function addCollaboration
     (
         Model $addedby, 
-        CollaborationData $collaborationData
+        CollaborationDTO $collaborationDTO
     ) : Collaboration
     {
         $collaboration = $addedby->addedCollaborations()
             ->create([
-                'name' => $collaborationData->name,
-                'description' => $collaborationData->description,
-                'type' => strtoupper($collaborationData->type),
+                'name' => $collaborationDTO->name,
+                'description' => $collaborationDTO->description,
+                'type' => strtoupper($collaborationDTO->type),
             ]);
 
         if (is_null($collaboration)) {
             $this->throwCollaborationException(
                 message:"creating of collaboration failed.",
-                data: $collaborationData
+                data: $collaborationDTO
             );
         }
 
         return $collaboration;
     }
     
-    public function updateCollaboration(CollaborationData $collaborationData)
+    public function updateCollaboration(CollaborationDTO $collaborationDTO)
     {     
-        $this->getModel($collaborationData->account, $collaborationData->accountId);
+        $this->getModel($collaborationDTO->account, $collaborationDTO->accountId);
         
-        $collaboration = $this->getCollaborationWithId($collaborationData);
+        $collaboration = $this->getCollaborationWithId($collaborationDTO);
 
-        $this->checkAuthorization($collaboration, $collaborationData);
+        $this->checkAuthorization($collaboration, $collaborationDTO);
 
-        $this->editCollaboration($collaboration,$collaborationData);
+        $this->editCollaboration($collaboration,$collaborationDTO);
 
         list($collaboration, $removedCollaborators) = $this->removeCollaborators(
             $collaboration,
-            $collaborationData
+            $collaborationDTO
         );
 
         list($collaboration, $editedCollaborators) = $this->editCollaborators(
             $collaboration,
-            $collaborationData
+            $collaborationDTO
         );
 
         $collaboration = $this->addCollaborators(
             $collaboration,
-            $collaborationData
+            $collaborationDTO
         );
 
         ray($editedCollaborators)->green();
@@ -222,11 +222,11 @@ class CollaborationService
     private function editCollaborators
     (
         Collaboration $collaboration,
-        CollaborationData $collaborationData,
+        CollaborationDTO $collaborationDTO,
     )
     {
         $accounts = [];
-        foreach ($collaborationData->editedCollaborators as $collaborator) {
+        foreach ($collaborationDTO->editedCollaborators as $collaborator) {
             $account = getYourEduModel(
                 $collaborator->account,
                 $collaborator->accountId
@@ -236,7 +236,7 @@ class CollaborationService
             }
             
             CommissionService::updateCommissionPercentage(
-                CommissionData::createFromData(
+                CommissionDTO::createFromData(
                     for: $collaboration,
                     ownedby: $account,
                     percentageOwned: $collaborator->share
@@ -252,11 +252,11 @@ class CollaborationService
     private function removeCollaborators
     (
         Collaboration $collaboration,
-        CollaborationData $collaborationData,
+        CollaborationDTO $collaborationDTO,
     )
     {
         $accounts = [];
-        foreach ($collaborationData->removedCollaborators as $collaborator) {
+        foreach ($collaborationDTO->removedCollaborators as $collaborator) {
             $account = getYourEduModel(
                 $collaborator->account,
                 $collaborator->accountId
@@ -271,7 +271,7 @@ class CollaborationService
                 ->first()?->delete();
             
             (new CommissionService)->deleteCommission(
-                CommissionData::createFromData(
+                CommissionDTO::createFromData(
                     for: $collaboration,
                     ownedby: $account,
                 )
@@ -286,22 +286,22 @@ class CollaborationService
     private function editCollaboration
     (
         Collaboration $collaboration,
-        CollaborationData $collaborationData
+        CollaborationDTO $collaborationDTO
     )
     {
         $collaboration->update([
-            'name' => $collaborationData->name,
-            'description' => $collaborationData->description,
-            'type' => $collaborationData->type,
+            'name' => $collaborationDTO->name,
+            'description' => $collaborationDTO->description,
+            'type' => $collaborationDTO->type,
         ]);
 
         return $collaboration;
     }
 
-    private function checkAuthorization($collaboration, $collaborationData)
+    private function checkAuthorization($collaboration, $collaborationDTO)
     {
-        if ($collaborationData->userId !== $collaboration->addedby->user_id &&
-            $collaborationData->userId !== $collaboration->addedby->owner_id) {
+        if ($collaborationDTO->userId !== $collaboration->addedby->user_id &&
+            $collaborationDTO->userId !== $collaboration->addedby->owner_id) {
             $this->throwCollaborationException(
                 message: "you are not authorized to update this collaboration with id {$collaboration->id}"
             );
@@ -320,9 +320,9 @@ class CollaborationService
         );
     }
 
-    private function getCollaborationWithId(CollaborationData $collaborationData)
+    private function getCollaborationWithId(CollaborationDTO $collaborationDTO)
     {
-        return $this->getModel('collaboration', $collaborationData->collaborationId);
+        return $this->getModel('collaboration', $collaborationDTO->collaborationId);
     }
 
     private function getModel($account, $accountId)
@@ -336,16 +336,16 @@ class CollaborationService
         return $account;
     }
 
-    public function deleteCollaboration(CollaborationData $collaborationData)
+    public function deleteCollaboration(CollaborationDTO $collaborationDTO)
     {     
         $this->getModel(
-            $collaborationData->account,
-            $collaborationData->accountId
+            $collaborationDTO->account,
+            $collaborationDTO->accountId
         );
 
-        $collaboration = $this->getCollaborationWithId($collaborationData);
+        $collaboration = $this->getCollaborationWithId($collaborationDTO);
 
-        $this->checkAuthorization($collaboration, $collaborationData);
+        $this->checkAuthorization($collaboration, $collaborationDTO);
 
         $this->removeCollaboration($collaboration);
 

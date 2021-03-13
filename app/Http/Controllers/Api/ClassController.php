@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\ClassData;
+use App\DTOs\ClassDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateClassRequest;
 use App\Http\Resources\ClassResource;
@@ -19,7 +19,7 @@ class ClassController extends Controller
         try {
             DB::beginTransaction();
             $class = (new ClassService())->createCLass(
-                ClassData::createFromRequest($request)
+                ClassDTO::createFromRequest($request)
             );
 
             DB::commit();
@@ -43,7 +43,7 @@ class ClassController extends Controller
         try {
             DB::beginTransaction();
             $class = (new ClassService())->updateCLass(
-                ClassData::createFromRequest($request)
+                ClassDTO::createFromRequest($request)
             );
 
             DB::commit();

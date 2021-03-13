@@ -19,7 +19,7 @@ class CreateDiscussionsTable extends Migration
             $table->nullableMorphs('discussionfor'); // class group lesson course extracurriculum
             $table->string('title');
             $table->string('preamble');
-            $table->boolean('restricted'); //can be changed anytime by raisedby
+            $table->boolean('restricted');
             $table->enum('type',['PUBLIC','PRIVATE']);
             $table->enum('allowed',['ALL','LEARNERS','PARENTS','FACILITATORS','PROFESSIONALS','SCHOOLS']);
             $table->softDeletes();

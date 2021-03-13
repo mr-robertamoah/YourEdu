@@ -4,7 +4,7 @@ namespace App\DTOs;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CommissionData
+class CommissionDTO
 {
     public float | null $percentageOwned;
     public Model | null $for;

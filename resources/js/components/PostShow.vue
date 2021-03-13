@@ -117,7 +117,7 @@
         <template v-if="computedType && computedLesson">
             <lesson-preview
                 :lesson="computedType"
-                :profileUrl="post.profile_url"
+                :profileUrl="post.addedby.url"
                 :full="postMediaFull"
                 @clickedMedia="clickedMedia"
                 :post="post"
@@ -479,9 +479,9 @@ import { mapGetters, mapActions } from 'vuex'
 
                 if (profiles) {
                     
-                    profile =  profiles.findIndex(el=>{
-                        return this.post.postedby_id === el.params.accountId && 
-                            this.post.postedby_type === el.profile
+                    profile =  profiles.findIndex(profile=>{
+                        return this.post.addedby.accountId === profile.params.accountId && 
+                            this.post.addedby.account === profile.params.account
                     })
 
                     if (profile > -1) {
@@ -519,16 +519,16 @@ import { mapGetters, mapActions } from 'vuex'
                     this.post.typeName : null
             },
             computedUrl(){
-                return this.post && this.post.hasOwnProperty('profile_url') ?
-                    this.post.profile_url : ''
+                return this.post && this.post.hasOwnProperty('addedby') ?
+                    this.post.addedby.url : ''
             },
             computedContent() {
                 return this.post && this.post.hasOwnProperty('content') ? 
                     strings.content(this.post.content,100) : null
             },
             computedName(){
-                return this.post && this.post.hasOwnProperty('postedby') ?
-                    this.post.postedby : ''
+                return this.post && this.post.hasOwnProperty('addedby') ?
+                    this.post.addedby.name : ''
             },
             computedCreated(){
                 return this.post ? dates.createdAt(this.post.created_at) : ''
@@ -589,8 +589,8 @@ import { mapGetters, mapActions } from 'vuex'
             },
             computedPostOwnerAccount(){
                 let postOwner = this.post ? {
-                    account: strings.getAccount(this.post.postedby_type),
-                    accountId: `${this.post.postedby_id}`
+                    account: this.post.addedby.account,
+                    accountId: `${this.post.addedby.accountId}`
                 } : {}
 
                 return postOwner
@@ -795,8 +795,8 @@ import { mapGetters, mapActions } from 'vuex'
                                 likeId: this.myLike.id,
                                 item: 'post',
                                 itemId: this.post.id,
-                                owner: this.post.postedby_type,
-                                ownerId: this.post.postedby_id,
+                                owner: this.post.addedby.account,
+                                ownerId: this.post.addedby.accountId,
                             }
 
                             newData.where = this.$route.name
@@ -897,8 +897,8 @@ import { mapGetters, mapActions } from 'vuex'
                     itemId: this.post.id,
                     account: who.account,
                     accountId: who.accountId,
-                    owner: this.post.postedby_type,
-                    ownerId: this.post.postedby_id,
+                    owner: this.post.addedby.account,
+                    ownerId: this.post.addedby.accountId,
                 }
 
                 data.where = this.$route.name
@@ -988,21 +988,21 @@ import { mapGetters, mapActions } from 'vuex'
                     
                     if (data.type === 'book') {
                         formData.append('title', data.title)
-                        formData.append('author', data.author)
+                        formData.append('authorNames', data.author)
                         formData.append('about', data.about)
                         formData.append('published', data.published)
                     } else if (data.type === 'poem') {
                         formData.append('title', data.title)
-                        formData.append('author', data.author)
+                        formData.append('authorNames', data.author)
                         formData.append('about', data.about)
                         formData.append('sections', JSON.stringify(data.sections))
                         formData.append('published', data.published)
                     } else if (data.type === 'riddle') {
-                        formData.append('author', data.author)
-                        formData.append('riddle', data.riddle)
+                        formData.append('authorNames', data.author)
+                        formData.append('body', data.body)
                         formData.append('published', data.published)
                     } else if (data.type === 'question') {
-                        formData.append('question', data.question)
+                        formData.append('body', data.body)
                         formData.append('published', data.published)
                     } else if (data.type === 'activity') {
                         formData.append('description', data.description)
@@ -1011,15 +1011,16 @@ import { mapGetters, mapActions } from 'vuex'
 
                     if (data && data.file &&
                         data.file.length > 0) {
-                        formData.append('previewFile', data.file[0])
-                        formData.append('previewFileType', files.fileType(data.file[0]))
+                        formData.append('typeFiles', data.file[0])
+                        formData.append('typeFilesType', files.fileType(data.file[0]))
                     }
                 }
-                formData.append('content', data.content)                
+                formData.append('content', data.content)
+                formData.append('account',this.profile.params.account)
+                formData.append('accountId',this.profile.params.accountId)
+                formData.append('postId',this.post.id)
                 
                 otherData['postId'] = this.post.id
-                otherData['account'] = this.profile.params.account
-                otherData['accountId'] = this.profile.params.accountId
                 otherData['where'] = this.$route.name
 
                 let main = {

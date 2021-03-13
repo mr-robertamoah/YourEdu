@@ -93,7 +93,7 @@ class Search extends Controller
     public function getPosts($search, $parentsLearnerUserIds = [])
     {
         return Post::with(['questions','activities','riddles',
-            'poems.poemSections','books','postedby.profile.images'])
+            'poems.poemSections','books','addedby.profile.images'])
             ->where('content','like',"%{$search}%")
             ->orWhereHas('questions',function(Builder $query) use ($search) {
                 $query->where('question','like',"%{$search}%");

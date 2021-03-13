@@ -4,7 +4,7 @@ namespace App\Services;
 
 class ActivityTrackService
 {
-    public function createActivityTrack($what,$for,$who,$action)
+    public function trackActivity($what,$for,$who,$action)
     {
         $activityTrack = $for->activityTrack()->create([
             'action' => $action

@@ -37,11 +37,11 @@ class FlaggedResource extends JsonResource
         } else {
             $data['flags'] = FlagResource::collection($this->flags);
         }
-        if (!is_null($this->postedby)) {
-            $data['postedby_type'] = class_basename_lower($this->postedby_type);
-            $data['postedby_id'] = $this->postedby_id;
-            $data['name'] = $this->postedby->profile->name;
-            $data['url'] = $this->postedby->profile->url;
+        if (!is_null($this->addedby)) {
+            $data['addedby_type'] = class_basename_lower($this->addedby_type);
+            $data['addedby_id'] = $this->addedby_id;
+            $data['name'] = $this->addedby->profile->name;
+            $data['url'] = $this->addedby->profile->url;
         }
         if (!is_null($this->commentedby)) {
             $data['commentedby_type'] = class_basename_lower($this->commentedby_type);

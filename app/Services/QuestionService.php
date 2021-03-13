@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\QuestionDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\QuestionException;
 use App\YourEdu\Question;
@@ -13,53 +14,113 @@ class QuestionService
 {
     public function createQuestion
     (
-        QuestionData $questionData
+        QuestionDTO $questionDTO
     ) : Question
     {
-        $question = $this->createOrUpdateQuestion($questionData, 'create');
+        $question = $this->createOrUpdateQuestion($questionDTO, 'create');
+
+        $questionDTO = $questionDTO->withQuestion($question);
 
         $question = $this->attachQuestionToItem(
             question: $question,
-            questionData: $questionData
+            questionDTO: $questionDTO
         );
 
-        $question = $this->addPossibleAnswers($question, $questionData);
+        $question = $this->addPossibleAnswers($question, $questionDTO);
 
-        $this->checkPossibleAnswers($question);
+        $this->checkPossibleAnswers($question, $questionDTO);
+
+        $question = $this->addQuestionFiles($question, $questionDTO);
 
         return $question;
     }
 
-    private function checkPossibleAnswers(Question $question)
+    private function addQuestionFiles
+    (
+        Question $question,
+        QuestionDTO $questionDTO,
+    )
+    {
+        foreach ($questionDTO->files as $file) {
+
+            FileService::createAndAttachFiles(
+                account: $questionDTO->addedby, 
+                file: $file,
+                item: $question
+            );
+        }
+
+        return $question->refresh();
+    }
+
+    private function removeQuestionFiles
+    (
+        Question $question,
+        QuestionDTO $questionDTO,
+    )
+    {
+        foreach ($questionDTO->removedFiles as $file) {
+            FileService::deleteAndUnattachFiles(
+                item: $question,
+                file: $file
+            );
+        }
+
+        return $question->refresh();
+    }
+
+    private function deleteQuestionFiles
+    (
+        Question $question,
+    )
+    {
+        FileService::deleteYourEduItemFiles(
+            item: $question,
+        );
+
+        return $question->refresh();
+    }
+
+    private function checkPossibleAnswers
+    (
+        Question $question,
+        QuestionDTO $questionDTO
+    )
     {
         if ($question->doesntRequireOptionalAnswers()) return;
 
         if ($question->doesntHaveOptionalAnswers()) {
             $this->throwQuestionException(
                 message: 'The question requires options from which choices will be made. But no option was given',
-                data: $question
+                data: $questionDTO
             );
         }
         
         if ($question->doesntHaveRequiredNumberOfOptionalAnswers()) {
             $this->throwQuestionException(
                 message: 'The question with options requires at least two options. Add more options.',
-                data: $question
+                data: $questionDTO
             );
         }
     }
 
-    public function updateQuestion(QuestionData $questionData)
+    public function updateQuestion(QuestionDTO $questionDTO)
     {
-        $question = $this->createOrUpdateQuestion($questionData, 'update');
+        $question = $this->createOrUpdateQuestion($questionDTO, 'update');
         
-        $question = $this->removePossibleAnswers($question, $questionData);
+        $questionDTO = $questionDTO->withQuestion($question);
 
-        $question = $this->editPossibleAnswers($question, $questionData);
+        $question = $this->removePossibleAnswers($question, $questionDTO);
 
-        $question = $this->addPossibleAnswers($question, $questionData);
+        $question = $this->editPossibleAnswers($question, $questionDTO);
 
-        $this->checkPossibleAnswers($question);
+        $question = $this->addPossibleAnswers($question, $questionDTO);
+
+        $this->checkPossibleAnswers($question, $questionDTO);
+
+        $question = $this->addQuestionFiles($question, $questionDTO);
+
+        $question = $this->removeQuestionFiles($question, $questionDTO);
 
         return $question;
     }
@@ -67,10 +128,12 @@ class QuestionService
     private function attachQuestionToItem
     (
         Question $question,
-        QuestionData $questionData
-    )
+        QuestionDTO $questionDTO
+    ) : Question
     {
-        $question->questionable()->associate($questionData->questionable);
+        if (!$questionDTO->questionable) return $question;
+
+        $question->questionable()->associate($questionDTO->questionable);
         $question->save();
 
         return $question->refresh();
@@ -78,68 +141,143 @@ class QuestionService
 
     private function createOrUpdateQuestion
     (
-        QuestionData $questionData,
+        QuestionDTO $questionDTO,
         string $method
     ) : Question
     {
         $data = [
-            'question' => $questionData->question,
-            'state' => $questionData->state,
-            'hint' => $questionData->hint,
-            'position' => $questionData->position,
-            'score_over' => $questionData->scoreOver,
-            'answer_type' => $questionData->answerType,
-            'published' => $questionData->published?->toDateTimeString(),
+            'body' => $questionDTO->body,
+            'state' => $questionDTO->state,
+            'hint' => $questionDTO->hint,
+            'position' => $questionDTO->position,
+            'score_over' => $questionDTO->scoreOver,
+            'answer_type' => $questionDTO->answerType,
+            'published_at' => $questionDTO->publishedAt?->toDateTimeString(),
         ];
 
         $question = null;
 
         if ($method === 'create') {
-            $question = $questionData->questionedby->questionsAdded()
+            $question = $questionDTO->addedby->questionsAdded()
                 ->create($data);
         }
         
         if ($method === 'update') {
-            $question = getYourEduModel('question',$questionData->questionId)
-                ?->update($data);
+            $question = getYourEduModel('question',$questionDTO->questionId);
+                
+            $question?->update($data);
         }
         
         if (is_null($question)) {
             $this->throwQuestionException(
                 message: "failed to {$method} question.",
-                data: $questionData
+                data: $questionDTO
             );
         }
 
-        return $question;
+        return $question->refresh();
     }
 
     private function addPossibleAnswers
     (
         Question $question,
-        QuestionData $questionData
+        QuestionDTO $questionDTO
     ) : Question
     {
-        foreach ($questionData->possibleAnswers as $possibleAnswer) {
-            $question->possibleAnswers()->create([
-                'option' => $possibleAnswer->option,
+        foreach ($questionDTO->possibleAnswers as $possibleAnswerDTO) {
+            $possibbleAnswer = $question->possibleAnswers()->create([
+                'option' => $possibleAnswerDTO->option,
+                'position' => $possibleAnswerDTO->position,
             ]);
         }
 
+        $question = $this->setCorrectPossibleAnswers($question, $questionDTO);
+
         return $question->refresh();
+    }
+
+    private function setCorrectPossibleAnswers
+    (
+        Question $question,
+        QuestionDTO $questionDTO,
+        string $type = 'id'
+    ) : Question
+    {
+        if ($question->doesntHaveOptionalAnswers()) return $question;
+
+        if ($type === 'id') {
+            $correctAnswerIds = $this->getCorrectPossibleAnswerIdsById(
+                $question, $questionDTO
+            );
+        } 
+        
+        if ($question->isArrangeFlowAnswerType()) {
+            $correctAnswerIds = $this->getCorrectPossibleAnswerIdsByOption(
+                $question, $questionDTO
+            );
+        }
+
+        $question->correct_possible_answers = $correctAnswerIds;
+        $question->save();
+
+        return $question;
+    }
+
+    private function getCorrectPossibleAnswerIdsById
+    (
+        Question $question,
+        QuestionDTO $questionDTO
+    )
+    {
+        $correctAnswerIds = [];
+
+        foreach ($questionDTO->correctPossibleAnswers as $possibleAnswerDTO) {
+            if ($question->isTrueOrFalseOptionAnswerType()) {
+                $correctAnswerIds = [$possibleAnswerDTO->id];
+            } 
+            if ($question->isArrangeFlowAnswerType()) {
+                $correctAnswerIds[] = $possibleAnswerDTO->id;
+            }   
+        }
+
+        return $correctAnswerIds;
+    }
+
+    private function getCorrectPossibleAnswerIdsByOption
+    (
+        Question $question,
+        QuestionDTO $questionDTO
+    ) 
+    {
+        $correctAnswerIds = [];
+
+        foreach ($questionDTO->correctPossibleAnswers as $possibleAnswerDTO) {
+            $id = $question->getPossibleAnswerId(
+                $possibleAnswerDTO->option
+            );
+            if ($question->isTrueOrFalseOptionAnswerType()) {
+                $correctAnswerIds = [$id];
+            } 
+            if ($question->isArrangeFlowAnswerType()) {
+                $correctAnswerIds[] = $id;
+            }                
+        }
+
+        return $correctAnswerIds;
     }
     
     private function editPossibleAnswers
     (
         Question $question,
-        QuestionData $questionData
+        QuestionDTO $questionDTO
     ) : Question
     {
-        foreach ($questionData->editedPossibleAnswers as $possibleAnswer) {
+        foreach ($questionDTO->editedPossibleAnswers as $possibleAnswer) {
             $question->possibleAnswers()
                 ->where('id',$possibleAnswer->possibleAnswerId)->first()
                 ?->update([
                     'option' => $possibleAnswer->option,
+                    'position' => $possibleAnswer->position,
                 ]);
         }
 
@@ -149,10 +287,10 @@ class QuestionService
     private function removePossibleAnswers
     (
         Question $question,
-        QuestionData $questionData
+        QuestionDTO $questionDTO
     ) : Question
     {
-        foreach ($questionData->possibleAnswers as $possibleAnswer) {
+        foreach ($questionDTO->removedPossibleAnswers as $possibleAnswer) {
             $question->possibleAnswers()
                 ->where('id',$possibleAnswer->possibleAnswerId)->first()
                 ?->delete();
@@ -172,9 +310,13 @@ class QuestionService
         );
     }
 
-    private function getModel($itemId) : Question
+    private function getModel(QuestionDTO $questionDTO) : Question
     {
-        $question = getYourEduModel('question',$itemId);
+        if ($questionDTO->question) {
+            return $questionDTO->question;
+        }
+
+        $question = getYourEduModel('question',$questionDTO->questionId);
 
         if (is_null($question)) {
             throw new AccountNotFoundException("question not found with id {$itemId}");
@@ -183,78 +325,71 @@ class QuestionService
         return $question;
     }
 
-    public function deleteQuestion(QuestionData $questionData, $returnType = 'array')
+    public function deleteQuestion
+    (
+        QuestionDTO $questionDTO, 
+        $check = false
+    )
     {
-        $question = $this->getModel($questionData->questionId);
+        $question = $this->getModel($questionDTO);
 
-        $this->checkAuthorization($question, $questionData);
-
-        if ($questionData->action === 'self') {
-            return $this->removeQuestionForSelf(
-                question: $question,
-                questionData: $questionData
-            );
+        if ($check) {
+            $this->checkAuthorization($question, $questionDTO);
         }
 
-        $data = $this->removeQuestion($question);
-        if ($returnType === 'array') {
-            $data = $this->removeQuestionReturnedData($questionData);
-        }
-
-        return $data;
+        $this->deleteQuestionFiles($question);
+        
+        return $this->removeQuestion($question, $questionDTO);
     }
 
-    private function removeQuestionForSelf
+    public function setUserDeletes
     (
-        Question $question,
-        QuestionData $questionData
+        QuestionDTO $questionDTO
     ) : Question
     {
+        $question = $this->getModel($questionDTO);
+
+        $question->setTouchedRelations([]);
         $question->timestamps = false;
+
         if (is_null($question->user_deletes)) {
-            $question->user_deletes = [$questionData->userId];
+            $question->user_deletes = [$questionDTO->userId];
         } else {
-            $question->user_deletes = Arr::prepend($question->user_deletes, $questionData->userId);
+            $question->user_deletes = Arr::prepend($question->user_deletes, $questionDTO->userId);
         }
+
         $question->save();
+
         return $question->load('images','videos','audios','files','flags','raisedby.profile');
     }
 
-    private function checkAuthorization($question, $questionData)
+    private function checkAuthorization($question, $questionDTO)
     {
-        if ($question->questionedby->user_id !== $questionData->userId) {
+        if ($question->addedby->user_id !== $questionDTO->userId) {
             $this->throwQuestionException(
                 message: "you are not authorized to delete this question",
-                data: $question
+                data: $questionDTO
             );
         }
     }
 
     private function removeQuestion
     (
-        Question $question
+        Question $question,
+        QuestionDTO $questionDTO
     ) : bool
     {
-        $question->setTouchedRelations([]);
-        $question->timestamps = false;
-        FileService::deleteYourEduFiles($question); //throw error on delete fail
+        FileService::deleteYourEduItemFiles($question);
         
         $successCheck = $question->delete();
         if (!$successCheck) {
             $this->throwQuestionException(
                 message: "failed to delete question",
-                data: $question
+                data: $questionDTO
             );
         }
-        return $successCheck;
-    }
 
-    private function removeQuestionReturnedData($questionData)
-    {
-        return [
-            'item' => 'question',
-            'itemId' => $questionData->questionId
-        ];
+        return $successCheck;
     }
 }
 

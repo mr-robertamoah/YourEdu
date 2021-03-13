@@ -19,7 +19,7 @@ class BookResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -32,10 +32,10 @@ class BookResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'author' => $this->author,
+            'author' => $this->author_names,
             'about' => $this->about,
             'comments_number' => $this->comments()->count(),
-            'published' => $this->published,
+            'publishedAt' => $this->published_at,
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,

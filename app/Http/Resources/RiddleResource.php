@@ -19,7 +19,7 @@ class RiddleResource extends JsonResource
         $audios = null;
         $files = null;
 
-        if ($this->images()->exists()) {
+        if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
         } else if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
@@ -31,10 +31,10 @@ class RiddleResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'author' => $this->author,
-            'riddle' => $this->riddle,
-            'score_over' => $this->score_over,
-            'published' => $this->published,
+            'author' => $this->author_names,
+            'body' => $this->body,
+            'scoreOver' => $this->score_over,
+            'publishedAt' => $this->published_at,
             'answers_number' => $this->answers()->count(),
             'answers' => $this->answers()->latest(),
             'images' => $images,

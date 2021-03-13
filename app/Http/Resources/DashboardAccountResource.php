@@ -32,7 +32,7 @@ class DashboardAccountResource extends JsonResource
             $data['points'] = $this->points ? $this->points->value : 0;
             $data['likes'] = Like::whereHasMorph('likeable','*',function($query,$type){
                 if ($type === 'App\YourEdu\Post') {
-                    $query->whereHasMorph('postedby','*',function($q,$type){
+                    $query->whereHasMorph('addedby','*',function($q,$type){
                         if ($type === 'App\YourEdu\School') {
                             $q->where('owner_id',$this->profile->user_id);
                         } else {

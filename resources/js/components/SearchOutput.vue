@@ -57,7 +57,7 @@
                                 v-for="data in computedData"
                                 :key="data.id"
                                 :class="{account:data.hasOwnProperty('account_id'),
-                                post:data.hasOwnProperty('postedby_id')}"
+                                post:data.hasOwnProperty('addedby_id')}"
                             >
                                 <account-badge
                                     v-if="data.hasOwnProperty('account_id')"
@@ -66,12 +66,12 @@
                                     @removeMyfollow="removeMyfollow"
                                 ></account-badge>
                                 <div class="item"
-                                    v-if="data.hasOwnProperty('postedby_id')"
+                                    v-if="data.hasOwnProperty('addedby_id')"
                                     @click="clickedViewPost(data)"
                                 >
                                     <div class="top">
                                         <div class="name">{{data.name}}</div>
-                                        <div class="account-type">{{data.postedby_type}}</div>
+                                        <div class="account-type">{{data.addedby_type}}</div>
                                     </div>
                                     <div class="lower">
 

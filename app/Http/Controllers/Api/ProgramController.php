@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\ProgramData;
+use App\DTOs\ProgramDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateProgramRequest;
 use App\Http\Requests\ProgramAliasCreateRequest;
@@ -102,7 +102,7 @@ class ProgramController extends Controller
         try {
             DB::beginTransaction();
             $program = (new ProgramService())->createProgram(
-                ProgramData::createFromRequest($request)
+                ProgramDTO::createFromRequest($request)
             );
 
             DB::commit();
@@ -121,7 +121,7 @@ class ProgramController extends Controller
         try {
             DB::beginTransaction();
             $program = (new ProgramService())->updateProgram(
-                ProgramData::createFromRequest($request)
+                ProgramDTO::createFromRequest($request)
             );
 
             DB::commit();
@@ -142,7 +142,7 @@ class ProgramController extends Controller
         try {
             DB::beginTransaction();
             $program = (new ProgramService())->deleteProgram(
-                ProgramData::createFromRequest($request)
+                ProgramDTO::createFromRequest($request)
             );
 
             DB::commit();

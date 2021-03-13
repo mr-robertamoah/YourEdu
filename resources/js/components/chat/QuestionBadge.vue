@@ -31,7 +31,7 @@
         </div>
         <div class="middle" v-if="!computedDeletedForMe">
             <div class="question">
-                {{question.question}}
+                {{question.body}}
             </div>
             <div class="media" v-if="computedMedia">
                 <img :src="computedImage.url"

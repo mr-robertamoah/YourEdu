@@ -38,7 +38,6 @@ class CommissionException extends Exception
    {
        return response()->json([
            'message' => $this->getMessage(),
-           'data' => $this->data
        ], 422);
    }
 }

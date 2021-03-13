@@ -16,10 +16,13 @@ class AssessmentNotification extends Notification
      *
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct
+    (
         private $message, 
         private $assessmentResource,
+    )
+    {
+        
     }
 
     /**

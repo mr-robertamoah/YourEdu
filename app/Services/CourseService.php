@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\DTOs\CourseData;
+use App\DTOs\CourseDTO;
 use App\Events\DeleteCourseEvent;
 use App\Events\NewCourseEvent;
 use App\Events\UpdateCourseEvent;
@@ -76,37 +76,35 @@ class CourseService
         return 'successful';
     }
     
-    public function createCourse(CourseData $courseData)
+    public function createCourse(CourseDTO $courseDTO)
     {
-        ray($courseData)->green();
-        $mainAccount = getYourEduModel($courseData->account,$courseData->accountId);
+        ray($courseDTO)->green();
+        $mainAccount = getYourEduModel($courseDTO->account,$courseDTO->accountId);
         if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$courseData->account} not found with id {$courseData->accountId}");
+            throw new AccountNotFoundException("{$courseDTO->account} not found with id {$courseDTO->accountId}");
         }
 
-        if (!$this->checkAccountOwnership($mainAccount,$courseData->userId)) {
-            throw new CourseException("you do not own this account");
-        }
+        $this->checkAccountOwnership($mainAccount,$courseDTO);
 
         $course = $mainAccount->addedCourses()->create([
-            'name' => $courseData->name,
-            'state' => $courseData->owner === 'school' && 
-                ($courseData->account !== 'admin' && $courseData->account !== 'school') 
+            'name' => $courseDTO->name,
+            'state' => $courseDTO->owner === 'school' && 
+                ($courseDTO->account !== 'admin' && $courseDTO->account !== 'school') 
                 ? 'PENDING' : 'ACCEPTED',
-            'description' => $courseData->description,
-            'stand_alone' => $courseData->standAlone,
+            'description' => $courseDTO->description,
+            'stand_alone' => $courseDTO->standAlone,
         ]);
 
         if (is_null($course)) {
             throw new CourseException("course creation failed");
         }
 
-        if ($courseData->account === $courseData->owner && $courseData->accountId === $courseData->ownerId) {
+        if ($courseDTO->account === $courseDTO->owner && $courseDTO->accountId === $courseDTO->ownerId) {
             $mainOwner = $mainAccount;
         } else {
-            $mainOwner = getYourEduModel($courseData->owner,$courseData->ownerId);
+            $mainOwner = getYourEduModel($courseDTO->owner,$courseDTO->ownerId);
             if (is_null($mainOwner)) {
-                throw new AccountNotFoundException("{$courseData->owner} not found with id {$courseData->ownerId}");
+                throw new AccountNotFoundException("{$courseDTO->owner} not found with id {$courseDTO->ownerId}");
             }
         }        
 
@@ -116,13 +114,13 @@ class CourseService
         $course = $this->itemCreateUpdateMethodParts(
             course: $course,
             mainAccount: $mainAccount,
-            courseData: $courseData,
+            courseDTO: $courseDTO,
             method: __METHOD__
         );
 
         if ($course->state === 'PENDING') { //it is only pending if it belongs to school and it is created by a non owner or non admin
-            $userIds = array_filter($mainOwner->getAdminIds(),function($id) use ($courseData){
-                return $id !== $courseData->userId;
+            $userIds = array_filter($mainOwner->getAdminIds(),function($id) use ($courseDTO){
+                return $id !== $courseDTO->userId;
             });
             $name = $mainOwner->name ?? $mainAccount->company_name;
             Notification::send(User::whereIn('id',$userIds)->get(), 
@@ -134,10 +132,10 @@ class CourseService
             );
         }
 
-        if ($courseData->owner === 'school') {
+        if ($courseDTO->owner === 'school') {
             broadcast(new NewCourseEvent([
-                'account' => $courseData->owner,
-                'accountId' => $courseData->ownerId,
+                'account' => $courseDTO->owner,
+                'accountId' => $courseDTO->ownerId,
                 'classes' => $course->classes->toArray(),
                 'course' => new CourseResource($course),
             ]))->toOthers();
@@ -150,7 +148,7 @@ class CourseService
     (
         Course $course,
         $mainAccount,
-        CourseData $courseData,
+        CourseDTO $courseDTO,
         $method
     )
     {
@@ -158,17 +156,17 @@ class CourseService
         $this->createAttachments(
             $course,
             $mainAccount,
-            $courseData->attachments,
-            $courseData->facilitate
+            $courseDTO->attachments,
+            $courseDTO->facilitate
         );
 
         //for classes and programs to which we may attach course
         if (!$course->stand_alone) {            
             $this->createMainAttachments(
-                attachments: $courseData->classes,
+                attachments: $courseDTO->classes,
                 method: 'courses',
                 itemId: $course->id,
-                userId: $courseData->userId
+                userId: $courseDTO->userId
             );
         }
 
@@ -176,30 +174,30 @@ class CourseService
         $this->setPayment(
             item: $course,
             addedby: $mainAccount,
-            paymentType: $courseData->type,
-            paymentData: $courseData->paymentData,
+            paymentType: $courseDTO->type,
+            paymentData: $courseDTO->paymentData,
         );
 
         //create auto discussion 
         $this->createAutoDiscussion(
             item: $course,
-            itemData: $courseData,
+            itemData: $courseDTO,
         );
 
         //create sections
         $course = $this->createCourseSections(
             course: $course,
-            courseData: $courseData
+            courseDTO: $courseDTO
         );
 
         //track school activities
-        if ($courseData->account === 'admin') {
-            (new ActivityTrackService())->createActivityTrack(
+        if ($courseDTO->account === 'admin') {
+            (new ActivityTrackService())->trackActivity(
                 $course,$course->ownedby,$mainAccount,$method
             );
-        } else if ($courseData->account === 'facilitator' || $courseData->account === 'professional') {
+        } else if ($courseDTO->account === 'facilitator' || $courseDTO->account === 'professional') {
             //update course relations
-            if ($courseData->facilitate) { //facilitate
+            if ($courseDTO->facilitate) { //facilitate
                 self::courseAttachItem($course->id,$mainAccount,'facilitate');
             } else {
                 self::courseUnattachItem($course->id,$mainAccount);
@@ -209,9 +207,9 @@ class CourseService
         return $course->refresh();
     }
 
-    private function createCourseSections(Course $course, CourseData $courseData)
+    private function createCourseSections(Course $course, CourseDTO $courseDTO)
     {
-        forEach($courseData->sections as $section) {
+        forEach($courseDTO->sections as $section) {
             $course->courseSections()->create([
                 'name' => $section->name,
                 'description' => $section->description,
@@ -221,10 +219,10 @@ class CourseService
         return $course->refresh();
     }
 
-    private function removeCourseSections(Course $course,CourseData $courseData)
+    private function removeCourseSections(Course $course,CourseDTO $courseDTO)
     {
-        if (!is_array($courseData->removedSections)) return $course;
-        forEach($courseData->removedSections as $section) {
+        if (!is_array($courseDTO->removedSections)) return $course;
+        forEach($courseDTO->removedSections as $section) {
             $courseSection = getYourEduModel('courseSection',$section->id);
             if (is_null($courseSection)) {
                 throw new AccountNotFoundException("course section with id {$section->id} not found");
@@ -238,10 +236,10 @@ class CourseService
         return $course->refresh();
     }
 
-    private function editCourseSections(Course $course, CourseData $courseData)
+    private function editCourseSections(Course $course, CourseDTO $courseDTO)
     {
-        if (!is_array($courseData->editedSections)) return $course;
-        forEach($courseData->editedSections as $section) {
+        if (!is_array($courseDTO->editedSections)) return $course;
+        forEach($courseDTO->editedSections as $section) {
             $course->courseSections()->where('id', $section->id)->first()?->update([
                 'name' => $section->name,
                 'description' => $section->description,
@@ -266,45 +264,44 @@ class CourseService
         
     }
     
-    public function updateCourse(CourseData $courseData)
+    public function updateCourse(CourseDTO $courseDTO)
     {
-        ray($courseData)->green();
+        ray($courseDTO)->green();
         //check account
-        $mainAccount = getYourEduModel($courseData->account,$courseData->accountId);
+        $mainAccount = getYourEduModel($courseDTO->account,$courseDTO->accountId);
         if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("$courseData->account not found with id {$courseData->courseId}");
+            throw new AccountNotFoundException("$courseDTO->account not found with id {$courseDTO->courseId}");
         }
 
-        if (!$this->checkAccountOwnership($mainAccount,$courseData->userId)) {
-            throw new CourseException("you do not own this account");
-        }
+        $this->checkAccountOwnership($mainAccount,$courseDTO);
+        
         //check course
-        $course = getYourEduModel('course',$courseData->courseId);
+        $course = getYourEduModel('course',$courseDTO->courseId);
         if (is_null($course)) {
-            throw new AccountNotFoundException("course not found with id {$courseData->courseId}");
+            throw new AccountNotFoundException("course not found with id {$courseDTO->courseId}");
         }
 
         //check authorization
-        $this->checkCourseAuthorization($course,$courseData->userId);
+        $this->checkCourseAuthorization($course,$courseDTO->userId);
 
         //update course attributes
         $course->update([
-            'name' => $courseData->name,
-            'state' => Str::upper($courseData->state),
-            'description' => $courseData->description,
+            'name' => $courseDTO->name,
+            'state' => Str::upper($courseDTO->state),
+            'description' => $courseDTO->description,
         ]);
 
         $course = $this->itemCreateUpdateMethodParts(
             course: $course,
             mainAccount: $mainAccount,
-            courseData: $courseData,
+            courseDTO: $courseDTO,
             method: __METHOD__
         );
         
         //for classes and programs from which we may detach course
         if (!$course->stand_alone) {            
             $this->removeMainAttachments(
-                attachments: $courseData->removedClasses,
+                attachments: $courseDTO->removedClasses,
                 method: 'courses',
                 itemId: $course->id,
             );
@@ -314,27 +311,27 @@ class CourseService
 
         $this->removeAttachments( //remove attachments
             item: $course,
-            account: ($courseData->account === 'facilitator' || $courseData->account === 'professional') ? $mainAccount : null,
-            facilitate: $courseData->facilitate,
-            attachments: $courseData->removedAttachments,
+            account: ($courseDTO->account === 'facilitator' || $courseDTO->account === 'professional') ? $mainAccount : null,
+            facilitate: $courseDTO->facilitate,
+            attachments: $courseDTO->removedAttachments,
         );
 
         //set payment information
         $this->removePayment(
             item: $course,
-            paymentData: $courseData->removedPaymentData,
+            paymentData: $courseDTO->removedPaymentData,
         );
 
         //remove sections
         $course = $this->removeCourseSections(
             course: $course,
-            courseData: $courseData
+            courseDTO: $courseDTO
         );
 
         //edit sections
         $course = $this->editCourseSections(
             course: $course,
-            courseData: $courseData
+            courseDTO: $courseDTO
         );
 
         //broadcast
@@ -355,32 +352,32 @@ class CourseService
 
     public function checkCourseAuthorization($course,$userId)
     {
-        if (!$this->checkAuthorization($course,$userId)) {
-            ray('enters');
-            throw new CourseException("You are not authorized to edit or delete the course with id {$course->id}");
+        if ($this->doesntHaveAuthorization($course,$userId)) {
+            return;
         }
+        throw new CourseException("You are not authorized to edit or delete the course with id {$course->id}");
     }
 
-    public function deleteCourse(CourseData $courseData)
+    public function deleteCourse(CourseDTO $courseDTO)
     {
-        ray($courseData)->green();
-        $course = getYourEduModel('course',$courseData->courseId);
+        ray($courseDTO)->green();
+        $course = getYourEduModel('course',$courseDTO->courseId);
         if (is_null($course)) {
-            throw new AccountNotFoundException("course not found with id {$courseData->courseId}");
+            throw new AccountNotFoundException("course not found with id {$courseDTO->courseId}");
         }
 
-        $this->checkCourseAuthorization($course,$courseData->userId);
+        $this->checkCourseAuthorization($course,$courseDTO->userId);
 
-        if ($courseData->adminId) {
-            $admin = getYourEduModel('admin',$courseData->adminId);
-            (new ActivityTrackService())->createActivityTrack(
+        if ($courseDTO->adminId) {
+            $admin = getYourEduModel('admin',$courseDTO->adminId);
+            (new ActivityTrackService())->trackActivity(
                 $course,$course->ownedby,$admin,__METHOD__
             );
         }
 
-        if ($courseData->action === 'undo') {
+        if ($courseDTO->action === 'undo') {
             return $this->changeState($course,'accepted');
-        } else if($courseData->action === 'delete') {
+        } else if($courseDTO->action === 'delete') {
             //check if someone has subsribed or paid or used by a program
             if ($this->paymentMadeFor($course) || $this->usedByAnother($course)) {
                 return $this->changeState($course,'deleted');
@@ -390,7 +387,7 @@ class CourseService
                     'account' => class_basename_lower($course->ownedby),
                     'accountId' => $course->ownedby->id,
                     'classes' => $course->classes,
-                    'courseId' => $courseData->courseId,
+                    'courseId' => $courseDTO->courseId,
                 ]))->toOthers();
 
                 $course->delete();
