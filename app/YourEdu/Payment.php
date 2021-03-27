@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\PaymentFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
         'type', 'amount', 'state', 'postponement_date'
@@ -47,5 +49,10 @@ class Payment extends Model
     public function for()
     {
         return $this->morphTo();
+    }
+
+    protected static function newFactory()
+    {
+        return PaymentFactory::new();
     }
 }

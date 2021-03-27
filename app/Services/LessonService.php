@@ -14,7 +14,7 @@ use App\Http\Resources\UserAccountResource;
 use App\Notifications\LessonCreatedNotification;
 use App\Notifications\LessonDeletedNotification;
 use App\Notifications\LessonUpdatedNotification;
-use App\Traits\ClassCourseTrait;
+use App\Traits\DashboardItemServiceTrait;
 use App\User;
 use App\YourEdu\Lesson;
 use Illuminate\Support\Facades\Notification;
@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
 
 class LessonService
 {
-    use ClassCourseTrait;
+    use DashboardItemServiceTrait;
 
     public function __construct(private int $lessonFileTypeMax = 1) 
     {
@@ -216,7 +216,7 @@ class LessonService
             return;
         }
         
-        if ($this->doesntHaveAuthorization($lesson,$lessonDTO->userId)) {
+        if ($this->hasAuthorization($lesson,$lessonDTO->userId)) {
             return;
         }
 
@@ -244,6 +244,8 @@ class LessonService
         $this->deleteLessonLinks($lesson);
 
         $this->deleteLessonFiles($lesson);
+
+        $this->deleteDiscussion($lesson, $lessonDTO);
         
         $lesson->delete();
         
@@ -416,15 +418,14 @@ class LessonService
             return $lesson;
         }
 
-        $lesson = $this->createMainAttachments(
+        $lesson = $this->attachToItems(
             attachments: $lessonDTO->items,
-            method: 'lessons',
             lesson: $lesson,
-            activity: $lessonDTO->intro ? 'INTRO' : ($lessonDTO->free ? 
+            type: $lessonDTO->intro ? 'INTRO' : ($lessonDTO->free ? 
                 'FREE' : null)
         );
 
-        $lesson = $this->removeMainAttachments(
+        $lesson = $this->detachFromItems(
             attachments: $lessonDTO->removedItems,
             method: 'lessons',
             lesson: $lesson,
@@ -510,7 +511,7 @@ class LessonService
         $name = $lessonDTO->ownedby->company_name;
 
         if ($type === 'created') {                
-            $notification = new LessonCreatedNotification(
+            return new LessonCreatedNotification(
                 new UserAccountResource($lessonDTO->addedby),
                 "created a lesson with the name: {$lesson->title}, 
                 for {$name}. Please go to dashboard to approve or otherwise."
@@ -518,48 +519,54 @@ class LessonService
         }
 
         if ($type === 'updated') {                
-            $notification = new LessonUpdatedNotification(
+            return new LessonUpdatedNotification(
                 new UserAccountResource($lessonDTO->addedby),
                 "updated a lesson with the name: {$lesson->title}, for {$name}."
             );
         }
 
         if ($type === 'deleted') {                
-            $notification = new LessonDeletedNotification(
+            return new LessonDeletedNotification(
                 new UserAccountResource($lessonDTO->addedby),
                 "deleted a lesson with the name: {$lesson->title}, for {$name}."
             );
         }
 
-        if (!isset($notification)) {
-            return null;
-        }
-        
-        return $notification;
+        return null;
     }
 
-    private function removeMainAttachments
+    private function detachFromItems
     (
         array $attachments,
         string $method,
         Lesson $lesson
     )
     {
-        foreach ($attachments as $attachment) {
-            if (property_exists($attachment,"classId")) {
-                $attachable = getYourEduModel('class',$attachment->classId);
+        foreach ($attachments as $attachmentDTO) {
+            $lessonable = $this->getModel($attachmentDTO->type, $attachmentDTO->id);
+
+            $itemable = $this->getItemable($attachmentDTO, $lessonable);
+            
+            if ($this->detachItem($lessonable, $itemable, $lesson)) {
+                $detachedItems[] = $lessonable;
             }
 
-            if (!isset($attachable)) {
-                $attachable = getYourEduModel($attachment->type, $attachment->id);
-            }
-            
-            if ($attachable->$method->where('id',$lesson->id)->count() > 0) {
-                $attachable->$method()->detach($lesson->id);
-            }
+            $lessonable->save();
         }
 
         return $lesson->refresh();
+    }
+
+    private function detachItem
+    (
+        $lessonable,
+        $itemable,
+        $lesson
+    ) : bool
+    {
+        return $lesson->specificLessonable(
+                $lessonable, $itemable
+            )?->delete();
     }
 
     private function getModel($account, $accountId)
@@ -586,57 +593,94 @@ class LessonService
         return $lesson;
     }
 
-    private function createMainAttachments
+    private function isNotValidAttachmentType($attachment) {
+        if ($attachment->type === 'courseSection' ||
+            $attachment->type === 'subject') {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function attachToItems
     (
         array $attachments,
-        $method,
         Lesson $lesson,
-        $activity
+        $type
     )
     {
-        foreach ($attachments as $attachment) {
+        foreach ($attachments as $attachmentDTO) {
 
-            if (property_exists($attachment,"classId")) {
-                $attachable = getYourEduModel('class',$attachment->classId);
+            if ($this->isNotValidAttachmentType($attachmentDTO->item)) {
+                continue;
             }
 
-            if (!isset($attachable)) {
-                $attachable = $this->getModel($attachment->type, $attachment->id);
+            $lessonable = $this->getModel($attachmentDTO->item, $attachmentDTO->itemId);
+            
+            if ($type === 'INTRO') {
+                $this->checkForLessonIntro($lessonable);
             }
 
-            if ($activity === 'INTRO') {
-                $this->checkForLessonIntro($attachable);
-            }
-
-            if ($this->alreadyHasLesson($attachable,$lesson)) {
+            if ($this->alreadyHasLesson($lessonable,$lesson)) {
                 return $lesson;
             }
 
-            if ($attachment->type === 'courseSection') {
-                
-                $attachable->$method()->attach($lesson->id,[
-                    'lesson_number' => $attachable->lessons->last()?->lesson_number + 1
-                ]);
-                
-                return $lesson->refresh();
-            } 
-            
-            if (class_basename_lower($attachable) === 'class') {
+            $itemable = $this->getItemable($attachmentDTO, $lessonable);
 
-                $attachable->$method()->attach($lesson->id,[
-                    'activity'=>$activity,
-                    'subject_id' => $attachment->id
-                ]);
+            if ($lesson->specificLessonable($lessonable, $itemable)) {
+                $this->throwLessonException(
+                    message: "please the {$attachmentDTO->item} with id {$attachmentDTO->itemId} already has the assessment with name: {$assessment->name}",
+                    data: $attachmentDTO
+                );
+            }
 
-                return $lesson->refresh();
-            } 
-                
-            $attachable->$method()->attach($lesson->id,[
-                'activity' => $activity
-            ]);
+            $this->createLessonables(
+                $lesson,
+                $lessonable,
+                $itemable,
+                $type
+            );
         }
 
         return $lesson->refresh();
+    }
+
+    private function getItemable($dto, $item)
+    {
+        if ($dto->item === 'courseSection') {
+            return $item->course;
+        }
+
+        if ($dto->item !== 'subject') {
+            return $item;
+        }
+        
+        if (!$dto->extraItemId) {
+            $this->throwLessonException(
+                message: "class id is required for this {$item->name} subject",
+                data: $dto
+            );
+        }
+
+        return $this->getModel('class', $dto->extraItemId);
+    }
+
+    private function createLessonables
+    (
+        $lesson,
+        $lessonable,
+        $itemable,
+        $type
+    )
+    {
+        $lessonables = $lesson->lessonables()->create();
+        $lessonables->lessonable()->associate($lessonable);
+        $lessonables->itemable()->associate($itemable);
+        $lessonables->type = $type;
+        $lessonables->lesson_number = $lessonable->lastLesson()?->lesson_number + 1;
+        $lessonables->save();
+
+        return $lessonables;
     }
 
     private function alreadyHasLesson($item,$lesson)
@@ -649,7 +693,7 @@ class LessonService
 
     private function checkForLessonIntro($item) 
     {
-        if ($item->lessons()->where('activity','INTRO')->count() > 0) {
+        if ($item->lessonables()->where('type','INTRO')->count() > 0) {
             $itemType = class_basename_lower($item);
             $this->throwLessonException("there is already an introductory lesson for {$itemType} with id {$item->id}");
         }
@@ -762,7 +806,7 @@ class LessonService
         return false;
     }
 
-    private function usedByAnother($lesson)
+    private function usedByAnotherItem($lesson)
     {
         
     }

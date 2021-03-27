@@ -18,14 +18,14 @@ use Illuminate\Support\Facades\DB;
 class CourseController extends Controller
 {
     
-    public function courseCreate(CourseCreateRequest $request)
+    public function createCourseAsAttachment(CourseCreateRequest $request)
     {
         try {
             DB::beginTransaction();
             
-            $course = (new CourseService())->courseCreate($request->account,
-                $request->accountId,$request->name,$request->description,
-                $request->rationale,json_decode($request->aliases));
+            $course = (new CourseService())->createCourseAsAttachment(
+                CourseDTO::createFromRequest($request)
+            );
 
             DB::commit();
             return response()->json([
@@ -42,13 +42,14 @@ class CourseController extends Controller
 
     }
 
-    public function courseAliasCreate(Request $request,$course)
+    public function createCourseAttachmentAlias(Request $request)
     {
         try {
             DB::beginTransaction();
 
-            $mainCourse = (new CourseService())->courseAliasCreate($course,
-                $request->account,$request->accountId,$request->name,$request->description);
+            $mainCourse = (new CourseService())->createCourseAttachmentAlias(
+                CourseDTO::createFromRequest($request)
+            );
 
             DB::commit();
             return response()->json([
@@ -83,13 +84,15 @@ class CourseController extends Controller
         ]);
     }
 
-    public function coursesDelete($course)
+    public function deleteCourseAsAttachment(Request $request)
     {
         try {
-            $courseInfo = (new CourseService())->courseDelete($course,auth()->id());
+            (new CourseService())->deleteCourseAsAttachment(
+                CourseDTO::createFromRequest($request)
+            );
 
             return response()->json([
-                'message' => $courseInfo
+                'message' => 'successful'
             ]);
         } catch (\Throwable $th) {
             throw $th;
@@ -166,7 +169,7 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             $course = (new CourseService())->deleteCourse(
-                CourseData::createFromRequest($request)
+                CourseDTO::createFromRequest($request)
             );
 
             DB::commit();

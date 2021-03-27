@@ -7,7 +7,7 @@
             </div>
             <div class="search-section">
                 <search-input
-                    searchPlaceholder="searching for?"
+                    placeholder="searching for?"
                     paClass="gray"
                     :value="searchText"
                     :homeSearch="true"

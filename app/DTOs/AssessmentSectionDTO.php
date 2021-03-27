@@ -23,10 +23,10 @@ class AssessmentSectionDTO
     public array $removedQuestions = [];
     public array $editedQuestions = [];
 
-    public static function createFromArray(array $dataArray) : array
+    public static function createFromArray(array $dataArray, $request = null) : array
     {
         $sections = [];
-
+        
         foreach ($dataArray as $data) {
             $sections[] = static::createFromData(
                 assessmentSectionId: $data->assessmentSectionId ?? null,
@@ -37,9 +37,21 @@ class AssessmentSectionDTO
                 maxQuestions: $data->maxQuestions ?? null,
                 random: $data->random ?? false,
                 answerType: $data->answerType ?? '',
-                questions: $data->questions ?? [],
+                questions: $data->questions && $request ? 
+                    array_map(
+                        function ($question) use ($request) {
+                            return static::mapQuestions($question, $request);
+                        }, 
+                        $data->questions
+                    ) : [],
                 removedQuestions: $data->removedQuestions ?? [],
-                editedQuestions: $data->editedQuestions ?? [],
+                editedQuestions: $data->editedQuestions && $request ? 
+                    array_map(
+                        function ($question) use ($request) {
+                            return static::mapQuestions($question, $request);
+                        }, 
+                        $data->editedQuestions
+                    ) : [],
             );
         }
 
@@ -65,8 +77,8 @@ class AssessmentSectionDTO
 
         $static->assessmentSectionId = $assessmentSectionId;
         $static->name = $name;
-        $static->position = $position;
-        $static->maxQuestions = $maxQuestions;
+        $static->position = (int)$position;
+        $static->maxQuestions = (int)$maxQuestions;
         $static->instruction = $instruction;
         $static->autoMark = $autoMark;
         $static->random = $random;
@@ -95,5 +107,13 @@ class AssessmentSectionDTO
         $clone->addedby = $addedby;
 
         return $clone;
+    }
+
+    private static function mapQuestions($question, $request)
+    {
+        $questionFileId = "question{$question->id}";
+        $question->files = $request->$questionFileId;
+
+        return $question;
     }
 }

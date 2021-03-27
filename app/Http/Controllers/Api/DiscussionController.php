@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\DiscussionDTO;
 use App\Events\DeleteDiscussion;
 use App\Events\DeleteDiscussionMessage;
 use App\Events\NewDiscussion;
@@ -88,22 +89,16 @@ class DiscussionController extends Controller
         }
     }
     
-    public function deleteDiscussion(Request $request, $discussionId)
+    public function deleteDiscussion(Request $request)
     {
-        try {
-            DB::beginTransaction();
-            $discussionInfo = (new DiscussionService())
-                ->deleteDiscussion($discussionId,auth()->id());
+        (new DiscussionService())->deleteDiscussion(
+            DiscussionDTO::createFromRequest($request)
+        );
 
-            DB::commit();
-            broadcast(new DeleteDiscussion($discussionInfo))->toOthers();
-            return response()->json([
-                'message' => 'successful',
-            ]);
-        } catch (\Throwable $th) {
-            DB::rollback();
-            throw $th;
-        }
+        DB::commit();
+        return response()->json([
+            'message' => 'successful',
+        ]);
     }
 
     public function getDiscussions()

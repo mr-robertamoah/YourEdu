@@ -31,8 +31,7 @@ class BookException extends Exception
                 $this->data?->book
             );
         }
-        Log::alert($this->getMessage(), [
-           'data' => $this->data]);
+        Log::alert($this->getMessage(), ['data' => $this->data]);
    }
 
    /**

@@ -2,26 +2,26 @@
 
 namespace App\Services;
 
+use App\DTOs\DiscussionDTO;
+use App\Events\DeleteDiscussion;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\DiscussionException;
 use App\Notifications\DiscussionRequestNotification;
+use App\YourEdu\Discussion;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
 use Illuminate\Support\Str;
 use \Debugbar;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\DB;
 
 class DiscussionService
 {
     public function createDiscussion($raiserType,$raiserId,$title,$preamble,
         $restricted,$type,$allowed, $files,$attachments)
     {
-        $raisedby = getYourEduModel($raiserType, $raiserId);
-
-        if (is_null($raisedby)) {
-            throw new AccountNotFoundException("{$raiserType} was not found by id {$raiserId}");
-        }
+        $raisedby = $this->getModel($raiserType, $raiserId);
 
         $discussion = $raisedby->discussions()->create([
             'title' => $title,
@@ -94,16 +94,10 @@ class DiscussionService
     public function updateDiscussion($discussionId, $id,$account,$accountId,$title,$restricted,
         $allowed,$type,$preamble,$files,$deletableFiles)
     {
-        $adminAccount = getYourEduModel($account, $accountId);
-        if (is_null($adminAccount)) {
-            throw new AccountNotFoundException("{$account} with id {$accountId} not found");
-        }
+        $adminAccount = $this->getModel($account, $accountId);
         
-        $discussion = getYourEduModel('discussion', $discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion with id {$discussionId} not found");
-        }
-
+        $discussion = $this->getModel('discussion', $discussionId);
+        
         $this->canUpdate($discussion, $id);
 
         $discussion->update([
@@ -125,7 +119,7 @@ class DiscussionService
             }
         }
         foreach ($deletableFiles as $file) {
-            deleteYourEduFile($file->id,$file->type);
+            FileService::deleteAndUnattachFiles($file,$discussion);
         }
 
         return $discussion->load(['likes','messages','comments','flags','beenSaved',
@@ -135,11 +129,8 @@ class DiscussionService
     public function sendMessage($discussionId,$account, $accountId, $userId,$message,
         $state,$file)
     {
-        $discussion = getYourEduModel('discussion', $discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException('unsuccessful, discussion does not exist');
-        }
-
+        $discussion = $this->getModel('discussion', $discussionId);
+        
         $participant = null;
         if (!is_null($userId)) {
 
@@ -147,10 +138,8 @@ class DiscussionService
             $account = class_basename_lower($participant->accountable_type);
             $accountId = $participant->accountable_id;
         } else{
-            $participantAccount = getYourEduModel($account, $accountId);
-            if (is_null($participantAccount)) {
-                throw new AccountNotFoundException("unsuccessful, {$account} does not exist");
-            }
+            $participantAccount = $this->getModel($account, $accountId);
+            
             $participant = $discussion->participants()
                 ->whereHasMorph('accountable','*',function(MorphTo $query,$type) use ($participantAccount){
                     if ($type === 'App\YourEdu\School') {
@@ -184,16 +173,10 @@ class DiscussionService
 
     public function contributionResponse($messageId, $userId, $action)
     {
-        $message = getYourEduModel('message', $messageId);
-        if (is_null($message)) {
-            throw new AccountNotFoundException("message not found with id {$messageId}");
-        }
-
-        $discussion = getYourEduModel('discussion',$message->messageable_id);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion not found with id {$message->messageable_id}");
-        }
-
+        $message = $this->getModel('message', $messageId);
+        
+        $discussion = $this->getModel('discussion',$message->messageable_id);
+        
         $this->canUpdate($discussion,$userId);
 
         $request = Request::where('requestable_type','App\YourEdu\Message')
@@ -226,16 +209,13 @@ class DiscussionService
     
     public function updateParticipantState($discussionId,$participantId,$action,$id)
     {
-        $discussion = getYourEduModel('discussion',$discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion not found with id {$discussionId}");
-        }
-
+        $discussion = $this->getModel('discussion',$discussionId);
+        
         $this->canUpdate($discussion,$id);
 
         $participant = $discussion->participants()->where('id',$participantId)->first();
         if (is_null($participant)) {
-            throw new DiscussionException("participant with id {$participantId} does not belong to discussion not found with id {$discussionId}");
+            $this->throwDiscussionException("participant with id {$participantId} does not belong to discussion not found with id {$discussionId}");
         }
 
         $participant->state = Str::upper($action);
@@ -249,18 +229,15 @@ class DiscussionService
     
     public function deleteDiscussionParticipant($discussionId,$participantId,$id,$userId)
     {
-        $discussion = getYourEduModel('discussion',$discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion not found with id {$discussionId}");
-        }
-
+        $discussion = $this->getModel('discussion',$discussionId);
+        
         if ($id != $userId) {
             $this->canUpdate($discussion,$id);
         }
 
         $participant = $discussion->participants()->where('id',$participantId)->first();
         if (is_null($participant)) {
-            throw new DiscussionException("participant with id {$participantId} does not belong to discussion not found with id {$discussionId}");
+            $this->throwDiscussionException("participant with id {$participantId} does not belong to discussion not found with id {$discussionId}");
         }
 
         $theParticipant = $participant;
@@ -284,16 +261,13 @@ class DiscussionService
 
     public function discussionSearch($discussionId,$search,$searchType,$user)
     {
-        $discussion = getYourEduModel('discussion',$discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion not found with id {$discussionId}");
-        }
+        $discussion = $this->getModel('discussion',$discussionId);
+        
         $discussion->load('raisedby');
         $adminsUserIds = $this->getDiscussionAdminsId($discussion);
 
         $withoutUserIds = $discussion->participants->pluck('user_id'); 
         $withoutUserIds[] = $discussion->raisedby->user_id;
-        Debugbar::info($withoutUserIds);
 
         $theOther = $discussion->requests()
         ->whereHasMorph('requestfrom','*',function(Builder $query,$type) use ($adminsUserIds){
@@ -308,10 +282,8 @@ class DiscussionService
             }
             $item['owner_id'];
         });
-        Debugbar::info($theOther);
 
-        $withoutUserIds = $withoutUserIds->merge($theOther);         
-        Debugbar::info($withoutUserIds);
+        $withoutUserIds = $withoutUserIds->merge($theOther);
 
         $searchClass = null;
         if ($searchType === 'profiles') {
@@ -340,16 +312,10 @@ class DiscussionService
 
     public function inviteParticipant($discussionId,$account,$accountId,$id)
     {
-        $discussion = getYourEduModel('discussion',$discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion not found with id {$discussionId}");
-        }
-
-        $invitedAccount = getYourEduModel($account,$accountId);
-        if (is_null($invitedAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-        }
-
+        $discussion = $this->getModel('discussion',$discussionId);
+        
+        $invitedAccount = $this->getModel($account,$accountId);
+        
         $adminAccount = null;
         if ($discussion->raisedby->user_id &&
             $discussion->raisedby->user_id === $id) {
@@ -359,7 +325,7 @@ class DiscussionService
                 ->where('state',"ADMIN")->first();
         }
         if (is_null($adminAccount)) {
-            throw new AccountNotFoundException("admin account was not found");
+            $this->throwDiscussionException("admin account was not found");
         }
 
         $request = $adminAccount->requestsSent()->create();
@@ -391,34 +357,39 @@ class DiscussionService
 
     private function joinInvitationResponseData($requestId,$discussionId,$account,$accountId)
     {
-        $request = getYourEduModel('request',$requestId);
-        if (is_null($request)) {
-            throw new AccountNotFoundException("request not found with id {$requestId}");
-        }
+        $request = $this->getModel('request',$requestId);
+        
         if ($request->requestable_type !== 'App\YourEdu\Discussion') {
-            throw new DiscussionException("request with id {$requestId} not a request to join discussion");
+            $this->throwDiscussionException("request with id {$requestId} not a request to join discussion");
         }
 
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-        }
+        $mainAccount = $this->getModel($account,$accountId);
+        
         if ($request->requestfrom->user_id !== $mainAccount->user_id && 
             $request->requestfrom->owner_id !== $mainAccount->owner_id) {
-            throw new DiscussionException("request with id {$requestId} not from this account");
+            $this->throwDiscussionException("request with id {$requestId} not from this account");
         }
 
-        $discussion = getYourEduModel('discussion',$discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion not found with id {$discussionId}");
-        }
-
+        $discussion = $this->getModel('discussion',$discussionId);
+        
         return [
             'discussion' => $discussion,
-            'requestfrom' => $mainAccount, //this is to help me use it in more than one function
+            'requestfrom' => $mainAccount,
             'requestto' => $request->requestto,
             'request' => $request,
         ];
+    }
+
+    private function throwDiscussionException
+    (
+        $message,
+        $data = null
+    )
+    {
+        throw new DiscussionException(
+            message: $message,
+            data: $data
+        );
     }
 
     public function joinResponse($account,$accountId,$requestId,$discussionId,$response)
@@ -472,38 +443,109 @@ class DiscussionService
                 $data['request']->requestfrom->owner
         ];
     }
-    
-    public function deleteDiscussion($discussionId, $id)
+
+    private function getModel($account, $accountId)
     {
-        $discussion = getYourEduModel('discussion', $discussionId);
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion with id {$discussionId} no found");
+        $main = getYourEduModel($account, $accountId);
+        if (is_null($main)) {
+            throw new AccountNotFoundException("$account with id $accountId not found.");
         }
 
-        $this->canUpdate($discussion, $id);
-        $discussionInfo = [
-            'discussionId' => $discussionId,
-            'account' => class_basename_lower($discussion->raisedby_type),
-            'accountId' => $discussion->raisedby_id,
-        ];
-        $discussion->delete();
+        return $main;
+    }
 
-        return $discussionInfo;
+    private function deleteDiscussionFiles(Discussion $discussion)
+    {
+        FileService::deleteYourEduItemFiles($discussion);
+    }
+    
+    public function deleteDiscussion(DiscussionDTO $discussionDTO)
+    {
+        try {
+            $discussion = $this->getModel('discussion', $discussionDTO->discussionId);
+            
+            if ($discussionDTO->main) {
+                DB::beginTransaction();
+                
+                $this->canUpdate($discussion, $discussionDTO->userId);
+            }
+
+            $discussionDTO = $this->setDiscussionDTORaisedby($discussionDTO, $discussion);
+
+            $this->deleteDiscussionFiles($discussion);
+
+            $deletionStatus = $discussion->delete();
+
+            if ($deletionStatus) {
+                
+                $discussionDTO->methodType = 'deleted';
+                $this->broadcastDiscussion($discussion, $discussionDTO);
+            }
+
+            return $deletionStatus;
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    private function setDiscussionDTORaisedby
+    (
+        $discussionDTO,
+        $discussion = null,
+    )
+    {
+        if ($discussion) {
+            return $discussionDTO->withRaisedby(
+                $discussion->raisedby
+            );
+        }
+
+        return $discussionDTO->withRaisedby(
+            $this->getModel(
+                $discussionDTO->account,
+                $discussionDTO->accountId
+            )
+        );
+    }
+
+    private function broadcastDiscussion
+    (
+        $discussion,
+        $discussionDTO
+    )
+    {
+        if (!$discussionDTO->main) {
+            return;
+        }
+
+        $event = $this->getEvent($discussion, $discussionDTO);
+
+        if (is_null($event)) {
+            return;
+        }
+        
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($discussion, $discussionDTO)
+    {
+        if ($discussionDTO->methodType === 'deleted') {
+            return new DeleteDiscussion([
+                'discussionId' => $discussionDTO->discussionId,
+                'account' => class_basename_lower($discussionDTO->raisedby),
+                'accountId' => $discussionDTO->raisedby->id,
+            ]);
+        }
+
+        return null;
     }
 
     public function joinDiscussion($discussionId,$account,$accountId,$userId)
     {
-        $discussion = getYourEduModel('discussion', $discussionId);
+        $discussion = $this->getModel('discussion', $discussionId);
 
-        if (is_null($discussion)) {
-            throw new AccountNotFoundException("discussion with id {$discussionId} not found");
-        }
-
-        $joiningAccount = getYourEduModel($account, $accountId);
-
-        if (is_null($joiningAccount)) {
-            throw new AccountNotFoundException("{$account} with id {$accountId} not found");
-        }
+        $joiningAccount = $this->getModel($account, $accountId);
 
         //if private, make request and send notification
         //else make participant
@@ -520,13 +562,13 @@ class DiscussionService
                 'type' => 'pendingParticipant',
                 'requestfrom' => $joiningAccount
             ];
-        } else {
-            $participant = $this->createParticipant($discussion,$joiningAccount);
-            return [
-                'type' => 'participant',
-                'participant' => $participant
-            ];
-        }
+        } 
+
+        $participant = $this->createParticipant($discussion,$joiningAccount);
+        return [
+            'type' => 'participant',
+            'participant' => $participant
+        ];
     }
 }
 

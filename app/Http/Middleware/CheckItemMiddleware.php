@@ -46,6 +46,7 @@ class CheckItemMiddleware
                 $item === 'facilitator' ||
                 $item === 'professional' ||
                 $item === 'extracurriculum' ||
+                $item === 'assessment' ||
                 $item === 'course' ||
                 $item === 'program' ||
                 $item === 'school') {

@@ -17,6 +17,7 @@
                         :correctPossibleAnswers="correctPossibleAnswers"
                         :possibleAnswersLength="possibleAnswers.length"
                         @movePossibleAnswer="movePossibleAnswer"
+                        @editPossibleAnswer="editPossibleAnswer"
                         @possibleAnswerIsCorrect="possibleAnswerIsCorrect"
                         @possibleAnswerIsWrong="possibleAnswerIsWrong"
                     ></possible-answer-badge>
@@ -155,7 +156,9 @@ import GreyButton from '../GreyButton.vue';
         data() {
             return {
                 data: {
+                    id: '',
                     option: '',
+                    position: '',
                 },
                 showPopUp: false,
                 showCorrectAnswer: false,
@@ -227,6 +230,14 @@ import GreyButton from '../GreyButton.vue';
             removePossibleAnswer(data) {
                 this.$emit('removePossibleAnswer',data)
             },
+            editPossibleAnswer(possibleAnswer) {
+                this.setAssessmentSectionQuestionPossibleAnswer(possibleAnswer)
+            },
+            setAssessmentSectionQuestionPossibleAnswer(possibleAnswer) {
+                this.data.id = possibleAnswer.id
+                this.data.option = possibleAnswer.option
+                this.data.position = possibleAnswer.position
+            },
             clickedSetCorrect() {
                 this.$emit('answersInCorrectAnswer')
             },
@@ -234,12 +245,28 @@ import GreyButton from '../GreyButton.vue';
                 if (!this.computedHasData) {
                     return
                 }
+
+                if (Boolean(this.data.id)) {
+                    this.$emit('updatePossibleAnswer',{
+                        id: this.data.id,
+                        option: this.data.option.trim(),
+                        position: this.data.position,
+                    })
+                    this.clearPossibleAnswerData()
+                    return
+                }
+
                 this.$emit('addPossibleAnswer',{
-                    id: Math.ceil(Math.random() * 1000),
+                    id: Math.ceil(Math.random() * -1000),
                     option: this.data.option.trim(),
                     position: null,
                 })
+                this.clearPossibleAnswerData()
+            },
+            clearPossibleAnswerData() {
+                this.data.id = ''
                 this.data.option = ''
+                this.data.position = ''
             },
             scrollToForm() {
                 if (this.$refs.possibleanswersform) {

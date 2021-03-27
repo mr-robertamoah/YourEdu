@@ -9,6 +9,7 @@ use App\Http\Resources\ClassResource;
 use App\Http\Resources\DashboardClassResource;
 use App\Http\Resources\DashboardItemResource;
 use App\Services\ClassService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -64,13 +65,14 @@ class ClassController extends Controller
         try {
             DB::beginTransaction();
             $class = (new ClassService())->deleteCLass(
-                ClassData::createFromRequest($request)
+                ClassDTO::createFromRequest($request)
             );
 
             DB::commit();
             return response()->json([
                 'message' => 'successful',
-                'class' => $class ? new DashboardClassResource($class) : null
+                'class' => $class instanceof Model 
+                    ? new DashboardClassResource($class) : null
             ]);
         } catch (\Throwable $th) {
             DB::rollback();

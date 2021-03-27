@@ -12,6 +12,12 @@ class Admin extends Model
 {
     //
     use SoftDeletes, HasFactory;
+    
+    const SUPERADMIN = 'SUPERADMIN';
+    const SUPERVISOR = 'SUPERVISOR';
+    const CLASSADMIN = 'CLASSADMIN';
+    const SCHOOLADMIN = 'SCHOOLADMIN';
+    const GROUPADMIN = 'GROUPADMIN';
 
     protected $fillable = [
         'user_id','name','role','level','title','description'
@@ -174,6 +180,20 @@ class Admin extends Model
     public function addedAudio()
     {
         return $this->morphMany(Audio::class,'addedby');
+    }
+
+    public function scopewhereYourEduAdminByUserId($query, $userId)
+    {
+        return $query->where('user_id', $userId)
+            ->where(function($query) {
+                $query->whereYourEduAdmin();
+            });
+    }
+
+    public function scopewhereYourEduAdmin($query, $userId)
+    {
+        return $query->where('role', self::SUPERADMIN)
+            ->orWhere('role', self::SUPERVISOR);
     }
     
     protected static function newFactory()

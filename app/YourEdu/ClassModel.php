@@ -5,13 +5,16 @@ namespace App\YourEdu;
 use App\Traits\AssessmentTrait;
 use App\Traits\DashboardItemTrait;
 use App\Traits\NotOwnedbyTrait;
+use Database\Factories\ClassFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassModel extends Model
 {
     //
-    use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait;
+    use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait,
+        HasFactory;
 
     protected $fillable = [
         'name','state','description','max_learners','structure'
@@ -52,6 +55,11 @@ class ClassModel extends Model
             ->withTimestamps();
     }
 
+    public function professionals(){
+        return $this->morphedByMany(Facilitator::class,'classable','classables','class_id')
+            ->withTimestamps();
+    }
+
     public function learners(){
         return $this->morphedByMany(Learner::class,'classable','classables','class_id')
             ->withTimestamps();
@@ -65,6 +73,11 @@ class ClassModel extends Model
     public function classes(){
         return $this->morphedByMany(ClassModel::class,'classable','classables','class_id')
             ->withPivot(['resource'])->withTimestamps();
+    }
+
+    public function classSubjects(){
+        return $this->morphedByMany(Subject::class,'classable','classables','class_id')
+            ->withTimestamps();
     }
 
     public function courses(){
@@ -130,8 +143,8 @@ class ClassModel extends Model
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'classable','classables','class_id')
-            ->withPivot(['activity','subject_id'])->withTimestamps();
+        return $this->morphTOMany(Lesson::class,'lessonable','lessonables')
+            ->withPivot(['type', 'lesson_number'])->withTimestamps();
     }
 
     public function reports()
@@ -164,6 +177,58 @@ class ClassModel extends Model
         return $this->morphMany(Discussion::class,'discussionfor');
     }
 
+    public function facilitationDetails()
+    {
+        return $this->morphMany(FacilitationDetail::class, 'itemable');
+    }
+
+    public function discussion()
+    {
+        return $this->discussions->first();
+    }
+
+    public function hasDiscussion()
+    {
+        return $this->discussions->count() > 0;
+    }
+
+    public function doesntHaveDiscussion()
+    {
+        return !$this->hasDiscussion();
+    }
+
+    public function specificFacilitationDetail($facilitatable, $accountable)
+    {
+        return $this->facilitationDetails()
+            ->where('facilitatable_type', $facilitatable::class)
+            ->where('facilitatable_id', $facilitatable->id)
+            ->where('accountable_type', $accountable::class)
+            ->where('accountable_id', $accountable->id)
+            ->first();
+    }
+
+    public function facilitationDetailsAccountables()
+    {
+        return $this->facilitationDetails()
+            ->has('accountable')->get()
+            ->pluck('accounatable');
+    }
+
+    public function itemable()
+    {
+        return $this->morphMany(Lessonable::class, 'itemable');
+    }
+
+    public function assessments()
+    {
+        return $this->morphByMany(Assessment::class,'assessmentable');
+    }
+
+    public function assessmentable()
+    {
+        return $this->morphMany(Assessmentable::class,'itemable');
+    }
+
     public function scopeRunningAcademicYears($query)
     {
         return $query->whereHas('academicYears',function($q) {
@@ -171,13 +236,9 @@ class ClassModel extends Model
                 // ->whereDate('end_date','>=',now());
         });
     }
-
-    public function scopeHasCoursesOrSubjects($query)
+    
+    protected static function newFactory()
     {
-        return $query->has('courses')
-            ->orWhereHas('subjects',function($q){
-                ray($q);
-                $q->where('activity','OFFER');
-            });
+        return ClassFactory::new();
     }
 }

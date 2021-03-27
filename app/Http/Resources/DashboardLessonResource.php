@@ -29,7 +29,7 @@ class DashboardLessonResource extends JsonResource
             'audios' => AudioResource::collection($this->audios),
             'files' => FileResource::collection($this->files),
         ];
-        $data['items'] = $this->classSubjects();
+        $data['items'] = $this->classSubjects;
         $data['items'] = $data['items']->merge($this->courseSections);
         $data['items'] = $data['items']->merge($this->courses()->hasOwner()->get());
         $data['items'] = DashboardItemMiniResource::collection($data['items']);

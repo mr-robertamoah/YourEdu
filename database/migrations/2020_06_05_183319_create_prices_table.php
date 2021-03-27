@@ -15,8 +15,8 @@ class CreatePricesTable extends Migration
     {
         Schema::create('prices', function (Blueprint $table) {
             $table->id();
-            $table->morphs('priceable'); // book extracurriculum course class classsection request admission permission
-            $table->morphs('ownedby'); //professional school facilitator 
+            $table->nullableMorphs('priceable'); // book extracurriculum course class classsection request admission permission
+            $table->nullableMorphs('ownedby'); //professional school facilitator 
             $table->float('amount');
             $table->string('description')->nullable();
             $table->boolean('postponed')->default(false);

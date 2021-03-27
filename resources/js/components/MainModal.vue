@@ -1,5 +1,9 @@
 <template>
-    <div class="modal-wrapper" v-if="show" @click.self="disappear">
+    <div class="modal-wrapper" 
+        v-if="show" 
+        @click.self="disappear"
+        :class="{long}"
+    >
         <div class="main-modal" 
             :class="{dark}" 
             @click.self="clickedMain"
@@ -57,6 +61,10 @@ import FadeRight from "./transitions/FadeRight";
             mainOther: {
                 type: Boolean,
                 default: true,
+            },
+            long: {
+                type: Boolean,
+                default: false,
             },
             dark: {
                 type: Boolean,
@@ -176,8 +184,8 @@ $modal-margin-height: (100vh - $modal-height)/2;
         .main-modal{
             background-color: $modal-background;
             width: $modal-width;
-            height: $modal-height;
             position: relative;
+            height: $modal-height;
             top: $modal-margin-height;
             left: $modal-margin-width;
             border-radius: 10px;
@@ -288,6 +296,15 @@ $modal-margin-height: (100vh - $modal-height)/2;
         }
     }
 
+    .modal-wrapper.long{
+        $modal-height: 100vh;
+        $modal-margin-height: (100vh - $modal-height)/2;
+
+        .main-modal{    
+            height: $modal-height;
+            top: $modal-margin-height;
+        }
+    }
 
 @media screen and (min-width:800px) and (max-width:1100px){
 $modal-width: 70%;

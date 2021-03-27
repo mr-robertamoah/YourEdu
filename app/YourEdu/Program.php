@@ -3,14 +3,18 @@
 namespace App\YourEdu;
 
 use App\Traits\AssessmentTrait;
+use App\Traits\DashboardItemTrait;
 use App\Traits\NotOwnedbyTrait;
+use Database\Factories\ProgramFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Program extends Model
 {
     //
-    use SoftDeletes, NotOwnedbyTrait, AssessmentTrait;
+    use SoftDeletes, NotOwnedbyTrait, AssessmentTrait, DashboardItemTrait,
+        HasFactory;
 
     protected $fillable = [
         'name','description','rationale', 'state'
@@ -78,8 +82,8 @@ class Program extends Model
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'programmable','programmables')
-            ->withTimestamps();
+        return $this->morphToMany(Lesson::class,'lessonable','lessonables')
+            ->withPivot(['type', 'lesson_number'])->withTimestamps();
     }
 
     public function courses()
@@ -117,5 +121,42 @@ class Program extends Model
     public function comments()
     {
         return $this->morphMany(Comment::class,'commentable');
+    }
+
+    public function facilitationDetails()
+    {
+        return $this->morphMany(FacilitationDetail::class, 'itemable');
+    }
+
+    public function assessments()
+    {
+        return $this->morphByMany(Assessment::class,'assessmentable');
+    }
+
+    public function discussion()
+    {
+        return $this->discussions->first();
+    }
+
+    public function hasDiscussion()
+    {
+        return $this->discussions->count() > 0;
+    }
+
+    public function doesntHaveDiscussion()
+    {
+        return !$this->hasDiscussion();
+    }
+
+    public function facilitationDetailsAccountables()
+    {
+        return $this->facilitationDetails()
+            ->has('accountable')->get()
+            ->pluck('accountable');
+    }
+
+    protected static function newFactory()
+    {
+        return ProgramFactory::new();
     }
 }

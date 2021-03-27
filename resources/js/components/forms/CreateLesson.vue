@@ -321,7 +321,7 @@
 
                                 <search-input
                                     class="search-input"
-                                    searchPlaceholder="search for courses, extracurriculums and classes"
+                                    placeholder="search for courses, extracurriculums and classes"
                                     @search="getSearchItemsText"
                                 ></search-input>
                                 <div class="class-payment course-classes-section">
@@ -698,7 +698,7 @@ import { strings } from '../../services/helpers';
         },
         methods: {
             ...mapActions(['dashboard/createLesson','dashboard/editLesson',
-                'dashboard/getAccountSpecificItem']),
+                'dashboard/getAccountSpecificItems']),
             mainModalDisappear() {
                 this.data.owner = {name: ''}
                 this.clearData()
@@ -920,15 +920,13 @@ import { strings } from '../../services/helpers';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: 'courses',
-                        secondItem: 'extracurriculums',
+                        items: ['courses', 'extracurriculums', 'classes'],
                         for: 'lesson',
-                        thirdItem: 'classes',
                         search: this.searchItemsText
                     }
 
                 this.specificItemLoading = true
-                response = await this['dashboard/getAccountSpecificItem']({
+                response = await this['dashboard/getAccountSpecificItems']({
                     data, nextPage: this.specificItemDetailsNextPage
                 })
                 this.specificItemLoading = false
@@ -1314,8 +1312,6 @@ import { strings } from '../../services/helpers';
 
         .course-classes-section{
             min-height: 100px;
-            display: flex;
-            justify-content: center;
             align-items: center;
 
             .loading{

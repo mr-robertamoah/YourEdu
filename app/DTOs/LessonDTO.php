@@ -45,6 +45,8 @@ class LessonDTO extends PostTypeDTOContract implements ItemDataContract
     public ?Model $addedby = null;
     public ?Model $ownedby = null;
     public ?Model $lessonable = null;
+    public ?string $methodType = null;
+    public ?string $method = null;
 
     public static function new()
     {
@@ -89,9 +91,13 @@ class LessonDTO extends PostTypeDTOContract implements ItemDataContract
         $self->removedItems = $request->removedItems ? 
             json_decode($request->removedItems) : [];
         $self->attachments = $request->attachments ? 
-            json_decode($request->attachments) : [];
+            ModelDTO::createFromArray(
+                json_decode($request->attachments)
+            ) : [];
         $self->removedAttachments = $request->removedAttachments ? 
-            json_decode($request->removedAttachments) : [];
+            ModelDTO::createFromArray(
+                json_decode($request->removedAttachments)
+            ) : [];
         $self->removedPaymentData = $request->removedPaymentData ? 
             json_decode($request->removedPaymentData) : [];
         $self->paymentData = $request->paymentData ? 

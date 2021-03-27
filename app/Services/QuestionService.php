@@ -151,7 +151,7 @@ class QuestionService
             'hint' => $questionDTO->hint,
             'position' => $questionDTO->position,
             'score_over' => $questionDTO->scoreOver,
-            'answer_type' => $questionDTO->answerType,
+            'answer_type' => AssessmentService::getAnswerType($questionDTO->answerType),
             'published_at' => $questionDTO->publishedAt?->toDateTimeString(),
         ];
 
@@ -185,7 +185,7 @@ class QuestionService
     ) : Question
     {
         foreach ($questionDTO->possibleAnswers as $possibleAnswerDTO) {
-            $possibbleAnswer = $question->possibleAnswers()->create([
+            $question->possibleAnswers()->create([
                 'option' => $possibleAnswerDTO->option,
                 'position' => $possibleAnswerDTO->position,
             ]);
@@ -310,16 +310,21 @@ class QuestionService
         );
     }
 
-    private function getModel(QuestionDTO $questionDTO) : Question
+    private function getQuestionModel(QuestionDTO $questionDTO) : Question
     {
         if ($questionDTO->question) {
             return $questionDTO->question;
         }
 
-        $question = getYourEduModel('question',$questionDTO->questionId);
+        return $this->getModel('question', $questionDTO->questionId);
+    }
+
+    private function getModel($account, $accountId)
+    {
+        $question = getYourEduModel($account,$accountId);
 
         if (is_null($question)) {
-            throw new AccountNotFoundException("question not found with id {$itemId}");
+            throw new AccountNotFoundException("$account not found with id {$accountId}");
         }
 
         return $question;
@@ -331,7 +336,7 @@ class QuestionService
         $check = false
     )
     {
-        $question = $this->getModel($questionDTO);
+        $question = $this->getQuestionModel($questionDTO);
 
         if ($check) {
             $this->checkAuthorization($question, $questionDTO);
@@ -347,7 +352,7 @@ class QuestionService
         QuestionDTO $questionDTO
     ) : Question
     {
-        $question = $this->getModel($questionDTO);
+        $question = $this->getQuestionModel($questionDTO);
 
         $question->setTouchedRelations([]);
         $question->timestamps = false;

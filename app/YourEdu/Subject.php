@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\SubjectFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subject extends Model
 {
     //
-    // use SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'name','description','rationale'
@@ -45,6 +47,12 @@ class Subject extends Model
     public function classes()
     {
         return $this->morphedByMany(ClassModel::class,'subjectable','subjectables')
+            ->withPivot(['activity'])->withTimestamps();
+    }
+
+    public function subjectClasses()
+    {
+        return $this->morphToMany(ClassModel::class,'classable','classables', null, 'class_id')
             ->withPivot(['activity'])->withTimestamps();
     }
 
@@ -86,5 +94,57 @@ class Subject extends Model
     public function discussions()
     {
         return $this->morphMany(Discussion::class,'discussionon');
+    }
+
+    public function facilitationDetails()
+    {
+        return $this->morphMany(FacilitationDetail::class, 'facilitatable');
+    }
+
+    public function lessons()
+    {
+        return $this->morphedByMany(Lesson::class,'lessonable','lessonables')
+            ->withPivot(['lesson_number', 'type'])->withTimestamps();
+    }
+
+    public function lessonables()
+    {
+        return $this->morphMany(Lessonable::class, 'lessonable');
+    }
+
+    public function lastLesson()
+    {
+        return $this->lessonables()->whereNotNull('lesson_number')->last();
+    }
+
+    public function usesFacilitationDetail()
+    {
+        return true;
+    }
+
+    public function doesntUseFacilitationDetail()
+    {
+        return !$this->usesFacilitationDetail();
+    }
+
+    public function scopeSearchItems($query,$search)
+    {
+        return $query->where(function($q) use ($search){
+            $q->where('name','like',"%$search%")
+                ->orWhere('description','like',"%$search%");
+        });
+    }
+
+    public function scopeWithClasses($query, $account)
+    {
+        return $query
+            ->with(['subjectClasses' => function($query) use ($account) {
+                $query->whereOwnedOrFacilitating($account);
+            }]);
+    }
+    
+    protected static function newFactory()
+    {
+        return SubjectFactory::new();
     }
 }

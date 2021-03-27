@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\AttachmentDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\AttachmentException;
 use App\YourEdu\PostAttachment;
@@ -10,7 +11,9 @@ use \Debugbar;
 
 class AttachmentService
 {
-    //attach an attachment from request
+    private $attachmentTypes = [
+        'subject', 'grade', 'program', 'course', 'extracurriculum'
+    ];
 
     public function attachmentCreate($account,$accountId,$item,$itemId,$attachable,
         $attachableId,$note,$adminId)
@@ -123,10 +126,9 @@ class AttachmentService
             ?->delete();
     }
 
-    //create an attachment
     public function createAttachment($account,$accountId,$type,$name,$description,$rationale,$aliases)
     {
-        $mainAccount = getYourEduModel($account,$accountId);
+        $mainAccount = $this->getModel($account,$accountId);
         if (is_null($mainAccount)) {
             throw new AccountNotFoundException("{$account} not found with id {$accountId}");
         }
@@ -164,6 +166,115 @@ class AttachmentService
         $mainAccount->point->save();
 
         return $attachment;
+    }
+
+    private function getModel($account, $accountId)
+    {
+        $mainAccount = getYourEduModel($account,$accountId);
+            if (is_null($mainAccount)) {
+                throw new AccountNotFoundException("{$account} not found with id {$accountId}");
+            }
+
+        return $mainAccount;
+    }
+
+    private function checkAttachmentType(AttachmentDTO $attachmentDTO)
+    {
+        if (in_array($attachmentDTO->type, $this->attachmentTypes)) {
+            return;
+        }
+
+        $this->throwAttachmentException(
+            message: 'not a valid attachment type',
+            data: $attachmentDTO
+        );
+    }
+
+    private function throwAttachmentException
+    (
+        $message,
+        $data = null
+    )
+    {
+        throw new AttachmentException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    private function makeAttachment(AttachmentDTO $attachmentDTO)
+    {
+        $attachment = PostAttachment::create([
+            'name' => $attachmentDTO->name,
+            'description' => $attachmentDTO->description,
+            'rationale' => $attachmentDTO->rationale,
+        ]);
+
+        if (is_null($attachment)) {
+            throw new AttachmentException('attachment creation failed');
+        }
+
+        return $attachment;
+    }
+
+    public function createAttachmentWithAccount(AttachmentDTO $attachmentDTO)
+    {
+        $this->checkAttachmentType($attachmentDTO);
+
+        $attachment = $this->makeAttachment($attachmentDTO);
+        
+        $attachment = $this->makeAccountAttachmentAddedby($attachment, $attachmentDTO);
+
+        $attachment = $this->addAliasesToAttachment($attachment, $attachmentDTO);
+
+        $attachmentDTO = $this->increaseAccountPoints($attachmentDTO);
+
+        return $attachment;
+    }
+
+    private function addAliasesToAttachment
+    (
+        PostAttachment $attachment,
+        AttachmentDTO $attachmentDTO
+    )
+    {
+        if (is_null($attachmentDTO->aliases) || !is_array($attachmentDTO->aliases)) {
+            return;
+        }
+
+        foreach ($attachmentDTO->aliases as $aliasName) {
+            if (!Str::length($aliasName)) {
+                continue;
+            }
+
+            $alias = $this->createAlias($attachmentDTO->addedby, $aliasName);
+
+            $alias->aliasable()->associate($attachment);
+            $alias->save();
+        }
+
+        return $attachment->refresh();
+    }
+
+    private function makeAccountAttachmentAddedby
+    (
+        PostAttachment $attachment,
+        AttachmentDTO $attachmentDTO
+    )
+    {
+        $attachment->attachedby->associate($attachmentDTO->addedby);
+        $attachment->save();
+
+        return $attachment->refresh();
+    }
+
+    private function increaseAccountPoints($attachmentDTO)
+    {
+        $attachmentDTO->addedby->point->value += 1;
+        $attachmentDTO->addedby->point->save();
+
+        $attachmentDTO->addedby->refresh();
+        return $attachmentDTO;
     }
 
     //create an alias of an attachment

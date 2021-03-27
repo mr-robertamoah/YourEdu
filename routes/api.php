@@ -100,33 +100,33 @@ Route::get('dashboard/{item}/{itemId}', [DashboardController::class,'getItemDeta
 
 Route::group(['middleware' => 'auth:api'], function () {
 
-    Route::post('/class/create', [ClassController::class,'createClass']);
-    Route::post('/class/delete', [ClassController::class,'deleteClass']);
-    Route::post('/class/update', [ClassController::class,'updateClass']);
+    Route::post('/class', [ClassController::class,'createClass']);
+    Route::delete('/class/{classId}', [ClassController::class,'deleteClass']);
+    Route::put('/class/{classId}', [ClassController::class,'updateClass']);
     
-    Route::post('/program/create/main', [ProgramController::class,'createProgram']);
-    Route::post('/program/delete/main', [ProgramController::class,'deleteProgram']);
-    Route::post('/program/update/main', [ProgramController::class,'updateProgram']);
+    Route::post('/program/main', [ProgramController::class,'createProgram']);
+    Route::delete('/program/{programId}/main', [ProgramController::class,'deleteProgram']);
+    Route::put('/program/{prpgramId}/main', [ProgramController::class,'updateProgram']);
 
-    Route::post('/lesson/create', [LessonController::class,'createLesson']);
-    Route::post('/lesson/delete', [LessonController::class,'deleteLesson']);
-    Route::post('/lesson/update', [LessonController::class,'updateLesson']);
+    Route::post('/lesson', [LessonController::class,'createLesson']);
+    Route::delete('/lesson/{lessonId}', [LessonController::class,'deleteLesson']);
+    Route::put('/lesson/{lessonId}', [LessonController::class,'updateLesson']);
     
     Route::post('/assessment', [AssessmentController::class,'createAssessment']);
     Route::delete('/assessment/{assessmentId}', [AssessmentController::class,'deleteAssessment']);
-    Route::put('/assessment/{assessmentId}', [AssessmentController::class,'updateAssessment']);
+    Route::post('/assessment/{assessmentId}', [AssessmentController::class,'updateAssessment']);
 
     Route::post('/collaboration/create', [CollaborationController::class,'createCollaboration']);
     Route::post('/collaboration/delete', [CollaborationController::class,'deleteCollaboration']);
     Route::post('/collaboration/update', [CollaborationController::class,'updateCollaboration']);
     
-    Route::post('/extracurriculum/create', [ExtracurriculumController::class,'createExtracurriculum' ]);
-    Route::post('/extracurriculum/delete', [ExtracurriculumController::class,'deleteExtracurriculum' ]);
-    Route::post('/extracurriculum/update', [ExtracurriculumController::class,'updateExtracurriculum' ]);
+    Route::post('/extracurriculum', [ExtracurriculumController::class,'createExtracurriculum' ]);
+    Route::delete('/extracurriculum/{extracurriculumId}', [ExtracurriculumController::class,'deleteExtracurriculum' ]);
+    Route::put('/extracurriculum/{extracurriculumId}', [ExtracurriculumController::class,'updateExtracurriculum' ]);
     
-    Route::post('/course/create/main', [CourseController::class,'createCourse']);
-    Route::post('/course/delete/main', [CourseController::class,'deleteCourse']);
-    Route::post('/course/update/main', [CourseController::class,'updateCourse']);
+    Route::post('/course/main', [CourseController::class,'createCourse']);
+    Route::delete('/course/{courseId}/main', [CourseController::class,'deleteCourse']);
+    Route::put('/course/{courseId}/main', [CourseController::class,'updateCourse']);
 
     Route::get('/dashboard/activities', [DashboardController::class,'getAccountActivities']);
     Route::get('/dashboard/accounts', [DashboardController::class,'getAccounts']);
@@ -262,13 +262,13 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/subject/{subject}/alias', [SubjectController::class,'subjectAliasCreate']);
     Route::delete('/subject/{subject}', [SubjectController::class,'subjectDelete']);
     
-    Route::post('/program/create', [ProgramController::class,'programCreate']);
-    Route::post('/program/{program}/alias', [ProgramController::class,'programAliasCreate']);
-    Route::delete('/program/{program}', [ProgramController::class,'programDelete']);
+    Route::post('/program/create', [ProgramController::class,'createProgramAsAttachment']);
+    Route::post('/program/{programId}/alias', [ProgramController::class,'createProgramAttachmentAlias']);
+    Route::delete('/program/{programId}', [ProgramController::class,'deleteProgramAsAttachment']);
     
-    Route::post('/course/create', [CourseController::class,'courseCreate']);
-    Route::post('/course/{course}/alias', [CourseController::class,'courseAliasCreate']);
-    Route::delete('/course/{course}', [CourseController::class,'courseDelete']);
+    Route::post('/course/create', [CourseController::class,'createCourseAsAttachment']);
+    Route::post('/course/{courseId}/alias', [CourseController::class,'createCourseAttachmentAlias']);
+    Route::delete('/course/{courseId}', [CourseController::class,'deleteCourseAsAttachment']);
 
     Route::post('/grade/create', [GradeController::class,'gradeCreate']);
     Route::post('/grade/{grade}/alias', [GradeController::class,'gradeAliasCreate']);

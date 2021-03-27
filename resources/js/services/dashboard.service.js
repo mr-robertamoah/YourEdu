@@ -178,7 +178,7 @@ const DashboadService = {
     //class
     async createClass(data){
         try {
-            let response = await ApiService.post(`api/class/create`,data)
+            let response = await ApiService.post(`api/class`,data)
 
             return response
         } catch (error) {
@@ -188,7 +188,7 @@ const DashboadService = {
     },
     async deleteClass(data){
         try {
-            let response = await ApiService.post(`api/class/delete`,data)
+            let response = await ApiService.delete(`api/class/${data.postId}`,data)
 
             return response
         } catch (error) {
@@ -198,7 +198,7 @@ const DashboadService = {
     },
     async updateClass(data){
         try {
-            let response = await ApiService.post(`api/class/update`,data)
+            let response = await ApiService.put(`api/class/${data.get('postId')}`,data)
 
             return response
         } catch (error) {
@@ -240,7 +240,7 @@ const DashboadService = {
     //course
     async createCourse(data){
         try {
-            let response = await ApiService.post(`api/course/create/main`,data)
+            let response = await ApiService.post(`api/course/main`,data)
 
             return response
         } catch (error) {
@@ -250,7 +250,7 @@ const DashboadService = {
     },
     async deleteCourse(data){
         try {
-            let response = await ApiService.post(`api/course/delete/main`,data)
+            let response = await ApiService.delete(`api/course/${data.courseId}/main`,data)
 
             return response
         } catch (error) {
@@ -260,7 +260,37 @@ const DashboadService = {
     },
     async updateCourse(data){
         try {
-            let response = await ApiService.post(`api/course/update/main`,data)
+            let response = await ApiService.post(`api/course/${data.get('courseId')}/main`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async createAssessment(data){
+        try {
+            let response = await ApiService.post(`api/assessment`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async deleteAssessment(data){
+        try {
+            let response = await ApiService.delete(`api/assessment/${data.assessmentId}`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async updateAssessment(data){
+        try {
+            let response = await ApiService.post(`api/assessment/${data.get('assessmentId')}`,data)
 
             return response
         } catch (error) {
@@ -271,7 +301,7 @@ const DashboadService = {
     //lesson
     async createLesson(data){
         try {
-            let response = await ApiService.post(`api/lesson/create`,data)
+            let response = await ApiService.post(`api/lesson`,data)
 
             return response
         } catch (error) {
@@ -281,7 +311,7 @@ const DashboadService = {
     },
     async deleteLesson(data){
         try {
-            let response = await ApiService.post(`api/lesson/delete`,data)
+            let response = await ApiService.delete(`api/lesson/${data.lessonId}`,data)
 
             return response
         } catch (error) {
@@ -291,7 +321,7 @@ const DashboadService = {
     },
     async updateLesson(data){
         try {
-            let response = await ApiService.post(`api/lesson/update`,data)
+            let response = await ApiService.put(`api/lesson/${data.get('lessonId')}`,data)
 
             return response
         } catch (error) {
@@ -302,7 +332,7 @@ const DashboadService = {
     //extracurriculum
     async createExtracurriculum(data){
         try {
-            let response = await ApiService.post(`api/extracurriculum/create`,data)
+            let response = await ApiService.post(`api/extracurriculum`,data)
 
             return response
         } catch (error) {
@@ -312,7 +342,7 @@ const DashboadService = {
     },
     async deleteExtracurriculum(data){
         try {
-            let response = await ApiService.post(`api/extracurriculum/delete`,data)
+            let response = await ApiService.delete(`api/extracurriculum/${data.extracurriculumId}`,data)
 
             return response
         } catch (error) {
@@ -322,7 +352,7 @@ const DashboadService = {
     },
     async updateExtracurriculum(data){
         try {
-            let response = await ApiService.post(`api/extracurriculum/update`,data)
+            let response = await ApiService.put(`api/extracurriculum/${data.get('extracurriculumId')}`,data)
 
             return response
         } catch (error) {
@@ -382,7 +412,7 @@ const DashboadService = {
             return error.response
         }
     },
-    async getAccountSpecificItem(main){
+    async getAccountSpecificItems(main){
         let {nextPage, data} = main
         try {
             let response = 

@@ -10,6 +10,10 @@ class PostAttachment extends Model
     //
     use SoftDeletes;
 
+    const ATTACHMENTCREATORACCOUNTTYPE = [
+        'professional', 'facilitator', 'school', 'admin'
+    ];
+
     protected $fillable = ['note'];
 
     public function post()

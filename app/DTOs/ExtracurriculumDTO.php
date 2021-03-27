@@ -3,14 +3,15 @@
 namespace App\DTOs;
 
 use App\Contracts\ItemDataContract;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class ExtracurriculumData implements ItemDataContract
+class ExtracurriculumDTO implements ItemDataContract
 {
     public string | null $name;
     public bool | null $facilitate;
-    public array | null $classes;
-    public array | null $removedClasses;
+    public array | null $items;
+    public array | null $removedItems;
     public array | null $attachments;
     public array | null $removedAttachments;
     public string | null $extracurriculumId;
@@ -22,6 +23,10 @@ class ExtracurriculumData implements ItemDataContract
     public string | null $adminId;
     public string | null $account;
     public string | null $accountId;
+    public ?string $methodType = null;
+    public ?string $method = null;
+    public ?Model $addedby = null;
+    public ?Model $ownedby = null;
     public string | null $description;
     public string | null $type;
     public string | null $state;
@@ -46,15 +51,40 @@ class ExtracurriculumData implements ItemDataContract
         $self->state = $request->state;
         $self->type = $request->type;
         $self->facilitate = json_decode($request->facilitate);
-        $self->classes = json_decode($request->classes);
-        $self->removedClasses = json_decode($request->removedClasses);
-        $self->attachments = json_decode($request->attachments);
-        $self->removedAttachments = json_decode($request->removedAttachments);
-        $self->removedPaymentData = json_decode($request->removedPaymentData);
-        $self->paymentData = json_decode($request->paymentData);
-        $self->discussionData = json_decode($request->discussionData);
+        $self->items = $request->items ?
+            json_decode($request->items) : [];
+        $self->removedItems = $request->removedItems ?
+            json_decode($request->removedItems) : [];
+        $self->attachments = $request->attachments ?
+            json_decode($request->attachments) : [];
+        $self->removedAttachments = $request->removedAttachments ?
+            json_decode($request->removedAttachments) : [];
+        $self->removedPaymentData = $request->removedPaymentData ?
+            json_decode($request->removedPaymentData) : [];
+        $self->paymentData = $request->paymentData ?
+            json_decode($request->paymentData) : [];
+        $self->discussionData = $request->discussionData ?
+            json_decode($request->discussionData) : null;
         $self->discussionFiles = $request->file('discussionFile');
 
         return $self;
+    }
+
+    public function withAddedby(Model $addedby)
+    {
+        $clone = clone $this;
+
+        $clone->addedby = $addedby;
+
+        return $clone;
+    }
+
+    public function withOwnedby(Model $ownedby)
+    {
+        $clone = clone $this;
+
+        $clone->ownedby = $ownedby;
+
+        return $clone;
     }
 }

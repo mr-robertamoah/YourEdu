@@ -55,17 +55,19 @@ import 'flatpickr/dist/flatpickr.css';
             value:{
                 immediate: true,
                 handler(newValue){
-                    this.datePicked = newValue
+                    if (this.datePicked !== newValue) {
+                        this.datePicked = newValue
+                    }
                 }
             },
             placeholder:{
                 immediate: true,
                 handler(newValue){
-                    if (new Date(newValue).toString() != 'Invalid Date') {
-                        this.datePicked = newValue
-                    } else {
-                        this.datePicked = ''
-                    }                    
+                    // if (new Date(newValue).toString() != 'Invalid Date') {
+                    //     this.datePicked = newValue
+                    // } else {
+                    //     this.datePicked = ''
+                    // }                    
                 }
             },
         },

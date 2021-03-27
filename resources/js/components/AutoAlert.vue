@@ -63,7 +63,7 @@ import { mapActions, mapGetters } from 'vuex'
                 immediate: true,
                 handler(newValue) {
                     if (newValue) {
-                        this.time = 10000
+                        this.time = 15000
                     } else {
                         this.time = 4000
                     }

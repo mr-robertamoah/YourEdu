@@ -34,7 +34,7 @@
                             
                             <search-input
                                 class="search-input"
-                                :searchPlaceholder="`search for ${item}`"
+                                :placeholder="`search for ${item}`"
                                 @search="getSearchText"
                             ></search-input>
 

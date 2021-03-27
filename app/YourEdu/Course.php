@@ -47,8 +47,18 @@ class Course extends Model
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'coursable','coursables')
-            ->withPivot(['activity'])->withTimestamps();
+        return $this->morphToMany(Lesson::class,'lessonable','lessonables')
+            ->withPivot(['type', 'lesson_number'])->withTimestamps();
+    }
+
+    public function lessonables()
+    {
+        return $this->morphMany(Lessonable::class, 'lessonable');
+    }
+
+    public function itemables()
+    {
+        return $this->morphMany(Lessonable::class, 'itemable');
     }
 
     public function subscriptions()
@@ -172,6 +182,50 @@ class Course extends Model
     public function payments()
     {
         return $this->morphMany(Payment::class,'what');
+    }
+
+    public function facilitationDetails()
+    {
+        return $this->morphMany(FacilitationDetail::class, 'facilitatable');
+    }
+
+    public function assessments()
+    {
+        return $this->morphByMany(Assessment::class,'assessmentable');
+    }
+
+    public function assessmentable()
+    {
+        return $this->morphMany(Assessmentable::class,'itemable');
+    }
+
+    public function discussion()
+    {
+        return $this->discussions->first();
+    }
+
+    public function hasDiscussion()
+    {
+        return $this->discussions->count() > 0;
+    }
+
+    public function doesntHaveDiscussion()
+    {
+        return !$this->hasDiscussion();
+    }
+
+    public function facilitationDetailsAccountables()
+    {
+        return $this->facilitationDetails()
+            ->has('accountable')->get()
+            ->pluck('accountable');
+    }
+
+    public function items()
+    {
+        return $this->classes->merge(
+            $this->programs()->hasOwner()->get()
+        );
     }
 
     protected static function newFactory()

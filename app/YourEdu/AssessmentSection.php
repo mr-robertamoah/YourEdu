@@ -58,6 +58,11 @@ class AssessmentSection extends Model
         ) < $this->questions->count();
     }
 
+    public function scopeOrderedByPosition($query)
+    {
+        return $query->orderBy('position', 'asc');
+    }
+
     protected static function newFactory()
     {
         return AssessmentSectionFactory::new();

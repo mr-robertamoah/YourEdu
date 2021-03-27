@@ -524,7 +524,7 @@ import { mapGetters, mapActions } from 'vuex'
             },
             computedContent() {
                 return this.post && this.post.hasOwnProperty('content') ? 
-                    strings.content(this.post.content,100) : null
+                    strings.trim(this.post.content,100) : null
             },
             computedName(){
                 return this.post && this.post.hasOwnProperty('addedby') ?

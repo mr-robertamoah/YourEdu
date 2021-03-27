@@ -95,4 +95,15 @@ class Collaboration extends Model
     {
         return $this->morphMany(Activity::class,'owned');
     }
+
+    public function scopeWhereCollaborationable($query,$account)
+    {
+        return $query->where(function($query) use ($account) {
+            $query->whereHas('collabos', function($query) use ($account) {
+                $query->whereHasMorph('collaborationable', function($query) use ($account) {
+                    $query->where('user_id', $account->user_id);
+                });
+            });
+        });
+    }
 }

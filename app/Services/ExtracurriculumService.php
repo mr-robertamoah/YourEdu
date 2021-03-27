@@ -6,12 +6,11 @@ use App\DTOs\ExtracurriculumDTO;
 use App\Events\DeleteExtracurriculumEvent;
 use App\Events\NewExtracurriculumEvent;
 use App\Events\UpdateExtracurriculumEvent;
-use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\ExtracurriculumException;
 use App\Http\Resources\ExtracurriculumResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\ExtracurriculumCreatedNotification;
-use App\Traits\ClassCourseTrait;
+use App\Traits\DashboardItemServiceTrait;
 use App\User;
 use App\YourEdu\Extracurriculum;
 use Illuminate\Support\Facades\Notification;
@@ -19,21 +18,23 @@ use Illuminate\Support\Str;
 
 class ExtracurriculumService 
 {
-    use ClassCourseTrait;
+    use DashboardItemServiceTrait;
     /**
      * create an extracurriculum
      * @return Extracurriculum
      */
     public function createExtracurriculum(ExtracurriculumDTO $extracurriculumDTO) : Extracurriculum
     {
-        $mainAccount = getYourEduModel($extracurriculumDTO->account,$extracurriculumDTO->accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$extracurriculumDTO->account} not found with id {$extracurriculumDTO->accountId}");
-        }
+        $extracurriculumDTO = $extracurriculumDTO->withAddedby(
+            $this->getModel(
+                $extracurriculumDTO->account,
+                $extracurriculumDTO->accountId
+            )
+        );
+        
+        $this->checkAccountOwnership($extracurriculumDTO->addedby,$extracurriculumDTO);
 
-        $this->checkAccountOwnership($mainAccount,$extracurriculumDTO);
-
-        $extracurriculum = $mainAccount->addedExtracurriculums()->create([
+        $extracurriculum = $extracurriculumDTO->addedby->addedExtracurriculums()->create([
             'name' => $extracurriculumDTO->name,
             'state' => $extracurriculumDTO->owner === 'school' && 
                 ($extracurriculumDTO->account !== 'admin' && $extracurriculumDTO->account !== 'school') 
@@ -42,114 +43,214 @@ class ExtracurriculumService
         ]);
 
         if (is_null($extracurriculum)) {
-            throw new ExtracurriculumException("extracurriculum creation failed");
-        }
-
-        if ($extracurriculumDTO->account === $extracurriculumDTO->owner && $extracurriculumDTO->accountId === $extracurriculumDTO->ownerId) {
-            $mainOwner = $mainAccount;
-        } else {
-            $mainOwner = getYourEduModel($extracurriculumDTO->owner,$extracurriculumDTO->ownerId);
-            if (is_null($mainOwner)) {
-                throw new AccountNotFoundException("{$extracurriculumDTO->owner} not found with id {$extracurriculumDTO->ownerId}");
-            }
-        }        
-
-        $extracurriculum->ownedby()->associate($mainOwner);
-        $extracurriculum->save();
-
-        $this->itemCreateUpdateMethodParts(
-            item: $extracurriculum,
-            mainAccount: $mainAccount,
-            itemData: $extracurriculumDTO,
-            method: __METHOD__
-        );
-
-        if ($extracurriculum->state === 'PENDING') { //it is only pending if it belongs to school and it is created by a non owner or non admin
-            $userIds = array_filter($mainOwner->getAdminIds(),function($id) use ($extracurriculumDTO){
-                return $id !== $extracurriculumDTO->userId;
-            });
-            $name = $mainOwner->name ?? $mainAccount->company_name;
-            Notification::send(User::whereIn('id',$userIds)->get(), 
-                new ExtracurriculumCreatedNotification(
-                    new UserAccountResource($mainAccount),
-                    "created a extracurriculum with the name: {$extracurriculum->name}, 
-                    for {$name}. Please go to dashboard to approve or otherwise."
-                )
+            $this->throwExtracurriculumException(
+                message: "extracurriculum creation failed",
+                data: $extracurriculumDTO
             );
         }
 
-        if ($extracurriculumDTO->owner === 'school') {
-            broadcast(new NewExtracurriculumEvent([
+        $extracurriculumDTO = $this->setDtoOwnedby($extracurriculumDTO);
+
+        $extracurriculum = $this->updateOwnedby($extracurriculum, $extracurriculumDTO);
+
+        $extracurriculumDTO->method = __METHOD__;
+        $extracurriculum = $this->addMainExtracurriculumDetails(
+            extracurriculum: $extracurriculum,
+            extracurriculumDTO: $extracurriculumDTO,
+        );
+
+        $extracurriculumDTO->methodType = 'created';
+        $this->notifySchoolAdmins($extracurriculum, $extracurriculumDTO);
+
+        $this->broadcastExtracurriculum($extracurriculum, $extracurriculumDTO);
+
+        return $extracurriculum;
+    }
+
+    private function throwExtracurriculumException
+    (
+        $message,
+        $data = null
+    )
+    {
+        throw new ExtracurriculumException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    private function broadcastExtracurriculum
+    (
+        $extracurriculum,
+        $extracurriculumDTO,
+    )
+    {
+        $event = $this->getEvent($extracurriculum, $extracurriculumDTO);
+
+        if (is_null($event)) {
+            return;
+        }
+
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent
+    (
+        $extracurriculum,
+        $extracurriculumDTO,
+    )
+    {
+        if ($extracurriculumDTO->methodType === 'created') {
+            return new NewExtracurriculumEvent([
                 'account' => $extracurriculumDTO->owner,
                 'accountId' => $extracurriculumDTO->ownerId,
                 'classes' => $extracurriculum->classes,
                 'programs' => $extracurriculum->programs,
                 'extracurriculum' => new ExtracurriculumResource($extracurriculum),
-            ]))->toOthers();
+            ]);
         }
+
+        if ($extracurriculumDTO->methodType === 'updated') {
+            return new UpdateExtracurriculumEvent([
+                'account' => class_basename_lower($extracurriculum->ownedby),
+                'accountId' => $extracurriculum->ownedby->id,
+                'extracurriculum' => new ExtracurriculumResource($extracurriculum),
+                'classes' => $extracurriculum->classes,
+                'programs' => $extracurriculum->programs,
+            ]);
+        }
+
+        if ($extracurriculumDTO->methodType === 'deleted') {
+            return new DeleteExtracurriculumEvent([
+                'account' => class_basename_lower($extracurriculum->ownedby),
+                'accountId' => $extracurriculum->ownedby->id,
+                'classes' => $extracurriculum->classes,
+                'programs' => $extracurriculum->programs,
+                'extracurriculumId' => $extracurriculumDTO->extracurriculumId,
+            ]);
+        }
+
+        return null;
+    }
+
+    private function notifySchoolAdmins
+    (
+        Extracurriculum $extracurriculum,
+        ExtracurriculumDTO $extracurriculumDTO,
+    )
+    {
+        if ($extracurriculumDTO->ownedby->accountType === 'school') {
+        }
+        $userIds = array_filter($extracurriculumDTO->ownedby->getAdminIds(),function($id) use ($extracurriculumDTO){
+            return $id !== $extracurriculumDTO->userId;
+        });
+
+        $notification = $this->getNotification(
+            $extracurriculum, $extracurriculumDTO
+        );
+
+        if (is_null($notification)) {
+            return;
+        }
+
+        Notification::send(
+            User::whereIn('id',$userIds)->get(), 
+            $notification
+        );
+    }
+
+    private function getNotification
+    (
+        $extracurriculum,
+        $extracurriculumDTO,
+    )
+    {
+        $name = $extracurriculumDTO->ownedby->company_name;
+
+        if ($extracurriculumDTO->methodType === 'created') {
+            return new ExtracurriculumCreatedNotification(
+                new UserAccountResource($extracurriculumDTO->addedby),
+                "created a extracurriculum with the name: {$extracurriculum->name}, 
+                for {$name}. Please go to dashboard to approve or otherwise."
+            );
+        }
+
+        return null;
+    }
+
+    private function addMainExtracurriculumDetails
+    (
+        Extracurriculum $extracurriculum,
+        ExtracurriculumDTO $extracurriculumDTO,
+    )
+    {
+        $this->createAttachments(
+            $extracurriculum,
+            $extracurriculumDTO->addedby,
+            $extracurriculumDTO->attachments,
+            $extracurriculumDTO->facilitate
+        );
+
+        $this->attachToItems(
+            attachments: $extracurriculumDTO->items,
+            attachable: $extracurriculum,
+            dto: $extracurriculumDTO
+        );
+
+        $this->setPayment(
+            item: $extracurriculum,
+            addedby: $extracurriculumDTO->addedby,
+            paymentType: $extracurriculumDTO->type,
+            paymentData: $extracurriculumDTO->paymentData,
+        );
+
+        $extracurriculum = $this->createAutoDiscussion(
+            item: $extracurriculum,
+            itemData: $extracurriculumDTO,
+        );
+
+        $this->trackSchoolAdmin($extracurriculum, $extracurriculumDTO);
+
+        $extracurriculum = $this->updateAccountExtracurriculumFacilitation(
+            extracurriculum: $extracurriculum, 
+            extracurriculumDTO: $extracurriculumDTO, 
+        );
 
         return $extracurriculum;
     }
 
-    private function itemCreateUpdateMethodParts
+    private function updateAccountExtracurriculumFacilitation
     (
-        $item,
-        $mainAccount,
-        ExtracurriculumDTO $itemData,
-        $method
+        $extracurriculum,
+        $extracurriculumDTO,
     )
     {
-        //attachments like extracurriculums programs grades
-        $this->createAttachments(
-            $item,
-            $mainAccount,
-            $itemData->attachments,
-            $itemData->facilitate
-        );
-
-        //for classes and programs to which we may attach extracurriculum
-        $this->createMainAttachments(
-            attachments: $itemData->classes,
-            method: 'extracurriculums',
-            itemId: $item->id,
-            userId: $itemData->userId
-        );
-
-        //set payment information
-        $this->setPayment(
-            item: $item,
-            addedby: $mainAccount,
-            paymentType: $itemData->type,
-            paymentData: $itemData->paymentData,
-        );
-
-        //create auto discussion 
-        $this->createAutoDiscussion(
-            item: $item,
-            itemData: $itemData,
-        );
-
-        //track school activities
-        if ($itemData->account === 'admin') {
-            (new ActivityTrackService())->trackActivity(
-                $item,$item->ownedby,$mainAccount,$method
-            );
-        } else if ($itemData->account === 'facilitator' || $itemData->account === 'professional') {
-            //update course relations
-            if ($itemData->facilitate) { //facilitate
-                self::extracurriculumAttachItem($item->id,$mainAccount,'facilitate');
-            } else {
-                self::extracurriculumUnattachItem($item->id,$mainAccount);
-            }
+        if ($extracurriculumDTO->account !== 'facilitator' && 
+            $extracurriculumDTO->account !== 'professional') {
+            return $extracurriculum;
         }
+
+        if ($extracurriculumDTO->facilitate) {
+            
+            self::extracurriculumAttachItem(
+                $extracurriculum->id,
+                $extracurriculumDTO->addedby,
+                'facilitate'
+            );
+            return $extracurriculum->refresh();
+        } 
+
+        self::extracurriculumUnattachItem(
+            $extracurriculum->id,
+            $extracurriculumDTO->addedby
+        );
+
+        return $extracurriculum->refresh();
     }
     
     public function getExtracurriculum($extracurriculumId)
     {
-        $extracurriculum = getYourEduModel('extracurriculum',$extracurriculumId);
-        if (is_null($extracurriculum)) {
-            throw new AccountNotFoundException("extracurriculum not found with id {$extracurriculumId}");
-        }
+        $extracurriculum = $this->getModel('extracurriculum',$extracurriculumId);
 
         return $extracurriculum;
     }
@@ -159,110 +260,95 @@ class ExtracurriculumService
         
     }
     
-    public function updateExtracurriculum (ExtracurriculumDTO $extracurriculumDTO) 
+    public function updateExtracurriculum
+    (
+        ExtracurriculumDTO $extracurriculumDTO
+    ) 
     {
-        //check account
-        $mainAccount = getYourEduModel($extracurriculumDTO->account,$extracurriculumDTO->accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("$extracurriculumDTO->account not found with id {$extracurriculumDTO->accountId}");
-        }
-
-        $this->checkAccountOwnership($mainAccount,$extracurriculumDTO);
+        $extracurriculumDTO = $extracurriculumDTO->withAddedby(
+            $this->getModel($extracurriculumDTO->account,$extracurriculumDTO->accountId)
+        );
         
-        //check extracurriculum
-        $extracurriculum = getYourEduModel('extracurriculum',$extracurriculumDTO->extracurriculumId);
-        if (is_null($extracurriculum)) {
-            throw new AccountNotFoundException("extracurriculum not found with id {$extracurriculumDTO->extracurriculumId}");
-        }
+        $this->checkAccountOwnership($extracurriculumDTO->addedby,$extracurriculumDTO);
+        
+        $extracurriculum = $this->getModel('extracurriculum',$extracurriculumDTO->extracurriculumId);
+        
+        $this->checkExtracurriculumAuthorization($extracurriculum,$extracurriculumDTO);
 
-        //check authorization
-        $this->checkExtracurriculumAuthorization($extracurriculum,$extracurriculumDTO->userId);
-
-        //update extracurriculum attributes
         $extracurriculum->update([
             'name' => $extracurriculumDTO->name,
-            'state' => Str::upper($extracurriculumDTO->state),
+            'state' => $extracurriculumDTO->state && strlen($extracurriculumDTO->state) ?
+                Str::upper($extracurriculumDTO->state) : "PENDING",
             'description' => $extracurriculumDTO->description,
         ]);
 
-        //update extracurriculum relations
-
-        $this->itemCreateUpdateMethodParts(
-            item: $extracurriculum,
-            mainAccount: $mainAccount,
-            itemData: $extracurriculumDTO,
-            method: __METHOD__
+        $extracurriculumDTO->method = __METHOD__;
+        $extracurriculum = $this->addMainExtracurriculumDetails(
+            extracurriculum: $extracurriculum,
+            extracurriculumDTO: $extracurriculumDTO,
         );
         
-        //for classes and programs from which we may detach extracurriculum
-        $this->removeMainAttachments(
-            attachments: $extracurriculumDTO->removedClasses,
-            method: 'extracurriculums',
-            itemId: $extracurriculum->id,
+        $this->detachFromItems(
+            attachments: $extracurriculumDTO->removedItems,
+            attachable: $extracurriculum,
         );
 
-        $this->removeAttachments( //remove attachments
+        $this->removeAttachments( 
             item: $extracurriculum,
-            account: ($extracurriculumDTO->account === 'facilitator' || $extracurriculumDTO->account === 'professional') ? $mainAccount : null,
+            account: ($extracurriculumDTO->account === 'facilitator' || $extracurriculumDTO->account === 'professional') ? 
+                $extracurriculumDTO->addedby : null,
             facilitate: $extracurriculumDTO->facilitate,
             attachments: $extracurriculumDTO->removedAttachments,
         );
 
-        //set payment information
-        $this->removePayment(
+        $extracurriculum = $this->removePayment(
             item: $extracurriculum,
             paymentData: $extracurriculumDTO->removedPaymentData,
         );
 
-        //broadcast
-        $this->broadcastUpdate($extracurriculum);
+        $extracurriculumDTO->methodType = 'updated';
+        $this->broadcastExtracurriculum($extracurriculum, $extracurriculumDTO);
 
         return $extracurriculum;
     }
 
-    public function checkExtracurriculumAuthorization($extracurriculum,$userId)
+    public function checkExtracurriculumAuthorization
+    (
+        $extracurriculum,
+        $extracurriculumDTO
+    )
     {
-        if (!$this->doesntHaveAuthorization($extracurriculum,$userId)) {
-            throw new ExtracurriculumException("You are not authorized to edit or delete the extracurriculum with id {$extracurriculum->id}");
+        if ($this->hasAuthorization($extracurriculum,$extracurriculumDTO->userId)) {
+            return;
         }
+        
+        $this->throwExtracurriculumException(
+            message: "You are not authorized to edit or delete the extracurriculum with id {$extracurriculum->id}",
+            data: $extracurriculumDTO
+        );
     }
 
     public function deleteExtracurriculum(ExtracurriculumDTO $extracurriculumDTO)
     {
-        $extracurriculum = getYourEduModel('extracurriculum',$extracurriculumDTO->extracurriculumId);
-        if (is_null($extracurriculum)) {
-            throw new AccountNotFoundException("extracurriculum not found with id {$extracurriculumDTO->extracurriculumId}");
-        }
+        $extracurriculum = $this->getModel('extracurriculum',$extracurriculumDTO->extracurriculumId);
+        
+        $this->checkExtracurriculumAuthorization($extracurriculum,$extracurriculumDTO);
 
-        $this->checkExtracurriculumAuthorization($extracurriculum,$extracurriculumDTO->userId);
-
-        if ($extracurriculumDTO->adminId) {
-            $admin = getYourEduModel('admin',$extracurriculumDTO->adminId);
-            (new ActivityTrackService())->trackActivity(
-                $extracurriculum,$extracurriculum->ownedby,$admin,__METHOD__
-            );
-        }
+        $this->trackSchoolAdmin($extracurriculum, $extracurriculumDTO);
 
         if ($extracurriculumDTO->action === 'undo') {
             return $this->changeState($extracurriculum,'accepted');
-        } else if($extracurriculumDTO->action === 'delete') {
-            //check if someone has subsribed or paid or used by a program
-            if ($this->paymentMadeFor($extracurriculum) || $this->usedByAnother($extracurriculum)) {
-                return $this->changeState($extracurriculum,'deleted');
-            } else {
-                
-                broadcast(new DeleteExtracurriculumEvent([
-                    'account' => class_basename_lower($extracurriculum->ownedby),
-                    'accountId' => $extracurriculum->ownedby->id,
-                    'classes' => $extracurriculum->classes,
-                    'programs' => $extracurriculum->programs,
-                    'extracurriculumId' => $extracurriculumDTO->extracurriculumId,
-                ]))->toOthers();
+        } 
 
-                $extracurriculum->delete();
-                return null;
-            }
-        }
+        if ($this->paymentMadeFor($extracurriculum) || $this->usedByAnotherItem($extracurriculum)) {
+            return $this->changeState($extracurriculum,'deleted');
+        } 
+
+        $extracurriculumDTO->methodType = 'deleted';
+        $this->broadcastExtracurriculum($extracurriculum, $extracurriculumDTO);
+
+        $extracurriculum->delete();
+        return null;
     }
 
     private function broadcastUpdate($extracurriculum)
@@ -278,27 +364,19 @@ class ExtracurriculumService
 
     private function paymentMadeFor($extracurriculum)
     {
-        if (
-            $extracurriculum->whereHas('payments')
-                ->orWhereHas('programs',function($query) {
-                    $query->whereHas('payments');
-                })
-                ->orWhereHas('classes',function($query) {
-                    $query->whereHas('payments');
-                })
-                ->first()
-        ) {
+        if ($extracurriculum->hasPayments()) {
             return true;
         }
+
         return false;
     }
 
-    private function usedByAnother($extracurriculum)
+    private function usedByAnotherItem($extracurriculum)
     {
-        if ($extracurriculum->programs->whereNotNull('ownedby_type')->first() ||
-            $extracurriculum->classes->whereNotNull('ownedby_type')->first()) {
+        if ($extracurriculum->isUsedByAnotherItem()) {
             return true;
         }
+        
         return false;
     }
 

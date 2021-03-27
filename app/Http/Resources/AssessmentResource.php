@@ -17,17 +17,22 @@ class AssessmentResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'state' => $this->state,
             'description' => $this->description,
             'totalMark' => $this->total_mark,
             'duration' => $this->duration,
             'publishedAt' => $this->published_at,
             'dueAt' => $this->due_at,
             'addedby' => new UserAccountResource($this->addedby),
-            'assessmentSections' => AssessmentSectionsResource::collection($this->assessmentSections),
+            'assessmentSections' => AssessmentSectionsResource::collection(
+                $this->assessmentSections()->orderedByPosition()->get()
+            ),
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
             'restricted' => $this->restricted,
             'type' => $this->type,
+            'discussions' => $this->discussions->count(),
+            'items' => DashboardItemMiniResource::collection($this->items()),
         ];
     }
 }

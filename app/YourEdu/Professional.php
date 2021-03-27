@@ -3,8 +3,10 @@
 namespace App\YourEdu;
 
 use App\Traits\AccountTrait;
+use App\Traits\FacilitatingAccountsTrait;
 use App\User;
 use Database\Factories\ProfessionalFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Professional extends Model
 {
     //
-    use SoftDeletes, AccountTrait, HasFactory;
+    use SoftDeletes, AccountTrait, HasFactory, FacilitatingAccountsTrait;
 
     protected $fillable = [
         'user_id','name', 'description', 'role'
@@ -464,6 +466,11 @@ class Professional extends Model
     public function addedCollaboration()
     {
         return $this->morphMany(Collaboration::class,'addedby');
+    }
+
+    public function facilitationDetails()
+    {
+        return $this->morphMany(FacilitationDetail::class, 'accountable');
     }
     
     protected static function newFactory()

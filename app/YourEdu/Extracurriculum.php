@@ -4,13 +4,15 @@ namespace App\YourEdu;
 
 use App\Traits\AssessmentTrait;
 use App\Traits\DashboardItemTrait;
+use Database\Factories\ExtracurriculumFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Extracurriculum extends Model
 {
     
-    use SoftDeletes, DashboardItemTrait, AssessmentTrait;
+    use SoftDeletes, DashboardItemTrait, AssessmentTrait, HasFactory;
 
     protected $fillable = [
         'name', 'description', 'state'
@@ -70,11 +72,13 @@ class Extracurriculum extends Model
 
     public function facilitators(){
         return $this->morphedByMany(Facilitator::class,'extracurriculumable','extra')
+            ->withPivot(['activity'])
             ->withTimestamps();
     }
 
     public function professionals(){
         return $this->morphedByMany(Professional::class,'extracurriculumable','extra')
+            ->withPivot(['activity'])
             ->withTimestamps();
     }
 
@@ -96,8 +100,8 @@ class Extracurriculum extends Model
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'extracurriculumable','extra')
-            ->withPivot(['activity'])->withTimestamps();
+        return $this->morphToMany(Lesson::class,'lessonable','lessonables')
+            ->withPivot(['type','lesson_number'])->withTimestamps();
     }
     
     public function requests()
@@ -124,6 +128,11 @@ class Extracurriculum extends Model
     {
         return $this->morphMany(Discussion::class,'discussionfor');
     }
+
+    public function discussion()
+    {
+        return $this->discussions->first();
+    }
     
     public function payments()
     {
@@ -139,5 +148,50 @@ class Extracurriculum extends Model
     public function comments()
     {
         return $this->morphMany(Comment::class,'commentable');
+    }
+
+    public function assessments()
+    {
+        return $this->morphByMany(Assessment::class,'assessmentable');
+    }
+
+    public function hasDiscussion()
+    {
+        return $this->discussions->count() > 0;
+    }
+
+    public function doesntHaveDiscussion()
+    {
+        return !$this->hasDiscussion();
+    }
+
+    public function items()
+    {
+        return $this->classes->merge(
+            $this->programs()->hasOwner()->get()
+        );
+    }
+
+    public function hasPayments()
+    {
+        return $this->whereHas('payments')
+            ->orWhereHas('programs',function($query) {
+                $query->whereHas('payments');
+            })
+            ->orWhereHas('classes',function($query) {
+                $query->whereHas('payments');
+            })
+            ->count() > 0;
+    }
+
+    public function isUsedByAnotherItem()
+    {
+        return $this->programs->whereNotNull('ownedby_type')->count() ||
+            $this->classes->count();
+    }
+
+    protected static function newFactory()
+    {
+        return ExtracurriculumFactory::new();
     }
 }

@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\DiscussionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Discussion extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
         'title', 'preamble', 'restricted', 'type','allowed',
@@ -98,5 +100,10 @@ class Discussion extends Model
     public function scopeNotSocial($query)
     {
         return $query->whereNull('discussionfor_type');
+    }
+
+    protected static function newFactory()
+    {
+        return DiscussionFactory::new();
     }
 }

@@ -16,7 +16,8 @@ class CreateAssessmentablesTable extends Migration
         Schema::create('assessmentables', function (Blueprint $table) {
             $table->id();
             $table->foreignId('assessment_id')->constrained()->onDelete('cascade');
-            $table->nullableMorphs('assessmentable'); // academicYearSection lesson course class extracurriculum program admission`
+            $table->nullableMorphs('assessmentable'); // lesson courseSection course class extracurriculum program admission`
+            $table->nullableMorphs('itemable'); // class course
             $table->timestamps();
         });
     }

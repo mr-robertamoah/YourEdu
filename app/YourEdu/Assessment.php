@@ -92,6 +92,69 @@ class Assessment extends Model
         )->withTimestamps();
     }
 
+    public function courseSections()
+    {
+        return $this->morphedByMany(
+            related: CourseSection::class,
+            name: 'assessmentable',
+            table: 'assessmentables'
+        )->withTimestamps();
+    }
+
+    public function subjects()
+    {
+        return $this->morphedByMany(
+            related: Subject::class,
+            name: 'assessmentable',
+            table: 'assessmentables'
+        )->withTimestamps();
+    }
+    
+    public function payments()
+    {
+        return $this->morphMany(Payment::class,'what');
+    }
+
+    public function assessmentable()
+    {
+        return $this->morphTo();
+    }
+
+    public function assessmentables()
+    {
+        return $this->hasMany(Assessmentable::class);
+    }
+
+    public function addedby()
+    {
+        return $this->morphTo();
+    }
+
+    public function reportDetail()
+    {
+        return $this->belongsTo(ReportDetail::class);
+    }
+    
+    public function discussions()
+    {
+        return $this->morphMany(Discussion::class,'discussionfor');
+    }
+
+    public function discussion()
+    {
+        return $this->discussions->first();
+    }
+
+    public function hasDiscussion()
+    {
+        return $this->discussions->count() > 0;
+    }
+
+    public function doesntHaveDiscussion()
+    {
+        return !$this->hasDiscussion();
+    }
+
     public function allItems()
     {
         return $this->extracurriculums->merge(
@@ -105,19 +168,60 @@ class Assessment extends Model
         );
     }
 
-    public function assessmentable()
+    public function items()
     {
-        return $this->morphTo();
+        return Assessmentable::where('assessment_id', $this->id)
+            ->has('assessmentable')->get()
+            ->pluck('assessmentable');
     }
 
-    public function addedby()
+    public function doesntHaveSpecificAssessmentable($assessmentable, $itemable)
     {
-        return $this->morphTo();
+        return is_null(
+            $this->specificAssesmentable($assessmentable, $itemable)
+        );
     }
 
-    public function reportDetail()
+    public function specificAssesmentable($assessmentable, $itemable)
     {
-        return $this->belongsTo(ReportDetail::class);
+        return $this->assessmentables()
+            ->where('assessmentable_type', $assessmentable::class)
+            ->where('assessmentable_id', $assessmentable->id)
+            ->where('itemable_type', $itemable::class)
+            ->where('itemable_id', $itemable->id)
+            ->first();
+    }
+
+    public function hasPayments()
+    {
+        return $this->has('payments')
+            ->orWhereHas('programs',function($query) {
+                $query->has('payments');
+            })
+            ->orWhereHas('classes',function($query) {
+                $query->has('payments');
+            })
+            ->orWhereHas('lessons',function($query) {
+                $query->has('payments');
+            })
+            ->orWhereHas('courses',function($query) {
+                $query->has('payments');
+            })
+            ->orWhereHas('extracurriculums',function($query) {
+                $query->has('payments');
+            })
+            ->count() > 0;
+    }
+
+    public function isUsedByAnotherItem()
+    {
+        return $this->programs->count() ||
+            $this->extracurriculums->count() ||
+            $this->lessons->count() ||
+            $this->courses->count() ||
+            $this->courseSections->count() ||
+            $this->subjects->count() ||
+            $this->classes->count();
     }
 
     public function doesntHaveAssessmentSections()

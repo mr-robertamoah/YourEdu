@@ -181,6 +181,27 @@ const mutations = {
             state.accountDetails.ownedCourses.splice(index,1)
         }
     },
+    ADD_NEW_ASSESSMENT(state,data){
+        state.accountDetails.assessments.unshift(data)
+    },
+    UPDATE_ASSESSMENT(state,data){
+        let index = state.accountDetails.assessments.findIndex(assessment=>{
+            return assessment.id === data.id
+        })
+        if (index === -1) {
+            return
+        }
+        state.accountDetails.assessments.splice(index,1,data)
+    },
+    REMOVE_ASSESSMENT(state,assessmentId){
+        let index = state.accountDetails.assessments.findIndex(assessment=>{
+            return assessment.id == assessmentId
+        })
+        if (index === -1) {
+            return
+        }
+        state.accountDetails.assessments.splice(index,1)
+    },
     //programs
     ADD_NEW_PROGRAM(state,data){
         state.accountDetails.programs.unshift(data)

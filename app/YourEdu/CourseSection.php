@@ -19,7 +19,30 @@ class CourseSection extends Model
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'sectionable','sectionables','section_id')
-            ->withPivot(['lesson_number'])->withTimestamps();
+        return $this->morphToMany(Lesson::class,'lessonable','lessonables')
+            ->withPivot(['lesson_number', 'type'])->withTimestamps();
+    }
+
+    public function lessonables()
+    {
+        return $this->morphMany(Lessonable::class, 'lessonable');
+    }
+
+    public function lastLesson()
+    {
+        return $this->lessonables()->whereNotNull('lesson_number')->last();
+    }
+
+    public function assessments()
+    {
+        return $this->morphByMany(Assessment::class,'assessmentable');
+    }
+
+    public function scopeSearchItems($query,$search)
+    {
+        return $query->where(function($q) use ($search){
+            $q->where('name','like',"%$search%")
+                ->orWhere('description','like',"%$search%");
+        });
     }
 }

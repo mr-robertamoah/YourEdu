@@ -183,32 +183,32 @@ import PostButton from './PostButton'
                 if (this.type) {
                     if (this.typeName === 'book') {
                         if (this.type.about && this.type.about.length) {
-                            this.typeValue = this.typeMediaFull ? this.type.about : strings.content(this.type.about)
+                            this.typeValue = this.typeMediaFull ? this.type.about : strings.trim(this.type.about)
                         } else {
                             return false
                         }
                     } else if (this.typeName === 'poem') {
                         if (this.type.sections && this.type.sections.length) {
                             let mappedString = strings.arrayToNewLineStrings(this.type.sections.map(el=>el.body))
-                            this.typeValue =  this.typeMediaFull ? mappedString : strings.content(mappedString,200,true)
+                            this.typeValue =  this.typeMediaFull ? mappedString : strings.trim(mappedString,200,true)
                         } else {
                             return false
                         }
                     } else if (this.typeName === 'question') {
                         if (this.type.body && this.type.body.length) {
-                            this.typeValue = this.typeMediaFull ? this.type.body :  strings.content(this.type.body)
+                            this.typeValue = this.typeMediaFull ? this.type.body :  strings.trim(this.type.body)
                         } else {
                             return false
                         }
                     } else if (this.typeName === 'activity') {
                         if (this.type.description && this.type.description.length) {
-                            this.typeValue =  this.typeMediaFull ? this.type.description : strings.content(this.type.description)
+                            this.typeValue =  this.typeMediaFull ? this.type.description : strings.trim(this.type.description)
                         } else {
                             return false
                         }
                     } else if (this.typeName === 'riddle') {
                         if (this.type.body && this.type.body.length) {
-                            this.typeValue =  this.typeMediaFull ? this.type.body : strings.content(this.type.body)
+                            this.typeValue =  this.typeMediaFull ? this.type.body : strings.trim(this.type.body)
                         } else {
                             return false
                         }

@@ -143,7 +143,7 @@
                                 <search-input
                                     class="search-input"
                                     v-if="data.owner.account"
-                                    :searchPlaceholder="`search for classes and programs`"
+                                    :placeholder="`search for classes and programs`"
                                     @search="getSearchItemsText"
                                 ></search-input>
                                 <div class="class-payment course-classes-section">
@@ -156,10 +156,10 @@
                                             :key="index"
                                             :item="item"
                                             type="class"
-                                            :hasRemove="inClassesSelection(item)"
+                                            :hasRemove="inItemsSelection(item)"
                                             class="class-badge"
-                                            @clickedItem="classSelected"
-                                            @clickedRemoveItem="removeClass"
+                                            @clickedItem="itemSelected"
+                                            @clickedRemoveItem="removeItem"
                                         ></item-badge>
                                     </div>
                                     <div class="no-data" 
@@ -374,7 +374,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         },
         methods: {
             ...mapActions(['dashboard/createExtracurriculum','dashboard/editExtracurriculum',
-                'dashboard/getAccountSpecificItem']),
+                'dashboard/getAccountSpecificItems']),
             closeModal() {
                 this.data.owner = {name: ''}
                 this.clearData()
@@ -385,10 +385,10 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.data.extracurriculumId = data.id
                 this.data.state = data.state?.toLowerCase()
                 this.data.description = data.description
-                this.data.classes = []
-                this.data.mainClasses = []
-                this.data.classes.push(...data.classes)
-                this.data.mainClasses.push(...data.classes)
+                this.data.items = []
+                this.data.mainItems = []
+                this.data.items.push(...data.items)
+                this.data.mainItems.push(...data.items)
                 this.data.mainAttachments = []
                 if (data.attachments) {
                     this.data.mainAttachments.push(...data.attachments)
@@ -417,36 +417,36 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.checkDiscussion(data)
             },
             //classes or programs
-            inClassesSelection(data) {
-                let index = this.findClassIndex(data)
+            inItemsSelection(data) {
+                let index = this.findItemIndex(data)
                 if (index > -1) {
                     return true
                 }
                 return false
             },
-            classSelected(data) {
-                let index = this.findClassIndex(data)
+            itemSelected(data) {
+                let index = this.findItemIndex(data)
                 if (index === -1) {
-                    this.data.classes.push(data)
+                    this.data.items.push(data)
                 }
             },
-            findClassIndex(data) {
-                return this.data.classes.findIndex(cl=>{
+            findItemIndex(data) {
+                return this.data.items.findIndex(cl=>{
                     return cl.id === data.id && cl.type === data.type
                 })
             },
-            removeClass(data) {
-                let index = this.findClassIndex(data)
+            removeItem(data) {
+                let index = this.findItemIndex(data)
                 if (index > -1) {
-                    this.data.classes.splice(index,1)
+                    this.data.items.splice(index,1)
                 }
             },
-            removedClassesUpdate(data) {
-                let index = this.data.removedClasses.findIndex(cl=>{
+            removedItemsUpdate(data) {
+                let index = this.data.removedItems.findIndex(cl=>{
                     return data.type === cl.type && data.id === cl.id
                 })
                 if (index === -1) {
-                    this.data.removedClasses.push(data)
+                    this.data.removedItems.push(data)
                 }
             },
             attachmentSelection(data){
@@ -460,13 +460,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: 'class',
-                        secondItem: 'program',
-                        search: this.searchItemsText
+                        items: ['classes', 'programs'],
+                        search: this.searchItemsText,
+                        for: 'extracurriculum'
                     }
 
                 this.specificItemLoading = true
-                response = await this['dashboard/getAccountSpecificItem']({
+                response = await this['dashboard/getAccountSpecificItems']({
                     data, nextPage: this.specificItemDetailsNextPage
                 })
                 this.specificItemLoading = false
@@ -530,7 +530,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 data.append('type', this.data.type)
                 data.append('paymentData', JSON.stringify(this.data.paymentData))
  
-                data.append('classes', JSON.stringify(this.data.classes.map(cl=>{
+                data.append('items', JSON.stringify(this.data.items.map(cl=>{
                     return {
                         id: cl.id,
                         type: cl.type,
@@ -566,16 +566,16 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             }
                         }
                     )))
-                    this.data.mainClasses.forEach(mainCl=>{ //check if class or program has been removed
-                        let index = this.data.classes.findIndex(cl=>{
+                    this.data.mainItems.forEach(mainCl=>{
+                        let index = this.data.items.findIndex(cl=>{
                             return cl.type === mainCl.type && cl.id === mainCl.id
                         })
                         if (index === -1) {
-                            this.removedClassesUpdate(mainCl)
+                            this.removedItemsUpdate(mainCl)
                         }
-                        console.table(this.data.removedClasses)
+                        console.table(this.data.removedItems)
                     })
-                    data.append('removedClasses', JSON.stringify(this.data.removedClasses.map(attachment=>{
+                    data.append('removedItems', JSON.stringify(this.data.removedItems.map(attachment=>{
                         return {
                             type: attachment.type,
                             id: attachment.id
@@ -708,8 +708,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 
         .course-classes-section{
             min-height: 100px;
-            display: flex;
-            justify-content: center;
             align-items: center;
 
             .class-wrapper{

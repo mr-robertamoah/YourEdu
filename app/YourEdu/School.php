@@ -4,6 +4,7 @@ namespace App\YourEdu;
 
 use App\Traits\AccountTrait;
 use App\Traits\DashboardItemTrait;
+use App\Traits\FacilitatingAccountsTrait;
 use App\User;
 use Database\Factories\SchoolFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,8 @@ class School extends Model
 {
     //
 
-    use SoftDeletes, AccountTrait, DashboardItemTrait, HasFactory;
+    use SoftDeletes, AccountTrait, DashboardItemTrait, HasFactory, 
+        FacilitatingAccountsTrait;
 
     protected $fillable = [
         'owner_id','company_name', 'role', 'class_structure', 'types', 'about'
@@ -263,7 +265,7 @@ class School extends Model
     }
 
     public function classes(){
-        return $this->morphToMany(ClassModel::class,'classable','classables')
+        return $this->morphToMany(ClassModel::class,'classable','classables', null, 'class_id')
             ->withPivot(['resource'])->withTimestamps();
     }
 

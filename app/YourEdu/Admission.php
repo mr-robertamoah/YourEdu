@@ -44,5 +44,10 @@ class Admission extends Model
     {
         return $this->morphMany(Comment::class,'commentable');
     }
+
+    public function assessments()
+    {
+        return $this->morphByMany(Assessment::class,'assessmentable');
+    }
     
 }

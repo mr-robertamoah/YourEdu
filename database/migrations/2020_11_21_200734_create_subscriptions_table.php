@@ -15,7 +15,7 @@ class CreateSubscriptionsTable extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->morphs('subsribable'); // book extracurriculum course class classsection request admission permission
+            $table->morphs('subscribable'); // book extracurriculum course class classsection request admission permission
             $table->morphs('ownedby'); //professional school facilitator 
             $table->string('name')->nullable();
             $table->float('amount');

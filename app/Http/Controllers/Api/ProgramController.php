@@ -19,51 +19,30 @@ use Illuminate\Support\Facades\DB;
 
 class ProgramController extends Controller
 {
-    public function programCreate(ProgramCreateRequest $request)
+    public function createProgramAsAttachment(ProgramCreateRequest $request)
     {
-        try { 
-            DB::beginTransaction();
-            
-            $program = (new ProgramService())->programCreate($request->account,
-                $request->accountId,$request->name,$request->description,
-                $request->rationale,json_decode($request->aliases));
+        $program = (new ProgramService())->createProgramAsAttachment(
+            ProgramDTO::createFromRequest($request)
+        );
 
-            DB::commit();
-            return response()->json([
-                'message' => "successful",
-                'program' => new ProgramResource($program)
-            ]);
-        } catch (\Throwable $th) {
-            DB::rollback();
-            throw $th;
-            // return response()->json([
-            //     'message' => "unsuccessful, something happened."
-            // ],422);
-        }
-
+        DB::commit();
+        return response()->json([
+            'message' => "successful",
+            'program' => new ProgramResource($program)
+        ]);
     }
 
-    public function programAliasCreate(ProgramAliasCreateRequest $request,$program)
+    public function createProgramAttachmentAlias(ProgramAliasCreateRequest $request)
     {
-        try {
-            DB::beginTransaction();
+        $mainProgram = (new ProgramService())->createProgramAttachmentAlias(
+            ProgramDTO::createFromRequest($request)
+        );
 
-            $mainProgram = (new ProgramService())->programAliasCreate($program,
-                $request->account,$request->accountId,$request->name,$request->description);
-
-            DB::commit();
-            return response()->json([
-                'message' => "successful",
-                'program' => new ProgramResource($mainProgram)
-            ]);
-        } catch (\Throwable $th) {
-            DB::rollback();
-            throw $th;
-            // return response()->json([
-            //     'message' => "unsuccessful, something happened."
-            // ],422);
-        }
-
+        DB::commit();
+        return response()->json([
+            'message' => "successful",
+            'program' => new ProgramResource($mainProgram)
+        ]);
     }
 
     public function programsGet()
@@ -84,17 +63,16 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function programsDelete($program)
+    public function deleteProgramAsAttachment(Request $request)
     {
-        try {
-            $programInfo = (new ProgramService())->programDelete($program,auth()->id());
+        (new ProgramService())->deleteProgramAsAttachment(
+            ProgramDTO::createFromRequest($request)
+        );
 
-            return response()->json([
-                'message' => $programInfo
-            ]);
-        } catch (\Throwable $th) {
-            throw $th;
-        }
+        DB::commit();
+        return response()->json([
+            'message' => 'successful'
+        ]);
     }
     
     public function createProgram(CreateProgramRequest $request)

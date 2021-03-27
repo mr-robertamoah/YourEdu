@@ -193,7 +193,7 @@ class AssessmentSectionService
             'random' => $assessmentSectionDTO->random,
             'max_questions' => $assessmentSectionDTO->maxQuestions,
             'auto_mark' => $assessmentSectionDTO->autoMark,
-            'answer_type' => $assessmentSectionDTO->answerType,
+            'answer_type' => AssessmentService::getAnswerType($assessmentSectionDTO->answerType),
         ];
 
         $assessmentSection = null;

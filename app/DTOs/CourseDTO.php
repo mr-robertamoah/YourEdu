@@ -3,6 +3,7 @@
 namespace App\DTOs;
 
 use App\Contracts\ItemDataContract;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class CourseDTO implements ItemDataContract
@@ -10,12 +11,12 @@ class CourseDTO implements ItemDataContract
     public string | null $courseId;
     public string | null $name;
     public bool | null $facilitate;
-    public bool | null $standAlone;
+    public bool $standAlone = false;
     public array | null $sections;
     public array | null $removedSections;
     public array | null $editedSections;
-    public array | null $classes;
-    public array | null $removedClasses;
+    public array | null $items;
+    public array | null $removedItems;
     public array | null $attachments;
     public array | null $removedAttachments;
     public object | null $discussionData;
@@ -29,9 +30,13 @@ class CourseDTO implements ItemDataContract
     public string | null $description;
     public string | null $type;
     public string | null $state;
+    public ?string $methodType = null;
+    public ?string $method = null;
     public array | null $paymentData;
     public array | null $removedPaymentData;
     public int | null $userId;
+    public ?Model $addedby = null;
+    public ?Model $ownedby = null;
 
     public static function createFromRequest(Request $request)
     {
@@ -50,19 +55,49 @@ class CourseDTO implements ItemDataContract
         $self->state = $request->state;
         $self->type = $request->type;
         $self->facilitate = json_decode($request->facilitate);
-        $self->standAlone = json_decode($request->standAlone);
-        $self->classes = json_decode($request->classes);
-        $self->removedClasses = json_decode($request->removedClasses);
-        $self->attachments = json_decode($request->attachments);
-        $self->removedAttachments = json_decode($request->removedAttachments);
-        $self->removedPaymentData = json_decode($request->removedPaymentData);
-        $self->paymentData = json_decode($request->paymentData);
-        $self->sections = json_decode($request->sections);
-        $self->removedSections = json_decode($request->removedSections);
-        $self->editedSections = json_decode($request->editedSections);
-        $self->discussionData = json_decode($request->discussionData);
-        $self->discussionFiles = $request->file('discussionFile');
+        $self->standAlone = $request->standAlone ?
+            json_decode($request->standAlone) : false;
+        $self->items = $request->items ?
+            json_decode($request->items) : [];
+        $self->removedItems = $request->removedItems ?
+            json_decode($request->removedItems) : [];
+        $self->attachments = $request->attachments ?
+            json_decode($request->attachments) : [];
+        $self->removedAttachments = $request->removedAttachments ?
+            json_decode($request->removedAttachments) : [];
+        $self->removedPaymentData = $request->removedPaymentData ?
+            json_decode($request->removedPaymentData) : [];
+        $self->paymentData = $request->paymentData ?
+            json_decode($request->paymentData) : [];
+        $self->sections = $request->sections ?
+            json_decode($request->sections) : [];
+        $self->removedSections = $request-> removedSections?
+            json_decode($request->removedSections) : [];
+        $self->editedSections = $request->editedSections ?
+            json_decode($request->editedSections) : [];
+        $self->discussionData = $request->discussionData ?
+            json_decode($request->discussionData) : null;
+        $self->discussionFiles = $request->hasFile('discussionFiles') ?
+            $request->file('discussionFile') : [];
 
         return $self;
+    }
+
+    public function withAddedby(Model $addedby)
+    {
+        $clone = clone $this;
+
+        $clone->addedby = $addedby;
+
+        return $clone;
+    }
+
+    public function withOwnedby(Model $ownedby)
+    {
+        $clone = clone $this;
+
+        $clone->ownedby = $ownedby;
+
+        return $clone;
     }
 }

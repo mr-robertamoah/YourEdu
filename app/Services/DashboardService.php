@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\DashboardItemSearchDTO;
 use App\Exceptions\AccessDeniedException;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\DashboardException;
@@ -242,72 +243,486 @@ class DashboardService
 
     public function getSectionItemData($item,$itemId)
     {
-        $mainItem = getYourEduModel($item,$itemId);
-        if (is_null($mainItem)) {
-            throw new AccountNotFoundException("{$item} not found with id {$itemId}");
-        }
+        $mainItem = $this->getModel($item,$itemId);
 
         return $mainItem;
+    }
+
+    private function searchOwnedCourses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->ownedCourses()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedCourseSections
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedCourseSections()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedOrFacilitatingCourseSections
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedOrFacilitatingCourseSections()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedOrFacilitatingCourses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedOrFacilitatingCourses()->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedAndFacilitatingCourses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->whereOwnedAndFacilitatingCourses()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedLessons
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->ownedLessons()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedOrFacilitatingLessons
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedOrFacilitatingLessons()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchPrograms
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->ownedPrograms()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedExtracurriculums
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->ownedExtracurriculums()->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedOrFacilitatingExtracurriculums
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedOrFacilitatingExtracurriculums()->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedClasses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        $query = $dashboardItemSearchDTO->searcher
+            ->ownedClasses();
+        
+        if ($dashboardItemSearchDTO->account === 'school') {     
+            $query->runningAcademicYears(); 
+        }
+        
+        return $query->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedAndFacilitatingClasses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedAndFacilitatingClasses()->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedSubjects
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedClassSubjects()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function searchOwnedOrFacilitatingClasses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        $query = $dashboardItemSearchDTO->searcher
+            ->whereOwnedOrFacilitatingClasses()->searchItems(
+                $dashboardItemSearchDTO->search
+            );
+        
+        if ($dashboardItemSearchDTO->account === 'school') {     
+            $query->runningAcademicYears(); 
+        }
+        
+        return $query->searchItems(
+            $dashboardItemSearchDTO->search
+        )->get();
+    }
+
+    private function searchOwnedOrFacilitatingSubjects
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher
+            ->whereOwnedOrFacilitatingClassSubjects()
+            ->searchItems(
+                $dashboardItemSearchDTO->search
+            )->get();
+    }
+
+    private function getSearchSubjects
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+            $this->searchOwnedOrFacilitatingSubjects($dashboardItemSearchDTO) :
+            $this->searchOwnedSubjects($dashboardItemSearchDTO);
+    }
+
+    private function getSearchClasses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+            $this->searchOwnedOrFacilitatingClasses($dashboardItemSearchDTO) :
+            $this->searchOwnedClasses($dashboardItemSearchDTO);
+    }
+
+    private function getSearchExtracurriculums
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+            $this->searchOwnedOrFacilitatingExtracurriculums($dashboardItemSearchDTO) :
+            $this->searchOwnedExtracurriculums($dashboardItemSearchDTO);
+    }
+
+    private function getSearchCourseSections
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+            $this->searchOwnedOrFacilitatingCourseSections($dashboardItemSearchDTO) :
+            $this->searchOwnedCourseSections($dashboardItemSearchDTO);
+    }
+
+    private function getSearchCourses
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+            $this->searchOwnedOrFacilitatingCourses($dashboardItemSearchDTO) :
+            $this->searchOwnedCourses($dashboardItemSearchDTO);
+    }
+
+    private function getSearchLessons
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        return $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+            $this->searchOwnedOrFacilitatingLessons($dashboardItemSearchDTO) :
+            $this->searchOwnedLessons($dashboardItemSearchDTO);
+    }
+
+    private function getLessonSpecificItems
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        $data = new Collection();
+        
+        if ($dashboardItemSearchDTO->searchCourses) {
+            $data = $data->merge(
+                $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+                $this->searchOwnedAndFacilitatingCourses($dashboardItemSearchDTO) :
+                $this->searchOwnedCourses($dashboardItemSearchDTO)
+            );
+        }
+
+        if ($dashboardItemSearchDTO->searchExtracurriculums) {
+            $data = $data->merge(
+                $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+                $this->searchOwnedOrFacilitatingExtracurriculums($dashboardItemSearchDTO) :
+                $this->searchOwnedExtracurriculums($dashboardItemSearchDTO)
+            );
+        }
+        
+        if ($dashboardItemSearchDTO->searchClasses) {            
+            $data = $data->merge(
+                $dashboardItemSearchDTO->searcher->usesFacilitationDetails() ?
+                $this->searchOwnedAndFacilitatingClasses($dashboardItemSearchDTO) :
+                $this->searchOwnedClasses($dashboardItemSearchDTO)
+            );
+        }
+        
+        return $this->paginate($data);
+    }
+
+    private function getAssessmentSpecificItems
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        $data = new Collection();
+        
+        if ($dashboardItemSearchDTO->searchLessons) {
+            $data = $data->merge(
+                $this->getSearchLessons($dashboardItemSearchDTO)
+            );
+        }
+
+        if ($dashboardItemSearchDTO->searchCourses) {
+            $data = $data->merge(
+                $this->getSearchCourses($dashboardItemSearchDTO)
+            );
+        }
+
+        if ($dashboardItemSearchDTO->searchCourseSections) {
+            $data = $data->merge(
+                $this->getSearchCourseSections($dashboardItemSearchDTO)
+            );
+        }
+
+        if ($dashboardItemSearchDTO->searchExtracurriculums) {
+            $data = $data->merge(
+                $this->getSearchExtracurriculums($dashboardItemSearchDTO)
+            );
+        }
+        
+        if ($dashboardItemSearchDTO->searchClasses) {            
+            $data = $data->merge(
+                $this->getSearchClasses($dashboardItemSearchDTO)
+            );
+        }
+        
+        if ($dashboardItemSearchDTO->searchSubjects) {            
+            $data = $data->merge(
+                $this->getSearchSubjects($dashboardItemSearchDTO)
+            );
+        }
+        
+        return $this->paginate($data);
+    }
+
+    private function getCourseSpecificItems
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        $data = new Collection();
+
+        if ($dashboardItemSearchDTO->searchClasses) {            
+            $data = $data->merge(
+                $this->searchOwnedClasses($dashboardItemSearchDTO)
+            );
+        }
+
+        return $this->paginate($data);
+    }
+
+    private function getProgramSpecificItems
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        $data = new Collection();
+        if ($dashboardItemSearchDTO->searchCourses) {            
+            $data = $data->merge(
+                $this->searchOwnedCourses($dashboardItemSearchDTO)
+            );
+        }
+        
+        if ($dashboardItemSearchDTO->searchExtracurriculums) {
+            $data = $data->merge(
+                $this->searchOwnedExtracurriculums($dashboardItemSearchDTO)
+            );
+        }
+        return $this->paginate($data);
+    }
+
+    private function getClassSpecificItems
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        if ($dashboardItemSearchDTO->searchSubjects) {
+            return $this->paginate(SubjectService::getSubjects());
+        }
+
+        $data = new Collection();
+        if ($dashboardItemSearchDTO->searchCourses) {
+            $data = $data->merge(
+                $this->searchOwnedCourses($dashboardItemSearchDTO)
+            );
+        }
+        
+        if ($dashboardItemSearchDTO->searchAcademicYears) {
+            $data = $data->merge(
+                $dashboardItemSearchDTO->searcher->currentAcademicYears()
+                    ->get()
+            );
+        }
+
+        return $this->paginate($data);
+    }
+
+    private function getExtracurriculumSpecificItems
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
+    {
+        $data = new Collection();
+        
+        if ($dashboardItemSearchDTO->searchClasses) {            
+            $data = $data->merge(
+                $this->searchOwnedClasses($dashboardItemSearchDTO)
+            );
+        }
+
+        if ($dashboardItemSearchDTO->searchPrograms) {            
+            $data = $data->merge(
+                $this->searchPrograms($dashboardItemSearchDTO)
+            );
+        }
+
+        return $this->paginate($data);
+    }
+
+    private function paginate($data)
+    {
+        return paginate(
+            $data->unique()->sortByDesc('updated_at'), 
+            self::PAGINATION_LENGTH
+        );
     }
 
     /**
      * this helps us get the items like classes, courses, extracurriculums, etc 
      * for facilitators, professionals, schools
      */
-    public function getAccountSpecificItems($account,$accountId,$item)
+    public function getAccountSpecificItems
+    (
+        DashboardItemSearchDTO $dashboardItemSearchDTO
+    )
     {
-        $mainAccount = $this->getModel($account,$accountId);
-        
-        if ($item['for'] === 'lesson') {
-            $data = new Collection();
-            $data = $data->merge($mainAccount->ownedCourses()
-                ->searchItems($item['search'])->get()
-            );
-            if ($item['two'] === 'extracurriculums') {
-                $data = $data->merge(
-                    $mainAccount->ownedExtracurriculums()->searchItems($item['search'])->get()
-                );
-            }
-            if ($item['three'] === 'classes') {
-                $query = ClassModel::query();
-                $query->where('ownedby_type',$mainAccount::class)
-                    ->where('ownedby_id',$mainAccount->id);
-                if ($account === 'school') {     
-                    $query->runningAcademicYears(); 
-                }
-                $data = $data->merge(
-                    $query->hasCoursesOrSubjects()->searchItems($item['search'])->get()
-                );
-            }
-            return paginate($data->sortByDesc('updated_at'), self::PAGINATION_LENGTH);
-        } else if ($item['one'] === 'class') {
-            $data = new Collection();
-            $query = ClassModel::query();
-            $query->where('ownedby_type',$mainAccount::class)
-                ->where('ownedby_id',$mainAccount->id);
-            if ($account === 'school') {     
-                $query->runningAcademicYears(); 
-            }
-            $data = $data->merge($query->searchItems($item['search'])->get());
-
-            return paginate($data->sortByDesc('updated_at'), self::PAGINATION_LENGTH);
-        } else if ($item['one'] === 'courses') {
-            $data = new Collection();
-            $data = $data->merge(
-                $mainAccount->ownedCourses()->searchItems($item['search'])->get()
+        try {
+            $dashboardItemSearchDTO = $dashboardItemSearchDTO->withSearcher(
+                    $this->getModel(
+                    $dashboardItemSearchDTO->account,
+                    $dashboardItemSearchDTO->accountId
+                )
             );
             
-            if ($item['two'] === 'extracurriculums') {
-                $data = $data->merge(
-                    $mainAccount->ownedExtracurriculums()->searchItems($item['search'])->get()
-                );
+            if ($dashboardItemSearchDTO->for === 'lesson') {
+                return $this->getLessonSpecificItems($dashboardItemSearchDTO);
+            } 
+            
+            if ($dashboardItemSearchDTO->for === 'assessment') {
+                return $this->getAssessmentSpecificItems($dashboardItemSearchDTO);
+            } 
+            
+            if ($dashboardItemSearchDTO->for === 'class') {
+                return $this->getClassSpecificItems($dashboardItemSearchDTO);
             }
-            return paginate($data->sortByDesc('updated_at'), self::PAGINATION_LENGTH);
-        }  else if ($item['one'] === 'subjects') {
-            return paginate(SubjectService::getSubjects(),self::PAGINATION_LENGTH);
-        } else if ($item['one'] === 'academicYear') {
-            return $mainAccount->currentAcademicYears()->paginate(self::PAGINATION_LENGTH);
+            
+            if ($dashboardItemSearchDTO->for === 'program') {
+                return $this->getProgramSpecificItems($dashboardItemSearchDTO);
+            }
+            
+            if ($dashboardItemSearchDTO->for === 'course') {
+                return $this->getCourseSpecificItems($dashboardItemSearchDTO);
+            }
+            
+            if ($dashboardItemSearchDTO->for === 'extracurriculum') {
+                return $this->getExtracurriculumSpecificItems($dashboardItemSearchDTO);
+            }
+
+            $this->throwDashboardException(
+                message: "there is insufficient data for this request.",
+                data: $dashboardItemSearchDTO
+            );
+        } catch (\Throwable $th) {
+            throw $th;
         }
+    }
+
+    private function throwDashboardException
+    (
+        string $message,
+        $data = null
+    )
+    {
+        throw new DashboardException(
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -316,10 +731,7 @@ class DashboardService
      */
     public function getAccountItems($account,$accountId,$item,$search)
     {
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} with id {$accountId} was not found");
-        }
+        $mainAccount = $this->getModel($account,$accountId);
 
         $data = new Collection();
         if ($item === 'lessons') {
@@ -336,10 +748,7 @@ class DashboardService
 
     public function getItemDetails($item,$itemId,$authId)
     {   
-        $mainItem = getYourEduModel($item,$itemId);
-        if (is_null($mainItem)) {
-            throw new AccountNotFoundException("{$item} with id {$itemId} not found.");
-        }
+        $mainItem = $this->getModel($item,$itemId);
 
         //if fails authId then check if item has any payment type
         if (!$authId) {

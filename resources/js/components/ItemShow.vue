@@ -80,7 +80,7 @@ import { mapGetters } from 'vuex'
         },
         methods: {
             shortenText(text){
-                return strings.content(text, 200)
+                return strings.trim(text, 200)
             },
             message(data){
                 return data.poem ? this.shortenText(data.poem) : 

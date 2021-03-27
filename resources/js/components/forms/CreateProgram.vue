@@ -145,7 +145,7 @@
                                 </div>
                                 <search-input
                                     class="search-input"
-                                    searchPlaceholder="search for courses and extracurriculums"
+                                    placeholder="search for courses and extracurriculums"
                                     @search="getSearchItemsText"
                                 ></search-input>
                                 <div class="class-payment course-classes-section">
@@ -360,7 +360,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         },
         methods: {
             ...mapActions(['dashboard/createProgram','dashboard/editProgram',
-                'dashboard/getAccountSpecificItem']),
+                'dashboard/getAccountSpecificItems']),
             closeModal() {
                 this.data.owner = {name: ''}
                 this.clearData()
@@ -454,13 +454,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: 'courses',
-                        secondItem: 'extracurriculums',
-                        search: this.searchItemsText
+                        items: ['courses', 'extracurriculums'],
+                        search: this.searchItemsText,
+                        for: 'program'
                     }
 
                 this.specificItemLoading = true
-                response = await this['dashboard/getAccountSpecificItem']({
+                response = await this['dashboard/getAccountSpecificItems']({
                     data, nextPage: this.specificItemDetailsNextPage
                 })
                 this.specificItemLoading = false
@@ -701,8 +701,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 
         .course-classes-section{
             min-height: 100px;
-            display: flex;
-            justify-content: center;
             align-items: center;
 
             .class-wrapper{

@@ -74,7 +74,7 @@
                             <div class="section">Adding Other Collaborators</div>
                             <search-input
                                 class="search-input"
-                                searchPlaceholder="search accounts"
+                                placeholder="search accounts"
                                 @search="getSearchText"
                             ></search-input>
 

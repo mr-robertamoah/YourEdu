@@ -214,7 +214,7 @@
                                 <search-input
                                     class="search-input"
                                     v-if="!standAlone && data.owner.account"
-                                    searchPlaceholder="search for classes and programs"
+                                    placeholder="search for classes and programs"
                                     @search="getSearchItemsText"
                                 ></search-input>
                                 <div class="class-payment course-classes-section"
@@ -470,7 +470,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         },
         methods: {
             ...mapActions(['dashboard/createCourse','dashboard/editCourse',
-                'dashboard/getAccountSpecificItem']),
+                'dashboard/getAccountSpecificItems']),
             getSections(sections) {
                 this.sections = sections
             },
@@ -492,16 +492,15 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.data.description = data.description
                 this.standAlone = data.standAlone
                 if (!data.standAlone) {                    
-                    this.data.classes = []
-                    this.data.mainClasses = []
-                    this.data.classes.push(...data.classes)
-                    this.data.mainClasses.push(...data.classes)
+                    this.data.items = []
+                    this.data.mainItems = []
+                    this.data.items.push(...data.items)
+                    this.data.mainItems.push(...data.items)
                 }
                 this.data.mainAttachments = []
                 this.data.mainAttachments.push(...data.courses)
                 this.data.mainAttachments.push(...data.programs)
                 this.data.mainAttachments.push(...data.grades)
-                //sections
                 this.mainSections = []
                 this.mainSections.push(...data.sections)
                 if (data.sections.length) {
@@ -538,26 +537,26 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             classSelected(data) {
                 let index = this.findClassIndex(data)
                 if (index === -1) {
-                    this.data.classes.push(data)
+                    this.data.items.push(data)
                 }
             },
             findClassIndex(data) {
-                return this.data.classes.findIndex(cl=>{
+                return this.data.items.findIndex(cl=>{
                     return cl.id === data.id 
                 })
             },
             removeClass(data) {
                 let index = this.findClassIndex(data)
                 if (index > -1) {
-                    this.data.classes.splice(index,1)
+                    this.data.items.splice(index,1)
                 }
             },
-            removedClassesUpdate(data) {
-                let index = this.data.removedClasses.findIndex(cl=>{
+            removedItemsUpdate(data) {
+                let index = this.data.removedItems.findIndex(cl=>{
                     return data.type === cl.type && data.id === cl.id
                 })
                 if (index === -1) {
-                    this.data.removedClasses.push(data)
+                    this.data.removedItems.push(data)
                 }
             },
             //sections
@@ -622,13 +621,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: 'class',
-                        secondItem: 'program',
-                        search: this.searchItemsText
+                        items: ['classes', 'programs'],
+                        search: this.searchItemsText,
+                        for: 'course'
                     }
 
                 this.specificItemLoading = true
-                response = await this['dashboard/getAccountSpecificItem']({
+                response = await this['dashboard/getAccountSpecificItems']({
                     data, nextPage: this.specificItemDetailsNextPage
                 })
                 this.specificItemLoading = false
@@ -694,7 +693,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 data.append('sections', JSON.stringify(this.sections)) 
                 data.append('type', this.data.type)
 
-                data.append('classes', JSON.stringify(this.data.classes.map(cl=>{
+                data.append('items', JSON.stringify(this.data.items.map(cl=>{
                     return {
                         id: cl.id,
                         type: cl.type
@@ -729,15 +728,15 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             }
                         }
                     )))
-                    this.data.mainClasses.forEach(mainCl=>{ //check if class or program has been removed
-                        let index = this.data.classes.findIndex(cl=>{
+                    this.data.mainItems.forEach(mainCl=>{ //check if class or program has been removed
+                        let index = this.data.items.findIndex(cl=>{
                             return cl.type === mainCl.type && cl.id === mainCl.id
                         })
                         if (index === -1) {
-                            this.removedClassesUpdate(mainCl)
+                            this.removedItemsUpdate(mainCl)
                         }
                     })
-                    data.append('removedClasses', JSON.stringify(this.data.removedClasses.map(attachment=>{
+                    data.append('removedItems', JSON.stringify(this.data.removedItems.map(attachment=>{
                         return {
                             type: attachment.type,
                             id: attachment.id
@@ -889,8 +888,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 
         .course-classes-section{
             min-height: 100px;
-            display: flex;
-            justify-content: center;
             align-items: center;
 
             .class-wrapper{

@@ -40,10 +40,10 @@ import { strings } from '../services/helpers'
         computed: {
             computedName() {
                 if (this.link.name.length) return this.link.name
-                return strings.content(this.link.link) 
+                return strings.trim(this.link.link) 
             },
             computedDescription() {
-                return strings.content(this.link.description)
+                return strings.trim(this.link.description)
             },
         },
         methods: {

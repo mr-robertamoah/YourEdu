@@ -10,6 +10,7 @@
             :drag="assessmentSections.length > 1"
             @arrangeAssessmentSections="arrangeAssessmentSections"
             @editAssessmentSection="editAssessmentSection"
+            @removeAssessmentSection="removeAssessmentSection"
         ></assessment-section-badge>
         <div class="sections-form" 
             v-show="showSectionForm"
@@ -69,7 +70,7 @@
                     placeholder="set default answer type for this section"
                     backgroundColor='white'
                     :items="computedAnswerTypes"
-                    v-model="data.answerType"
+                    v-model="data.userAnswerType"
                 ></main-select>
             </div>
             
@@ -84,19 +85,43 @@
             <question-form
                 class="sections"
                 @addQuestion="addQuestion"
+                @updateQuestion="updateQuestion"
                 :questions="data.questions"
                 :answerType="data.answerType"
                 :autoMark="data.autoMark"
                 :answerTypes="computedAnswerTypes"
                 :answerTypesPair="computedAnswerTypesPair"
+                @removeQuestion="removeQuestion"
+                @undoQuestionRemoval="undoQuestionRemoval"
             ></question-form>
+            <div class="small-msg" v-if="data.removedQuestions.length">
+                these questions have been deleted
+            </div>
+            <div class="sections red" v-if="data.removedQuestions.length">
+                <question-badge
+                    v-for="(question, questionIndex) in data.removedQuestions"
+                    :key="questionIndex"
+                    :question="question"
+                    :removed="question"
+                    @undoQuestionRemoval="undoQuestionRemoval"
+                ></question-badge>
+            </div>
 
             <div class="buttons">
                 <post-button
                     v-if="computedAddSectionButton"
                     buttonText="add section"
-                    buttonStyle=''
                     @click="addSection"
+                ></post-button>
+                <post-button
+                    v-if="computedDoneSectionButton"
+                    buttonText="done editing section"
+                    @click="updateAssessmentSection"
+                ></post-button>
+                <post-button
+                    v-if="computedDoneSectionButton"
+                    buttonText="clear data"
+                    @click="clearSectionData"
                 ></post-button>
             </div>
         </div>
@@ -111,6 +136,7 @@ import PostButton from '../PostButton';
 import MainCheckbox from '../MainCheckbox';
 import MainSelect from '../MainSelect';
 import AssessmentSectionBadge from '../dashboard/AssessmentSectionBadge';
+import QuestionBadge from '../dashboard/QuestionBadge';
 import NumberInput from '../NumberInput';
 import {bus} from '../../app';
     export default {
@@ -121,6 +147,7 @@ import {bus} from '../../app';
             PostButton,
             MainSelect,
             MainCheckbox,
+            QuestionBadge,
             AssessmentSectionBadge,
             NumberInput
         },
@@ -147,7 +174,9 @@ import {bus} from '../../app';
                     questions: [],
                     removedQuestions: [],
                     editedQuestions: [],
+                    mainQuestions: [],
                     answerType: '',
+                    userAnswerType: '',
                     question: null
                 },
                 showSectionForm: false,
@@ -156,7 +185,7 @@ import {bus} from '../../app';
         watch: {
             sections(newValue) {
                 if (newValue && newValue.length) {
-                    this.toggleSectionFormMethod()
+                    this.setShowSectionFormToTrue()
                 }
             },
             showSectionForm(newValue) {
@@ -164,6 +193,9 @@ import {bus} from '../../app';
                     this.scrollToSections()
                     this.scrollToForm()
                 }
+            },
+            userAnswerType(newValue) {
+                this.answerType = this.computedAnswerTypesPair[newValue]
             }
         },
         mounted () {
@@ -172,7 +204,7 @@ import {bus} from '../../app';
                 this.clearAssessmentSectionData()
             })
             .$on('toggleSectionForm', ()=> { 
-                this.toggleSectionFormMethod()
+                this.setShowSectionFormToTrue()
             })
             .$on('arrangedQuestions', questions=>{
                 console.log(questions);
@@ -180,10 +212,13 @@ import {bus} from '../../app';
         },
         computed: {
             computedAddSectionButton() {
-                return !this.data.id.length && this.computedHasData
+                return !String(this.data.id).length && this.computedHasData
+            },
+            computedDoneSectionButton() {
+                return String(this.data.id).length && this.computedHasData
             },
             computedEditSectionButton() {
-                return this.data.id.length && this.computedHasData
+                return String(this.data.id).length && this.computedHasData
             },
             computedHasData() {
                 return this.data.name.length && this.data.questions.length
@@ -220,12 +255,23 @@ import {bus} from '../../app';
             },
         },
         methods: {
+            clearSectionData() {
+                this.clearAssessmentSectionData()
+            },
             editAssessmentSection(assessmentSection) {
-                this.setAssessmentSectionData(assessmentSection)
+                this.setAssessmentSectionData(_.cloneDeep(assessmentSection))
                 this.scrollToForm()
+            },
+            removeAssessmentSection(assessmentSection) {
+                this.$emit('removeAssessmentSection', assessmentSection)
             },
             arrangeAssessmentSections() {
                 bus.$emit('arrangeAssessmentSections', this.assessmentSections)
+            },
+            updateAssessmentSection() {
+                this.$emit('updateAssessmentSection', _.cloneDeep(this.data))
+                this.clearAssessmentSectionData()
+                this.scrollToLast()
             },
             updateQuestionsPositions() {
                 this.data.questions.forEach(
@@ -234,14 +280,55 @@ import {bus} from '../../app';
                     }
                 )
             },
-            toggleSectionFormMethod() {
-                this.showSectionForm = !this.showSectionForm
+            undoQuestionRemoval(question) {
+                let index = this.findAssessmentSectionQuestion(this.data.removedQuestions, question)
+
+                if (index === -1) {
+                    return
+                }
+
+                this.data.removedQuestions.splice(index, 1)
+                this.data.questions.push(question)
+                this.updateQuestionsPositions()
+            },
+            removeQuestion(question) {
+                let index = this.findAssessmentSectionQuestion(this.data.questions, question)
+
+                if (index === -1) {
+                    return
+                }
+
+                this.data.questions.splice(index, 1)
+                this.data.removedQuestions.push(question)
+                this.updateQuestionsPositions()
+            },
+            setShowSectionFormToTrue() {
+                this.showSectionForm = true
+            },
+            setAssessmentSectionData(assessmentSection) {
+                this.setShowSectionFormToTrue()
+                this.data.id = assessmentSection.id
+                this.data.name = assessmentSection.name
+                this.data.instruction = assessmentSection.instruction
+                this.data.position = assessmentSection.position
+                this.data.duration = assessmentSection.duration
+                this.data.autoMark = assessmentSection.autoMark
+                this.data.hasMaxQuestions = assessmentSection.hasMaxQuestions
+                this.data.random = assessmentSection.random
+                this.data.maxQuestions = assessmentSection.maxQuestions
+                this.data.questions = assessmentSection.questions
+                this.data.removedQuestions = assessmentSection.removedQuestions
+                this.data.editedQuestions = assessmentSection.editedQuestions
+                this.data.mainQuestions = assessmentSection.mainQuestions ? 
+                    assessmentSection.mainQuestions : []
+                this.data.answerType = assessmentSection.answerType
             },
             clearAssessmentSectionData() {
                 this.data.id = ''
                 this.data.name = ''
                 this.data.instruction = ''
                 this.data.position = ''
+                this.data.duration = ''
                 this.data.autoMark = false
                 this.data.hasMaxQuestions = false
                 this.data.random = false
@@ -249,21 +336,39 @@ import {bus} from '../../app';
                 this.data.questions = []
                 this.data.removedQuestions = []
                 this.data.editedQuestions = []
+                this.data.mainQuestions = []
                 this.data.answerType = ''
                 this.clearAssessmentSectionQuestionData()
             },
             clearAssessmentSectionQuestionData() {
                 bus.$emit('clearAssessmentSectionQuestionData')
             },
+            findAssessmentSectionQuestion(data, question) {
+                return data.findIndex(assessmentSectionQuestion=>{
+                    return assessmentSectionQuestion.id === question.id &&
+                        assessmentSectionQuestion.body === question.body &&
+                        assessmentSectionQuestion.answerType === question.answerType 
+                })
+            },
+            updateQuestion(question) {
+                let index = this.findAssessmentSectionQuestion(this.data.questions, question)
+
+                if (index === -1) {
+                    return
+                }
+
+                this.data.questions.splice(index,1,question)
+            },
             addQuestion(question) {
                 this.data.questions.push(
                     this.mapAssessmentSectionQuestionData(_.cloneDeep(question))
                 )
+                this.updateQuestionsPositions()
             },
             mapAssessmentSectionQuestionData(questionData) {
                 return {
                     id: questionData.id.length ? questionData.id : 
-                        `${Math.floor(Math.random() * 1000)}`,
+                        `${Math.floor(Math.random() * -1000)}`,
                     body: questionData.body,
                     hint: questionData.hint,
                     position: questionData.position,
@@ -271,8 +376,10 @@ import {bus} from '../../app';
                     answerType: questionData.answerType,
                     files: questionData.files,
                     removedFiles: questionData.removedFiles,
+                    mainFiles: questionData.mainFiles,
                     possibleAnswers: questionData.possibleAnswers,
                     removedPossibleAnswers: questionData.removedPossibleAnswers,
+                    mainPossibleAnswers: questionData.mainPossibleAnswers,
                     editedPossibleAnswers: questionData.editedPossibleAnswers,
                     correctPossibleAnswers: questionData.correctPossibleAnswers,
                 }
@@ -290,6 +397,7 @@ import {bus} from '../../app';
                 this.data.questions = data.questions
                 this.data.removedQuestions = data.removedQuestions
                 this.data.editedQuestions = data.editedQuestions
+                this.data.mainQuestions = data.mainQuestions
                 this.data.answerType = data.answerType
             },
             goToSectionQuestionForm() {
@@ -299,7 +407,7 @@ import {bus} from '../../app';
             scrollToForm() {
                 if (this.$refs.sectionsform) {
                     setTimeout(() => {
-                        this.$refs.sectionsform.scrollIntoView()                        
+                        this.$refs.sections.scrollTo(this.$refs.sections.scrollWidth, 0)                        
                     }, 100);
                 }
             },
@@ -312,8 +420,8 @@ import {bus} from '../../app';
             },
             scrollToLast() {
                 if (this.$refs.sections) {
-                    this.$refs.sections.scrollTo(
-                        - (this.$refs.sectionsform.width + 20),0
+                    this.$refs.sections.scrollBy(
+                        - (this.$refs.sectionsform.scrollWidth + 20),0
                     )
                 }
             },
@@ -350,11 +458,17 @@ import {bus} from '../../app';
 
         .sections{
             display: flex;
-            width: 90%;
+            width: 100%;
             padding: 10px;
             overflow: hidden;
             overflow-x: scroll;
             margin: 10px auto;
+            align-items: center;
+            justify-content: space-between;
+
+            &.red{
+                background: $red-04;
+            }
         }
 
         .main{
@@ -370,14 +484,23 @@ import {bus} from '../../app';
         .sections-form{
             background: white;
             margin: 0 10px 0 20px;
+            min-width: 110%;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 0 20px;
+            border-radius: 10px;
         }
 
         .buttons{
             display: flex;
             width: 100%;
-            padding-top: 40px;
+            padding-top: 20px;
             padding-bottom: 20px;
             justify-content: center;
+
+            button{
+                margin: 0 10px;
+            }
         }
     }
 </style>

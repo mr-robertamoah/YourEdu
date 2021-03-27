@@ -391,6 +391,54 @@ const actions = {
             commit('REMOVE_COURSE',data.courseId)
         }  
     },
+    async createAssessment({commit},data){
+        let response = await DashboardService.createAssessment(data)
+
+        if (response.data.message === 'successful') {
+            commit('ADD_NEW_ASSESSMENT',response.data.assessment)
+            return {status: true}
+        }
+
+        return {status: false, response}
+    },
+    async deleteAssessment({commit},data){
+        let response = await DashboardService.deleteAssessment(data)
+
+        if (response.data.message === 'successful') {
+            if (response.data.assessment) {
+                commit('UPDATE_ASSESSMENT',response.data.assessment)
+                return {status: true, data: response.data.assessment, action: 'update'}
+            } 
+
+            commit('REMOVE_ASSESSMENT',data.assessmentId)
+            return {status: true, data: response.data.assessment, action: 'delete'}
+        }
+
+        return {status: false, response}
+    },
+    async editAssessment({commit},data){
+        let response = await DashboardService.updateAssessment(data)
+
+        if (response.data.message === 'successful') {
+            commit('UPDATE_ASSESSMENT',response.data.assessment)
+            return {
+                status: true,
+                assessment: response.data.assessment,
+                assessmentResource: response.data.assessmentResource
+            }
+        }
+        
+        return {status: false, response}
+    },
+    addAssessment({commit},data){
+        commit('ADD_NEW_ASSESSMENT',data.assessment)
+    },
+    updateAssessment({commit},data){
+        commit('UPDATE_ASSESSMENT',data.assessment)
+    },
+    removeAssessment({commit},data){
+        commit('REMOVE_ASSESSMENT',data.assessmentId)
+    },
     //lesson
     async createLesson({commit},data){
         let response = await DashboardService.createLesson(data)
@@ -686,8 +734,8 @@ const actions = {
             return {status: false, response}
         }
     },
-    async getAccountSpecificItem({},data) {
-        let response = await DashboardService.getAccountSpecificItem(data)
+    async getAccountSpecificItems({},data) {
+        let response = await DashboardService.getAccountSpecificItems(data)
 
         if (response.data.data) {
             return {

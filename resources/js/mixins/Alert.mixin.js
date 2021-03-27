@@ -28,7 +28,7 @@ export default {
             if (response?.data?.message) {
                 this.alertMessage = response?.data?.message
             }  else {
-                this.alertMessage = `${this.edit ? 'editing' : 'creation'} was unsuccessful`
+                this.alertMessage = `${this.edit ? 'editing' : 'creation'} was unsuccessful 😞`
             }
         },
     },

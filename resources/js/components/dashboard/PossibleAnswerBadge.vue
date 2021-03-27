@@ -19,6 +19,7 @@
                     removed,
                     'no-drag': !drag
                 }"
+                @dblclick="editPossibleAnswer"
             >
                 <div class="option" v-if="computedOption">
                     <div class="list-identifier" v-if="!removed">
@@ -151,16 +152,16 @@ import { strings } from '../../services/helpers'
         },
         computed: {
             computedTrueOrFalse() {
-                return this.answerType.toLowerCase() === 'true_false'
+                return this.answerType.toLowerCase().includes('true')
             },
             computedOption() {
-                return this.answerType.toLowerCase() === 'option'
+                return this.answerType.toLowerCase().includes('option')
             },
             computedArrange() {
-                return this.answerType.toLowerCase() === 'arrange'
+                return this.answerType.toLowerCase().includes('arrange')
             },
             computedFlow() {
-                return this.answerType.toLowerCase() === 'flow'
+                return this.answerType.toLowerCase().includes('flow')
             },
             computedPosition() {
                 return strings.getNumberLetter(this.possibleAnswer.position)
@@ -169,6 +170,9 @@ import { strings } from '../../services/helpers'
         methods: {
             movePossibleAnswer(data) {
                 this.$emit('movePossibleAnswer', data)
+            },
+            editPossibleAnswer() {
+                this.$emit('editPossibleAnswer', this.possibleAnswer)
             },
             isCorrectTrueOrFalse(data) {
                 return this.computedTrueOrFalse && 

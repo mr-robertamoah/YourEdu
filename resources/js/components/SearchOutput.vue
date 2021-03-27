@@ -182,7 +182,7 @@ import { mapGetters } from 'vuex'
                 this.$emit('clickedLoadMore')
             },
             shortenText(text){
-                return strings.content(text, 200)
+                return strings.trim(text, 200)
             },
             removeMyfollow(data){
                 this.$emit('removeMyfollow',data)

@@ -1,14 +1,24 @@
 <template>
-    <div class="assessment-section-wrapper" v-if="assessmentSection">
-        <div class="drag"
-            v-if="drag"
-            @click="clickedDrag"
-            @dragstart="clickedDrag"
-            draggable
-        >
+    <div class="assessment-section-badge-wrapper" 
+        v-if="assessmentSection"
+        @dblclick="dbclickedAssessmentSection"
+    >
+        <div class="other">
             <font-awesome-icon
-                :icon="['fa', 'hand-rock']"
+                class="close"
+                :icon="['fa', 'times']"
+                @click="clickedClose"
             ></font-awesome-icon>
+            <div class="drag"
+                v-if="drag"
+                @click="clickedDrag"
+                @dragstart="clickedDrag"
+                draggable
+            >
+                <font-awesome-icon
+                    :icon="['fa', 'hand-rock']"
+                ></font-awesome-icon>
+            </div>
         </div>
         <div class="name">
             {{assessmentSection.name}}
@@ -16,31 +26,17 @@
         <div class="instruction">
             {{assessmentSection.instruction}}
         </div>
+        <div class="question" v-if="assessmentSection.questions.length">
+            Questions:
+        </div>
         <div class="questions" 
-            v-if="assessmentSection.questions"
+            v-if="assessmentSection.questions.length"
         >
             <question-badge
                 v-for="(question, questionIndex) in assessmentSection.questions"
                 :key="questionIndex"
                 :question="question"
-            ></question-badge>
-        </div>
-        <div class="questions edited" 
-            v-if="assessmentSection.editedQuestions"
-        >
-            <question-badge
-                v-for="(question, questionIndex) in assessmentSection.editedQuestions"
-                :key="questionIndex"
-                :question="question"
-            ></question-badge>
-        </div>
-        <div class="questions removed" 
-            v-if="assessmentSection.removedQuestions"
-        >
-            <question-badge
-                v-for="(question, questionIndex) in assessmentSection.removedQuestions"
-                :key="questionIndex"
-                :question="question"
+                :close="false"
             ></question-badge>
         </div>
     </div>
@@ -63,40 +59,76 @@ import QuestionBadge from './QuestionBadge';
                 type: Boolean,
                 default: false
             },
+            removed: {
+                type: Boolean,
+                default: false
+            },
         },
         methods: {
             clickedDrag() {
                 this.$emit('arrangeAssessmentSections')
             },
-            clickedAssessmentSection() {
+            dbclickedAssessmentSection() {
                 this.$emit('editAssessmentSection', this.assessmentSection)
-            }
+            },
+            clickedClose() {
+                if (this.removed) {
+                    this.$emit('undoAssessmentSectionRemoval', this.assessmentSection)
+                    return
+                }
+                this.$emit('removeAssessmentSection', this.assessmentSection)
+            },
         },
     }
 </script>
 
 <style lang="scss" scoped>
 
-    .assessment-section-wrapper{
+    .assessment-section-badge-wrapper{
         min-width: 100%;
         position: relative;
-        margin: 0 10px;
-        width: 100%;
+        margin: 0 10px; 
+        background: white;
+        padding: 20px;
+        max-height: 450px;
+        border-radius: 10px;
+        overflow-y: auto;
+        cursor: pointer;
 
-        .drag{
-            cursor: grab;
+        .other{
             position: absolute;
             right: 10px;
-            font-size: 20px;
-            color: gray;
+            top: 5px;
+
+            .drag{
+                cursor: grab;
+                font-size: 20px;
+                color: gray;
+            }
+
+            .close{
+                font-size: 30px;
+                color: gray;
+                padding: 5px;
+                cursor: pointer;
+
+                &:hover{
+                    color: red;
+                }
+            }
         }
 
         .name{
-
+            font-size: 14px;
+            color: black;
         }
 
         .instruction{
-
+            font-size: 12px;
+            color: gray;
+            width: 100%;
+            text-align: center;
+            margin: 5px;
         }
 
         .questions{

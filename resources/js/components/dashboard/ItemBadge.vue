@@ -70,23 +70,38 @@ import { dates, strings } from '../../services/helpers'
                 } else if (this.item.description) {
                     str = this.item.description
                 }
-                return strings.content(str,30)
+                return strings.trim(str,30)
             },
             computedDetails() {
-                return !this.item ? null : this.type === 'class' || this.type === 'course' ? 
-                    `${this.item.learners} learners, ${this.item.lessons} lessons` : 
-                    this.type === 'discussion' ? 
-                    `type: ${this.item.type}, allowed: ${this.item.allowed}` : 
-                    this.type === 'subject' && this.item.rationale ? 
-                    `rationale: ${strings.content(this.item.rationale)}` : 
-                    this.type === 'program' ? `${this.item.courses} courses` : 
-                    this.type === 'year' || this.type === 'section' ? this.computedDates : ''
+                let msg = ''
+                if (this.item.learners) {
+                    msg = `${this.item.learners} learners` + `\n`
+                }
+                if (this.item.lessons) {
+                    msg =  `${this.item.lessons} lessons` + `\n`
+                }
+                if (this.item.type) {
+                    msg = `type: ${this.item.type}` + `\n`
+                }
+                if (this.item.allowed) {
+                    msg = `allowed: ${this.item.allowed}` + `\n`
+                }
+                if (this.item.rationale) {
+                    msg = `rationale: ${strings.trim(this.item.rationale, 40)}` + `\n`
+                }
+                if (this.item.courses) {
+                    msg = `${this.item.courses} courses` + `\n`
+                }
+                if (this.computedDates.length) {
+                    msg = this.computedDates
+                }
+                return msg
             },
             computedCreatedAt() {
                 return this.item && this.item.createdAt ? 
                     dates.dateReadable(this.item.createdAt) : null
             },
-            computedDates() { //start and end dates
+            computedDates() {
                 let str = ''
                 if (this.item.startDate) {
                     str += `start date: ${dates.dateReadable(this.item.startDate)}`

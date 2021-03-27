@@ -68,7 +68,6 @@ const dates = {
     },
     createdAt(date){
         let theDate = new Date(date)
-        // console.log('updated_at', theDate)
         let now = new Date
         let div = (now - theDate)
         let divInSeconds = div/_MS_PER_SECOND
@@ -84,11 +83,37 @@ const dates = {
         } else if (divInHours > 1 && divInHours < 2) {
             return 'an hour ago'
         } else if (divInHours > 2 && divInHours < 24) {
-            return `today`
+            return `${Math.floor(divInHours)} hours ago`
         } else if (divInDays > 1 && divInDays < 2) {
             return `${Math.floor(divInHours)} hours ago`
         } else if (divInDays > 2 && divInDays < 3) {
             return `2 days ago`
+        } else if (divInDays > 3) {
+            return `${this.dayShort(theDate.getDay())}, ${theDate.getDate()} ${this.monthShort(theDate.getMonth())}, ${theDate.getFullYear()}`
+        }
+    },
+    dueAt(date){
+        let theDate = new Date(date)
+        let now = new Date
+        let div = (theDate - now)
+        let divInSeconds = div/_MS_PER_SECOND
+        let divInHours = div/_MS_PER_HOUR
+        let divInDays = div/_MS_PER_DAY
+
+        if (divInSeconds < 60) {
+            return 'now'
+        } else if (divInSeconds > 60 && divInSeconds < 120) {
+            return 'few minutes time'
+        } else if (divInSeconds > 120 && divInHours < 1) {
+            return `${Math.floor(divInSeconds/60)} minutes time`
+        } else if (divInHours > 1 && divInHours < 2) {
+            return 'an hour time'
+        } else if (divInHours > 2 && divInHours < 24) {
+            return `${Math.floor(divInHours)} hours time`
+        } else if (divInDays > 1 && divInDays < 2) {
+            return `${Math.floor(divInHours)} hours time`
+        } else if (divInDays > 2 && divInDays < 3) {
+            return `2 days time`
         } else if (divInDays > 3) {
             return `${this.dayShort(theDate.getDay())}, ${theDate.getDate()} ${this.monthShort(theDate.getMonth())}, ${theDate.getFullYear()}`
         }
@@ -110,7 +135,7 @@ const files = {
 }
 
 const strings = {
-    content(string, int = 100,){
+    trim(string, int = 100,){
         if (string) {
             if (string.length > int) {
                 return `${string.slice(0,int)}...`

@@ -10,6 +10,7 @@
             :drag="questions.length > 1"
             @arrangeQuestions="arrangeQuestions"
             @editQuestion="editQuestion"
+            @removeQuestion="removeQuestion"
         ></question-badge>
         <div class="questions-form" 
             v-show="showQuestionForm"
@@ -91,6 +92,9 @@
                     :inputMin="1"
                     class="other-input"
                 ></number-input>
+                <div class="small-msg">
+                    Answer type required for this question
+                </div>
                 <div class="type">
                     <grey-button
                         class="grey-button"
@@ -110,6 +114,18 @@
                     buttonStyle=''
                     @click="addQuestion"
                 ></post-button>
+                <post-button
+                    v-if="computedDoneQuestionButton"
+                    buttonText="done editing question"
+                    buttonStyle=''
+                    @click="updateQuestion"
+                ></post-button>
+                <post-button
+                    v-if="computedDoneQuestionButton"
+                    buttonText="clear data"
+                    buttonStyle=''
+                    @click="clearQuestionData"
+                ></post-button>
             </div>
         </div>
 
@@ -123,6 +139,7 @@
             @addPossibleAnswer="addPossibleAnswer"
             @movePossibleAnswer="movePossibleAnswer"
             @removePossibleAnswer="removePossibleAnswer"
+            @updatePossibleAnswer="updatePossibleAnswer"
             @possibleAnswerIsCorrect="possibleAnswerIsCorrect"
             @possibleAnswerIsWrong="possibleAnswerIsWrong"
             @answersInCorrectAnswer="answersInCorrectAnswer"
@@ -213,10 +230,12 @@ import {bus} from '../../app';
                         correct: false
                     },
                     files: [],
+                    mainFiles: [],
                     removedFiles: [],
                     correctPossibleAnswers: [],
                     possibleAnswers: [],
                     removedPossibleAnswers: [],
+                    mainPossibleAnswers: [],
                     editedPossibleAnswers: [],
                 },
                 showQuestionForm: false,
@@ -239,7 +258,7 @@ import {bus} from '../../app';
         watch: {
             sections(newValue) {
                 if (newValue && newValue.length) {
-                    this.toggleQuestionFormMethod()
+                    this.setShowQuestionFormToTrue()
                 }
             },
             answerType(newValue) {
@@ -270,12 +289,12 @@ import {bus} from '../../app';
                 this.clearAssessmentSectionQuestionData()
             })
             .$on('toggleQuestionForm', ()=> { 
-                this.toggleQuestionFormMethod()
+                this.setShowQuestionFormToTrue()
             })
         },
         computed: {
             computedAddQuestionButton() {
-                return !this.data.id.length && this.computedHasData &&
+                return !String(this.data.id).length && this.computedHasData &&
                     !(this.computedShowPossibleAnswerForm && !this.data.possibleAnswers.length)
             },
             computedEditQuestionButton() {
@@ -292,17 +311,35 @@ import {bus} from '../../app';
                     this.data.answerType === 'arrange' ||
                     this.data.answerType === 'flow')
             },
+            computedDoneQuestionButton() {
+                return String(this.data.id).length && this.computedHasData &&
+                    !(this.computedShowPossibleAnswerForm && !this.data.possibleAnswers.length)
+            },
         },
         methods: {
             clickedRemoveFiles() {
                 this.data.files = []
             },
+            clearQuestionData() {
+                this.clearAssessmentSectionQuestionData()
+            },
             editQuestion(question) {
-                this.setAssessmentSectionQuestionData(question)
+                this.setAssessmentSectionQuestionData(_.cloneDeep(question))
                 this.scrollToForm()
             },
             arrangeQuestions() {
                 bus.$emit('arrangeQuestions', this.questions)
+            },
+            undoQuestionRemoval(question) {
+                this.$emit('undoQuestionRemoval', question)
+            },
+            removeQuestion(question) {
+                this.$emit('removeQuestion', question)
+            },
+            updateQuestion() {
+                this.$emit('updateQuestion', _.cloneDeep(this.data))
+                this.clearAssessmentSectionQuestionData()
+                this.scrollToLast()
             },
             closeMediaCapture() {
                 this.showMediaCapture = false
@@ -358,11 +395,22 @@ import {bus} from '../../app';
                 this.data.answerType = 'true_false'
                 this.scrollToPossibleAnswerForm()
             },
-            toggleQuestionFormMethod() {
-                this.showQuestionForm = !this.showQuestionForm
+            setShowQuestionFormToTrue() {
+                this.showQuestionForm = true
             },
             resetCorrectAnswer() {
                 this.data.correctPossibleAnswers = []
+            },
+            updatePossibleAnswer(possibleAnswer) {
+                let index = this.data.possibleAnswers.findIndex(pa=>{
+                    return pa.id == possibleAnswer.id
+                })
+
+                if (index === -1) {
+                    return
+                }
+
+                this.data.possibleAnswers.splice(index, 1, possibleAnswer)
             },
             removePossibleAnswer(data) {
                 let fromPossibleAnswer = this.data.possibleAnswers.splice(
@@ -448,25 +496,36 @@ import {bus} from '../../app';
                 this.data.removedPossibleAnswers = []
                 this.data.files = []
                 this.data.removedFiles = []
+                this.data.mainFiles = []
                 this.data.correctPossibleAnswers = []
                 this.data.editedPossibleAnswers = []
-                this.data.possibleAnswer.option = ''
-                this.data.possibleAnswer.id = ''
+                this.data.mainPossibleAnswers = []
+                this.data.possibleAnswer = {
+                    position: null,
+                    option: '',
+                    id: '',
+                    correct: false
+                }
             },
             setAssessmentSectionQuestionData(question) {
+                this.setShowQuestionFormToTrue()
                 this.data.id = question.id
                 this.data.body = question.body
                 this.data.hint = question.hint
                 this.data.position = question.position
                 this.data.scoreOver = question.scoreOver
                 this.data.answerType = question.answerType
-                this.data.possibleAnswers = question.possibleAnswers
                 this.data.removedPossibleAnswers = question.removedPossibleAnswers
                 this.data.correctPossibleAnswers = question.correctPossibleAnswers
                 this.data.editedPossibleAnswers = question.editedPossibleAnswers
-                this.data.possibleAnswer = question.possibleAnswer
+                this.data.mainPossibleAnswers = question.mainPossibleAnswers ?
+                    question.mainPossibleAnswers : []
                 this.data.files = question.files
                 this.data.removedFiles = question.removedFiles
+                this.data.mainFiles = question.mainFiles
+                setTimeout(() => {
+                    this.data.possibleAnswers = question.possibleAnswers                    
+                }, 100);
             },
             scrollToForm() {
                 if (this.$refs.questionsform) {
@@ -508,6 +567,7 @@ import {bus} from '../../app';
                     bus.$emit('assessmentError',{message: 'the option already exits.'})
                     return
                 }
+
                 this.data.possibleAnswers.push(data)
                 this.updatePossibleAnswersPositions()
             },
@@ -587,7 +647,8 @@ import {bus} from '../../app';
 
             .grey-button{
                 margin-right: 10px;
-                min-width: 80px;
+                min-width: fit-content;
+                padding: 5px 10px;
             }
         }
 
@@ -601,6 +662,10 @@ import {bus} from '../../app';
             padding-top: 0px;
             padding-bottom: 30px;
             justify-content: center;
+
+            button{
+                margin: 0 10px;
+            }
         }
     }
 </style>

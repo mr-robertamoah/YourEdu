@@ -35,10 +35,8 @@ class DashboardCourseResource extends JsonResource
             'lessons' => $this->lessons->count(),
             'sections' => DashboardItemMiniResource::collection($this->courseSections),
             'discussions' => $this->discussions->count(),
+            'items' => DashboardItemMiniResource::collection($this->items())
         ];
-        $data['classes'] = $this->classes;
-        $data['classes'] = $data['classes']->merge($this->programs()->hasOwner()->get());
-        $data['classes'] = DashboardItemMiniResource::collection($data['classes']);
 
         return $data;
     }

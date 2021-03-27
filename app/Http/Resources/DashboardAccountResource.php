@@ -94,6 +94,7 @@ class DashboardAccountResource extends JsonResource
                 );
             } else if ($data['account'] === 'facilitator') {
                 $data['hasFreeResources'] = $this->hasFreeResources();
+                $data['assessments'] = AssessmentResource::collection($this->addedAssessments);
                 $data['programs'] = DashboardProgramResource::collection(
                     $this->programs()
                         ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')
@@ -139,6 +140,7 @@ class DashboardAccountResource extends JsonResource
                 );
             } else if ($data['account'] === 'professional') {
                 $data['hasFreeResources'] = $this->hasFreeResources();
+                $data['assessments'] = AssessmentResource::collection($this->addedAssessments);
                 $data['courses'] = CourseResource::collection(
                     $this->courses()
                         ->notOwnedby($class,$data['accountId'])->get()->sortByDesc('created_at')

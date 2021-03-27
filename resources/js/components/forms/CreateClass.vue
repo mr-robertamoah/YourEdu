@@ -132,7 +132,7 @@
                                 <search-input
                                     class="search-input"
                                     v-if="computedHasStructure"
-                                    :searchPlaceholder="`search for ${data.structure}`"
+                                    :placeholder="`search for ${data.structure}`"
                                     @search="getSearchItemsText"
                                 ></search-input>
                                 <div class="class-payment course-classes-section"
@@ -479,7 +479,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
         },
         methods: {
             ...mapActions(['dashboard/createClass','dashboard/editClass',
-                'dashboard/getAccountSpecificItem']),
+                'dashboard/getAccountSpecificItems']),
             closeModal() {
                 this.data.owner = {name: ''}
                 this.data.structure = ''
@@ -615,12 +615,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: 'academicYear',
-                        search: this.searchItemsText
+                        items: ['academicYears'],
+                        search: this.searchItemsText,
+                        for: 'class'
                     }
 
                 this.specificItemLoading = true
-                response = await this['dashboard/getAccountSpecificItem']({
+                response = await this['dashboard/getAccountSpecificItems']({
                     data, nextPage: this.specificItemDetailsNextPage
                 })
                 this.specificItemLoading = false
@@ -649,12 +650,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     data = {
                         account: this.data.owner.account,
                         accountId: this.data.owner.accountId,
-                        item: this.data.structure,
-                        search: this.searchItemsText
+                        items: [this.data.structure],
+                        search: this.searchItemsText,
+                        for: 'class'
                     }
 
                 this.specificItemLoadingStructure = true
-                response = await this['dashboard/getAccountSpecificItem']({
+                response = await this['dashboard/getAccountSpecificItems']({
                     data, nextPage: this.specificItemDetailsStructureNextPage
                 })
                 this.specificItemLoadingStructure = false
@@ -953,8 +955,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
 
         .course-classes-section{
             min-height: 100px;
-            display: flex;
-            justify-content: center;
             align-items: center;
 
             .class-wrapper{

@@ -22,6 +22,21 @@ class Lesson extends DashboardItemContract
         'published_at' => 'datetime'
     ];
 
+    public function lessonables()
+    {
+        return $this->hasMany(Lessonable::class);
+    }
+
+    public function specificLessonable($lessonable, $itemable)
+    {
+        return $this->lessonables()
+            ->where('lessonable_type', $lessonable::class)
+            ->where('lessonable_id', $lessonable->id)
+            ->where('itemable_type', $itemable::class)
+            ->where('itemable_id', $itemable->id)
+            ->first();
+    }
+
     public function addedby()
     {
         return $this->morphTo();
@@ -102,43 +117,37 @@ class Lesson extends DashboardItemContract
 
     public function courses()
     {
-        return $this->morphToMany(Course::class,'coursable','coursables')
-            ->withPivot(['activity'])->withTimestamps();
-    }
-
-    public function classSubjects()
-    {
-        return $this->classes->map(function($class) {
-            return [
-                'id' => $class->pivot->subject_id,
-                'name' => Subject::find($class->pivot->subject_id)->name,
-                'classId' => $class->id,
-                'type' => 'subject',
-            ];
-        });
+        return $this->morphedByMany(Course::class,'lessonable','lessonables')
+            ->withPivot(['type', 'lesson_number'])->withTimestamps();
     }
 
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
-            ->withPivot(['activity'])->withTimestamps();
+        return $this->morphedByMany(Extracurriculum::class,'lessonable','lessonables')
+            ->withPivot(['type', 'lesson_number'])->withTimestamps();
     }
 
     public function courseSections()
     {
-        return $this->morphToMany(CourseSection::class,'sectionable','sectionables',null,'section_id')
-            ->withPivot(['lesson_number'])->withTimestamps();
+        return $this->morphedByMany(CourseSection::class,'lessonable','lessonables')
+            ->withPivot(['lesson_number', 'type'])->withTimestamps();
+    }
+
+    public function classSubjects()
+    {
+        return $this->morphedByMany(Subject::class,'lessonable','lessonables')
+            ->withPivot(['lesson_number', 'type'])->withTimestamps();
     }
 
     public function classes()
     {
-        return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id')
-            ->withPivot(['activity','subject_id'])->withTimestamps();
+        return $this->morphedByMany(ClassModel::class,'itemable','lessonables')
+            ->withPivot(['lesson_number','type'])->withTimestamps();
     }
 
     public function programs()
     {
-        return $this->morphToMany(Program::class,'programmable','programmables')
+        return $this->morphedByMany(Program::class,'lessonable','lessonables')
             ->withTimestamps();
     }
 
@@ -166,7 +175,7 @@ class Lesson extends DashboardItemContract
 
     public function assessments()
     {
-        return $this->morphMany(Assessment::class,'assessmentable');
+        return $this->morphedByMany(Assessment::class,'assessmentable');
     }
 
     public function links()
@@ -217,6 +226,11 @@ class Lesson extends DashboardItemContract
     {
         return $this->morphMany(Discussion::class,'discussionfor');
     }
+
+    public function discussion()
+    {
+        return $this->discussions->first();
+    }
     
     public function payments()
     {
@@ -228,12 +242,14 @@ class Lesson extends DashboardItemContract
         return $this->morphMany(Price::class,'priceable');
     }
 
-    public function scopeSearchItems($query,$search)
+    public function hasDiscussion()
     {
-        return $query->where(function($q) use ($search){
-            $q->where('title','like',"%$search%")
-                ->orWhere('description','like',"%$search%");
-        });
+        return $this->discussions->count() > 0;
+    }
+
+    public function doesntHaveDiscussion()
+    {
+        return !$this->hasDiscussion();
     }
 
     public function checkIfFreeOrIntro()
@@ -243,14 +259,34 @@ class Lesson extends DashboardItemContract
     
     public function allFiles()
     {
-        $files = [];
-
-        array_push($files, ...$this->images);
-        array_push($files, ...$this->videos);
-        array_push($files, ...$this->audios);
-        array_push($files, ...$this->files);
+        $files = $this->images;
+        $files = $files->merge($this->videos);
+        $files = $files->merge($this->audios);
+        $files = $files->merge($this->files);
 
         return $files;
+    }
+
+    public function scopeWhereAddedOrCollaborator($query, $account)
+    {
+        return $query->where(function($query) use ($account) {
+                $query->whereHasMorph('addedby', '*', function($query, $type) use ($account) {
+                    if ($type === Collaboration::class) {
+                        $query->whereCollaborationable($account);
+                    }
+                    if ($type !== Collaboration::class) {                            
+                        $query->where('user_id', $account->user_id);
+                    }
+                });
+            });
+    }
+
+    public function scopeSearchItems($query,$search)
+    {
+        return $query->where(function($q) use ($search){
+            $q->where('title','like',"%$search%")
+                ->orWhere('description','like',"%$search%");
+        });
     }
     
     protected static function newFactory()

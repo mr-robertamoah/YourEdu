@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\DashboardItemSearchDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AcademicYearResource;
 use App\Http\Resources\AcademicYearSectionResource;
@@ -228,23 +229,12 @@ class DashboardController extends Controller
 
     public function getAccountSpecificItems(Request $request)
     {
-        try {
-            $items = (new DashboardService())->getAccountSpecificItems(
-                $request->account,
-                $request->accountId,
-                [
-                    'one' => $request->item,
-                    'two' => $request->secondItem,
-                    'three' => $request->thirdItem,
-                    'for' => $request->for,
-                    'search' => $request->search,
-                ],
-            );
+        $items = (new DashboardService())->getAccountSpecificItems(
+            DashboardItemSearchDTO::createFromRequest($request)
+        );
 
-            return DashboardItemMiniResource::collection($items);
-        } catch (\Throwable $th) {
-            throw $th;
-        }
+        ray($items)->green();
+        return DashboardItemMiniResource::collection($items);
     }
 
     public function search(Request $request)

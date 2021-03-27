@@ -232,19 +232,21 @@ function getYourEduModel($accountText, $accountTextId): Model | null
 
 function isOwnedBy($ownedby,$userId)
 {
-    if ($ownedby) {
-        if ($ownedby->user_id === $userId ||
-            $ownedby->owner_id === $userId) {
-            return true;
-        } else if (class_basename_lower($ownedby) === 'school' && 
-            in_array($userId,AdminService::getAdminIds($ownedby))) {
-            return true;
-        } else {
-            return false;
-        }
-    } else {
+    if (!$ownedby) {
         return true;
     }
+
+    if ($ownedby->user_id === $userId ||
+        $ownedby->owner_id === $userId) {
+        return true;
+    } 
+    
+    if (class_basename_lower($ownedby) === 'school' && 
+        in_array($userId, $ownedby->getAdminIds())) {
+        return true;
+    }
+        
+    return false;
 }
 
 function capitalize(string $value)

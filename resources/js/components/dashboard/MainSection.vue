@@ -2113,6 +2113,8 @@ import {bus} from '../../app';
                 'dashboard/removeProgram','dashboard/deleteProgram',
                 'dashboard/addCollaboration','dashboard/updateCollaboration',
                 'dashboard/removeCollaboration','dashboard/deleteCollaboration',
+                'dashboard/addAssessment','dashboard/updateAssessment',
+                'dashboard/removeAssessment','dashboard/deleteAssessment',
                 ]),
             clickedHeaderDropdown() {
                 this.showHeaderDropdown = !this.showHeaderDropdown
@@ -2175,6 +2177,7 @@ import {bus} from '../../app';
                         data.type === 'owned program' ||
                         data.type === 'owned course' ||
                         data.type === 'owned class' ||
+                        data.type === 'assessment' ||
                         data.type === 'collaboration') {
                         let name = data.type.includes('extracurriculum') ? 'extracurriculum' : 
                             data.type.includes('program') ? 'program' : 
@@ -2258,6 +2261,7 @@ import {bus} from '../../app';
                         this.smallModalData.type === 'lesson' ||
                         this.smallModalData.type === 'program' ||
                         this.smallModalData.type === 'collaboration' ||
+                        this.smallModalData.type === 'assessment' ||
                         this.smallModalData.type === 'extracurriculum') {
                         this.smallModalContinueProcess()
                     }
@@ -2391,7 +2395,6 @@ import {bus} from '../../app';
             schoolUnlisten(schoolId){
                 Echo.leaveChannel(`youredu.school.${schoolId}`)
             },
-            //listen to a class
             classListen(classId){
                 Echo.private(`youredu.class.${classId}`)
                     .listen('.newComment',comment=>{
@@ -2406,7 +2409,7 @@ import {bus} from '../../app';
                         console.log('comment :>> ', comment);
                         this['dashboard/updateComment'](comment)
                     })
-                    .listen('.updateClass',data=>{ //for facilitator owned
+                    .listen('.updateClass',data=>{
                         console.log('data :>> ', data);
                         this.mainSectionData = data.classResource
                         this['dashboard/updateClass']({
@@ -2414,7 +2417,7 @@ import {bus} from '../../app';
                             owner: false
                         })
                     })
-                    .listen('.deleteClass',data=>{ //for facilitator owned
+                    .listen('.deleteClass',data=>{
                         console.log('data :>> ', data);
                         this.mainSection = ''
                         this.mainSectionData = null
@@ -2521,6 +2524,11 @@ import {bus} from '../../app';
                     data.account = item.data.addedby.account
                     data.accountId = item.data.addedby.accountId
                     response = await this['dashboard/deleteCollaboration'](data)
+                } else if (item.type === 'assessment') {
+                    data.assessmentId = item.data.id
+                    data.account = item.data.addedby.account
+                    data.accountId = item.data.addedby.accountId
+                    response = await this['dashboard/deleteAssessment'](data)
                 }
 
                 if (response.status) {
@@ -2643,7 +2651,6 @@ import {bus} from '../../app';
                     console.log('response :>> ', response);
                 }
             },
-            //comments for main section
             async getMainSectionComments(){
                 let data = await this.getComments()
 
@@ -2709,7 +2716,6 @@ import {bus} from '../../app';
                     this.mainSectionComments.unshift(comment)
                 }
             },
-            //users for superadmin and supervisoradmin
             async getUsersForAdmin(){
                 let data = await this.getUsers()
 
@@ -2791,7 +2797,6 @@ import {bus} from '../../app';
                     this.accountsNextPage += 1
                 }
             },
-            //admins for superadmin
             banTypeSelection(data){
                 this.banType = data
             },
@@ -2932,7 +2937,6 @@ import {bus} from '../../app';
 
                 response = await this['dashboard/getDashboardAccountDetails'](data)
 
-                this.loading = false
                 if (response.status) {
                     if (this.account.account === 'admin') {
                         this.getUsersForAdmin()
@@ -2944,6 +2948,7 @@ import {bus} from '../../app';
                 } else {
                     console.log('response :>> ', response);
                 }
+                this.loading = false
             },
             clickedUsername(){
                 this.$emit('clickedAccount',{type:'user'})
@@ -3311,7 +3316,7 @@ $background-color-section: white;
         }
 
         .main-section{
-            margin: 10px auto 80px;
+            margin: 80px auto 80px;
             max-width: 700px;
 
             .loading{

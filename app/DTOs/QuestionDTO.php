@@ -37,7 +37,7 @@ class QuestionDTO extends PostTypeDTOContract
     ) : array
     {
         $questions = [];
-
+        
         foreach ($dataArray as $data) {
             $questions[] = static::createFromData(
                 questionId: $data->questionId ?? null,
@@ -49,6 +49,8 @@ class QuestionDTO extends PostTypeDTOContract
                 publishedAt: $data->published ?? null,
                 hint: $data->hint ?? '',
                 answerType: $data->answerType ?? "",
+                files: $data->files ?? [],
+                removedFiles: $data->removedFiles ?? [],
                 possibleAnswers: $data->possibleAnswers ?? [],
                 removedPossibleAnswers: $data->removedPossibleAnswers ?? [],
                 editedPossibleAnswers: $data->editedPossibleAnswers ?? [],
@@ -83,13 +85,13 @@ class QuestionDTO extends PostTypeDTOContract
         $static->questionId = $questionId;
         $static->body = $body;
         $static->autoMark = $autoMark;
-        $static->position = $position;
+        $static->position = (int)$position;
         $static->state = $state;
         $static->publishedAt = Carbon::parse($publishedAt);
         $static->hint = $hint;
         $static->files = $files;
-        $static->removedFiles = $removedFiles;
-        $static->scoreOver = $scoreOver;
+        $static->removedFiles = FileDTO::createFromArray($removedFiles);
+        $static->scoreOver = (int)$scoreOver;
         $static->answerType = $answerType ? strtoupper($answerType) : null;
         $static->possibleAnswers = PossibleAnswerDTO::createFromArray($possibleAnswers);
         $static->editedPossibleAnswers = PossibleAnswerDTO::createFromArray($editedPossibleAnswers);

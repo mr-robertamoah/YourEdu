@@ -10,7 +10,7 @@
         </div>
         <input type="text" name="search" class="form-control input-text" 
             v-model="searchText"
-            :placeholder="searchPlaceholder"
+            :placeholder="placeholder"
         >
         <div class="input-close"
             @click="clickedClose"
@@ -28,7 +28,7 @@
         components: {
         },
         props: {
-            searchPlaceholder: {
+            placeholder: {
                 type: String,
                 default: 'search here'
             },

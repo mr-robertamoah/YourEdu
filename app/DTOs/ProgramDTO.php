@@ -3,6 +3,7 @@
 namespace App\DTOs;
 
 use App\Contracts\ItemDataContract;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class ProgramDTO implements ItemDataContract
@@ -26,8 +27,13 @@ class ProgramDTO implements ItemDataContract
     public string | null $type;
     public string | null $state;
     public array | null $paymentData;
+    public array $aliases = [];
     public array | null $removedPaymentData;
     public int | null $userId;
+    public ?Model $addedby = null;
+    public ?Model $ownedby = null;
+    public ?string $methodType = null;
+    public ?string $method = null;
 
     public static function createFromRequest(Request $request)
     {
@@ -46,15 +52,42 @@ class ProgramDTO implements ItemDataContract
         $self->state = $request->state;
         $self->type = $request->type;
         $self->facilitate = json_decode($request->facilitate);
-        $self->items = json_decode($request->items);
-        $self->removedItems = json_decode($request->removedItems);
-        $self->attachments = json_decode($request->attachments);
-        $self->removedAttachments = json_decode($request->removedAttachments);
-        $self->removedPaymentData = json_decode($request->removedPaymentData);
-        $self->paymentData = json_decode($request->paymentData);
-        $self->discussionData = json_decode($request->discussionData);
+        $self->aliases = $request->aliases ?
+            json_decode($request->aliases) : [];
+        $self->items = $request->items ?
+            json_decode($request->items) : [];
+        $self->removedItems = $request->removedItems ?
+            json_decode($request->removedItems) : [];
+        $self->attachments = $request->attachments ?
+            json_decode($request->attachments) : [];
+        $self->removedAttachments = $request->removedAttachments ?
+            json_decode($request->removedAttachments) : [];
+        $self->removedPaymentData = $request->removedPaymentData ?
+            json_decode($request->removedPaymentData) : [];
+        $self->paymentData = $request->paymentData ?
+            json_decode($request->paymentData) : [];
+        $self->discussionData = $request->discussionData ?
+            json_decode($request->discussionData) : null;
         $self->discussionFiles = $request->file('discussionFile');
 
         return $self;
+    }
+
+    public function withAddedby(Model $addedby)
+    {
+        $clone = clone $this;
+
+        $clone->addedby = $addedby;
+
+        return $clone;
+    }
+
+    public function withOwnedby(Model $ownedby)
+    {
+        $clone = clone $this;
+
+        $clone->ownedby = $ownedby;
+
+        return $clone;
     }
 }

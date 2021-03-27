@@ -27,7 +27,7 @@
             <search-input
                 v-if="hasSearch && items.length > 5"
                 @search="getSearchText"
-                :searchPlaceholder="computedSearchPlaceholder"
+                :placeholder="computedplaceholder"
                 class="search-input"
             ></search-input>
             <template v-if="items.length">
@@ -112,7 +112,7 @@ export default {
                     item.sectionThree && item.sectionThree.toLowerCase().includes(this.searchText.toLowerCase())
             }) : this.items
         },
-        computedSearchPlaceholder(){
+        computedplaceholder(){
             return this.heading.length ? `search through ${this.heading}` : 'search for item'
         },
     },

@@ -44,7 +44,6 @@ export default {
                 items: [], //courses and subjects 
                 mainItems: [],
                 removedItems: [],
-                classes: [],
                 maximum: '',
                 structure: '',
                 state: '',
@@ -61,8 +60,6 @@ export default {
                 attachments: [],
                 mainAttachments: [],
                 removedAttachments: [],
-                mainClasses: [], //also for owned programs
-                removedClasses: [], 
                 mainPaymentData: [],
                 removedPaymentData: [],
                 paymentData: null, //but an array
@@ -177,7 +174,7 @@ export default {
         },
         initiateGetItems() {
             this.specificItemDetails = []
-            this.specificItemDetailsNextPage = 0
+            this.specificItemDetailsNextPage = 1
             this.getSpecificAccountItem()
         },
         debouncedSearchItems: _.debounce(
@@ -227,6 +224,8 @@ export default {
             this.data.description = ''
             // this.data.owner = {name: ''}
             this.data.items = []
+            this.data.removedItems = []
+            this.data.mainItems = []
             this.data.attachments = []
             this.data.mainAttachments = []
             this.data.removedAttachments = []
@@ -256,9 +255,6 @@ export default {
             if (this.data.account) {
                 this.specificItemDetails = []
                 this.specificItemDetailsNextPage = 0
-                this.data.classes = []
-                this.data.mainClasses = []
-                this.data.removedClasses = []
             }
             this.$forceUpdate()
         },

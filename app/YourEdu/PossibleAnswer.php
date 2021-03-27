@@ -21,6 +21,11 @@ class PossibleAnswer extends Model
         return $this->morphTo();
     }
 
+    public function scopeOrderedByPosition($query)
+    {
+        return $query->orderBy('position', 'asc');
+    }
+
     protected static function newFactory()
     {
         return PossibleAnswerFactory::new();

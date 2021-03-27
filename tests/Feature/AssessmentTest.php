@@ -2,18 +2,24 @@
 
 namespace Tests\Feature;
 
+use App\Events\DeleteAssessmentEvent;
+use App\Events\UpdateAssessmentEvent;
 use App\Notifications\AssessmentNotification;
 use App\User;
 use App\YourEdu\Admin;
 use App\YourEdu\Assessment;
 use App\YourEdu\AssessmentSection;
 use App\YourEdu\Course;
+use App\YourEdu\Discussion;
+use App\YourEdu\Payment;
 use App\YourEdu\Professional;
 use App\YourEdu\Question;
 use App\YourEdu\School;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -125,7 +131,16 @@ class AssessmentTest extends TestCase
                         ]
                     ]
                 ],
-            ])
+            ]),
+            'discussionData' => json_encode(
+                (object) [
+                    'title' => $this->faker->sentence,
+                    'preamble' => $this->faker->sentence,
+                ]
+            ),
+            'discussionFiles' => [
+                UploadedFile::fake()->image('new_image.png')
+            ],
         ];
 
         $response = $this->postJson("/api/assessment", $data);
@@ -138,6 +153,7 @@ class AssessmentTest extends TestCase
             );
 
         $this->assertDatabaseCount('assessments',1);
+        $this->assertEquals(1,$response['assessment']['discussions']);
         $this->assertDatabaseCount('assessment_sections',2);
         $this->assertDatabaseCount('questions',4);
         $this->assertDatabaseCount('possible_answers',4);
@@ -294,9 +310,10 @@ class AssessmentTest extends TestCase
             ]);
     }
     
-    public function test_can_delete_assessment()
+    public function test_can_delete_assessment_by_changing_state_by_usedByAnother()
     {
         Notification::fake();
+        Event::fake();
 
         $account = School::factory()
             ->state(['company_name' => $this->faker->company])
@@ -338,12 +355,97 @@ class AssessmentTest extends TestCase
                 ['message' => 'successful']
             );
 
+        Event::assertDispatched(UpdateAssessmentEvent::class);
+    }
+    
+    public function test_can_delete_assessment_by_changing_state_by_paymentMadeFor()
+    {
+        Notification::fake();
+        Event::fake();
+
+        $account = School::factory()
+            ->state(['company_name' => $this->faker->company])
+            ->for($this->user, 'owner')
+            ->create();
+        
+        $assessment = Assessment::factory()
+            ->for($account, 'addedby')
+            ->has(AssessmentSection::factory()
+                ->count(2)
+                ->has(Question::factory()
+                    ->for($account, 'addedby')
+                    ->count(3))
+            )
+            ->create();
+
+        $payments = Payment::factory()->count(2)->create();
+
+        $assessment->payments()->saveMany($payments);
+        $assessment->save();
+        
+        $data = [
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+        ];
+
+        $response = $this->deleteJson("/api/assessment/{$assessment->id}", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson(
+                ['message' => 'successful']
+            );
+
+        Event::assertDispatched(UpdateAssessmentEvent::class);
+    }
+    
+    public function test_can_delete_assessment()
+    {
+        Notification::fake();
+        Event::fake();
+
+        $account = School::factory()
+            ->state(['company_name' => $this->faker->company])
+            ->for($this->user, 'owner')
+            ->create();
+        
+        $assessment = Assessment::factory()
+            ->for($account, 'addedby')
+            ->has(AssessmentSection::factory()
+                ->count(2)
+                ->has(Question::factory()
+                    ->for($account, 'addedby')
+                    ->count(3))
+            )
+            ->create();
+        
+        $discussion = Discussion::factory()
+            ->state([
+                'raisedby_type' => $account::class,
+                'raisedby_id' => $account->id,
+            ])->create();
+
+        $assessment->discussions()->save($discussion);
+
+        $data = [
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+        ];
+
+        $response = $this->deleteJson("/api/assessment/{$assessment->id}", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson(
+                ['message' => 'successful']
+            );
+
+        $this->assertEquals(null, Discussion::find($discussion->id));
         $this->assertSoftDeleted('assessments',[
             'id' => $assessment->id
         ]);
-
-        Notification::assertTimesSent(1, AssessmentNotification::class);
-
     }
 
     public function test_validate_can_take_assessment()

@@ -13,8 +13,8 @@ class PriceService extends PaymentTypeContract
         //the owned by is actually added by
         $price = $item->prices()->create([
             'amount' => $priceData->amount,
-            'description' => $priceData->description,
-            'for' => Str::upper($priceData->for)
+            'description' => $priceData->description ?? '',
+            'for' => Str::upper($priceData->for ?? 'ALL')
         ]);
         $price->ownedby()->associate($ownedby);
         $price->save();

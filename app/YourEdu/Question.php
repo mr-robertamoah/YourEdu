@@ -28,7 +28,8 @@ class Question extends Model
 
     protected $fillable = [
         'body', 'state','published_at','user_deletes','updated_at',
-        'hint','position', 'score_over'
+        'hint','position', 'score_over', 'correct_possible_answers',
+        'answer_type'
     ];
 
     protected $touches = [
@@ -124,6 +125,21 @@ class Question extends Model
     public function doesntHaveRequiredNumberOfOptionalAnswers()
     {
         return $this->possibleAnswers->count() < self::MIN_NUMBER_OF_OPTIONS;
+    }
+    
+    public function allFiles()
+    {
+        $files = $this->images;
+        $files = $files->merge($this->videos);
+        $files = $files->merge($this->audios);
+        $files = $files->merge($this->files);
+
+        return $files;
+    }
+
+    public function scopeOrderedByPosition($query)
+    {
+        return $query->orderBy('position', 'asc');
     }
     
     protected static function newFactory()

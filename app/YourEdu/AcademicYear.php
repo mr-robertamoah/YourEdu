@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\AcademicYearFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AcademicYear extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
         'start_date','end_date','description', 'name', 'state'
@@ -38,5 +40,10 @@ class AcademicYear extends Model
     {
         return $this->morphedByMany(ClassModel::class,'academicable','academicables','academic_id')
             ->withTimestamps();
+    }
+
+    protected static function newFactory()
+    {
+        return AcademicYearFactory::new();
     }
 }

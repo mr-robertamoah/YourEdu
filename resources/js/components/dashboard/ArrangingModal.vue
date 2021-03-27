@@ -49,21 +49,26 @@ import { strings } from '../../services/helpers';
             PostButton,
             DroppableComponent,
         },
+        props: {
+            data: {
+                type: Array,
+                default() {
+                    return []
+                }
+            },
+            show: {
+                type: Boolean,
+                default: false
+            },
+            type: {
+                type: String,
+                default: ''
+            },
+        },
         data() {
             return {
-                type: '',
-                data: [],
-                show: false,
+                
             }
-        },
-        created () {
-            bus
-            .$on(
-                'arrangeQuestions', questions=> {
-                    console.log('questions :>> ', questions);
-                    this.setUp(questions, 'questions')
-                }
-            )
         },
         methods: {
             updatePositions() {
@@ -94,24 +99,12 @@ import { strings } from '../../services/helpers';
 
                 this.updatePositions()
             },
-            setUp(data, type) {
-                this.data = data
-                this.type = type
-                this.show = true
-            },
             clickedDone() {
-                if (this.type === 'questions') {
-                    bus.$emit('arrangedQuestions', this.data)
-                } else if (this.type === 'assessmentSections') {
-                    bus.$emit('arrangedAssessmentSections', this.data)
-                }
                 
-                this.data = null
-                this.type = ''
-                this.show = false
+                this.closeModal()
             },
             closeModal() {
-                this.show = false
+                this.$emit('closeArrangingModal')
             }
         },
     }

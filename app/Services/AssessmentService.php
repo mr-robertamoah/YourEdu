@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\DTOs\AssessmentDTO;
+use App\DTOs\DiscussionDTO;
+use App\Events\DeleteAssessmentEvent;
+use App\Events\NewAssessmentEvent;
+use App\Events\UpdateAssessmentEvent;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\AssessmentException;
 use App\Http\Resources\AssessmentResource;
@@ -12,9 +16,40 @@ use App\YourEdu\Assessment;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class AssessmentService
 {
+    const VALIDANSWERTYPES = [
+        'TRUE_FALSE', 'SHORT_ANSWER', 'LONG_ANSWER', 'IMAGE', 'VIDEO',
+        'AUDIO', 'OPTION', 'NUMBER', 'ARRANGE', 'FLOW', 'FILE'
+    ];
+    
+    public static function getAnswerType($answerType)
+    {
+        if (!strlen($answerType)) {
+            return 'SHORT_ANSWER';
+        }
+
+        if (str_contains(strtolower($answerType),'short')) {
+            return 'SHORT_ANSWER';
+        }
+
+        if (str_contains(strtolower($answerType),'long')) {
+            return 'LONG_ANSWER';
+        }
+
+        if (str_contains(strtolower($answerType),'true')) {
+            return 'TRUE_FALSE';
+        }
+
+        if (!in_array(strtoupper($answerType), self::VALIDANSWERTYPES)) {
+            return 'SHORT_ANSWER';
+        }
+
+        return strtoupper($answerType);
+    }
+
     public function createAssessment
     (
         AssessmentDTO $assessmentDTO
@@ -34,16 +69,23 @@ class AssessmentService
 
             $assessment = $this->createOrUpdateAssessment($assessmentDTO, 'create');
 
+            $this->comparePublishedAndDueDates($assessment, $assessmentDTO);
+
             $assessment = $this->addAssessmentSections($assessment,$assessmentDTO);
 
             $assessment = $this->attachAssessmentToItems($assessment,$assessmentDTO);
 
             $this->checkAssessmentSections($assessment);
+            
+            $assessment = $this->createAutoDiscussion($assessment, $assessmentDTO);
 
             $this->notifyAttachedItemsAccounts(
                 $assessment,
                 "am assessment with name: {$assessment->name} has been added.",
             );
+
+            $assessmentDTO->methodType = 'created';
+            $this->broadcastAssessment($assessment, $assessmentDTO);
 
             return $assessment;
         } catch (\Throwable $th) {
@@ -54,6 +96,28 @@ class AssessmentService
                 data: $assessmentDTO
             );
         }
+    }
+
+    private function comparePublishedAndDueDates
+    (
+        Assessment $assessment,
+        AssessmentDTO $assessmentDTO
+    )
+    {
+        if (!$assessment->publised_at || !$assessment->due_at) {
+            return;
+        }
+
+        if ($assessment->published_at->diffInDays(
+            $assessment->due_at
+        ) >= 1) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "due date for the assessment with name, {$assessment->name}, should be at least a day after the published date",
+            data: $assessmentDTO
+        );
     }
 
     private function checkRequiredData
@@ -94,6 +158,7 @@ class AssessmentService
             );
         }
 
+        ray($detachedItems)->green();
         foreach ($detachedItems as $item) {
             array_push($userIds,...$item->getAuthorizedUserIds($authority));
         }
@@ -107,17 +172,24 @@ class AssessmentService
 
     private function detachAssessmentFromAllItems
     (
-        Assessment $assessment
+        Assessment $assessment,
+        AssessmentDTO $assessmentDTO
     ) : array
     {
-        $detachedItems = [];
-        foreach ($assessment->allItems() as $item) {
+        $detachedItems = $assessment->items()->unique();
+        
+        $assessment->assessmentables->each(
+            function($assessmentable) use ($assessmentDTO) {
             
-            if ($this->detachItem($item, $assessment)) {
-                $detachedItems[] = $item;
+                $this->checkCanAttachOrDetachItem(
+                    $assessmentable->assessmentable,
+                    $assessmentDTO,
+                    $assessmentable->itemable,
+                );
+
+                $assessmentable->delete();
             }
-            $item->save();
-        }
+        );
         
         return [$assessment->refresh(), $detachedItems];
     }
@@ -159,14 +231,111 @@ class AssessmentService
         AssessmentDTO $assessmentDTO
     ) : Assessment
     {
-        foreach ($assessmentDTO->attachedItems as $attachedItem) {
-            $item = $this->getModel($attachedItem->item, $attachedItem->itemId);
+        foreach ($assessmentDTO->attachedItems as $attachedItemDTO) {
+            $assessmentable = $this->getModel($attachedItemDTO->item, $attachedItemDTO->itemId);
 
-            $item->assessments()->attach($assessment);
-            $item->save();
+            $itemable = $this->getItemable($attachedItemDTO, $assessmentable);
+
+            $this->checkCanAttachOrDetachItem(
+                $assessmentable, 
+                $assessmentDTO,
+                $attachedItemDTO
+            );
+
+            $this->checkExistenceOfAssessment(
+                $assessment, $assessmentable, $itemable, $attachedItemDTO
+            );
+
+            $this->createAssessmentables(
+                $assessment, $assessmentable, $itemable
+            );
         }
         
         return $assessment->refresh();
+    }
+
+    private function checkExistenceOfAssessment
+    (
+        Assessment $assessment,
+        $assessmentable,
+        $itemable,
+        $attachedItemDTO
+    )
+    {
+        if ($assessment->doesntHaveSpecificAssessmentable($assessmentable, $itemable)) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "please the {$attachedItemDTO->item} with id {$attachedItemDTO->itemId} already has the assessment with name: {$assessment->name}",
+            data: $attachedItemDTO
+        );
+    }
+
+    private function createAssessmentables
+    (
+        $assessment,
+        $assessmentable,
+        $itemable
+    )
+    {
+        $assessmentables = $assessment->assessmentables()->create();
+        $assessmentables->assessmentable()->associate($assessmentable);
+        $assessmentables->itemable()->associate($itemable);
+        $assessmentables->save();
+
+        return $assessmentables;
+    }
+
+    private function getItemable($dto, $item)
+    {
+        if ($dto->item === 'courseSection') {
+            return $item->course;
+        }
+
+        if ($dto->item !== 'subject') {
+            return $item;
+        }
+
+        if (!$dto->extraItemId) {
+            $this->throwAssessmentException(
+                message: "class id is required for this {$item->name} subject",
+                data: $dto
+            );
+        }
+
+        return $this->getModel('class', $dto->extraItemId);
+    }
+
+    private function checkCanAttachOrDetachItem
+    (
+        $item,
+        $assessmentDTO,
+        $itemable
+    )
+    {
+        $userIds = $item->getAuthorizedUserIds(
+            onlyMain: true
+        ) ?? [];
+        
+        $type = class_basename_lower($item);
+        if ($type === 'subject' || $type === 'courseSection') {
+            array_push(
+                $userIds, 
+                ...$itemable->getAuthorizedUserIds(
+                        onlyMain: true
+                    )
+            );
+        }
+
+        if (in_array($assessmentDTO->userId, $userIds)) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "you are not authorized to add/remove an assessment to/from {$type} with id {$item->id}. If is a mistake, please do report this.",
+            data: $assessmentDTO
+        );
     }
 
     public function detachAssessmentFromItems
@@ -176,22 +345,31 @@ class AssessmentService
     ) : array
     {
         $detachedItems = [];
-        foreach ($assessmentDTO->unattachedItems as $unattachedItem) {
-            $item = $this->getModel($unattachedItem->item, $unattachedItem->itemId);
+        foreach ($assessmentDTO->unattachedItems as $unattachedItemDTO) {
+            $assessmentable = $this->getModel($unattachedItemDTO->item, $unattachedItemDTO->itemId);
 
-            if ($this->detachItem($item, $assessment)) {
-                $detachedItems[] = $item;
+            $itemable = $this->getItemable($unattachedItemDTO, $assessmentable);
+
+            if ($this->detachItem($assessmentable, $itemable, $assessment)) {
+                $detachedItems[] = $assessmentable;
             }
-            $item->save();
+
+            $assessmentable->save();
         }
         
         return [$assessment->refresh(), $detachedItems];
     }
 
-    private function detachItem($item, $assessment) : bool
+    private function detachItem
+    (
+        $assessmentable, 
+        $itemable, 
+        $assessment
+    ) : bool
     {
-        return $item->assessments()
-            ->where('id',$assessment->id)?->detach($assessment);
+        return $assessment->specificAssessmentable(
+                $assessmentable, $itemable
+            )?->delete();
     }
 
     public function addAssessmentSections
@@ -229,11 +407,13 @@ class AssessmentService
             'name' => $assessmentDTO->name,
             'description' => $assessmentDTO->description,
             'duration' => $assessmentDTO->duration,
+            'state' => $assessmentDTO->state ? 
+                Str::upper($assessmentDTO->state): "ACCEPTED",
             'restricted' => $assessmentDTO->restricted,
             'type' => $assessmentDTO->type,
             'total_mark' => $assessmentDTO->totalMark,
-            'due_at' => $assessmentDTO->dueAt->toDateString(),
-            'published_at' => $assessmentDTO->publishedAt->toDateString(),
+            'due_at' => $assessmentDTO->dueAt?->toDateString(),
+            'published_at' => $assessmentDTO->publishedAt?->toDateString(),
         ];
 
         if ($method === 'create') {
@@ -300,6 +480,8 @@ class AssessmentService
 
             $assessment = $this->createOrUpdateAssessment($assessmentDTO, 'update');
 
+            $this->comparePublishedAndDueDates($assessment, $assessmentDTO);
+            
             $assessment = $this->editAssessmentSections(
                 $assessment, $assessmentDTO
             );
@@ -318,11 +500,16 @@ class AssessmentService
 
             list($assessment, $detachedItems) = $this->detachAssessmentFromItems($assessment,$assessmentDTO);
 
+            $assessment = $this->createAutoDiscussion($assessment, $assessmentDTO);
+
             $this->notifyAttachedItemsAccounts(
                 assessment: $assessment,
                 message: "assessment with name {$assessment->name} has been updated.",
                 detachedItems: $detachedItems
             );
+
+            $assessmentDTO->methodType = 'updated';
+            $this->broadcastAssessment($assessment, $assessmentDTO);
 
             return $assessment;
         } catch (\Throwable $th) {
@@ -418,7 +605,8 @@ class AssessmentService
     ) 
     {
         try {
-           
+            DB::beginTransaction();
+
             $assessmentDTO->addedby = $this->getModel(
                 $assessmentDTO->account, 
                 $assessmentDTO->accountId
@@ -428,12 +616,23 @@ class AssessmentService
 
             $this->checkAuthorization($assessment, $assessmentDTO);
 
+            if ($assessmentDTO->action === 'undo') {
+                $assessmentDTO->state = 'accepted';
+                return $this->changeState($assessment,$assessmentDTO);
+            } 
+
+            if ($this->paymentMadeFor($assessment) || $this->usedByAnotherItem($assessment)) {
+                $assessmentDTO->state = 'deleted';
+                return $this->changeState($assessment,$assessmentDTO);
+            }
+
             $this->deleteAssessmentSections($assessment);
 
             list($assessment, $detachedItems) = $this->detachAssessmentFromAllItems(
-                $assessment
+                $assessment, $assessmentDTO
             );
 
+            $this->deleteDiscussion($assessment, $assessmentDTO);
             $this->removeAssessment($assessment, $assessmentDTO);
 
             $this->notifyAttachedItemsAccounts(
@@ -442,6 +641,10 @@ class AssessmentService
                 detachedItems: $detachedItems,
                 onlyDetached: true
             );
+
+            $assessmentDTO->methodType = 'deleted';
+            $assessmentDTO->assessmentables = $detachedItems;
+            $this->broadcastAssessment($assessment, $assessmentDTO);
 
             return $assessment;
         } catch (\Throwable $th) {
@@ -453,6 +656,119 @@ class AssessmentService
             );
         }
         
+    }private function createAutoDiscussion
+    (
+        $assessment,
+        $assessmentDTO,
+    )
+    {
+        if ($assessment->hasDiscussion()) {
+            return $assessment;
+        }
+
+        if (!$assessmentDTO->discussionData) {
+            return $assessment;
+        }
+
+        $discussion = (new DiscussionService())->createDiscussion(
+            $assessmentDTO->account,
+            $assessmentDTO->accountId,
+            $assessmentDTO->discussionData->title,
+            $assessmentDTO->discussionData->preamble,
+            $assessmentDTO->discussionData->restricted ?? false,
+            $assessmentDTO->discussionData->type ?? 'PRIVATE',
+            $assessmentDTO->discussionData->allowed ?? 'ALL',
+            $assessmentDTO->discussionFiles,
+            null
+        );
+        
+        $assessment->discussions()->save($discussion);
+
+        return $assessment->refresh();
+    }
+
+    private function deleteDiscussion($assessment, $assessmentDTO)
+    {
+        if ($assessment->doesntHaveDiscussion()) {
+            return $assessment;
+        }
+
+        (new DiscussionService)->deleteDiscussion(
+            DiscussionDTO::createFromData(
+                discussionId: $assessment->discussion()->id,
+                userId: $assessmentDTO->userId
+            )
+        );
+
+        return $assessment->refresh();
+    }
+
+    private function changeState
+    (
+        $assessment,
+        $assessmentDTO
+    )
+    {
+        $assessment->update(['state' => Str::upper($assessmentDTO->state)]);
+        
+        $assessmentDTO->methodType = 'updated';
+        $this->broadcastAssessment($assessment, $assessmentDTO);
+
+        return $assessment;
+    }
+
+    private function broadcastAssessment
+    (
+        $assessment,
+        $assessmentDTO,
+    )
+    {
+        $event = $this->getEvent($assessment, $assessmentDTO);
+
+        if (is_null($event)) {
+            return;
+        }
+
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent
+    (
+        $assessment,
+        $assessmentDTO,
+    )
+    {
+        if ($assessmentDTO->methodType === 'created') {
+            return new NewAssessmentEvent($assessment);
+        }
+
+        if ($assessmentDTO->methodType === 'updated') {
+            return new UpdateAssessmentEvent($assessment);
+        }
+
+        if ($assessmentDTO->methodType === 'deleted') {
+            return new DeleteAssessmentEvent($assessmentDTO);
+        }
+
+        return null;
+    }
+
+    private function paymentMadeFor($assessment)
+    {
+        if ($assessment->hasPayments()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function usedByAnotherItem($assessment)
+    {
+        if ($assessment->isUsedByAnotherItem()) {
+            return true;
+        }
+
+        return false;
     }
 
     private function checkAuthorization($assessment, $assessmentDTO)
@@ -481,7 +797,7 @@ class AssessmentService
         if (!$deletionStatus) {
             $this->throwAssessmentException(
                 message: "deletion of assessment failed.",
-                data: $assessmentData
+                data: $assessmentDTO
             );
         }
 

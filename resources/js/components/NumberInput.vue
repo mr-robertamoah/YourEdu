@@ -16,6 +16,7 @@
                 ref="muberinput"
                 pattern="[0-9]*"
                 inputmode="numeric"
+                @blur="checkInput"
             >
         </div>
         <div class="prepend" v-if="prepend.length">
@@ -82,24 +83,18 @@
         },
         data() {
             return {
-                inputNumber: ""
+                inputNumber: "",
+                timer: null
             }
         },
         watch: {
             inputNumber(newValue){
-
-                if (String(newValue).length && this.hasMin && newValue < this.inputMin) {
-                    this.inputNumber = `${this.inputMin}`
-                    return
-                } 
-
-                if (String(newValue).length && this.hasMax && newValue > this.inputMax) {
-                    this.inputNumber = `${this.inputMax}`
-                    return
-                }
-
+                clearTimeout(this.timer)
                 this.$emit('numberinput', newValue)
                 this.$emit('input', newValue)
+                this.timer = setTimeout(() => {
+                    this.checkInput()
+                }, 2000);
             },
             value:{
                 immediate: true,
@@ -112,10 +107,23 @@
         },
         methods: {
             checkInput(event) {
-                if (event.target.value < this.inputMin) {
+
+                if (!String(this.inputNumber).length) {
+                    return
+                }
+
+                if (!this.hasMin && !this.hasMax) {
+                    return
+                }
+                
+                if (this.hasMin && this.inputNumber < this.inputMin) {
                     this.inputNumber = `${this.inputMin}`
-                } else if (this.hasMax && event.target.value > this.inputMax) {
+                    return
+                } 
+
+                if (this.hasMax && this.inputNumber > this.inputMax) {
                     this.inputNumber = `${this.inputMax}`
+                    return
                 }
             },
         },
@@ -200,8 +208,12 @@ $buttonColor : rgba(2, 104, 90, .6);
 @media screen and (max-width:800px) {
     
     .text-input-wrapper{
-        input{
-            font-size: 14px;
+
+        .main {
+            
+            input{
+                font-size: 14px;
+            }
         }
     }
 }
@@ -210,8 +222,11 @@ $buttonColor : rgba(2, 104, 90, .6);
     
     .text-input-wrapper{
 
-        input{
-            font-size: 12px;
+        .main {
+            
+            input{
+                font-size: 12px;
+            }
         }
     }
 }

@@ -9,7 +9,9 @@ use App\Http\Requests\DeleteAssessmentRequest;
 use App\Http\Requests\UpdateAssessmentRequest;
 use App\Http\Resources\AssessmentResource;
 use App\Services\AssessmentService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class AssessmentController extends Controller
@@ -24,7 +26,7 @@ class AssessmentController extends Controller
         DB::commit();
         return response()->json([
             'message' => 'successful',
-            'Assessment' => new AssessmentResource($assessment)
+            'assessment' => new AssessmentResource($assessment)
         ]);
     }
 
@@ -33,23 +35,25 @@ class AssessmentController extends Controller
         $assessment = (new AssessmentService())->updateAssessment(
             AssessmentDTO::createFromRequest($request, true)
         );
-
+        // UploadedFile::
         DB::commit();
         return response()->json([
             'message' => 'successful',
-            'Assessment' => new AssessmentResource($assessment),
+            'assessment' => new AssessmentResource($assessment),
         ]);
     }
 
     public function deleteAssessment(DeleteAssessmentRequest $request)
     {
-        (new AssessmentService())->deleteAssessment(
+        $assessment = (new AssessmentService())->deleteAssessment(
             AssessmentDTO::createFromRequest($request, true)
         );
 
         DB::commit();
         return response()->json([
             'message' => 'successful',
+            'assessment' => $assessment instanceof Model ?
+                new AssessmentResource($assessment) : null
         ]);
     }
 }

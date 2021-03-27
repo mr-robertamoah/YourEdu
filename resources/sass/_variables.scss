@@ -12,6 +12,7 @@ $indigo: #6574cd;
 $purple: #9561e2;
 $pink: #f66d9b;
 $red: #e3342f;
+$red-04: rgba(255, 0, 0, .4);
 $orange: #f6993f;
 $yellow: #ffed4a;
 $green: #38c172;
@@ -79,4 +80,16 @@ $dashboard-section-second-background-color:whitesmoke;
 
 @mixin normal-box-shadow($pixels: 1px) {    
     box-shadow: 0 0 $pixels gray;
+}
+
+@mixin small-msg ($fontSize: 12px) {
+    font-size: $fontSize;
+    color: gray;
+    text-align: center;
+    width: 100%;
+}
+
+//classes
+.small-msg{
+    @include small-msg()
 }

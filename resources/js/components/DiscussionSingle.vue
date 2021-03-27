@@ -649,7 +649,7 @@
                     <div class="body">
                         <search-input
                             class="search-section"
-                            searchPlaceholder="search whom to invite?"
+                            placeholder="search whom to invite?"
                             @search="receivedParticipantsSearchText"
                         ></search-input>
                         <div class="search-types">
@@ -1735,7 +1735,7 @@ import { strings } from '../services/helpers';
                 }, 3000);
             },
             shortenUrl(data){
-                return strings.content(data,20)
+                return strings.trim(data,20)
             },
             getFileType(data){
                 if (data.includes('image')) {

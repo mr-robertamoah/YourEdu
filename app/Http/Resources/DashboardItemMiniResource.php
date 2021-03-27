@@ -59,6 +59,12 @@ class DashboardItemMiniResource extends JsonResource
             $data['sections'] = AcademicYearSectionResource::collection($this->academicYearSections);
         } else if ($data['type'] === 'subject') {    
             $data['name'] = $this->name;
+            
+            if ($this->subjectClasses->count()) {
+
+                $data['className'] = $this->subjectClasses[0]->name;
+                $data['classId'] = $this->subjectClasses[0]->id;
+            }
             $data['description'] = $this->description;
             $data['rationale'] = $this->rationale;
         } else if ($data['type'] === 'course') {    
@@ -75,6 +81,7 @@ class DashboardItemMiniResource extends JsonResource
         } else if ($data['type'] === 'courseSection') {    
             $data['name'] = $this->name;
             $data['courseId'] = $this->course_id;
+            $data['courseName'] = $this->course->name;
             $data['description'] = $this->description;
             $data['lessons'] = count($this->lessons);
         } else if ($data['type'] === 'program') {    
@@ -82,6 +89,10 @@ class DashboardItemMiniResource extends JsonResource
             $data['description'] = $this->description;
             $data['courses'] = count($this->courses);
             $data['learners'] = count($this->learners);
+            $data['state'] = $this->state;
+        } else if ($data['type'] === 'lesson') {    
+            $data['title'] = $this->title;
+            $data['description'] = $this->description;
             $data['state'] = $this->state;
         } else if ($data['type'] === 'link') {    
             $data['name'] = $this->name;

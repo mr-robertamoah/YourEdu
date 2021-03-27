@@ -20,16 +20,19 @@ class AssessmentSectionsResource extends JsonResource
             'name' => $this->name,
             'instruction' => $this->instruction,
             'random' => $this->random,
+            'position' => $this->position,
             'answerType' => $this->answer_type,
             'autoMark' => $this->auto_mark,
             'questions' => $this->when(
                 $this->max_questions,
                 QuestionResource::collection(
                     $this->random ? 
-                    $this->questions->shuffle()->take($this->max_questions) :
-                    $this->questions->take($this->max_questions)
+                    $this->questions()->inRandomOrder()->limit($this->max_questions)->get() :
+                    $this->questions()->limit($this->max_questions)->get()
                 ),
-                QuestionResource::collection($this->questions)
+                QuestionResource::collection(
+                    $this->questions()->orderedByPosition()->get()
+                )
             ),
         ];
     }

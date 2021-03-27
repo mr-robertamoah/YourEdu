@@ -314,7 +314,7 @@ import { mapGetters } from 'vuex'
                         msg = `age group: ${this.account.data.age_group} `
                     }
                     if (this.account.data.description) {
-                        msg += `description: ${strings.content(this.account.data.description)} `
+                        msg += `description: ${strings.trim(this.account.data.description)} `
                     }
                     if (this.account.data.rationale) {
                         msg += `rationale: ${this.account.data.rationale} `
@@ -324,17 +324,23 @@ import { mapGetters } from 'vuex'
                         msg += `type: ${this.account.type.toLowerCase()} \n`
                     }
                     if (this.account.description) {
-                        msg += `description: ${strings.content(this.account.description)} `
+                        msg += `description: ${strings.trim(this.account.description)} `
                     }
                     if (this.account.collaborators.length) {
                         msg += `${this.account.collaborators.length} collaborators`
                     }
                 } else if (this.computedShowView) {
                     if (this.account.description) {
-                        msg += `description: ${strings.content(this.account.description)} `
+                        msg += `description: ${strings.trim(this.account.description)} `
                     }
                     if (this.account.lessons) {
                         msg += `lessons: ${this.account.lessons} `
+                    }
+                    if (this.account.dueAt) {
+                        msg += `due on: ${dates.dueAt(this.account.dueAt)} `
+                    }
+                    if (this.account.publishedAt) {
+                        msg += `published: ${dates.createdAt(this.account.publishedAt)} `
                     }
                     if (this.account.learners) {
                         msg += `learners: ${this.account.learners} learners`
@@ -347,7 +353,7 @@ import { mapGetters } from 'vuex'
                     }
                 }
 
-                return strings.content(msg)
+                return strings.trim(msg)
             },
             computedPaymentDetails() {
                 if (this.type === 'owned course' || this.type === 'owned class' ||
@@ -398,7 +404,8 @@ import { mapGetters } from 'vuex'
                     this.type === 'extracurriculum' || this.type === 'program' ||
                     this.type === 'course' || this.type === 'class' ||
                     this.type === 'owned extracurriculum' || this.type === 'lesson' ||
-                    (this.type === 'collaboration' && this.computedOwner)
+                    (this.type === 'collaboration' && this.computedOwner) ||
+                    (this.type === 'assessment' && this.computedOwner)
             },
             computedState() {
                 return this.account.state ? this.account.state : ''
@@ -408,10 +415,11 @@ import { mapGetters } from 'vuex'
                     this.type.includes('extracurriculum') ||
                     this.type.includes('program') ||
                     this.type.includes('lesson') ||
+                    this.type.includes('assessment') && this.computedOwner ||
                     this.type.includes('class')
             },
             computedOwner() {
-                return this.type === 'collaboration' ?
+                return this.type === 'collaboration' || this.type === 'assessment' ?
                     this.isOwner(this.account.addedby) : 
                     this.isOwner(this.account.ownedby)
             },

@@ -35,11 +35,16 @@ class QuestionResource extends JsonResource
             'questionId' => $this->questionable_id,
             'state' => $this->state,
             'scoreOver' => $this->score_over,
-            'sections' => $this->poemSections,
+            'position' => $this->position,
+            'hint' => $this->hint,
+            'answerType' => $this->answer_type,
             'publishedAt' => $this->published_at,
             'updated_at' => $this->updated_at,
             'state' => $this->state,
-            'possibleAnswers' => PossibleAnswerResource::collection($this->possibleAnswers),
+            'correctPossibleAnswers' => $this->correct_possible_answers,
+            'possibleAnswers' => PossibleAnswerResource::collection(
+                $this->possibleAnswers()->orderedByPosition()->get()
+            ),
             'answers_number' => $this->answers()->count(),
             'answers' => $this->answers()->latest(),
             'images' => $images,

@@ -87,6 +87,12 @@ trait AccountTrait
                 }
             });
     }
+
+    public function usesFacilitationDetails()
+    {
+        return $this->accountType === 'professional' || 
+            $this->accountType === 'facilitator';
+    }
     
     public function getAdminIds() : array
     {

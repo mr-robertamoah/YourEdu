@@ -1,16 +1,24 @@
 <template>
     <div class="question-badge-wrapper" v-if="question">
-        <div class="drag"
-            v-if="drag"
-            @click="clickedDrag"
-            @dragstart="clickedDrag"
-            draggable
-        >
+        <div class="other">
             <font-awesome-icon
-                :icon="['fa', 'hand-rock']"
+                v-if="close"
+                class="close"
+                :icon="['fa', 'times']"
+                @click="clickedClose"
             ></font-awesome-icon>
+            <div class="drag"
+                v-if="drag"
+                @click="clickedDrag"
+                @dragstart="clickedDrag"
+                draggable
+            >
+                <font-awesome-icon
+                    :icon="['fa', 'hand-rock']"
+                ></font-awesome-icon>
+            </div>
         </div>
-        <div class="main" @click="clickedQuestion">
+        <div class="main" @dblclick="dbclickedQuestion">
             <div class="body">
                 {{question.body}}
             </div>
@@ -28,7 +36,7 @@
             <div class="score" v-if="question.scoreOver.length">
                 {{`score over: ${question.scoreOver}`}}
             </div>
-            <div class="possible-answers">
+            <div class="possible-answers" v-if="question.possibleAnswers.length">
                 Options:
                 <possible-answer-badge
                     v-for="(possibleAnswer, index) in question.possibleAnswers"
@@ -61,12 +69,27 @@ import PossibleAnswerBadge from './PossibleAnswerBadge';
                 type: Boolean,
                 default: false
             },
+            close: {
+                type: Boolean,
+                default: true
+            },
+            removed: {
+                type: Boolean,
+                default: false
+            },
         },
         methods: {
             clickedDrag() {
                 this.$emit('arrangeQuestions')
             },
-            clickedQuestion() {
+            clickedClose() {
+                if (this.removed) {
+                    this.$emit('undoQuestionRemoval', this.question)
+                    return
+                }
+                this.$emit('removeQuestion', this.question)
+            },
+            dbclickedQuestion() {
                 this.$emit('editQuestion', this.question)
             }
         },
@@ -84,12 +107,28 @@ import PossibleAnswerBadge from './PossibleAnswerBadge';
         align-items: center;
         justify-content: center;
 
-        .drag{
-            cursor: grab;
+
+        .other{
             position: absolute;
             right: 10px;
-            font-size: 20px;
-            color: gray;
+            top: 5px;
+
+            .drag{
+                cursor: grab;
+                font-size: 20px;
+                color: gray;
+            }
+
+            .close{
+                font-size: 30px;
+                color: gray;
+                padding: 5px;
+                cursor: pointer;
+
+                &:hover{
+                    color: red;
+                }
+            }
         }
 
         .main{

@@ -125,17 +125,21 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                     this.$refs.preview.innerHTML = ''
                 }
 
+                let el = null
                 if (file.type.includes('image')) {
-                    let el = document.createElement('img')
+                    el = document.createElement('img')
                     el = this.setImageAttributes(el)
+                    el.src = file.url
                 } else if (file.type.includes('video')) {
-                    let el = document.createElement('video')
+                    el = document.createElement('video')
                     el = this.setVideoAttributes(el)
+                    el.src = file.url
                 } else if (file.type.includes('audio')) {
-                    let el = document.createElement('audio')
+                    el = document.createElement('audio')
                     el = this.setAudioAttributes(el)
+                    el.src = file.url
                 } else if (file.type.includes('file')) {
-                    let el = document.createElement('div')
+                    el = document.createElement('div')
                     el = this.setFileAttributes(el, file)
                 } else {
                     this.message = `${newValue.name} is not a valid file`
@@ -144,7 +148,16 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                 if (!el) {
                     return
                 }
-                this.$refs.preview.appendChild(el)
+                this.appendElementToPreview(el)
+            },
+            appendElementToPreview(element) {
+                if (!this.$refs.preview) {
+                    setTimeout(() => {
+                        this.appendElementToPreview(element)
+                    }, 100);
+                    return
+                }
+                this.$refs.preview.appendChild(element)
             },
             setImageAttributes(el) {
                 el.setAttribute('id','img')
@@ -187,29 +200,30 @@ import BlackWhiteBadge from "./BlackWhiteBadge";
                         let el = document.createElement('img')
                         if (this.type === 'normal') {
                             el = this.setImageAttributes(el)
-                            this.$refs.preview.appendChild(el)
+                            el.src = fileReader.result
+                            this.appendElementToPreview(el)
                         } else {
                             el.style.width = 'inherit'
                             el.style.height = 'inherit'
                             el.style.borderRadius = 'inherit'
                             el.setAttribute('id','img')
+                            el.src = fileReader.result
                             this.$refs.circlepreview.appendChild(el)
                         }
-                        el.src = fileReader.result
                     } else if (file.type.includes('video')) {
                         let el = document.createElement('video')
                         el = this.setVideoAttributes(el)
-                        this.$refs.preview.appendChild(el)
                         el.src = fileReader.result
+                        this.appendElementToPreview(el)
                     } else if (file.type.includes('audio')) {
                         let el = document.createElement('audio')
                         el = this.setAudioAttributes(el)
-                        this.$refs.preview.appendChild(el)
                         el.src = fileReader.result
+                        this.appendElementToPreview(el)
                     } else if (file.type.includes('application')) {
                         let el = document.createElement('div')
                         el = this.setFileAttributes(el, file)
-                        this.$refs.preview.appendChild(el)
+                        this.appendElementToPreview(el)
                     } else {
                         this.message = `${file.name} is not acceptable`
                     }

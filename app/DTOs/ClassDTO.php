@@ -3,6 +3,7 @@
 namespace App\DTOs;
 
 use App\Contracts\ItemDataContract;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class ClassDTO implements ItemDataContract
@@ -15,8 +16,8 @@ class ClassDTO implements ItemDataContract
     public string | null $gradeId;
     public string | null $removedGradeId;
     public int | null $maxLearners;
-    public array | null $academicYears;
-    public array | null $removedAcademicYears;
+    public array $academicYears = [];
+    public array $removedAcademicYears = [];
     public string | null $structure;
     public object | null $discussionData;
     public array | null $discussionFiles;
@@ -28,6 +29,10 @@ class ClassDTO implements ItemDataContract
     public string | null $accountId;
     public string | null $description;
     public string | null $type;
+    public ?string $methodType = null;
+    public ?string $method = null;
+    public ?Model $addedby = null;
+    public ?Model $ownedby = null;
     public string | null $state;
     public array | null $paymentData;
     public array | null $removedPaymentData;
@@ -72,5 +77,23 @@ class ClassDTO implements ItemDataContract
             $request->file('discussionFile');
         
         return $self;
+    }
+
+    public function withAddedby(Model $addedby)
+    {
+        $clone = clone $this;
+
+        $clone->addedby = $addedby;
+
+        return $clone;
+    }
+
+    public function withOwnedby(Model $ownedby)
+    {
+        $clone = clone $this;
+
+        $clone->ownedby = $ownedby;
+
+        return $clone;
     }
 }

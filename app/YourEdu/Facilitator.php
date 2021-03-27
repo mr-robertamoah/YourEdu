@@ -3,6 +3,7 @@
 namespace App\YourEdu;
 
 use App\Traits\AccountTrait;
+use App\Traits\FacilitatingAccountsTrait;
 use App\User;
 use Database\Factories\FacilitatorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Facilitator extends Model
 {
     //
-    use SoftDeletes, AccountTrait, HasFactory;
+    use SoftDeletes, AccountTrait, HasFactory, FacilitatingAccountsTrait;
 
     protected $fillable = [
         'user_id','name'
@@ -235,7 +236,8 @@ class Facilitator extends Model
 
     public function programs()
     {
-        return $this->morphToMany(Program::class,'programmable','programmables');
+        return $this->morphToMany(Program::class,'programmable','programmables')
+            ->withPivot(['activity']);
     }
 
     public function curricula()
@@ -244,7 +246,8 @@ class Facilitator extends Model
     }
 
     public function classes(){
-        return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id');
+        return $this->morphToMany(ClassModel::class,'classable','classables',null,'class_id')
+            ->withPivot(['activity']);
     }
 
     public function courses()
@@ -494,6 +497,11 @@ class Facilitator extends Model
     public function addedCollaborations()
     {
         return $this->morphMany(Collaboration::class,'addedby');
+    }
+
+    public function facilitationDetails()
+    {
+        return $this->morphMany(FacilitationDetail::class, 'accountable');
     }
     
     protected static function newFactory()

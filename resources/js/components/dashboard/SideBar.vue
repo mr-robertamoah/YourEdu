@@ -22,15 +22,7 @@
                 <div class="item-icon">
                     (L)
                 </div>
-                <div class="item-sub">
-                    <!-- <div class="sub-item">
-                        <div class="sub-text">
-                            sub 1
-                        </div>
-                        <div class="sub-icon">
-                            icon
-                        </div>
-                    </div> -->
+                <div class="item-sub"> 
                     <div class="no-item" v-if="!isLearner">
                         <div class="info">no learner account</div>
                         <div class="button"

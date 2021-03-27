@@ -424,7 +424,7 @@ import {mapActions, mapGetters} from 'vuex'
                     } else if (this.previewType === 'riddle') {
                         return this.mainPreviewData.body
                     } else if (this.previewType === 'lesson') {
-                        return strings.content(this.mainPreviewData.description)
+                        return strings.trim(this.mainPreviewData.description)
                     }
                 }
             },

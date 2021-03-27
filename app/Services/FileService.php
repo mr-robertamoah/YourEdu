@@ -12,26 +12,28 @@ class FileService
 {
     public static function createAndAttachFiles($account,$file,$item)
     {
-        if (!is_null($file)) {
-            $file = self::accountCreateFile(
-                $account, 
-                self::getFileDetails($file),
-                $item
-            );
-            return $file;
+        if (is_null($file)) {
+            return null;
         }
-        return null;
+
+        return self::accountCreateFile(
+            $account, 
+            self::getFileDetails($file),
+            $item
+        );
     }
 
     public static function deleteAndUnattachFiles($file,$item)
     {
         $actualFile = getYourEduModel($file->type,$file->id);
-        if (!is_null($actualFile)) {
-            $method = "{$file->type}s";
-            $item->$method()->detach($file->id);
-            Storage::delete($actualFile->path);
-            $actualFile->delete();
+        if (is_null($actualFile)) {
+            return;
         }
+
+        $method = "{$file->type}s";
+        $item->$method()->detach($file->id);
+        Storage::delete($actualFile->path);
+        $actualFile->delete();
     }
 
     public static function getFileDetails($actualFile, $save = true)
