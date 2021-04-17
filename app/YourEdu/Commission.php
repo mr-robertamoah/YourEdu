@@ -12,7 +12,7 @@ class Commission extends Model
 
     protected $casts = ['percent' => 'double'];
 
-    public function for()
+    public function addedby()
     {
         return $this->morphTo();
     }
@@ -20,5 +20,15 @@ class Commission extends Model
     public function ownedby()
     {
         return $this->morphTo();
+    }
+
+    public function commissionables()
+    {
+        return $this->hasMany(Commissionable::class);
+    }
+
+    public function requests()
+    {
+        return $this->morphToMany(Request::class, 'requestable', 'requestables');
     }
 }

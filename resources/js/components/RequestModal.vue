@@ -8,11 +8,22 @@
                 :main="false"
                 :mainOther="false"
                 :loading="requestLoading"
+                class="request-modal-wrapper"
             >
-                <template slot="loading" v-if="requestLoading">
-                    <pulse-loader :loading="requestLoading"></pulse-loader>
-                </template>
                 <template slot="requests">
+                    <auto-alert
+                        :message="alertMessage"
+                        :success="alertSuccess"
+                        :danger="alertDanger"
+                        :sticky="true"
+                        @hideAlert="clearAlert"
+                    ></auto-alert>
+                    <pulse-loader 
+                        v-if="requestLoading"
+                        class="loading" 
+                        :loading="requestLoading"
+                    ></pulse-loader>
+
                     <div class="no-requests" 
                         v-if="!computedRequests && !requestLoading">
                         {{`there are no ${type}`}}
@@ -57,6 +68,14 @@
                                     @clickedAction="clickedRequestAction"
                                     @updateRequest="updateRequest"
                                 ></other-request-badge>
+                                <request-badge
+                                    v-if="request.action"
+                                    :key="`request.${request.id}`"
+                                    :request="request"
+                                    @clickedAction="clickedRequestAction"
+                                    @showDetails="clickedShowDetails"
+                                    @showMessages="clickedShowMessages"
+                                ></request-badge>
                             </template>
                         </template>
                         <template slot="transition" v-if="notifications.length">
@@ -81,6 +100,17 @@
                     >
                         <font-awesome-icon :icon="['fa','ellipsis-h']"></font-awesome-icon>
                     </div>
+
+                <messages-modal
+                    :show="showMessageModal"
+                    @closeMessageModal="closeMessageModal"
+                    :request="modalRequest"
+                ></messages-modal>
+                <details-modal
+                    :show="showDetailsModal"
+                    @closeDetailsModal="closeDetailsModal"
+                    :details="modalRequest"
+                ></details-modal>
                 </template>
             </main-modal>
         </template>
@@ -95,14 +125,21 @@ import AccountBadge from "./dashboard/AccountBadge";
 import ParticipantBadge from "./discussion/ParticipantBadge";
 import DiscussionBadge from "./DiscussionBadge";
 import OtherRequestBadge from "./OtherRequestBadge";
+import RequestBadge from "./RequestBadge";
 import PulseLoader from "vue-spinner/src/PulseLoader";
+import MessagesModal from "./MessagesModal"
+import DetailsModal from "./DetailsModal"
 import { mapActions, mapGetters } from 'vuex';
+import Alert from './../mixins/Alert.mixin';
     export default {
         components: {
+            DetailsModal,
+            MessagesModal,
             MainModal,
             SlideRightGroup,
             JustFade,
             PulseLoader,
+            RequestBadge,
             OtherRequestBadge,
             DiscussionBadge,
             ParticipantBadge,
@@ -118,14 +155,18 @@ import { mapActions, mapGetters } from 'vuex';
                 default: ''
             },
         },
+        mixins: [Alert],
         data() {
             return {
                 showMoreRequests: false,
+                showMessageModal: false,
+                modalRequest: null,
                 requestNextPage: 1,
                 notifications: [],
                 requests: [],
                 showMoreRequests: false,
                 requestLoading: false,
+                showDetailsModal: false,
                 requestId : null,
             }
         },
@@ -155,14 +196,22 @@ import { mapActions, mapGetters } from 'vuex';
             ...mapActions(['acceptFollowRequest','declineFollowRequest','userRequests',
                 'profile/discusionContributionResponse','profile/joinDiscussionResponse',
                 'userNotifications','profile/invitationDiscussionResponse',
-                'schoolRequestResponse']),
+                'dashboard/sendResponse']),
+            closeMessageModal(request) {
+                this.showMessageModal = false
+                this.modalRequest = null
+            },
+            clickedShowMessages(request) {
+                this.showMessageModal = true
+                this.modalRequest = request
+            },
             removeRequest(id, type ="message"){ //remove request on success
                 let requestIndex = this.requests.findIndex(request=>{
                     return request.id === id && 
                         (type === 'message' && request.isMessage || 
                         type === 'account' && request.isAccount || 
                         type === 'participant' && request.isParticipant ||
-                        request.isAdminRequest)
+                        request.action)
                 })
                 if (requestIndex > -1) {
                     this.requests.splice(requestIndex,1)
@@ -176,6 +225,14 @@ import { mapActions, mapGetters } from 'vuex';
                     this.requests[index].state = data.state
                 }
             },
+            clickedShowDetails(request) {
+                this.showDetailsModal = true
+                this.modalRequest = request
+            },
+            closeDetailsModal() {
+                this.showDetailsModal = false
+                this.modalRequest = null
+            },
             getNotificationAccount(data){
                 return data.account ? data.account : data.facilitator ? data.facilitator :
                     data.school ? data.school : null
@@ -186,11 +243,15 @@ import { mapActions, mapGetters } from 'vuex';
             clickedRequestAction(data){
                 if (data.hasOwnProperty('message')) {
                     this.acceptOrRejectMessage(data)
-                } else if (data.hasOwnProperty('account')) {
-                    this.acceptOrDeclineAccount(data)
-                } else if (data.hasOwnProperty('schoolRequest')) {
-                    this.acceptOrDeclineSchoolRequest(data)
+                    return
                 }
+                
+                if (data.hasOwnProperty('account')) {
+                    this.acceptOrDeclineAccount(data)
+                    return
+                }
+
+                this.acceptOrDeclineRequest(data)
             },
             clickedParticipantAction(participantData){
                 if (participantData.type === 'invitation') {
@@ -199,22 +260,23 @@ import { mapActions, mapGetters } from 'vuex';
                     this.joinDiscussionResponse(participantData)
                 }
             },
-            async acceptOrDeclineSchoolRequest(requestData){
-                let response,
-                    data = {
-                        requestId: requestData.schoolRequest.id,
-                        action: requestData.action,
-                        other: 'school', 
-                        mine: requestData.schoolRequest.myAccount === 'user' ? 'admin' :
-                            requestData.schoolRequest.myAccount
-                    }
+            async acceptOrDeclineRequest(request){
+                let formData = new FormData,
+                    response
 
-                response = await this.schoolRequestResponse(data)
+                formData.append('requestId', request.id)
+                formData.append('response', request.response !== 'decline' ? 'accepted' : 'declined')
+
+                response = await this['dashboard/sendResponse'](formData)
 
                 if (response.status) {
-                    this.removeRequest(data.requestId)
+                    this.removeRequest(request)
+                    this.alertSuccess = true
+                    this.alertMessage = `response was successfully sent 😎`
                 } else {
                     console.log('response :>> ', response);
+                    this.alertDanger = true
+                    this.alertMessage = `oops! it failed 😕. please try again later.`
                 }
             },
             async invitationDiscussionResponse(participantData){
@@ -325,28 +387,37 @@ import { mapActions, mapGetters } from 'vuex';
 
 <style lang="scss" scoped>
 
-    .show-more{
-        width: fit-content;
-        text-align: center;
-        padding: 5px;
-        margin: 5px auto;
+    .request-modal-wrapper{
+
+        .loading{
+            @include sticky-loader();
+            top: 49%;
+        }
+
+        .show-more{
+            width: fit-content;
+            text-align: center;
+            padding: 5px;
+            margin: 5px auto;
+        }
+
+        .no-requests,
+        .has-requests{
+            min-height: 100px;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 450;
+        }
+
+        .has-requests{
+            min-height: unset;
+        }
+
+        .request-badge{
+            margin-bottom: 10px;
+        }
     }
 
-    .no-requests,
-    .has-requests{
-        min-height: 100px;
-        width: 100%;
-        text-align: center;
-        padding: 10px;
-        font-size: 12px;
-        font-weight: 450;
-    }
-
-    .has-requests{
-        min-height: unset;
-    }
-
-    .request-badge{
-        margin-bottom: 10px;
-    }
 </style>

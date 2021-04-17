@@ -14,18 +14,21 @@ export default {
     computed: {
         computedDetails() {
             let str = `amount: ${this.data.amount}`
+            
             if (this.data.period) {
                 str += ` per ${this.data.period}`
             }
+
             if (this.data.description && this.data.description.length) {
                 str += '\n'
                 str += `description: ${this.data.description}`
             }
-            if (this.data.academicYears) {
-                str += '\n' + `${this.data.academicYears.length} academic years`
-            }
-            if (this.data.sections) {
-                str += '\n' + `${this.data.sections.length} academic year sections`
+            
+            if (this.data.feeables?.length) {
+                str += '\n'
+                let type = this.data.feeables[0].type.includes('ection') ?
+                    'academic year sections' : 'academic years'
+                str += `${this.data.feeables.length} ${type}`
             }
             return str
         }

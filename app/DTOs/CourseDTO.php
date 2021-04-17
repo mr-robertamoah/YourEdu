@@ -6,7 +6,7 @@ use App\Contracts\ItemDataContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class CourseDTO implements ItemDataContract
+class CourseDTO extends ItemDataContract
 {
     public string | null $courseId;
     public string | null $name;
@@ -28,12 +28,11 @@ class CourseDTO implements ItemDataContract
     public string | null $account;
     public string | null $accountId;
     public string | null $description;
-    public string | null $type;
     public string | null $state;
     public ?string $methodType = null;
     public ?string $method = null;
-    public array | null $paymentData;
-    public array | null $removedPaymentData;
+    public ?PaymentDTO $paymentDTO = null;
+    public ?PaymentDTO $removedPaymentDTO = null;
     public int | null $userId;
     public ?Model $addedby = null;
     public ?Model $ownedby = null;
@@ -53,7 +52,6 @@ class CourseDTO implements ItemDataContract
         $self->userId = (int) $request->user()->id;
         $self->description = $request->description;
         $self->state = $request->state;
-        $self->type = $request->type;
         $self->facilitate = json_decode($request->facilitate);
         $self->standAlone = $request->standAlone ?
             json_decode($request->standAlone) : false;
@@ -65,10 +63,13 @@ class CourseDTO implements ItemDataContract
             json_decode($request->attachments) : [];
         $self->removedAttachments = $request->removedAttachments ?
             json_decode($request->removedAttachments) : [];
-        $self->removedPaymentData = $request->removedPaymentData ?
-            json_decode($request->removedPaymentData) : [];
-        $self->paymentData = $request->paymentData ?
-            json_decode($request->paymentData) : [];
+        $self->removedPaymentDTO = static::createPaymentDTOForRemovedPayments(
+            $request->removedPaymentData
+        );
+        $self->paymentDTO = static::createPaymentDTOForPayments(
+            $request->paymentType,
+            $request->paymentData
+        );
         $self->sections = $request->sections ?
             json_decode($request->sections) : [];
         $self->removedSections = $request-> removedSections?

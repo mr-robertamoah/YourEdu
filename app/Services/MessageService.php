@@ -2,103 +2,240 @@
 
 namespace App\Services;
 
+use App\DTOs\MessageDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\MessageException;
+use App\Traits\ServiceTrait;
+use App\YourEdu\Message;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class MessageService
 
 {
-    public function createMessage($what,$whatId,$account,$accountId,$userId,$message,
-        $state,$file = null,$chattingAccount = null,$chattingAccountId = null,$chattingUserId = null)
+    use ServiceTrait;
+    
+    public function createMessage(MessageDTO $messageDTO)
     {
-        $toWhatMessageBelongs = getYourEduModel($what,$whatId); //request discussion conversation
-        if (is_null($toWhatMessageBelongs)) {
-            throw new AccountNotFoundException("{$what} was not found with id {$whatId}");
-        }
-        $fromable = getYourEduModel($account,$accountId);
+        $messageDTO = $this->setMessageable($messageDTO);
 
-        $toable = getYourEduModel($chattingAccount,$chattingAccountId);
-        if ($what === 'conversation' && is_null($toable)) {
-            throw new AccountNotFoundException("{$chattingAccount} does not exist");
-        }
+        $messageDTO = $this->setFromable($messageDTO);
 
-        $message = $toWhatMessageBelongs->messages()->create([
-            'message' => $message,
-            'to_user_id' => $chattingUserId,
-            'from_user_id' => $userId,
-            'state' => Str::upper($state),
-        ]);
+        $messageDTO = $this->setToable($messageDTO);
 
-        if (is_null($message)) {
-            throw new MessageException("message creation failed");
-        }
+        $message = $this->addMessage($messageDTO);
 
-        if (!is_null($toable)) {
-            $message->toable()->associate($toable);
-        }
-        $message->fromable()->associate($fromable);
-        $message->save();
+        $this->checkMessage($message);
 
-        if ($file) {
-            //fromable has uploaded a file and that file is attached to a message
-            if (is_array($file)) {
-                foreach ($file as $f) {
-                    $this->accountCreateFile($f, $fromable, $message);
-                }
-            } else {
-                $this->accountCreateFile($file, $fromable, $message);
-            }
-        }
+        $message = $this->associateMessageToFromable($message, $messageDTO);
 
-        return [
-            'belongsTo' => $toWhatMessageBelongs,
-            'message' => $message->load('images','videos','audios','files','flags','fromable.profile')
-        ];
+        $message = $this->associateMessageToToable($message, $messageDTO);
+
+        $messageDTO = $messageDTO->withMessage($message);
+
+        $message = $this->addFiles($messageDTO);
+
+        return $this->getReturnedMessage($message);
     }
 
-    private function accountCreateFile($file, $account, $item)
+    private function getReturnedMessage(Message $message)
+    {
+        if (class_basename_lower($message->messageable) === 'request') {
+            return $message;
+        }
+
+        return $this->getMessageWithLoadedData($message);
+    }
+
+    private function getMessageWithLoadedData($message)
+    {
+        return $message->load('images','videos','audios','files','flags','fromable.profile');
+    }
+
+    private function associateMessageToFromable($message, $messageDTO)
+    {
+        if (is_null($messageDTO->fromable)) {
+            return $message;
+        }
+
+        $message->fromable()->associate($messageDTO->fromable);
+        $message->save();
+
+        return $message;
+    }
+
+    private function associateMessageToToable($message, $messageDTO)
+    {
+        if (is_null($messageDTO->toable)) {
+            return $message;
+        }
+        
+        $message->toable()->associate($messageDTO->toable);
+        $message->save();
+
+        return $message;
+    }
+
+    private function setMessageable(MessageDTO $messageDTO)
+    {
+        if (is_not_null($messageDTO->messageable)) {
+            return $messageDTO;
+        }
+
+        return $messageDTO->withMessageable(
+            $this->getModel($messageDTO->item,$messageDTO->itemId)
+        );
+    }
+
+    private function setFromable(MessageDTO $messageDTO)
+    {
+        if (is_not_null($messageDTO->fromable)) {
+            return $messageDTO;
+        }
+        
+        return $messageDTO->withFromable(
+            $this->getModel($messageDTO->fromAccount,$messageDTO->fromAccountId)
+        );
+    }
+
+    private function doesntRequireToable(MessageDTO $messageDTO)
+    {
+        if ($messageDTO->item === 'discussion') {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function setToable(MessageDTO $messageDTO)
+    {
+        if ($this->doesntRequireToable($messageDTO)) {
+            return $messageDTO;
+        }
+
+        if (is_not_null($messageDTO->toable)) {
+            return $messageDTO;
+        }
+        
+        return $messageDTO->withToable(
+            $this->getModel($messageDTO->toAccount,$messageDTO->toAccountId)
+        );
+    }
+
+    private function checkMessage($message)
+    {
+        if (is_not_null($message)) {
+            return;
+        }
+        
+        throw new MessageException("message creation failed");
+    }
+
+    private function addFiles(MessageDTO $messageDTO)
+    {
+        foreach ($messageDTO->files as $file) {
+            $this->accountCreateFile($file, $messageDTO);
+        }
+
+        return $messageDTO->message->refresh();
+    }
+
+    private function addMessage(MessageDTO $messageDTO)
+    {
+        return $messageDTO->messageable->messages()->create([
+            'message' => $messageDTO->messageText,
+            'to_user_id' => $messageDTO->toUserId,
+            'from_user_id' => $messageDTO->fromUserId,
+            'state' => Str::upper($messageDTO->state ?: 'sent'),
+        ]);
+    }
+
+    private function throwMessageException($message, $data = null)
+    {
+        throw new MessageException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    private function accountCreateFile($file, $messageDTO)
     {
         $uploadedFile = FileService::createAndAttachFiles(
-            account: $account,
+            account: $messageDTO->fromable,
             file: $file,
-            item: $item
+            item: $messageDTO->message
         );
-        $uploadedFile->ownedby()->associate($account);
+
+        $uploadedFile->ownedby()->associate($messageDTO->fromable);
         $uploadedFile->save();
     }
 
-    public function deleteMessage($userId, $messageId, $action,$auth = true)
+    private function checkAuthorization(MessageDTO $messageDTO)
     {
-        $message = getYourEduModel('message', $messageId);
-
-        if (is_null($message)) {
-            throw new AccountNotFoundException("message not found with id {$messageId}");
+        if (! $messageDTO->requireAuthorization) {
+            return;
         }
 
-        if ($action === 'self') {
-            $message->timestamps = false;
-            if (is_null($message->user_deletes)) {
-                $message->user_deletes = [$userId];
-            } else {
-                $message->user_deletes = Arr::prepend($message->user_deletes, $userId);
-            }
-            $message->save();
-            return $message->load('images','videos','audios','files','flags','fromable.profile');
-        } else if ($action === 'delete') {
-            if ($auth && $message->from_user_id !== $userId) {
-                throw new MessageException("you are not authorized to delete this message");
-            }
-
-            deleteYourEduItemFiles($message);
-            $message->setTouchedRelations([]);
-            $message->timestamps = false;
-            $message->delete();
-            return [
-                'item' => 'message',
-                'itemId' => $messageId
-            ];
+        if ($messageDTO->fromable->isAuthorizedUserById($messageDTO->fromUserId)) {
+            return;
         }
+
+        $this->throwMessageException(
+            message: "you are not authorized to delete this message",
+            data: $messageDTO
+        );
+    }
+
+    public function deleteMessage(MessageDTO $messageDTO)
+    {
+        $message = $this->getMessage($messageDTO);
+
+        $messageDTO = $messageDTO->withFromable($message->fromable);
+        
+        $this->checkAuthorization($messageDTO);
+        
+        $messageDTO = $messageDTO->withMessage($message);
+
+        if ($messageDTO->action === 'self') {
+            return $this->deleteMessageForSelf($messageDTO);
+        }
+
+        $this->deleteFiles($messageDTO);
+
+        $message->setTouchedRelations([]);
+        $message->timestamps = false;
+
+        $message->delete();
+    }
+
+    private function getMessage($messageDTO)
+    {
+        if ($messageDTO->message) {
+            return $messageDTO->message;
+        }
+
+        return $this->getModel('message', $messageDTO->messageId);
+    }
+
+    private function deleteMessageForSelf(MessageDTO $messageDTO)
+    {
+        $messageDTO->message->timestamps = false;
+        if (is_null($messageDTO->message->user_deletes)) {
+            $messageDTO->message->user_deletes = [];
+        }
+        
+        $messageDTO->message->user_deletes = Arr::prepend(
+            $messageDTO->message->user_deletes, 
+            $messageDTO->fromUserId
+        );
+
+        $messageDTO->message->save();
+
+        return $this->getMessageWithLoadedData($messageDTO->message);
+    }
+
+    private function deleteFiles(MessageDTO $messageDTO)
+    {
+        (new FileService)->deleteYourEduItemFiles($messageDTO->message);
     }
 }

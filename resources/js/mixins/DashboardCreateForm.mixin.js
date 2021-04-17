@@ -37,7 +37,7 @@ export default {
                 ageGroup: '',
                 free: false,
                 intro: false,
-                type: 'free',
+                paymentType: 'free',
                 description: '',
                 grade: {},
                 owner: {name: ''},
@@ -191,7 +191,6 @@ export default {
             }
         },
         error(data) {
-            console.log('error :>> ', data);
             this.alertDanger = true
             this.alertLengthy = data.lengthy
             this.alertMessage = data.message
@@ -220,7 +219,7 @@ export default {
         },
         async clearData(){
             this.data.name = ''
-            this.data.type = 'free'
+            this.data.paymentType = 'free'
             this.data.description = ''
             // this.data.owner = {name: ''}
             this.data.items = []
@@ -309,7 +308,7 @@ export default {
                 this.data.removedPaymentData.push(...this.data.mainPaymentData)
                 this.data.mainPaymentData = []
             }
-            this.data.type = data.type
+            this.data.paymentType = data.type
             this.data.paymentData = data.data
         },
         clickedRemovePayment(data,type) {
@@ -320,7 +319,7 @@ export default {
                 } else if (type === 'removed') {
                     if (this.data.paymentData && this.data.paymentData.length &&
                         this.data.removedPaymentData.length && 
-                        this.data.type !== this.data.removedPaymentData[0].type) {
+                        this.data.paymentType !== this.data.removedPaymentData[0].type) {
                             return
                         }
                         this.spliceRemovedPaymentData(index,data)
@@ -356,7 +355,7 @@ export default {
         ownerSelection(data){
             this.data.owner = data
             this.data.paymentData = null
-            this.data.type = 'free'
+            this.data.paymentType = 'free'
         },
         clearDiscussionData(data) {
             this.data.discussionData = {

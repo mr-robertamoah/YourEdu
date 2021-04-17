@@ -3,9 +3,19 @@
 namespace App\Exceptions;
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class FeeException extends Exception
 {
+    public function __construct
+    (
+        $message,
+        $code = 0, 
+        private $data = null,
+    ) 
+    {
+        parent::__construct($message,$code);
+    }
      /**
      * Report the exception.
      *
@@ -13,7 +23,7 @@ class FeeException extends Exception
      */
     public function report()
     {
-        //
+        Log::alert($this->getMessage(), ['data' => $this->data]);
     }
 
     /**

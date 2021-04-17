@@ -12,5 +12,8 @@ class DashboardItemContract extends Model
     const DECLINED = 'DECLINED';
     const DELETED = 'DELETED';
     const ACCEPTED = 'ACCEPTED';
+    const VALIDITEMTYPEPLURAL = [
+        'classes', 'courses', 'programs', 'extracurriculums'
+    ];
 
 }

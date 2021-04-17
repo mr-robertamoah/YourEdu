@@ -2,33 +2,58 @@
 
 namespace App\Services;
 
-use App\Contracts\PaymentTypeContract;
-use App\Exceptions\AccountNotFoundException;
+use App\DTOs\SubscriptionDTO;
+use App\Exceptions\SubscriptionException;
+use App\Traits\ServiceTrait;
 use Illuminate\Support\Str;
 
-class SubscriptionService extends PaymentTypeContract
+class SubscriptionService
 {
-    public static function set($item,$subscriptionData,$ownedby)
+    use ServiceTrait;
+
+    public static function set(SubscriptionDTO $subscriptionDTO)
     {
-        //the owned by is actually added by
-        $subscription = $item->subscriptions()->create([
-            'name' => $subscriptionData->name,
-            'amount' => $subscriptionData->amount,
-            'description' => $subscriptionData->description,
-            'for' => Str::upper($subscriptionData->for)
+        $subscription = $subscriptionDTO->dashboardItem->subscriptions()->create([
+            'name' => $subscriptionDTO->name,
+            'amount' => $subscriptionDTO->amount,
+            'description' => $subscriptionDTO->description,
+            'for' => Str::upper($subscriptionDTO->for),
+            'period' => Str::upper($subscriptionDTO->period),
         ]);
-        $subscription->ownedby()->associate($ownedby);
+
+        (new static)->checkSubscription($subscription, $subscriptionDTO);
+
+        $subscription->ownedby()->associate($subscriptionDTO->addedby);
         $subscription->save();
+
+        return $subscription;
     }
 
-    public static function unset($item,$subscriptionId)
+    private function checkSubscription($subscription, $subscriptionDTO)
     {
-        $subscription = getYourEduModel('subscription', $subscriptionId);
-        if (is_null($subscription)) {
-            throw new AccountNotFoundException("subscription not found with id {$subscriptionId}");
+        if (!is_null($subscription)) {
+            return;
         }
 
-        $subscription->subscribable()->dissociate($item);
+        $this->throwSubscriptionException(
+            message: 'failed to create subscription',
+            data: $subscriptionDTO
+        );
+    }
+
+    private function throwSubscriptionException($message, $data = null)
+    {
+        throw new SubscriptionException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    public static function unset(SubscriptionDTO $subscriptionDTO)
+    {
+        $subscription = (new static)->getModel('subscription', $subscriptionDTO->subscriptionId);
+        
+        $subscription->subscribable()->dissociate($subscriptionDTO->dashboardItem);
         $subscription->delete();
     }
 }

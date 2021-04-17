@@ -118,6 +118,11 @@ const dates = {
             return `${this.dayShort(theDate.getDay())}, ${theDate.getDate()} ${this.monthShort(theDate.getMonth())}, ${theDate.getFullYear()}`
         }
     },
+    tomorrow() {
+        let now = new Date()
+
+        return new Date(Date.UTC(now.getFullYear(),now.getMonth(), now.getDate() + 1))
+    }
 }
 
 const files = {

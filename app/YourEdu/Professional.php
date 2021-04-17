@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountFilesTrait;
 use App\Traits\AccountTrait;
 use App\Traits\FacilitatingAccountsTrait;
 use App\User;
@@ -14,7 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Professional extends Model
 {
     //
-    use SoftDeletes, AccountTrait, HasFactory, FacilitatingAccountsTrait;
+    use SoftDeletes, 
+        AccountTrait, 
+        HasFactory, 
+        FacilitatingAccountsTrait,
+        AccountFilesTrait;
 
     protected $fillable = [
         'user_id','name', 'description', 'role'
@@ -98,6 +103,11 @@ class Professional extends Model
     public function commissions()
     {
         return $this->morphMany(Commission::class,'ownedby');
+    }
+
+    public function addedCommissions()
+    {
+        return $this->morphMany(Commission::class,'addedby');
     }
 
     public function employed()
@@ -275,46 +285,6 @@ class Professional extends Model
     {
         return $this->morphMany(Request::class,'requestto');
     }
-    
-    public function ownedImages()
-    {
-        return $this->morphMany(Image::class,'ownedby');
-    }
-    
-    public function ownedFiles()
-    {
-        return $this->morphMany(File::class,'ownedby');
-    }
-    
-    public function ownedVideos()
-    {
-        return $this->morphMany(Video::class,'ownedby');
-    }
-    
-    public function ownedAudio()
-    {
-        return $this->morphMany(Audio::class,'ownedby');
-    }
-    
-    public function addedImages()
-    {
-        return $this->morphMany(Image::class,'addedby');
-    }
-    
-    public function addedFiles()
-    {
-        return $this->morphMany(File::class,'addedby');
-    }
-    
-    public function addedVideos()
-    {
-        return $this->morphMany(Video::class,'addedby');
-    }
-    
-    public function addedAudio()
-    {
-        return $this->morphMany(Audio::class,'addedby');
-    }
 
     public function links()
     {
@@ -471,6 +441,16 @@ class Professional extends Model
     public function facilitationDetails()
     {
         return $this->morphMany(FacilitationDetail::class, 'accountable');
+    }
+
+    public function ownedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'ownedby');
+    }
+
+    public function addedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'addedby');
     }
     
     protected static function newFactory()

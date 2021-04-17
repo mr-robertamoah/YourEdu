@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\ActivityDTO;
+use App\DTOs\ActivityTrackDTO;
 use App\DTOs\BookDTO;
 use App\DTOs\LessonDTO;
 use App\DTOs\PoemDTO;
@@ -85,7 +86,7 @@ class PostService
 
     private function checkAccountAuthorization(PostDTO $postDTO)
     {
-        $userIds = $postDTO->addedby->authorizedIds();
+        $userIds = $postDTO->addedby->getAuthorizedIds();
 
         if (!in_array($postDTO->userId, $userIds)) {
             $this->throwPostException(
@@ -228,7 +229,7 @@ class PostService
             );
         }
 
-        if (!in_array($postDTO->userId, $account->authorizedIds())) {
+        if (!in_array($postDTO->userId, $account->getAuthorizedIds())) {
             $this->throwPostException(
                 message: "The {$postDTO->account} account with id {$postDTO->account_id} doesn't belong to you.",
                 data: $postDTO
@@ -385,10 +386,12 @@ class PostService
         }
 
         (new ActivityTrackService)->trackActivity(
-            who: $admin,
-            what: $postDTO->post,
-            for: $postDTO->addedby,
-            action: $method
+            ActivityTrackDTO::createFromData(
+                performedby: $admin,
+                activity: $postDTO->post,
+                activityfor: $postDTO->addedby,
+                action: $method
+            )
         );
     }
 

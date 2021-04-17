@@ -52,7 +52,7 @@ import { mapActions, mapGetters } from 'vuex'
                     this.show = true
                     setTimeout(() => {
                         this.show = false
-                        this.$emit('hideAlert', newValue)
+                        this.emit(newValue)
                         if (this['profile/getMsg'] && this['profile/getMsg'].length) {
                             this['profile/clearMsg']()
                         }
@@ -75,6 +75,12 @@ import { mapActions, mapGetters } from 'vuex'
         },
         methods: {
             ...mapActions(['profile/clearMsg']),
+            emit(value) {
+                if (this.success) {
+                    this.$emit('doneShowingSuccessMessage', value)
+                }
+                this.$emit('hideAlert', value)
+            }
         },
     }
 </script>

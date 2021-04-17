@@ -6,235 +6,304 @@
                 @mainModalDisappear="invitationModalDisappear"
                 :main="false"
                 :mainOther="false"
+                :requestsAlone="true"
+                class="invitation-modal-wrapper"
             >
                 <template slot="requests">
-                    <div class="invitation-modal-wrapper">
-                        <div class="loading" v-if="loading">
-                            <pulse-loader :loading="loading"></pulse-loader>
+                    <auto-alert
+                        :message="alertMessage"
+                        :success="alertSuccess"
+                        :danger="alertDanger"
+                        :sticky="true"
+                        @hideAlert="clearAlert"
+                        @doneShowingSuccessMessage="afterAlertSuccess"
+                    ></auto-alert>
+                    <pulse-loader 
+                        v-if="loading"
+                        class="loading" 
+                        :loading="loading"
+                    ></pulse-loader>
+                    
+                    <div class="back-icon"
+                        @click="clickedIconBack"
+                        v-if="steps > 0"
+                    >
+                        <font-awesome-icon 
+                            :icon="['fa','long-arrow-alt-left']">
+                        </font-awesome-icon>
+                    </div>
+                    <div class="section" v-if="steps === 0">
+                        <div class="description">
+                            {{actionDescription}}
                         </div>
-                        <div class="back-icon"
-                            @click="clickedIconBack"
-                            v-if="steps > 0"
+                        <main-list
+                            @listItemSelected='actionSelection'
+                            :multiple='false'
+                            :itemList="actionsList"
+                            select="actions you can perform"
+                        ></main-list>
+                    </div>
+                    <div class="send-request search-section"
+                        v-if="steps === 1 && computedShowReceiversSection"
+                        infinite-wrapper
+                    >
+                        <search-input
+                            class="search-input"
+                            @search="getReceiverSearchText"
+                            v-if="receiverTypes.length"
+                            :placeholder="`search for ${receiverTypes.toString()}`"
+                        ></search-input>
+                        <div class="buttons" v-if="receiverTypes.length > 1">
+                            <grey-button
+                                class="grey-button"
+                                v-for="(type, index) in receiverTypes"
+                                :key="index"
+                                :text="type"
+                                :active="type === receiverSearchType"
+                                @clickedAction="clickedReceiverType"
+                            ></grey-button>
+                        </div>
+                        <div class="no-data"
+                            v-if="!accountsLoading && !accountsNextPage && !computedAccounts.length"
                         >
-                            <font-awesome-icon 
-                                :icon="['fa','long-arrow-alt-left']">
-                            </font-awesome-icon>
+                            you got no one...try a different search
                         </div>
-                        <div class="section" v-if="steps === 0">
-                            <div class="description">
-                                {{actionDescription}}
-                            </div>
-                            <main-list
-                                @listItemSelected='actionSelection'
-                                :multiple='false'
-                                :itemList="actionsList"
-                                select="actions you can perform"
-                            ></main-list>
+                        <div class="output-section" v-if="computedAccounts.length">
+                            <other-user-account
+                                class="account"
+                                v-for="(account,index) in computedAccounts"
+                                :key="index"
+                                :account="account"
+                                :active="inAccountsSelection(account)"
+                                :chat="false"
+                                @clickedOtherUserAccount="clickedAccount"
+                            ></other-user-account>
                         </div>
-                        <div class="send-request"
-                            v-if="steps === 1"
-                            infinite-wrapper
+                        <pulse-loader
+                            v-if="accountsLoading"
+                            class="loading" 
+                            :loading="accountsLoading" 
+                            size="10px"
+                        ></pulse-loader>
+
+                        <infinite-loader
+                            v-if="!accountsLoading && accountsNextPage && accountsNextPage > 1"
+                            @infinite="infiniteHandler"
+                            force-use-infinite-wrapper
+                        ></infinite-loader>
+                        
+                        <div 
+                            v-if="computedWards.length"
                         >
                             <search-input
                                 class="search-input"
-                                @search="getSearchText"
+                                @search="getWardSearchText"
+                                :placeholder="`search for wards`"
+                                v-if="account.account === 'parent'"
                             ></search-input>
-
-                            <div class="no-data"
-                                v-if="!accountsLoading && !accountsNextPage && !computedAccounts.length"
-                            >
-                                you got no one...try different search
+                            <div class="small-msg">
+                                select one of your wards for whom you are sending this request
                             </div>
-                            <div class="output-section" v-if="computedAccounts.length">
+                            <div class="output-section">
                                 <other-user-account
-                                    v-for="(account,index) in computedAccounts"
+                                    class="account"
+                                    v-for="(ward,index) in computedWards"
                                     :key="index"
-                                    :account="account"
+                                    :account="ward"
+                                    :active="inWardsSelection(ward)"
                                     :chat="false"
-                                    @clickedOtherUserAccount="clickedAccount"
+                                    @clickedOtherUserAccount="clickedWard"
                                 ></other-user-account>
                             </div>
-                            <div class="loading" v-if="accountsLoading">
-                                <pulse-loader :loading="accountsLoading" size="10px"></pulse-loader>
+                        </div>                    
+                    </div>
+                    <div class="form-section" 
+                        v-if="steps === 1"
+                    >
+                        <div class="nothing" v-if="computedNothing">
+                            there is nothing more to do...just send the request
+                        </div>
+                        <text-textarea
+                            placeholder="job description" 
+                            v-if="action === 'administration'" 
+                            v-model="data.description"
+                            :bottomBorder="true"
+                            class="input"
+                        ></text-textarea>
+
+                        <main-select
+                            :items="['9','8','7','6','5','4','3','2','1']"
+                            :value="data.level"
+                            backgroundColor="white"
+                            v-if="action === 'administration'"
+                            @selection="levelSelection"
+                            class="main-select"
+                        ></main-select>
+
+                        <div class="small-msg text-left">
+                            {{computedPaymentType}}:
+                        </div>
+                        <payment-types
+                            class="payment-types"
+                            v-if="computedPaymentType.length"
+                            :type="paymentType"
+                            :showRadios="false"
+                            @paymentType="getPaymentType"
+                            @paymentTypeError="setErrorAlert"
+                            :radioValue="computedPaymentType"
+                        ></payment-types>
+
+                        <div class="other-selections search-section" 
+                            v-if="computedHasItemSelection"
+                            infinite-wrapper
+                        >                                
+                            <search-input
+                                class="search-input"
+                                @search="getSelectableItemsSearchText"
+                                :placeholder="`search for ${itemTypes.toString()}`"
+                            ></search-input>
+                            <div class="buttons" v-if="itemTypes.length">
+                                <grey-button
+                                    class="grey-button"
+                                    v-for="(type, index) in itemTypes"
+                                    :key="index"
+                                    :text="type"
+                                    :active="type === selectableItemsSearchType"
+                                    @clickedAction="clickedItemType"
+                                ></grey-button>
+                            </div>
+                            
+                            <pulse-loader 
+                                v-if="selectableItemsLoading"
+                                class="loading" 
+                                :loading="selectableItemsLoading"
+                                size="10px"
+                            ></pulse-loader>
+                            <div class="description small-msg" v-if="computedItemSelectionText.length">
+                                {{computedItemSelectionText}}
+                            </div>
+
+                            <div class="items-wrapper">
+                                <item-badge
+                                    v-for="(item,index) in computedItemSelectionArray"
+                                    :key="index"
+                                    :item="item"
+                                    type="class"
+                                    :hasRemove="inItemsSelection(item)"
+                                    class="badge"
+                                    @clickedItem="itemSelected"
+                                    @clickedRemoveItem="removeItem"
+                                ></item-badge>
                             </div>
 
                             <infinite-loader
-                                v-if="!accountsLoading && accountsNextPage && accountsNextPage > 1"
-                                @infinite="infiniteHandler"
+                                v-if="!selectableItemsLoading && selectableItemsNextPage && selectableItemsNextPage > 1"
+                                @infinite="itemsInfiniteHandler"
                                 force-use-infinite-wrapper
-                            ></infinite-loader>                            
+                            ></infinite-loader>
                         </div>
-                        <div class="form-section" v-if="steps === 2">
-                            
-                            <auto-alert
-                                :message="alertMessage"
-                                :success="alertSuccess"
-                                :danger="alertDanger"
-                                @hideAlert="hideAlert"
-                            ></auto-alert>
-                            <div class="nothing" v-if="computedNothing">
-                                there is nothing more to do...just send the request
-                            </div>
-                            <text-textarea
-                                placeholder="job description" 
-                                v-if="what === 'admin'" 
-                                v-model="data.description"
-                                :bottomBorder="true"
-                                class="input"
-                            ></text-textarea>
-
-                            <main-select
-                                :items="['9','8','7','6','5','4','3','2','1']"
-                                :value="data.level"
-                                backgroundColor="white"
-                                v-if="what === 'admin'"
-                                @selection="levelSelection"
-                                class="main-select"
-                            ></main-select>
-
-                            <div class="radios" v-if="computedRadios">
-                                <radio-input
-                                    name="payment"
-                                    label="free"
-                                    radioValue="free"
-                                    v-model="data.payment"
-                                    class="radio-button"
-                                ></radio-input>
-                                <radio-input
-                                    name="payment"
-                                    label="commission"
-                                    radioValue="commission"
-                                    v-model="data.payment"
-                                    class="radio-button"
-                                ></radio-input>
-                            </div>
-
-                            <payment-types
-                                v-if="paymentType.length"
-                                :type="paymentType"
-                                @paymentType="getPaymentType"
-                            ></payment-types>
-
-                            <div class="commission-section"
-                                v-if="data.payment === 'commission'"
-                            >
-                                <number-input placeholder="commission"
-                                    v-model="data.commission"
-                                    class="input"
-                                    :noBorder="true"
-                                ></number-input>
-                                <div class="per">%</div>
-                            </div>
-
-                            <main-checkbox
-                                v-if="computedSalary"
-                                label="has salary?"
-                                class="input"
-                                v-model="data.hasSalary"
-                            ></main-checkbox>
-
-                            <div class="salary-section" v-if="data.hasSalary">
-                                <number-input placeholder="salary"
-                                    v-model="data.salary"
-                                    class="input"
-                                    :noBorder="true"
-                                    :hasMax="false"
-                                ></number-input>
-                                <div class="per">per</div>
-                                <main-select
-                                    :items="['day','week','month','quarter','year',]"
-                                    :value="data.salaryPeriod"
-                                    backgroundColor="white"
-                                    @selection="periodSelection"
-                                    class="main-select"
-                                    select="select period"
-                                ></main-select>
-                            </div>
-                            <div class="other-selections" v-if="computedOtherSelection">
-                                <div class="description" v-if="computedOtherSelectionText.length">
-                                    {{computedOtherSelectionText}}
-                                </div>
-                                <main-select
-                                    v-if="computedOtherSelectionArray.length"
-                                    :objects="computedOtherSelectionArray"
-                                    :value="data.selection"
-                                    backgroundColor="white"
-                                    @selection="otherSelection"
-                                    class="main-select"
-                                    select="make your selection"
-                                ></main-select>
-                            </div>
-                            <div class="attachments" v-if="data.attachments.length">
+                        <div class="attachments" v-if="attachments.length">
+                            <attachment-badge
+                                v-for="(attachment,index) in attachments"
+                                :key="index"
+                                :attachment="attachment.data"
+                                :hasClose="true"
+                                @removeAttachment="removeAttachment"
+                            ></attachment-badge>
+                        </div>
+                        <post-attachment
+                            :show="true"
+                            :hasSelect="true"
+                            :hasClose="false"
+                            :buttons="computedPostAttachmentButtons"
+                            v-if="computedPostAttachment"
+                            @clickedAttachmentSelection="attachmentSelected"
+                            class="input"
+                        ></post-attachment>
+                        <div class="upload-section" v-if="computedFiles">
+                            <div class="note"
+                                v-if="files.length"
+                            >these are the files to be sent with request</div>
+                            <div class="files">
                                 <attachment-badge
-                                    v-for="(attachment,index) in data.attachments"
+                                    v-for="(file,index) in files"
                                     :key="index"
-                                    :attachment="attachment.data"
                                     :hasClose="true"
-                                    @removeAttachment="removeAttachment"
+                                    :file="file"
+                                    @removeAttachment="removeShownFile"
+                                    @click="preview(file)"
                                 ></attachment-badge>
                             </div>
-                            <post-attachment
-                                :show="true"
-                                :hasSelect="true"
-                                :hasClose="false"
-                                v-if="computedPostAttachment"
-                                @clickedAttachmentSelection="attachmentSelected"
-                                class="input"
-                            ></post-attachment>
-                            <div class="upload-section" 
-                                v-if="computedUploads">
-                                <div class="note"
-                                    v-if="data.files.length"
-                                >these are the files to be sent with request</div>
-                                <div class="files">
-                                    <attachment-badge
-                                        v-for="(file,index) in data.files"
-                                        :key="index"
-                                        :hasClose="true"
-                                        :file="file"
-                                        @removeAttachment="removeShownFile"
-                                        @click="preview(file)"
-                                    ></attachment-badge>
+                            <div class="note-red" 
+                                v-if="showFileNote"
+                            >you can only have a maximum of three files</div>
+                            <div class="upload" @click="clickedUpload">
+                                <div class="icon" v-if="files.length < 3">
+                                    <font-awesome-icon :icon="['fa','plus']"></font-awesome-icon>
                                 </div>
-                                <div class="note-red" 
-                                    v-if="showFileNote"
-                                >you can only have a maximum of three files</div>
-                                <div class="upload" @click="clickedUpload">
-                                    <div class="icon" v-if="data.files.length < 3">
-                                        <font-awesome-icon :icon="['fa','plus']"></font-awesome-icon>
-                                    </div>
-                                    <div class="text">
-                                        {{data.files.length === 3 ?
-                                            'you have reached the maximum of 3 files':
-                                            `add a file to send to ${what}`}}
-                                    </div>
+                                <div class="text">
+                                    {{files.length === 3 ?
+                                        'you have reached the maximum of 3 files':
+                                        `add a file to send with request`}}
                                 </div>
-                                <file-preview
-                                    v-if="data.files.length"
-                                    :show="showPreview"
-                                    :middle="true"
-                                    :showRemove="true"
-                                    :file="previewFile"
-                                    @removeFile="removeFile"
-                                    class="file-preview-wrapper"
-                                ></file-preview>
-                                <input type="file" class="d-none" 
-                                    @change="fileChange"
-                                    ref="inputfile"
-                                    v-if="what === 'admin' || what === 'school facilitation'"
-                                >
                             </div>
+                            <file-preview
+                                v-if="files.length"
+                                :show="showPreview"
+                                :middle="true"
+                                :showRemove="true"
+                                :file="previewFile"
+                                @removeFile="removeFile"
+                                class="file-preview-wrapper"
+                            ></file-preview>
                         </div>
-                        <div class="preview-section" v-if="steps === 3">
-
-                        </div>
-                        <action-button
-                            @click="clickedAction"
-                            :text="actionButttonText"
-                            v-if="actionButttonText.length"
-                            class="action-button"
-                        ></action-button>
                     </div>
+                    <div class="preview-section" v-if="steps === 2">
+                        <div class="small-msg" v-if="selectedAccounts.length">
+                            the request will be sent to the following:
+                        </div>
+                        <div class="" v-if="selectedAccounts.length">
+                            <other-user-account
+                                class="account"
+                                v-for="(account,index) in selectedAccounts"
+                                :key="index"
+                                :account="account"
+                                :chat="false"
+                            ></other-user-account>
+                        </div>
+                        <div class="small-msg" v-if="selectedItems.length">
+                            the request regards the following:
+                        </div>
+                        <div 
+                            class="output-section"
+                            v-if="selectedItems.length"
+                        >
+                            <item-badge
+                                class="item"
+                                v-for="(item,index) in selectedItems"
+                                :key="index"
+                                :item="item"
+                            ></item-badge>
+                        </div>
+                        <div 
+                            class="small-msg"
+                            v-if="selectedAccounts.length && selectedItems.length"
+                        >
+                            nothing more to do here 🙂. if you are ready, send the request...
+                        </div>
+                    </div>
+                    <action-button
+                        @click="clickedAction"
+                        :text="actionButttonText"
+                        v-if="actionButttonText.length"
+                        class="action-button"
+                    ></action-button>
+
+                    <input type="file" class="d-none" 
+                        @change="fileChange"
+                        ref="inputfile"
+                        v-if="computedFiles"
+                    >
                 </template>
             </main-modal>
         </template>
@@ -256,13 +325,16 @@ import TextTextarea from './TextTextarea';
 import MainSelect from './MainSelect';
 import PostAttachment from './PostAttachment';
 import PaymentTypes from './PaymentTypes';
-import AutoAlert from './AutoAlert';
+import GreyButton from './GreyButton';
+import ItemBadge from './dashboard/ItemBadge';
 import InfiniteLoader from 'vue-infinite-loading';
 import { mapActions, mapGetters } from 'vuex';
+import Alert from '../mixins/Alert.mixin';
     export default {
         components: {
             ActionButton,
-            AutoAlert,
+            ItemBadge,
+            GreyButton,
             PaymentTypes,
             PostAttachment,
             OtherUserAccount,
@@ -278,6 +350,7 @@ import { mapActions, mapGetters } from 'vuex';
             SearchInput,
             PulseLoader,
         },
+        mixins: [Alert],
         props: {
             show: {
                 type: Boolean,
@@ -315,35 +388,35 @@ import { mapActions, mapGetters } from 'vuex';
                 actionDescription: '',
                 action: '',
                 actionButttonText: '',
-                searchText: '',
-                accountsParams: '',
                 accountsNextPage: 1,
                 accountsLoading: false,
-                alertSuccess: false,
-                alertDanger: false,
-                alertMessage: '',
+                wardId: null,
+                wardsNextPage: 1,
+                wardsLoading: false,
+                wardsSearchText: '',
                 data: {
                     title: '', 
                     level: '', 
-                    files: [],
-                    hasSalary: false,
-                    payment: '',
-                    commission: '',
-                    salary: '',
-                    currency: '',
                     description: '',
-                    salaryPeriod: 'month',
-                    account: null,
-                    ward: null,
-                    selection: null, //extracurriculum course class
-                    attachments: [],
                 },
-                what: '',
-                requestType: '',
+                selectedAccounts: [],
+                attachments: [],
+                files: [],
+                selectedItems: [],
+                selectableItemsLoading: false,
+                selectableItemsNextPage: 1,
+                selectableItemsSearchText: '',
+                selectableItemsSearchType: '',
+                itemTypes: [],
+                receiverTypes: [],
+                receiversSearchText: '',
+                receiverSearchType: '',
+                detailTypes: [],
                 showPreview: false,
                 showFileNote: false,
                 previewFile: null,
-                paymentType: ''
+                paymentType: '', 
+                paymentData: null,
             }
         },
         watch: {
@@ -353,130 +426,28 @@ import { mapActions, mapGetters } from 'vuex';
                     this.action = ''
                     this.actionButttonText = ''
                 } else if (newValue === 1) {
-                    this.actionButttonText = ''
-                    this.searchText = ''
+                    this.actionButttonText = 'next'
+                    this.receiversSearchText = ''
                 } else if (newValue === 2) {
                     this.actionButttonText = 'send request'
                 } else if (newValue === 3) {
                     this.actionButttonText = 'send another request'
                 }
+
+                if (newValue === 1 && oldValue === 0) {
+                    this.initiateReceiverSearch()
+                }
             },
             action (newValue) {
-                if (newValue === 'request facilitation') {
-                    this.accountsParams = `account=facilitator`
-                    this.what = `school facilitation`
-                    this.actionDescription = 'A request will be sent to a facilitator of your choice. this facilitator will be joined to your school,s facilitators upon accepting your request'
-                } else if (newValue === 'request administration from a user') {
-                    this.accountsParams = `account=user`
-                    this.what = `admin`
-                    this.actionDescription = "A request will be sent to this user to become part of your school's dataistrating team."
-                } else if (newValue === 'request virtual admission of learner') {
-                    this.accountsParams = `account=learner&type=virtual`
-                    this.what = `school learning`
-                    this.actionDescription = "This will help you send a request directly to learner if he/she is 18 years and above. If not, request will be sent to parents, and learner notified. Upon accepting request, learner will either be added to your school or have the opportunity to take an admission test. Note: learner will be part of your school virtually."
-                } else if (newValue === 'request physical admission of learner') {
-                    this.accountsParams = `account=learner&type=traditional`
-                    this.what = `school learning`
-                    this.actionDescription = "This will help you send a request directly to learner if he/she is 18 years and above. If not, request will be sent to parents, and learner notified. Upon accepting request, learner will either be added to your school or have the opportunity to take an admission test."
-                } else if (newValue === 'become a facilitator of school') {
-                    this.accountsParams = `account=school`
-                    this.what = `school facilitation`
-                    this.actionDescription = 'Send a request to a school to become part of its facilitating staff.'
-                } else if (newValue === 'become a facilitator of class') {
-                    this.accountsParams = `account=facilitator`
-                    this.what = `class facilitation`
-                    this.actionDescription = 'Send a request to the owner of a private class to become part of the facilitating team of the class.'
-                } else if (newValue === 'request the use of your extracurriculum') {
-                    this.accountsParams = `account=school&account2=classModel`
-                    this.what = `extracurriculum`
-                    this.actionDescription = 'This will help you send a request to a school or private class to adopt the resources of your extracurriculum.'
-                } else if (newValue === 'request the use of your course') {
-                    this.accountsParams = `account=school&account2=classModel`
-                    this.what = `course`
-                    this.actionDescription = 'This will help you send a request to a school or private class to adopt the resources of your extracurriculum.'
-                } else if (newValue === 'request a collaboration') {
-                    this.what = `collaboration`
-                    this.accountsParams = `account=facilitator&account2=professional`
-                    this.actionDescription = 'This will help you send a collaboration request to a facilitator or professional. Note: your collaboration must already be created.'
-                } else if (newValue === 'request admission for learner into class') {
-                    this.accountsParams = `account=learner`
-                    this.what = `class learning` //send request, if payable, parent or learner will pay when request is accepted
-                    this.actionDescription = "This will help you send a request directly to learner if he/she is 18 years and above. If not, request will be sent to parents, and learner notified. Upon accepting request, learner will be added to your class."
-                } else if (newValue === 'request virtual admission for ward') {
-                    this.accountsParams = `account=school&type=virtual`
-                    this.what = `school learning`
-                    this.actionDescription = 'This will help you send a reques to a school, for your ward to be admitted into a school virtually.'
-                } else if (newValue === 'request physical admission for ward') {
-                    this.accountsParams = `account=school&type=traditional`
-                    this.what = `school learning`
-                    this.actionDescription = 'This will help you send a reques to a school, for your ward to be admitted into a school.'
-                } else if (newValue === 'request admission for ward into private class') {
-                    this.accountsParams = `account=classModel`
-                    this.what = `class learning`
-                    this.actionDescription = 'This will help you send a reques to the owner of a class, for your ward to be admitted into the class.'
-                } else if (newValue === 'request a nanny') {
-                    this.what = `nanny`
-                    this.accountsParams = `account=professional&type=nanny`
-                    this.actionDescription = 'This will help you request the services of a nanny.'
-                } else if (newValue === 'request home tutoring') {
-                    this.accountsParams = `account=facilitator`
-                    this.what = `home facilitation`
-                    this.actionDescription = 'This will help you request the services of a facilitator to tutor the ward at home.'
-                } else if (newValue === 'request virtual admission') {
-                    this.accountsParams = `account=school`
-                    this.what = `school learning`
-                    this.actionDescription = 'If you are 18 years and above, this will help you send a direct request to a school, seeking a virtual admission. If not, your parents will be notified so they can request on your behalf.'
-                } else if (newValue === 'request physical admission') {
-                    this.accountsParams = `account=school`
-                    this.what = `school learning`
-                    this.actionDescription = 'If you are 18 years and above, this will help you send a direct request to a school, seeking an admission. If not, your parents will be notified so they can request on your behalf.'
-                } else if (newValue === 'request admission into private class') {
-                    this.accountsParams = `account=classModel`
-                    this.what = `class learning`
-                    this.actionDescription = 'If you are 18 years and above, this will help you send a direct request to the owner of class, seeking an admission. If not, your parents will be notified so they can request on your behalf.'
-                }
-                this.actionButttonText = 'ok'
+
             },
             account: {
                 immediate: true,
                 handler(newValue){
-                    if (newValue.account === 'school') {
-                        this.actionsList = [
-                            'request facilitation',
-                            'request administration from a user',
-                            'request virtual admission of learner',
-                            'request physical admission of learner',
-                        ]
-                    } else if (newValue.account === 'facilitator') {
-                        this.actionsList = [
-                            'become a facilitator of school',
-                            'become a facilitator of class',
-                            'request the use of your extracurriculum',
-                            'request the use of your course',
-                            'request a collaboration',
-                            'request admission for learner into class',
-                        ]
-                    } else if (newValue.account === 'professional') {
-                        this.actionsList = [
-                            'request the use of your extracurriculum',
-                            'request the use of your course',
-                            'request a collaboration',
-                        ]
-                    } else if (newValue.account === 'parent') {
-                        this.actionsList = [
-                            'request virtual admission for ward',
-                            'request physical admission for ward',
-                            'request admission for ward into private class',
-                            'request a nanny',
-                            'request home tutoring',
-                        ]
-                    } else if (newValue.account === 'learner') {
-                        this.actionsList = [
-                            'request virtual admission',
-                            'request physical admission',
-                            'request admission into private class',
-                        ]
-                    }
+                    this.actionsList = Number(this.getUser.age) >= 18 && 
+                        newValue.account ==! 'school' ?
+                        this.computedAccountPossibleRequestTypes[newValue.account].push('school administration request') :
+                        this.computedAccountPossibleRequestTypes[newValue.account]
                 }
             },
             type: {
@@ -484,25 +455,30 @@ import { mapActions, mapGetters } from 'vuex';
                 handler(newValue){
                     if (newValue.length) {
                         if (newValue === 'add admin') {
+                            this.setAdministrationRequestForm()
                             this.steps = 1
-                            this.accountsParams = `account=user`
-                            this.what = `admin`
-                            this.actionDescription = "A request will be sent to this user to become part of your school's dataistrating team."
                         }
                     }
                 }
             },
-            searchText(newValue){
-                if (newValue.length) {
-                    this.accountsNextPage = 1
-                    this.debouncedSearchAccounts()
-                } else {
-                    this.accounts = []
-                }
+            wardsSearchText(newValue){
+                this.initiateWardsSearch()
+            },
+            receiversSearchText(newValue){
+                this.initiateReceiverSearch()
+            },
+            selectableItemsSearchText(newValue){
+                this.initiateItemSearch()
+            },
+            receiverSearchType(newValue){
+                this.initiateReceiverSearch()
+            },
+            selectableItemsSearchType(newValue){
+                this.initiateItemSearch()
             },
         },
         computed: {
-            ...mapGetters(['dashboard/getAccountDetails']),
+            ...mapGetters(['dashboard/getAccountDetails', 'getUser']),
             computedAccounts() {
                 return this.accounts.map(account=>{
                     return {
@@ -515,79 +491,286 @@ import { mapActions, mapGetters } from 'vuex';
                 }) 
             },
             computedPostAttachment(){
-                return this.what === 'school learning' || this.what === 'school facilitation' ||
-                    this.what === 'class facilitation'
+                return this.detailTypes.includes('attachments')
+            },
+            computedPostAttachmentButtons() {
+                let buttons = []
+
+                if (! this.computedPostAttachment) {
+                    return []
+                }
+
+                if (this.detailTypes.includes('attachment grades')) {
+                    buttons.push('grades')
+                }
+
+                if (this.detailTypes.includes('attachment subjects')) {
+                    buttons.push('subjects')
+                }
+
+                if (this.detailTypes.includes('attachment courses')) {
+                    buttons.push('courses')
+                }
+
+                if (this.detailTypes.includes('attachment programs')) {
+                    buttons.push('programs')
+                }
+
+                return buttons
             },
             computedNothing(){
                 return false
             },
-            computedRadios(){
-                return this.computedCommission
-            },
             computedSalary(){
-                return this.what === 'admin' || this.what === 'school facilitation'
+                return this.detailTypes.includes('salary')
             },
             computedCommission(){
-                return this.what === 'collaboration' || this.what === 'class facilitation'
+                return this.detailTypes.includes('commission')
+            },
+            computedHasWards(){
+                return this.account?.account === 'parent'
             },
             computedWards(){
-                return this.account.account === 'parent'? true : false
+                return this.wards.filter(ward=>{
+                    return ward.name.includes(this.wardsSearchText)
+                })
             },
-            computedUploads(){
-                return this.what === 'admin' || this.what === 'school facilitation' ||
-                    this.what === 'class learning' || this.what === 'class facilitation'
+            computedFiles(){
+                return this.detailTypes.includes('files')
             },
             computedClasses(){
-                return this.account.account === 'facilitator' && 
-                    this["dashboard/getAccountDetails"].classes ? 
-                    this["dashboard/getAccountDetails"].classes : []
+                if (!(this.account.account === 'facilitator' ||
+                    this.account.account === 'school')) {
+                    return []
+                }
+                
+                let data = []
+                if (this["dashboard/getAccountDetails"].classes) {
+                    data.push(...this["dashboard/getAccountDetails"].classes)
+                }
+                
+                if (this['dashboard/getAccountDetails'].ownedClasses) {
+                    data.push(...this['dashboard/getAccountDetails'].ownedClasses)
+                }
+
+                return data
             },
             computedExtracurriculums(){
-                return (this.account.account === 'facilitator' || 
-                    this.account.account === 'professional') && 
-                    this["dashboard/getAccountDetails"].extracurriculums ? 
-                    this["dashboard/getAccountDetails"].extracurriculums : []
+                if (!this.computedItemOwningAccountType) {
+                    return []
+                } 
+                let data = []
+
+                if (this['dashboard/getAccountDetails'].extracurriculums) {
+                    data.push(...this['dashboard/getAccountDetails'].extracurriculums)
+                }
+
+                if (this['dashboard/getAccountDetails'].ownedExtracurriculums) {
+                    data.push(...this['dashboard/getAccountDetails'].ownedExtracurriculums)
+                }
+
+                return data
             },
             computedCourses(){
-                return (this.account.account === 'facilitator' || 
-                    this.account.account === 'professional') && 
-                    this["dashboard/getAccountDetails"].courses ? 
-                    this["dashboard/getAccountDetails"].courses : []
+                if (!this.computedItemOwningAccountType) {
+                    return []
+                } 
+                let data = []
+
+                if (this['dashboard/getAccountDetails'].courses) {
+                    data.push(...this['dashboard/getAccountDetails'].courses)
+                }
+
+                if (this['dashboard/getAccountDetails'].ownedCourses) {
+                    data.push(...this['dashboard/getAccountDetails'].ownedCourses)
+                }
+
+                return data
             },
             computedCollaborations(){
-                return (this.account.account === 'facilitator' || 
-                    this.account.account === 'professional') && 
-                    this["dashboard/getAccountDetails"].collaborations ? 
-                    this["dashboard/getAccountDetails"].collaborations : []
+                if (!this.computedItemOwningAccountType) {
+                    return []
+                } 
+                let data = []
+
+                if (this['dashboard/getAccountDetails'].collaborations) {
+                    data.push(...this['dashboard/getAccountDetails'].collaborations)
+                }
+
+                return data
             },
-            computedOtherSelection(){
-                return (this.account.account === 'facilitator' || 
-                    this.account.account === 'professional') && [
-                        `collaboration`,`course`,`extracurriculum`,'class learning'
-                    ].includes(this.what)
+            computedPrograms(){
+                if (!this.computedItemOwningAccountType) {
+                    return []
+                } 
+                let data = []
+
+                if (this['dashboard/getAccountDetails'].programs) {
+                    data.push(...this['dashboard/getAccountDetails'].programs)
+                }
+
+                if (this['dashboard/getAccountDetails'].ownedPrograms) {
+                    data.push(...this['dashboard/getAccountDetails'].ownedPrograms)
+                }
+
+                return data
             },
-            computedOtherSelectionText(){
-                return this.computedOtherSelection && this.computedOtherSelectionArray ?
+            computedItemOwningAccountType() {
+                return this.account.account === 'facilitator' || 
+                    this.account.account === 'professional' || 
+                    this.account.account === 'school'
+            },
+            computedHasItemSelection(){
+                return this.itemTypes.length
+            },
+            computedItemSelectionText(){
+                return this.computedHasItemSelection && this.computedItemSelectionArray.length ?
                     `make a selection from these` :
-                    this.computedOtherSelection && !this.computedOtherSelectionArray ? 
-                    `you need to have a ${this.what === 'class learning' ? 'class' : this.what} before you can complete this. Create one in your dashboard.`
+                    this.computedHasItemSelection && !this.computedItemSelectionArray.length ? 
+                    `sorry, no ${this.itemTypes.toString()} to select from. try another search.`
                     : ''
             },
-            computedOtherSelectionArray(){
-                return this.what === 'collaboration' ? this.computedCollaborations : 
-                    this.what === 'course' ? this.computedCourses : 
-                    this.what === 'extracurriculum' ? this.computedExtracurriculums : 
-                    this.what === 'class learning' ? this.computedClasses : []
+            computedItemSelectionArray(){
+                let data = []
+
+                if (this.selectableItemsLoading) {
+                    return []
+                }
+                
+                if (this.computedSearchItem && this.selectedItems.length) {
+                    data.push(...this.selectedItems)
+                }
+
+                if (this.itemTypes.includes('collaborations')) {
+                    data.push(...this.mappedWithType(
+                        this.computedCollaborations, 'collaboration'
+                    ))
+                }
+                    
+                if (this.itemTypes.includes('classes') && 
+                    this.selectableItemsSearchType === 'classes') {
+                    data.push(...this.mappedWithType(
+                        this.computedClasses, 'class'
+                    ))
+                }
+                
+                if (this.itemTypes.includes('extracurriculums') && 
+                    this.selectableItemsSearchType === 'extracurriculums') {
+                    data.push(...this.mappedWithType(
+                        this.computedExtracurriculums, 'extracurriculum'
+                    ))
+                }
+                
+                if (this.itemTypes.includes('programs') && 
+                    this.selectableItemsSearchType === 'programs') {
+                    data.push(...this.mappedWithType(
+                        this.computedPrograms, 'program'
+                    ))
+                }
+                
+                if (this.itemTypes.includes('courses') && 
+                    this.selectableItemsSearchType === 'courses') {
+                    data.push(...this.mappedWithType(
+                        this.computedCourses, 'course'
+                    ))
+                }
+
+                return data
+            },
+            computedSearchItem() {
+                return this.detailTypes.includes('search items')
+            },
+            computedPayment() {
+                return this.detailTypes.includes('payment')
+            },
+            computedAccountPossibleRequestTypes() {
+                return {
+                    school: [
+                        'learning request',
+                        'admission request',
+                        'facilitation request',
+                        'collaboration request',
+                        'administration request',
+                    ],
+                    facilitator: [
+                        'facilitation request',
+                        'collaboration request',
+                        'school administration request'
+                    ],
+                    professional: [
+                        'facilitation request',
+                        'collaboration request',
+                        'school administration request'
+                    ],
+                    learner: [
+                        'learning request',
+                        'admission request',
+                    ],
+                    parent: [
+                        'learning request',
+                        'admission request',
+                    ],
+                }
+            },
+            computedPaymentType() {
+                return this.detailTypes.includes('commission') ? 'commission' :
+                    this.detailTypes.includes('salary') ? 'salary' :
+                    this.detailTypes.includes('discount') ? 'discount' : ''
+            },
+            computedShowReceiversSection() {
+                return this.receiverTypes.length || this.wards.length
             },
         },
         methods: {
-            ...mapActions(['dashboard/searchAccounts','dashboard/sendRequest']),
+            ...mapActions(['dashboard/searchAccounts',
+                'dashboard/searchItems','dashboard/sendRequest'
+            ]),
+            mappedWithType(items, itemType) {
+                return items.map(item=>{
+                    item.type = itemType
+                    return item
+                })
+            },
+            error(data) {
+                this.alertDanger = true
+                this.alertLengthy = data.lengthy
+                this.alertMessage = data.message
+            },
+            initiateReceiverSearch() {
+                this.debouncedSearchAccounts()
+            },
+            initiateWardsSearch() {
+                this.debouncedSearchWards()
+            },
+            initiateItemSearch() {
+                this.debouncedSearchSelectableItems()
+            },
             invitationModalDisappear() {
                 this.$emit('invitationDisappear')
             },
-            getPaymentType(data){
+            clickedReceiverType(data) {
+                if (!data.length) {
+                    this.receiverSearchType = this.receiverTypes[0]
+                    return
+                }
 
+                this.receiverSearchType = data
             },
+            clickedItemType(data) {
+                if (!data.length) {
+                    this.selectableItemsSearchType = this.itemTypes[0]
+                    return
+                }
+                
+                this.selectableItemsSearchType = data
+            },
+            getPaymentType(data){
+                this.paymentType = data.type
+                this.paymentData = data.data
+            },
+            getWardSearchText(text) {
+                this.wardsSearchText = text
+            }, 
             levelSelection(data){
                 this.data.level = data
             },
@@ -597,10 +780,134 @@ import { mapActions, mapGetters } from 'vuex';
             otherSelection(data){
                 this.data.selection = data
             },
+            clearRequestFormData() {
+                this.receiverTypes = []
+                this.detailTypes = []
+                this.itemTypes = []
+                this.selectedItems = []
+                this.selectedAccounts = []
+                this.actionDescription = ''
+                this.action = ''
+                this.actionButttonText = ''
+            },
             actionSelection(data){
-                this.action = data
+                this.clearRequestFormData()
+
+                if (!data.length) {
+                    return
+                }
+
+                if (data === 'learning request') {
+                    this.setLearningRequestForm()
+                }
+                
+                if (data === 'facilitation request') {
+                    this.setFacilitationRequestForm()
+                }
+                
+                if (data === 'collaboration request') {
+                    this.setCollaborationRequestForm()
+                }
+                
+                if (data === 'admission request') {
+                    this.setAdmissionRequestForm()
+                }
+                
+                if (data === 'administration request' ||
+                    data === 'school administration request') {
+                    this.setAdministrationRequestForm()
+                }
+
+                this.actionButttonText = 'next'
+            },
+            setLearningRequestForm() {
+                this.action = 'learning'
+                this.itemTypes = ['classes', 'courses', 'programs', 'extracurriculums']
+                
+                if (this.account.account === 'learner') {
+                    this.actionDescription = `sending a request to the owner of a class, course, etc in order to have access to it. You can use this avenue if you want a discount.`
+                    this.detailTypes.push(...['search items'])
+                }
+                
+                if (this.account.account === 'parent') {
+                    this.actionDescription = `sending a request to the owner of a class, course, etc in order for some of your wards have access to it. You can use this avenue if you want a discount.`
+                    this.detailTypes.push('search items')
+                }
+
+                if (!this.actionDescription.length) {
+                    this.receiverTypes = ['learners']
+                    this.actionDescription = `sending a request to learners (and indirectly to parents of learners) for them to notice/buy/access your classes, courses, etc. You can use this avenue if you want to give a discount.`
+                }
+
+                this.detailTypes.push(...['discount', 'files', ])
+            },
+            setFacilitationRequestForm() {
+                this.action = 'facilitation'
+                this.itemTypes = ['classes', 'courses', 'programs', 'extracurriculums']
+                this.detailTypes.push('search items')
+                
+                if (this.account.account === 'school') {
+                    this.actionDescription = `sending a request to a facilitator so he/she can facilitate your class, course, school, etc You can use this avenue to specify salary/commission.`
+                    this.receiverTypes = ['facilitators']
+                }
+                
+                if (this.account.account === 'facilitator') {
+                    this.actionDescription = `sending a request to the owner of a class, course, etc in order to become a facilitator for it. You can use this avenue to ask for a salary/commission.`
+                }
+                
+                this.detailTypes.push(...['payment', 'salary', 'commission', 'files'])
+            },
+            setCollaborationRequestForm() {
+                this.action = 'collaboration'
+                this.itemTypes = ['collaborations']
+                this.receiverTypes = ['facilitators', 'professionals']
+                this.actionDescription = `sending a request to facilitators or professionals in order for them to collaborate with you by joining your collaboration. You can use this avenue to specify commissions as well.`
+                this.detailTypes = ['payment', 'commission', 'search items', 'search']
+            },
+            setAdmissionRequestForm() {
+                this.action = 'admission'
+                this.detailTypes = ['attachments', 'attachment grades']
+
+                if (this.account.account === 'school') {
+                    this.actionDescription = `sending a request to a learner (and indirectly to parents) so they can be enrolled in the school (virtually/traditionally).`
+                    this.receiverTypes = ['learners']
+                    this.itemTypes = ['assessments']
+                    this.detailTypes.push(...['search', 'search items'])
+                }
+                
+                if (this.account.account === 'learner') {
+                    this.actionDescription = `sending a request to the administrators of a school so you can be enrolled (virtually/traditionally).`
+                    this.receiverTypes = ['schools']
+                    this.detailTypes.push('search')
+                }
+                
+                if (this.account.account === 'parent') {
+                    this.actionDescription = `sending a request to the administrators of a school so you can be enrolled (virtually/traditionally).`
+                    this.receiverTypes = ['schools']
+                    this.detailTypes.push(['search', 'search items'])
+                }
+                
+                this.detailTypes.push(...['payment', 'price', 'files'])
+            },
+            setAdministrationRequestForm() {
+                this.action = 'administration'
+                if (this.account.account === 'school') {
+                    this.receiverTypes = ['users']
+                    this.actionDescription = 'send a request to a user to become an administrator of your school. You can use this avenue to specify salary/commission'
+                }
+                
+                if (this.account.account !== 'school') {
+                    this.receiverTypes = ['schools']
+                    this.actionDescription = 'send a request to schools in order to become an administrator of the school. You can use this avenue to specify salary/commission'
+                }
+                    
+                this.detailTypes = ['payment', 'salary', 'commission', 'search']
             },
             clickedAction(data){
+                if (this.loading) {
+                    return
+                }
+
                 if (this.actionButttonText === 'send request') {
                     this.sendRequest()
                     return
@@ -608,12 +915,36 @@ import { mapActions, mapGetters } from 'vuex';
                     this.clearData()
                     return
                 }
+
+                if (this.steps === 1) {
+                    
+                    let message = this.validateStepOne()
+
+                    if (message.length) {
+                        this.setErrorAlert({message})
+                        return
+                    }
+                }
                 this.steps += 1
             },
-            hideAlert(){
-                this.alertSuccess = false
-                this.alertDanger = false
-                this.alertMessage = ''
+            validateStepOne() {
+                if (this.receiverTypes.length && !this.selectedAccounts.length) {
+                    return `please you need to select ${this.receiverTypes.toString()}`
+                }
+
+                if (this.computedHasWards && !this.wardId) {
+                    return `please you need to select one of your wards`
+                }
+
+                if (this.itemTypes.toString() === 'assessments') {
+                    return ''
+                }
+
+                if (this.itemTypes.length && !this.selectedItems.length) {
+                    return `please you need to select ${this.itemTypes.toString()}`
+                }
+
+                return ''
             },
             clearData(){
                 this.actionButttonText = ''
@@ -621,29 +952,26 @@ import { mapActions, mapGetters } from 'vuex';
                 this.data = {
                     title: '', 
                     level: '', 
-                    files: [],
-                    hasSalary: false,
-                    salary: '',
-                    currency: '',
-                    commission: '',
                     description: '',
-                    payment: '',
-                    salaryPeriod: 'month',
-                    account: null,
-                    ward: null,
-                    selection: null,
                 }
-                this.what = ''
+                this.paymentType = ''
+                this.paymentData = null
                 this.accounts = []
+                this.attachments = []
+                this.files = []
+                this.showPreview = false,
+                this.showFileNote = false,
+                this.previewFile = null,
+                this.clearRequestFormData()
             },
             attachmentSelected(data){
                 let index = this.findAttachmentIndex(data)
                 if (index === -1) {
-                    this.data.attachments.push(data)
+                    this.attachments.push(data)
                 }
             },
             findAttachmentIndex(data) {
-                return this.data.attachments.findIndex(attachment=>{
+                return this.attachments.findIndex(attachment=>{
                     return attachment.data.name === data.data.name && 
                         attachment.data.description === data.data.description && 
                         attachment.data.id === data.data.id
@@ -652,7 +980,7 @@ import { mapActions, mapGetters } from 'vuex';
             removeAttachment(data){
                 let index = this.findAttachmentIndex(data)
                 if (index > -1) {
-                    this.data.attachments.splice(index,1)
+                    this.attachments.splice(index,1)
                 }
             },
             removeFile(data){
@@ -662,96 +990,105 @@ import { mapActions, mapGetters } from 'vuex';
             removeShownFile(data){
                 this.showPreview = false
                 let file = data.data ? data.data : data,
-                index = this.data.files.findIndex(f=>{
+                index = this.files.findIndex(f=>{
                     return file.name === f.name && file.size === f.size
                 })
                 if (index > -1) {
-                    this.data.files.splice(index,1)
+                    this.files.splice(index,1)
                 }
             },
             clickedAccount(account){
-                this.data.account = account
-                this.steps += 1
+                this.accountSelected(account)
+            },
+            inWardsSelection(data) {
+                return this.findWardIndex(data)
+            },
+            clickedWard(data) {
+                if (this.findWardIndex(data)) {
+                    this.wardId = null
+                    return
+                }
+
+                this.wardId = data.accountId
+            },
+            findWardIndex(data) {
+                return this.wardId === data.accountId
             },
             clickedUpload(){
-                if (this.data.files.length === 3) {
+                if (this.files.length === 3) {
                     this.showFileNote = true
                 } else {
                     this.$refs.inputfile.click()
                 }
             },
             fileChange(){
-                this.data.files.push(this.$refs.inputfile.files[0])
+                this.files.push(this.$refs.inputfile.files[0])
                 this.$refs.inputfile.value = ''
             },
             sliceAttachmentType(type){
                 return type.slice(0,type.length - 1)
             },
+            getFailedValidationMessage() {
+
+                if (this.computedPayment && 
+                    this.paymentData === null) {
+                    return 'Please enter the required data for the payment.'                    
+                }
+
+                return ''
+            },
             async sendRequest(){
-                let msg = ''
-
-                let response,
-                    formData = new FormData
-
-                if (this.data.hasSalary && this.data.salary.trim() === '') {
-                    message = 'Please enter salary'
-                } else if (this.data.payment === 'commission' && 
-                    this.data.commission.trim() === '') {
-                    message = 'Please enter commission'
-                } 
+                let msg = this.getFailedValidationMessage()
                 
                 if (msg.length) {
                     this.alertDanger = true
                     this.alertMessage = msg
                     return
                 }
+
+                this.loading = true
+                let response,
+                    formData = new FormData
+
                 formData.append('title',this.data.title)
-                if (this.data.hasSalary) {                            
-                    formData.append('salary',this.data.salary)
-                    formData.append('salaryPeriod',this.data.salaryPeriod)
-                    formData.append('currency',this.data.currency)
-                }
+                formData.append('action', this.action)
+
                 formData.append('level',this.data.level)
                 formData.append('description',this.data.description.trim())
 
-                if (this.data.files.length) {  
-                    for (let i = 0; i < this.data.files.length; i++) {
-                        formData.append('files[]',this.data.files[i]);                        
-                    }
+                for (let i = 0; i < this.files.length; i++) {
+                    formData.append('files[]',this.files[i]);
                 }
 
-                formData.append('from',this.account.account)
-                formData.append('fromId',this.account.accountId)
+                formData.append('account',this.account.account)
+                formData.append('accountId',this.account.accountId)
+
                 if (this.account.account === 'school' && this.admin) {
                     formData.append('adminId',this.admin.id)
-                }                
-                formData.append('what',this.what)
-                if (this.data.account) {
-                    formData.append('to',this.data.account.account)
-                    formData.append('toId',this.data.account.accountId)
-                }
-                if (this.data.ward) {
-                    formData.append('item','learner')
-                    formData.append('itemId',this.data.ward.accountId)
-                }
-                if (this.data.payment === 'commission') {
-                    formData.append('commission',this.data.commission)
-                }
-                if (this.data.selection) {
-                    if (this.what.includes('extracurriculum')) {
-                        formData.append('item','extracurriculum')
-                    } else if (this.what.includes('class')) {
-                        formData.append('item','class')
-                    } else if (this.what.includes('course')) {
-                        formData.append('item','course')
-                    } else if (this.what.includes('collaboration')) {
-                        formData.append('item','collaboration')
-                    }                    
-                    formData.append('itemId',this.data.selection.id)
-                }
-                if (this.data.attachments.length) {
+                }  
+                
+                formData.append('receivers', JSON.stringify(this.selectedAccounts.map(account=>{
+                    return {
+                        account: account.account,
+                        accountId: account.accountId,
+                    }
+                })))
+
+                formData.append('wardId',this.wardId)
+                
+                formData.append('paymentData', JSON.stringify(this.paymentData)) 
+                formData.append('paymentType', JSON.stringify(this.paymentType)) 
+                
+                formData.append('items', JSON.stringify(this.selectedItems.map(item=>{
+                    return {
+                        item: item.type,
+                        itemId: item.id,
+                    }
+                })))
+
+                if (this.attachments.length) {
                     formData.append('attachments',
-                        JSON.stringify(this.data.attachments.map(attachment=>{
+                        JSON.stringify(this.attachments.map(attachment=>{
                             return {
                                 'item': this.sliceAttachmentType(attachment.type),
                                 'itemId': attachment.data.id
@@ -762,35 +1099,62 @@ import { mapActions, mapGetters } from 'vuex';
 
                 response = await this['dashboard/sendRequest'](formData)
 
+                this.loading = false
+
                 if (response.status) {
-                    this.steps += 1
+                    this.alertSuccess = true
+                    this.alertMessage = `request has been sent successfully 😎`
                 } else {
                     console.log('response :>> ', response);
+                    this.alertDanger = true
+                    this.alertMessage = `oops! it failed 😕. please try again later.`
                 }
 
             },
+            afterAlertSuccess() {
+                this.steps = 0
+                this.clearData()
+            },
             clickedIconBack(){
                 if (this.type.length) {
-                    this.invitationModalDisappear()                  
-                } else this.steps -= 1
+                    this.invitationModalDisappear()
+                    return              
+                }
+                
+                if (this.steps === 1) {
+                    this.clearRequestFormData()    
+                }
+
+                this.steps -= 1
             },
-            getSearchText(data){
-                this.searchText = data
+            getReceiverSearchText(data){
+                this.receiversSearchText = data
+            },
+            getSelectableItemsSearchText(data){
+                this.selectableItemsSearchText = data
             },
             debouncedSearchAccounts: _.debounce(function(){
+                this.accounts = []
+                this.accountsNextPage = 1
                 this.getAccounts()
             },300),
             async getAccounts(){                
                 this.accounts = await this.searchAccounts()
             },
             async searchAccounts(){
-                if (!this.accountsNextPage) {
+                if (!this.accountsNextPage || !this.receiverTypes.length) {
                     return 
                 }
+
                 let response,
                     data = {
                         nextPage: this.accountsNextPage,
-                        params: `${this.accountsParams}&search=${this.searchText}`
+                        data: {
+                            type: this.receiverSearchType.length ? this.receiverSearchType :
+                                this.receiverTypes[0],
+                            search: this.receiversSearchText,
+                            others: JSON.stringify(true)
+                        }
                     }
 
                 this.accountsLoading = true
@@ -819,6 +1183,155 @@ import { mapActions, mapGetters } from 'vuex';
                     $state.complete()
                 }
             },
+            debouncedSearchWards: _.debounce(function(){
+                this.wards = []
+                this.wardsNextPage = 1
+                this.getWards()
+            },300),
+            async getWards(){                
+                this.wards = await this.searchWards()
+            },
+            async searchWards(){
+                if (!this.wardsNextPage) {
+                    return 
+                }
+
+                let response,
+                    data = {
+                        nextPage: this.wardsNextPage,
+                        data: {
+                            accountId: this.account.accountId,
+                            search: this.wardsSearchText,
+                        }
+                    }
+
+                this.wardsLoading = true
+                response = await this['dashboard/searchWards'](data)
+                this.wardsLoading = false
+
+                if (response.status) {
+                    if (response.next) {
+                        this.wardsNextPage += 1
+                    } else {
+                        this.wardsNextPage = null
+                    }
+                    return response.wards
+                } else {
+                    console.log('response :>> ', response);
+                    return []
+                }
+            },
+            async wardsInfiniteHandler($state){
+
+                this.wards.push(...await this.searchWards())
+
+                if (this.wardsNextPage) {
+                    $state.loaded()
+                } else {
+                    $state.complete()
+                }
+            },
+            debouncedSearchSelectableItems: _.debounce(function(){
+                this.selectedItems = []
+                this.selectableItemsNextPage = 1
+                this.getSelectableItems()
+            },300),
+            async getSelectableItems(){                
+                this.selectedItems = await this.searchSelectableItems()
+            },
+            async searchSelectableItems(){
+                if (!this.selectableItemsNextPage) {
+                    return 
+                }
+                let response,
+                    data = {
+                        nextPage: this.selectableItemsNextPage,
+                        data: {
+                            type: this.selectableItemsSearchType.length ? this.selectableItemsSearchType :
+                                this.itemTypes[0],
+                            search: this.selectableItemsSearchText,
+                            others: JSON.stringify(true)
+                        }
+                    }
+
+                this.selectableItemsLoading = true
+                response = await this['dashboard/searchItems'](data)
+                this.selectableItemsLoading = false
+
+                if (response.status) {
+                    if (response.next) {
+                        this.selectableItemsNextPage += 1
+                    } else {
+                        this.selectableItemsNextPage = null
+                    }
+                    return response.items
+                } else {
+                    console.log('response :>> ', response);
+                    return []
+                }
+            },
+            async itemsInfiniteHandler($state){
+
+                this.selectedItems.push(...await this.searchSelectableItems())
+
+                if (this.selectableItemsNextPage) {
+                    $state.loaded()
+                } else {
+                    $state.complete()
+                }
+            },
+            inItemsSelection(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    return true
+                }
+                return false
+            },
+            itemSelected(data) {
+                let index = this.findItemIndex(data)
+                if (index === -1) {
+                    this.selectedItems.push(data)
+                }
+            },
+            findItemIndex(data) {
+                return this.selectedItems.findIndex(item=>{
+                    return item.id === data.id &&
+                        item.type === data.type
+                })
+            },
+            removeItem(data) {
+                let index = this.findItemIndex(data)
+                if (index > -1) {
+                    this.selectedItems.splice(index,1)
+                }
+            },
+            inAccountsSelection(data) {
+                let index = this.findAccountIndex(data)
+                if (index > -1) {
+                    return true
+                }
+                return false
+            },
+            accountSelected(data) {
+                let index = this.findAccountIndex(data)
+                if (index === -1) {
+                    this.selectedAccounts.push(data)
+                } else {
+                    this.selectedAccounts.splice(index, 1)
+                }
+            },
+            findAccountIndex(data) {
+                return this.selectedAccounts.findIndex(account=>{
+                    return account.account === data.account &&
+                        account.accountId === data.accountId
+                })
+            },
+            removeAccount(data) {
+                let index = this.findAccountIndex(data)
+                if (index > -1) {
+                    this.selectedAccounts.splice(index,1)
+                }
+            },
         },
     }
 </script>
@@ -832,11 +1345,10 @@ import { mapActions, mapGetters } from 'vuex';
 }
 
     .invitation-modal-wrapper{
-        position: relative;
 
         .loading{
-            width: 100%;
-            text-align: center;
+            @include sticky-loader();
+            top: 49%;
         }
 
         .back-icon{
@@ -847,10 +1359,29 @@ import { mapActions, mapGetters } from 'vuex';
             cursor: pointer;
         }
 
+        .search-section{
+            min-height: 200px;
+        }
+
+        .buttons{
+            margin: 10px;
+            padding: 10px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+
+            .grey-button{
+                margin: 0 5px
+            }
+        }
+
         .section{
 
             .description{
                 @include text-description();
+                text-align: center;
             }
         }
 
@@ -865,7 +1396,14 @@ import { mapActions, mapGetters } from 'vuex';
                 padding: 10px;
                 border-top: 1px solid gray;
                 border-radius: 0;
+                padding: 10px;
+                overflow-y: auto;
+                max-height: 200px;
+                margin-bottom: 10px;
 
+                .account{
+                    margin: 5px 0;
+                }
             }
 
             .no-data{
@@ -879,6 +1417,10 @@ import { mapActions, mapGetters } from 'vuex';
         .form-section{
             position: relative;
             
+            .payment-types{
+                margin: 10px auto;
+            }
+
             .nothing{
                 text-align: center;
                 @include text-description();
@@ -973,6 +1515,34 @@ import { mapActions, mapGetters } from 'vuex';
                 
                 .input{
                     max-width: 100px;
+                }
+            }
+
+            .items-wrapper{
+                display: flex;
+                width: 90%;
+                margin: 10px auto;
+                align-items: center;
+                overflow: auto;
+
+                .badge{
+                    min-width: 150px;
+                    min-height: 65px;
+                }
+            }
+        }
+
+        .preview-section{
+
+            .output-section{
+                display: flex;
+                width: 100%;
+                flex-wrap: nowrap;
+                align-items: center;
+                overflow-x: auto;
+
+                .item{
+                    min-width: 150px;
                 }
             }
         }

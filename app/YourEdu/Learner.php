@@ -3,6 +3,7 @@
 namespace App\YourEdu;
 
 use App\Traits\AccountTrait;
+use App\Traits\AdmissionTrait;
 use App\User;
 use Database\Factories\LearnerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,9 +12,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Learner extends Model
 {
-    //
+    const VALIDACCOUNTTYPE = [
+        'learner', 'parent', 'professional', 'facilitator', 'school'
+    ];
 
-    use SoftDeletes, AccountTrait, HasFactory;
+    use SoftDeletes, 
+        AccountTrait, 
+        AdmissionTrait,
+        HasFactory;
 
     protected $fillable = [
         'user_id','name'
@@ -153,6 +159,11 @@ class Learner extends Model
             ->withPivot(['resource','activity'])->withTimestamps();
     }
 
+    public function addedFees()
+    {
+        return $this->morphMany(Fee::class, 'addedby');
+    }
+
     public function aliasesAdded()
     {
         return $this->morphMany(Alias::class,'addedby');
@@ -184,10 +195,10 @@ class Learner extends Model
         return $this->morphToMany(subject::class,'subjectable','subjectables')
             ->withPivot(['activity'])->withTimestamps();
     }
-
-    public function admissions()
+    
+    public function requestsSent()
     {
-        return $this->hasMany(Admission::class);
+        return $this->morphMany(Request::class,'requestfrom');
     }
     
     public function requestsReceived()
@@ -375,6 +386,16 @@ class Learner extends Model
     public function messagesReceived()
     {
         return $this->morphMany(Message::class,'toable');
+    }
+
+    public function ownedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'ownedby');
+    }
+
+    public function addedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'addedby');
     }
     
     protected static function newFactory()

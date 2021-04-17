@@ -338,6 +338,16 @@ class ParentModel extends Model
     {
         return $this->morphMany(Message::class,'toable');
     }
+
+    public function ownedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'ownedby');
+    }
+
+    public function addedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'addedby');
+    }
     
     protected static function newFactory()
     {

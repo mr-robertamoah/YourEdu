@@ -14,19 +14,15 @@ class PaymentTypeResource extends JsonResource
      */
     public function toArray($request)
     {
-        $data = [
+        return [
             'id' => $this->id,
             'name' => $this->name,
             'amount' => $this->amount,
             'for' => $this->for,
             'id' => $this->id,
             'description' => $this->description,
+            'type' => class_basename_lower($this->resource),
+            'period' => $this->period,
         ];
-
-        $data['type'] = class_basename_lower($this->resource);
-        if ($data['type'] === 'subscription') {
-            $data['period'] = $this->period;
-        }
-        return $data;
     }
 }

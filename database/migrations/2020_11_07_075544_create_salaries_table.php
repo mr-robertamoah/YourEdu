@@ -15,14 +15,13 @@ class CreateSalariesTable extends Migration
     {
         Schema::create('salaries', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employment_id')->nullable();
+            $table->nullableMorphs('addedby');
+            $table->nullableMorphs('ownedby');
+            $table->string('name')->nullable();
             $table->integer('amount')->nullable();
             $table->enum('period',['DAY','WEEK','MONTH','QUARTER','YEAR'])->nullable();
             $table->string('currency')->nullable();
             $table->timestamps();
-
-            
-            $table->foreign('employment_id')->references('id')->on('employments')->cascadeOnDelete();
         });
     }
 

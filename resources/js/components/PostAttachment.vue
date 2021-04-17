@@ -18,7 +18,7 @@
                     <template>
                         <div class="button"
                             :key="key"
-                            v-for="(btn,key) in btns"
+                            v-for="(btn,key) in buttons"
                             :class="{active: searchItem === btn}"
                             @click="buttonClicked(btn)"
                         >{{btn}}</div>
@@ -161,7 +161,7 @@ import { mapActions } from 'vuex';
             SearchInput,
         },
         props: {
-            btns: {
+            buttons: {
                 type: Array,
                 default(){
                     return [

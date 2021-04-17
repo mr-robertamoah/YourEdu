@@ -2,22 +2,21 @@
 
 namespace App\Services;
 
-use App\Events\AddSchoolAccount;
-use App\Exceptions\AccountNotFoundException;
-use App\Exceptions\AdminServiceException;
+use App\Exceptions\AdministrationException;
 use App\Http\Resources\AdminResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\AdminResponseNotification;
 use App\Notifications\FacilitatorResponseNotification;
+use App\Traits\ServiceTrait;
 use App\User;
 use App\YourEdu\School;
 use Illuminate\Support\Facades\Notification;
 use  Illuminate\Support\Str;
 use  \Debugbar;
 
-class AdminService
+class AdministrationService
 {
-
+    use ServiceTrait;
     /**
      * school send admin request to a user.
      *
@@ -57,6 +56,14 @@ class AdminService
         return $request;
     }
 
+    private function throwAdministrationException($message, $data = null)
+    {
+        throw new AdministrationException(
+            message: $message,
+            data: $data
+        );
+    }
+
     /**
      * Respond to a request for you to be an admin
      * 
@@ -68,17 +75,16 @@ class AdminService
      * @return object
      */
 
-    public static function adminRequestResponse(string $requestId,string $action,
+    public function adminRequestResponse(string $requestId,string $action,
         string $accountType,int $id,string $type)
     {
-        $request = getYourEduModel('request',$requestId);
-        if (is_null($request)) {
-            throw new AccountNotFoundException("request was not found with id {$requestId}");
-        }
-
+        $request = $this->getModel('request',$requestId);
+        
         if ($type !== 'admin') {
             if ($request->requestto->user_id !== $id ||$request->requestto->owner_id !== $id) {
-                throw new AdminServiceException('the request you are trying to respond to was not addressed to you.');
+                $this->throwAdministrationException(
+                    'the request you are trying to respond to was not addressed to you.'
+                );
             }
         }
         $requestData = unserialize($request->data);
@@ -89,7 +95,7 @@ class AdminService
         $name = $request->requestto->username ? $request->requestto->username : $request->requestto->username;
         $message = "{$name} {$action} your request to be an admin of your {$accountType}";
         if ($accountType === 'school') {
-            $fromUserIds = self::getAdminIds($request->requestfrom);
+            $fromUserIds = $request->requestfrom->getAdminIds();
             $admin = null;
             $requestData['adminDetails']['user_id'] = $id;
             if ($action === 'accepted') {
@@ -108,7 +114,7 @@ class AdminService
                     ]
                 ));
         } else if ($accountType === 'facilitator') {
-            $fromUserIds = self::getAdminIds($request->requestfrom);
+            $fromUserIds = $request->requestfrom->getAdminIds();
             if ($action === 'accepted') {
                 self::createEmployment($request->requestfrom,$request->requestto,
                     $requestData['salary']);
@@ -126,13 +132,10 @@ class AdminService
 
         return $request->requestfrom;
     }
-    
-    private static function getAdminIds($school)
-    {
-        $fromUserIds = $school->admins->pluck('user_id');
-        $fromUserIds[] = $school->owner->id;
 
-        return $fromUserIds;
+    private function trackSchoolAdmin($administrationDTO)
+    {
+
     }
 
     private static function createEmployment($employee,$employer,$salary)
@@ -144,5 +147,10 @@ class AdminService
         $employment->salary()->create([
             'amount' => $salary
         ]);
+    }
+
+    public function createAdmin()
+    {
+        
     }
 }

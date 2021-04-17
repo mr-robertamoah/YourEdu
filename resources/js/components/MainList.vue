@@ -127,13 +127,20 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
                 let list =  this.$refs.list
                 if (!this.multiple) {
                     for (let i = 0; i < list.children.length; i++) {
-                        if (list.children[i].classList.contains('active')) {
+                        if (list.children[i] !== $event.target) {
                             list.children[i].classList.remove('active')
                         }
                     }
-                    $event.target.classList.add('active')
+
+                    if ($event.target.classList.contains('active')) {
+                        $event.target.classList.remove('active')
+                        this.item = ''
+                    } else {
+                        $event.target.classList.add('active')
+                        this.item = item
+                    }
+                    
                     this.showListButton = this.buttonText.length ? true : false
-                    this.item = item
                     this.$emit('listItemSelected', this.item)
                 } else{
                     if ( $event.target.classList.contains('active')) {
@@ -163,7 +170,7 @@ $third-color: rgba(102, 51, 153, .2);
         box-shadow: 1px 1px 1px aliceblue, -1px -1px 1px aliceblue,;
 
         .select{
-            text-align: start;
+            text-align: center;
             margin: 10px;
             font-weight: 450;
             font-size: 14px;
@@ -178,7 +185,7 @@ $third-color: rgba(102, 51, 153, .2);
 
         .list-item{
             width: 90%;
-            margin: 5px;
+            margin: 5px auto;
             padding: 5px;
             border: 1px solid $second-color;
             font-size: 16px;

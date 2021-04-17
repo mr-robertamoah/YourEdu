@@ -15,18 +15,12 @@ class NewRequestMessage implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    private $message;
-    private $requestId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($message,$requestId)
-    {
-        $this->message = $message;
-        $this->requestId = $requestId;
-    }
+    public function __construct(private $messageDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -35,7 +29,7 @@ class NewRequestMessage implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.request.{$this->requestId}");
+        return new PrivateChannel("youredu.request.{$this->messageDTO->itemId}");
     }
     
     public function broadcastAs()
@@ -46,7 +40,7 @@ class NewRequestMessage implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'message' => $this->message
+            'message' => $this->messageDTO->message
         ];
     }
 }

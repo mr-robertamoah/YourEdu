@@ -228,6 +228,13 @@ class Course extends Model
         );
     }
 
+    public function scopeWhereStandAlone($query)
+    {
+        return $query->where(function($query) {
+            $query->where('stand_alone', 1);
+        });
+    }
+
     protected static function newFactory()
     {
         return CourseFactory::new();

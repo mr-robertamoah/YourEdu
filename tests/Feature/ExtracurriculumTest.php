@@ -17,6 +17,7 @@ use App\YourEdu\Payment;
 use App\YourEdu\Price;
 use App\YourEdu\Program;
 use App\YourEdu\School;
+use App\YourEdu\Subscription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -53,8 +54,10 @@ class ExtracurriculumTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -87,10 +90,11 @@ class ExtracurriculumTest extends TestCase
                     'id' => $class->id
                 ]
             ]),
-            'type' => 'price',
+            'paymentType' => 'subscription',
             'paymentData' => json_encode([
                 (object) [
                     'amount' => '400',
+                    'name' => 'name of subscription'
                 ]
             ]),
             'facilitate' => json_encode(true),
@@ -115,6 +119,7 @@ class ExtracurriculumTest extends TestCase
             ->assertSuccessful();
 
         $this->assertEquals(1, $response['extracurriculum']['discussions']);
+        $this->assertEquals(1, count($response['extracurriculum']['subscriptions']));
 
         Notification::assertNotSentTo($this->user, 
             ExtracurriculumCreatedNotification::class
@@ -128,8 +133,10 @@ class ExtracurriculumTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -153,7 +160,7 @@ class ExtracurriculumTest extends TestCase
                     'id' => $class->id
                 ]
             ]),
-            'type' => 'price',
+            'paymentType' => 'price',
             'paymentData' => json_encode([
                 (object) [
                     'amount' => '400',
@@ -192,8 +199,10 @@ class ExtracurriculumTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -211,11 +220,11 @@ class ExtracurriculumTest extends TestCase
         $extracurriculum->ownedby()->associate($school);
         $extracurriculum->save();
 
-        $price = Price::factory()->state([
-            'priceable_type' => $extracurriculum::class,
-            'priceable_id' => $extracurriculum->id,
+        $subscription = Subscription::factory()->state([
+            'subscribable_type' => $extracurriculum::class,
+            'subscribable_id' => $extracurriculum->id,
         ])->create();
-        $price->ownedby()->associate($school);
+        $subscription->ownedby()->associate($school);
 
         $school->ownedExtracurriculums()->save($extracurriculum);
         $school->ownedClasses()->saveMany($classes);
@@ -248,7 +257,7 @@ class ExtracurriculumTest extends TestCase
                     'description' => $this->faker->sentence,
                 ]
             ]),
-            'type' => 'price',
+            'paymentType' => 'price',
             'paymentData' => json_encode([
                 (object) [
                     'amount' => '400',
@@ -256,8 +265,8 @@ class ExtracurriculumTest extends TestCase
             ]),
             'removedPaymentData' => json_encode([
                 (object) [
-                    'type' => 'price',
-                    'type' => $price->id,
+                    'type' => 'subscription',
+                    'id' => $subscription->id,
                 ]
             ]),
             'discussionData' => json_encode(
@@ -279,6 +288,8 @@ class ExtracurriculumTest extends TestCase
 
         $this->assertEquals('edited', $response['extracurriculum']['name']);
         $this->assertEquals(1, $response['extracurriculum']['discussions']);
+        $this->assertEquals(1, count($response['extracurriculum']['prices']));
+        $this->assertEquals(0, count($response['extracurriculum']['subscriptions']));
         
         Notification::assertNotSentTo($this->user, 
             ExtracurriculumUpdatedNotification::class
@@ -292,8 +303,10 @@ class ExtracurriculumTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -345,8 +358,10 @@ class ExtracurriculumTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -405,8 +420,10 @@ class ExtracurriculumTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -456,8 +473,10 @@ class ExtracurriculumTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()

@@ -3,6 +3,7 @@
         v-if="account.name"
         @click="clickedOtherUserAccount"
         :title="computedTitle"
+        :class="{active}"
     >
         <div class="user-account-section">
             <div class="online-alert" v-if="online"></div>
@@ -103,6 +104,10 @@ import { mapGetters } from 'vuex';
                 default: false
             },
             loading: {
+                type: Boolean,
+                default: false
+            },
+            active: {
                 type: Boolean,
                 default: false
             },
@@ -288,6 +293,10 @@ import { mapGetters } from 'vuex';
         width: 100%;
         border-radius: 10px;
         padding: 5px;
+
+        &.active{
+            background: wheat;
+        }
 
         &:hover{
             box-shadow: 0 0 2px gray;

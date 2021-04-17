@@ -26,9 +26,9 @@ class Employment extends Model
         return $this->morphTo();
     }
 
-    public function salaries()
+    public function salariables()
     {
-        return $this->hasMany(Salary::class);
+        return $this->hasMany(Salariable::class);
     }
 
     public function files()

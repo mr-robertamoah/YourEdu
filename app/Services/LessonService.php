@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\ActivityTrackDTO;
 use App\DTOs\LessonDTO;
 use App\Events\DeleteLessonEvent;
 use App\Events\NewLessonEvent;
@@ -203,10 +204,12 @@ class LessonService
         }
 
         (new ActivityTrackService)->trackActivity(
-            $lesson,
-            $lesson->ownedby,
-            $lesson->addedby,
-            $method
+            ActivityTrackDTO::createFromData(
+                activity: $lesson,
+                activityfor: $lesson->ownedby,
+                performedby: $lesson->addedby,
+                action: $method
+            )
         );
     }
 
@@ -432,15 +435,14 @@ class LessonService
         );
 
         $this->setPayment(
-            item: $lesson,
-            addedby: $lesson->addedby,
-            paymentType: $lessonDTO->type,
-            paymentData: $lessonDTO->paymentData,
+            paymentDTO: $lessonDTO->paymentDTO?->withDashboardItem(
+                $lesson
+            )->withAddedby($lessonDTO->addedby)
         );
 
         $this->removePayment(
-            item: $lesson,
-            paymentData: $lessonDTO->removedPaymentData,
+            paymentDTO: $lessonDTO->removedPaymentDTO
+                ->withDashboardItem($lesson),
         );
 
         $this->createAutoDiscussion(

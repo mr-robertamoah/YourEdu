@@ -3,13 +3,17 @@
 namespace App\YourEdu;
 
 use App\Traits\CommissionTrait;
+use Database\Factories\CollaborationFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Collaboration extends Model
 {
     //
-    use SoftDeletes, CommissionTrait;
+    use SoftDeletes, 
+    CommissionTrait, 
+    HasFactory;
 
     const FREE = 'FREE';
     const PAID = 'PAID';
@@ -17,6 +21,15 @@ class Collaboration extends Model
     protected $fillable = [
         'description', 'name', 'type'
     ];
+
+    protected $appends = [
+        'ownedby'
+    ];
+
+    public function getOwnedbyAttribute()
+    {
+        return $this->addedby;
+    }
 
     public function ownedLessons()
     {
@@ -41,11 +54,6 @@ class Collaboration extends Model
     public function collaborationable()
     {
         return $this->morphTo();
-    }
-
-    public function commissions()
-    {
-        return $this->morphMany(Commission::class,'for');
     }
 
     public function courses()
@@ -105,5 +113,10 @@ class Collaboration extends Model
                 });
             });
         });
+    }
+
+    protected static function newFactory()
+    {
+        return CollaborationFactory::new();
     }
 }

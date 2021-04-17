@@ -75,28 +75,25 @@ class RequestResource extends JsonResource
             $data['accountId'] = $this->requestfrom_id;
             $data['discussionId'] = $this->requestable->id;
         }  else if ($this->data) {
-            $requestData = unserialize($this->data);
-            Debugbar::info($requestData);
-            $files = [];
-            if (Arr::has($requestData,'file')) {                
-                foreach ($requestData['file'] as $file) {
-                    $files[] = getYourEduModel($file['type'],$file['id']);
-                }
-                $data['file'] = ImageResource::collection($files);
-            }
-            $data['isAdminRequest'] = true;
+            $requestDTO = unserialize($this->data);
             
-            $data['adminDetails'] = Arr::has($requestData,'adminDetails') ? 
-                $requestData['adminDetails'] : null;
-            if (Arr::has($requestData,'salary')) {
-                $data['salary'] = $requestData['salary'];
-            }
-            $data['name'] = $this->requestfrom->profile->name;
-            $data['url'] = $this->requestfrom->profile->url;
-            $data['account'] = class_basename_lower($this->requestfrom_type);
-            $data['accountId'] = $this->requestfrom_id;
-            $data['myAccount'] = class_basename_lower($this->requestto_type);
-            $data['myAccountId'] = $this->requestto_id;
+            $data['images'] = ImageResource::collection($this->images);
+            $data['videos'] = VideoResource::collection($this->videos);
+            $data['audios'] = AudioResource::collection($this->audios);
+            $data['files'] = FileResource::collection($this->files);
+            $data['salaries'] = PaymentTypeResource::collection($this->salaries);
+            $data['commissions'] = PaymentTypeResource::collection($this->commissions);
+            $data['fees'] = PaymentTypeResource::collection($this->fees);
+            $data['discounts'] = PaymentTypeResource::collection($this->discounts);
+            $data['action'] = $requestDTO->action;
+            $data['state'] = strtolower($this->state);
+            $data['message'] = $requestDTO->message;
+            $data['name'] = $this->requestfrom->profile->name ?? $this->requestfrom->full_name;
+            $data['username'] = $this->requestfrom->user_name;
+            $data['url'] = $this->requestfrom->profile?->url;
+            $data['createdAt'] = $this->created_at->diffForHumans();
+            $data['account'] = new UserAccountResource($this->requestfrom);
+            $data['myAccount'] = new UserAccountResource($this->requestto);
         }
         return $data;
     }

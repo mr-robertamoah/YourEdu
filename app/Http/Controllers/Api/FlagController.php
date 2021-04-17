@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\FlagDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\FlaggedResource;
 use App\Http\Resources\FlagResource;
@@ -14,12 +15,18 @@ class FlagController extends Controller
 {
     //
 
-    public function flagDelete($flag)
+    public function deleteFlag(Request $request)
     {
         try {
-            $flagInfo = (new FlagService())->flagDelete($flag,auth()->id());
+            DB::beginTransaction();
+
+            (new FlagService())->deleteFlag(
+                FlagDTO::createFromRequest($request)
+            );
+
+            DB::commit();
             return response()->json([
-                'message' => $flagInfo
+                'message' => 'successful'
             ]);
         } catch (\Throwable $th) {
             throw $th;
@@ -29,13 +36,14 @@ class FlagController extends Controller
         }
     }
 
-    public function flagCreate(Request $request,$item, $itemId)
+    public function createFlag(Request $request)
     {
         try {
             DB::beginTransaction();
 
-            $flag = (new FlagService())->flagCreate($request->account,$request->accountId,
-                $item,$itemId,$request->reason,auth()->id());
+            $flag = (new FlagService())->createFlag(
+                FlagDTO::createFromRequest($request)
+            );
 
             DB::commit();
             return response()->json([
@@ -55,7 +63,6 @@ class FlagController extends Controller
     {
         $flags = (new flagService())->userFlaggedGet($request->type);
 
-        Debugbar::info($flags);
         return FlaggedResource::collection(paginate($flags->sortByDesc('updated_at'), 5));
     }
     

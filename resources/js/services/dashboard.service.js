@@ -145,9 +145,30 @@ const DashboadService = {
         }
     },
     async searchAccounts(main){
-        let {params, nextPage} = main
+        let {data, nextPage} = main
         try {
-            let response = await ApiService.get(`api/request/accounts/search?page=${nextPage}&${params}`)
+            let response = await ApiService.get(`api/request/accounts/search?page=${nextPage}`, data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async searchItems(main){
+        let {data, nextPage} = main
+        try {
+            let response = await ApiService.get(`api/request/items/search?page=${nextPage}`, data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async getWork(data){
+        try {
+            let response = await ApiService.get(`api/assessment/${data.assessmentId}/work`)
 
             return response
         } catch (error) {
@@ -157,7 +178,17 @@ const DashboadService = {
     },
     async sendRequest(data){
         try {
-            let response = await ApiService.post(`api/request/accounts/send`,data)
+            let response = await ApiService.post(`api/request/account/send`,data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async sendRequest(data){
+        try {
+            let response = await ApiService.post(`api/request/account/respond`,data)
 
             return response
         } catch (error) {
@@ -167,7 +198,7 @@ const DashboadService = {
     },
     async deleteRequestMessage(data){
         try {
-            let response = await ApiService.post(`api/request/message/delete`,data)
+            let response = await ApiService.delete(`api/request/message/${data.messageId}`)
 
             return response
         } catch (error) {

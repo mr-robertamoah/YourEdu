@@ -65,55 +65,18 @@
                 :text="'messages'"
             ></action-button>
         </div>
-        <div class="messages-section" v-if="showMessages">
-            <div class="message">
-                <div class="loading" v-if="messageLoading">
-                    <pulse-loader :laoding="messageLoading" size="10px"></pulse-loader>
-                </div>
-                <discussion-textarea
-                    :request="true"
-                    @input="inputMessage"
-                    @sendMessage="sendMessage"
-                ></discussion-textarea>
-            </div>
-            <div class="messages" v-if="messages.length">
-                <discussion-badge
-                    v-for="message in messages"
-                    :key="message.id"
-                    :message="message"
-                    :simple="true"
-                    @clickedOption="deleteMessage"
-                ></discussion-badge>
-
-                <div class="more-data"
-                    @click="infiniteHandler"
-                    v-if="messagesNextPage && messagesNextPage !== 1"
-                >
-                    <font-awesome-icon :icon="['fa','ellipsis-h']"></font-awesome-icon>
-                </div>
-                
-                <div class="no-data"
-                    @click="infiniteHandler"
-                    v-if="!messagesNextPage && messages.length && messagesNextPage !== 1"
-                > no more requests</div>
-            </div>
-        </div>
     </div>
 </template>
 
 <script>
 import { mapActions } from 'vuex';
 import ActionButton from './ActionButton';
-import DiscussionBadge from './DiscussionBadge';
-import DiscussionTextarea from './DiscussionTextarea';
 import PulseLoader from 'vue-spinner/src/PulseLoader';
 import ProfilePicture from './profile/ProfilePicture';
     export default {
         components: {
             ProfilePicture,
             PulseLoader,
-            DiscussionTextarea,
-            DiscussionBadge,
             ActionButton,
         },
         props: {
@@ -132,11 +95,6 @@ import ProfilePicture from './profile/ProfilePicture';
             return {
                 acceptLoading: false,
                 rejectLoading: false,
-                showMessages: false,
-                messageText: '',
-                messages: [],
-                messagesNextPage: 1,
-                messageLoading: false,
             }
         },
         watch: {
@@ -201,77 +159,6 @@ import ProfilePicture from './profile/ProfilePicture';
                         this.$emit('updateRequest',data)
                     })
             },
-            async getMessages(){
-                let response,
-                    nextPage = this.messagesNextPage
-
-                this.messageLoading = true
-                response = await this['dashboard/getRequestMessages']({
-                    requestId: this.request.id, nextPage
-                })
-
-                this.messageLoading = false
-                if (response.status) {
-                    this.messages.push(...response.messages)
-                    if (response.next) {
-                        this.messagesNextPage += 1
-                    } else {
-                        this.messagesNextPage = null
-                    }
-                } else {
-                    console.log('response :>> ', response);
-                }
-            },
-            async infiniteHandler(){
-                if (this.messagesNextPage === 1 || this.messagesNextPage === null) {
-                    return
-                }
-
-                await this.getMessages()
-            },
-            async sendMessage(){
-                let response,
-                    formData = new FormData
-                
-                this.messageLoading = true
-                formData.append('message', this.messageText)
-                formData.append('account', this.dashboard ? 'school' : this.request.myAccount)
-                formData.append('accountId', this.dashboard ? this.request.schoolId : this.request.myAccountId)
-                
-                response = await this['dashboard/sendRequestMessage']({
-                    formData,requestId: this.request.id
-                })
-
-                this.messageLoading = false
-                if (response.status) {
-                    this.messages.unshift(response.message)
-                } else {
-                    console.log('response :>> ', response);
-                }
-            },
-            async deleteMessage(messageData){
-                let response,
-                    data = {
-                    messageId: messageData.message.id,
-                    requestId: this.request.id
-                }
-                this.messageLoading = true
-                response = await this['dashboard/deleteRequestMessage'](data)
-                this.messageLoading = false
-                if (response.status) {
-                    this.removeMessage(data.messageId)
-                } else {
-                    console.log('response :>> ', response);
-                }
-            },
-            removeMessage(messageId){
-                let index = this.messages.findIndex(message=>{
-                    return message.id == messageId
-                })
-                if (index > -1) {
-                    this.messages.splice(index,1)
-                }
-            },
             clickedReject(){
                 if (this.acceptLoading) return
                 this.rejectLoading = true
@@ -288,12 +175,6 @@ import ProfilePicture from './profile/ProfilePicture';
                     action: 'accepted'
                 })
             },
-            clickedShowMessages(){
-                this.showMessages = !this.showMessages
-            },
-            inputMessage(data){
-                this.messageText = data
-            },
         },
     }
 </script>
@@ -306,6 +187,7 @@ import ProfilePicture from './profile/ProfilePicture';
         box-shadow: 0 0 2px gray;
         width: 100%;
         background: rgb(240,248,255);
+        position: relative;
 
         .username{
             font-size: 14px;
@@ -319,10 +201,12 @@ import ProfilePicture from './profile/ProfilePicture';
             display: inline-flex;
             justify-content: space-around;
             align-items: center;
+            position: absolute;
+            top: 0;
         }
 
         .message-section{
-            padding: 10px;    
+            padding: 0 10px;    
             display: flex;
 
             .profile-picture{   
@@ -348,7 +232,6 @@ import ProfilePicture from './profile/ProfilePicture';
 
         .salary{
             width: 100%;
-            font-size: 14px;
             display: flex;
             align-items: center;
             margin: 10px 0;
@@ -357,51 +240,26 @@ import ProfilePicture from './profile/ProfilePicture';
             .title{
                 color: gray;
                 min-width: fit-content;
-                margin-right: 10px;
+                margin-right: 5px;
+                font-size: 10px;
             }
 
             .amount{
                 text-transform: lowercase;
-            }
-        }
-
-        .messages-section{
-            margin-bottom: 10px;
-            padding: 10px;
-
-            .message{
-                margin-bottom: 10px;
-
-                .loading{
-                    width: 100%;
-                    text-align: center;
-                }
-            }
-
-            .messages{
-
-                .more-data,
-                .no-data{
-                    width: 100%;
-                    text-align: center;
-                    cursor: pointer;
-                    color: gray;
-                    font-size: 12px;
-                }
-
-                .more-data{
-                    font-size: 16px;
-                }
+                font-size: 12px;
             }
         }
 
         .state{
-            font-size: 12px;
+            font-size: 10px;
             color: gray;
             font-style: italic;
             width: fit-content;
             margin-left: auto;
             margin-right: 10px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
 
         .files-section{    
@@ -409,15 +267,13 @@ import ProfilePicture from './profile/ProfilePicture';
             text-align: center;
 
             .note{
-                font-size: 14px;
+                font-size: 10px;
                 color: gray;
             }
 
             .files{
-
-                a{
-                    font-size: 12px;
-                }
+                font-size: 10px;
+                padding-bottom: 10px;
             }
         }
     }

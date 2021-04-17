@@ -2,198 +2,298 @@
 
 namespace App\Services;
 
-use App\Exceptions\AccountNotFoundException;
+use App\DTOs\ActivityTrackDTO;
+use App\DTOs\CommentDTO;
+use App\Events\DeleteComment;
+use App\Events\NewComment;
+use App\Events\UpdateComment;
 use App\Exceptions\CommentException;
-use Illuminate\Support\Facades\Storage;
-use \Debugbar;
+use App\Traits\ServiceTrait;
 
 class CommentService
 {
-    public function commentCreate($body,$file,$account,$accountId,$id,$item,$itemId,$adminId)
+    use ServiceTrait;
+
+    public function createComment(CommentDTO $commentDTO)
     {
-        if(is_null($body) && is_null($file)){
-            throw new CommentException('unsuccessful. there is nothing to add as comment.');
-        }
+        $this->checkCommentData($commentDTO);
         
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("unsuccessful. there is no such {$account}.");
-        }
-
-        $this->checkAccountOwnership($mainAccount,$id,$account);        
-
-        $commentable = getYourEduModel($item,$itemId);
-        if (is_null($commentable)) {
-            throw new AccountNotFoundException("unsuccessful. there is no such {$item}.");
-        }
-
-        $method = 'comments';
-        if ($account === 'school') {
-            $method = 'commentsMade';
-        }
-
-        $comment = $mainAccount->$method()->create([
-            'body' => $body
-        ]);
+        $commentDTO = $this->setCommentedby($commentDTO);
         
-        FileService::createAndAttachFiles(
-            account: $mainAccount,
-            file: $file,
-            item: $comment
-        );
+        $this->checkAccountOwnership($commentDTO);
 
-        $commentData = $this->commentAssociate($comment,$commentable,$item);    
-            
-        if ($commentData['rollback']) {
-            if($file){
-                Storage::delete($file->path);
-            }
-            throw new CommentException("unsuccessful. {$item} does not exist or comment was not created");
-        }
+        $commentDTO = $this->setCommentable($commentDTO);
         
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $comment,$mainAccount,$admin,__METHOD__
-                );
-            }
-        }
+        $comment = $this->makeComment($commentDTO);
         
-        return $commentData;
+        $this->checkComment($comment);
+
+        $commentDTO = $commentDTO->withComment($comment);
+
+        $comment = $this->associateCommentToItem($commentDTO);
+        
+        $comment = $this->addFiles($commentDTO);
+
+        $commentDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($commentDTO);
+
+        $commentDTO = $this->setAccountAndItemForBroadcast($commentDTO);
+
+        $commentDTO->methodType = 'created';
+        $this->broadcastComment($commentDTO);
+        
+        return $comment->refresh();
     }
 
-    private function checkAccountOwnership($account,$id,$accountType)
+    private function broadcastComment($commentDTO)
     {
-        if ($accountType === 'school') {
-            if (!in_array($id,$account->getAdminIds())) {                
-                throw new CommentException("unsuccessful. you are not authorised to perform this action.");
-            }
-        } else if ($account->user_id && $account->user_id !== $id) {
-            throw new CommentException("unsuccessful. you do not own this account.");
-        } else if ($account->owner_id && $account->owner_id !== $id) {
-            throw new CommentException("unsuccessful. you do not own this account.");
+        $event = $this->getEvent($commentDTO);
+        
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($commentDTO)
+    {
+        if ($commentDTO->methodType === 'created') {
+            return new NewComment($commentDTO);
         }
+
+        if ($commentDTO->methodType === 'updated') {
+            return new UpdateComment($commentDTO);
+        }
+
+        return new DeleteComment($commentDTO);
+    }
+
+    private function addFiles(CommentDTO $commentDTO)
+    {
+        foreach ($commentDTO->files as $file) {
+            FileService::createAndAttachFiles(
+                account: $commentDTO->commentedby,
+                file: $file,
+                item: $commentDTO->comment
+            );
+        }
+
+        return $commentDTO->comment->refresh();
+    }
+
+    private function makeComment(CommentDTO $commentDTO)
+    {
+        $method = $this->getAccountCommentingMethod($commentDTO);
+
+        return $commentDTO->commentedby->$method()->create([
+            'body' => $commentDTO->body
+        ]);
+    }
+
+    private function setCommentedby($commentDTO)
+    {
+        if ($commentDTO->commentedby) {
+            return $commentDTO;
+        }
+
+        return $commentDTO->withCommentedby(
+            $this->getModel($commentDTO->account,$commentDTO->accountId)
+        );
+    }
+
+    private function setCommentable($commentDTO)
+    {
+        if ($commentDTO->commentable) {
+            return $commentDTO;
+        }
+
+        if ($commentDTO->comment) {
+            return $commentDTO->withCommentable($commentDTO->comment->commentable);
+        }
+
+        return $commentDTO->withCommentable(
+            $this->getModel($commentDTO->item,$commentDTO->itemId)
+        );
+    }
+
+    private function checkCommentData($commentDTO)
+    {
+        if(is_not_null($commentDTO->body) && count($commentDTO->files)) {
+            return;
+        }
+
+        $this->throwCommentException('unsuccessful. there is nothing to add as comment.');
+    }
+
+    private function throwCommentException($message, $data = null)
+    {
+        throw new CommentException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    private function trackSchoolAdmin(CommentDTO $commentDTO)
+    {
+        if (is_null($commentDTO->adminId)) {
+            return;
+        }
+
+        $admin = $this->getModel('admin',$commentDTO->adminId);
+
+        (new ActivityTrackService)->trackActivity(
+            ActivityTrackDTO::createFromData(
+                activity: $commentDTO->comment,
+                activityfor: $commentDTO->commentedby,
+                performedby: $admin,
+                action: $commentDTO->method
+            )
+        );
+    }
+
+    private function checkAccountOwnership($commentDTO)
+    {
+        if (in_array($commentDTO->userId, $commentDTO->commentedby->getAuthorizedIds())) {
+            return;              
+        }
+
+        $this->throwCommentException("unsuccessful. you are not authorised to perform this action using this account.");
+    }
+
+    private function checkComment($comment)
+    {
+        if (is_not_null($comment)) {
+            return;
+        }
+        
+        $this->throwCommentException("failed to create or find the comment.");
     }
     
-    public function commentEdit($account,$accountId,$id,$commentId,$body,$adminId)
+    public function updateComment(CommentDTO $commentDTO)
     {
-        // for now, body must be required, on a later date, it wont be. but we will 
-        //check to ensure that the update doesnt lead to an empty comment (without body and file)
-        Debugbar::info('edit');
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("unsuccessful. there is no such {$account}.");
+        $this->checkCommentData($commentDTO);
+
+        $commentDTO = $this->setCommentedby($commentDTO);
+        
+        $this->checkAccountOwnership($commentDTO);
+
+        $comment = $this->editComment($commentDTO);
+
+        $this->checkComment($comment);
+
+        $commentDTO = $commentDTO->withComment($comment);
+
+        $commentDTO = $this->setCommentable($commentDTO);
+
+        $comment = $this->addFiles($commentDTO);
+        
+        $commentDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($commentDTO);
+
+        $commentDTO = $this->setAccountAndItemForBroadcast($commentDTO);
+
+        $commentDTO->methodType = 'updated';
+        $this->broadcastComment($commentDTO);
+
+        return $comment;
+    }
+
+    private function getAccountCommentingMethod($commentDTO) : string
+    {
+        if ($commentDTO->commentedby->accountType === 'school') {
+            return 'commentsMade';
         }
 
-        $this->checkAccountOwnership($mainAccount,$id,$account);
+        return 'comments';
+    }
 
-        $method = 'comments';
-        if ($account === 'school') {
-            $method = 'commentsMade';
-        }
-        $comment = $mainAccount->$method()->where('id', $commentId)->first();
-            
-        if (is_null($comment)) {
-            throw new CommentException("unsuccessful. there is no such comment for this accout user.");
-        }
+    private function editComment($commentDTO)
+    {
+        $method = $this->getAccountCommentingMethod($commentDTO);
+
+        $comment = $commentDTO->commentedby
+            ->$method()->where('id', $commentDTO->commentId)->first();
         
         $comment->update([
-            'body' => $body
+            'body' => $commentDTO->body
         ]);
-        
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $comment,$mainAccount,$admin,__METHOD__
-                );
-            }
-        }
 
-        return [
-            'comment' => $comment,
-        ];
+        return $comment;
     }
     
-    public function commentDelete($commentId,$adminId)
+    public function deleteComment(CommentDTO $commentDTO)
     {
-        Debugbar::info('delete');
-        $comment = getYourEduModel('comment',$commentId);
-        if (is_null($comment)) {
-            throw new AccountNotFoundException("comment not found with id {$commentId}.");
-        }
-
-        $item = class_basename_lower($comment->commentable_type);
-        $itemId = $comment->commentable_id;
-        $account = null;
-        $accountId = null;
-        if ($item === 'post') {
-            $account = class_basename_lower(get_class($comment->commentable->addedby));
-            $accountId = $comment->commentable->addedby->id;
-        } else if ($item === 'book' || $item === 'poem' || $item === 'activity') {
-            $account = class_basename_lower(get_class($comment->commentable->post->addedby));
-            $accountId = $comment->commentable->post->addedby->id;
-        } else if ($item === 'discussion') {
-            $account = class_basename_lower(get_class($comment->commentable->raisedby));
-            $accountId = $comment->commentable->raisedby->id;
-        } else if ($item === 'class') {
-            $account = class_basename_lower(get_class($comment->commentable->ownedby));
-            $accountId = $comment->commentable->ownedby->id;
-        } else if ($item === 'comment') {
-            $account = class_basename_lower(get_class($comment->commentable->commentedby));
-            $accountId = $comment->commentable->commentedby->id;
-        }
+        $comment = $this->getModel('comment',$commentDTO->commentId);
         
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $comment,$comment->commentedby,$admin,__METHOD__
-                );
-            }
-        }
+        $commentDTO = $commentDTO->withComment($comment);
+
+        $commentDTO = $this->setAccountAndItemForBroadcast($commentDTO);
 
         $comment->delete();
+        
+        $commentDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($commentDTO);
 
-        return [
-            'item' => $item,
-            'itemId' => $itemId,
-            'account' => $account,
-            'accountId' => $accountId,
-        ];
+        $commentDTO->methodType = 'deleted';
+        $this->broadcastComment($commentDTO);
+
+        $this->deleteFiles($commentDTO);
+    }
+
+    private function deleteFiles($commentDTO)
+    {
+        FileService::deleteYourEduItemFiles($commentDTO->comment);
+    }
+
+    private function setAccountAndItemForBroadcast($commentDTO)
+    {
+        $commentDTO->item = class_basename_lower(
+            $commentDTO->comment->commentable
+        );
+        $commentDTO->itemId = $commentDTO->comment->commentable->id;
+
+        $commentableOwnerAccount = $this->getCommentableOwnerAccount(
+            $commentDTO->comment
+        );
+
+        $commentDTO->account = $commentableOwnerAccount->accountType;
+        $commentDTO->accountId = $commentableOwnerAccount->id;
+
+        return $commentDTO;
     }
     
-    public function commentsGet($item, $itemId)
+    public function getComments(CommentDTO $commentDTO)
     {
-        $commentable = getYourEduModel($item,$itemId);
-        if (is_null($commentable)) {
-            throw new AccountNotFoundException("{$item} not found with id {$itemId}.");
-        }
+        $commentable = $this->getModel($commentDTO->item,$$commentDTO->itemId);
         
         return $commentable->comments()->latest()->get();
     }
 
-    private function commentAssociate($comment,$commentable, $item)
+    private function associateCommentToItem($commentDTO)
     {
-        $commentableOwner = null;
-        $rollback = false;
+        $commentDTO->comment->commentable()->associate($commentDTO->commentable);
+        $commentDTO->comment->save();
+            
+        return $commentDTO->comment;
+    }
+
+    public function getCommentableOwnerAccount($comment)
+    {
+        $item = class_basename_lower($comment->commentable);
+
         if ($item === 'post') {
-            $commentableOwner = $commentable->addedby;
+            return $comment->commentable->addedby;
         } else if ($item === 'discussion') {
-            $commentableOwner = $commentable->raisedby;
+            return $comment->commentable->raisedby;
         } else if ($item === 'activity') {
-            $commentableOwner = $commentable->post->addedby;
+            return $comment->commentable->post->addedby;
         } else if ($item === 'book') {
-            $commentableOwner = $commentable->post->addedby;
+            return $comment->commentable->post->addedby;
         } else if ($item === 'riddle') {
-            $commentableOwner = $commentable->post->addedby;
+            return $comment->commentable->post->addedby;
         } else if ($item === 'question') {
-            $commentableOwner = $commentable->post->addedby;
+            return $comment->commentable->post->addedby;
         } else if ($item === 'poem') {
-            $commentableOwner = $commentable->post->addedby;
+            return $comment->commentable->post->addedby;
         } else if ($item === 'comment') {
-            $commentableOwner = $commentable->commentedby;
+            return $comment->commentable->commentedby;
         } else if ($item === 'request') {
 
         } else if ($item === 'admission') {
@@ -216,19 +316,9 @@ class CommentService
 
         } else if ($item === 'class' || $item === 'course' ||
             $item === 'extracurriculum' || $item === 'lesson') {
-            $commentableOwner = $commentable->ownedby;
+            return $comment->commentable->ownedby;
         }
 
-        if ($comment && $commentable) {
-            $comment->commentable()->associate($commentable);
-            $comment->save();
-        } else {
-            $rollback = true;
-        }
-        return [
-            'rollback' => $rollback,
-            'comment' => $comment,
-            'commentableOwner' => $commentableOwner,
-        ];
+        return null;
     }
 }

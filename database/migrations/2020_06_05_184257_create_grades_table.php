@@ -16,10 +16,9 @@ class CreateGradesTable extends Migration
         Schema::create('grades', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->morphs('addedby');
+            $table->nullableMorphs('addedby');
             $table->string('description')->nullable();
             $table->string('age_group')->nullable();
-            // $table->morphs('gradable'); //school curriculum making in many to many morph
             $table->tinyInteger('level')->nullable();
             $table->softDeletes();
             $table->timestamps();

@@ -4,6 +4,7 @@ namespace App\YourEdu;
 
 use App\Traits\AssessmentTrait;
 use App\Traits\DashboardItemTrait;
+use App\Traits\FeeTrait;
 use App\Traits\NotOwnedbyTrait;
 use Database\Factories\ClassFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,8 +14,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ClassModel extends Model
 {
     //
-    use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait,
-        HasFactory;
+    use SoftDeletes, 
+        NotOwnedbyTrait, 
+        DashboardItemTrait, 
+        AssessmentTrait,
+        HasFactory,
+        FeeTrait;
 
     protected $fillable = [
         'name','state','description','max_learners','structure'
@@ -34,7 +39,7 @@ class ClassModel extends Model
 
     public function commissions()
     {
-        return $this->morphMany(Commission::class,'for');
+        return $this->morphToMany(Commission::class,'commissionable', 'commissionables');
     }
 
     public function activityTrack()
@@ -130,11 +135,6 @@ class ClassModel extends Model
     {
         return $this->morphedByMany(Extracurriculum::class,'classable','classables','class_id')
             ->withTimestamps();
-    }
-
-    public function fees()
-    {
-        return $this->hasMany(Fee::class,'class_id');
     }
 
     public function gradingSystem(){

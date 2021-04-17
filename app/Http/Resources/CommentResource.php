@@ -41,7 +41,7 @@ class CommentResource extends JsonResource
             'flags' => FlagResource::collection($this->flags),
             'saves' => SaveResource::collection($this->beenSaved),
             'commentedby' => $this->commentedby->name,
-            'profile_url' => $this->commentedby->profile->url,
+            'profile_url' => $this->commentedby->profile?->url,
             'commentedby_type' => $this->commentedby_type,
             'commentedby_id' => $this->commentedby_id,
             'commentable_type' => $this->commentable_type,

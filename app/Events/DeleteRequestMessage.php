@@ -15,18 +15,12 @@ class DeleteRequestMessage implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $requestId;
-    public $messageId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($messageId, $requestId)
-    {
-        $this->messageId = $messageId;
-        $this->requestId = $requestId;
-    }
+    public function __construct(private $messageDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -35,7 +29,7 @@ class DeleteRequestMessage implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.request.{$this->requestId}");
+        return new PrivateChannel("youredu.request.{$this->messageDTO->messageable->id}");
     }
     
     public function broadcastAs()
@@ -46,7 +40,7 @@ class DeleteRequestMessage implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'messageId' => $this->messageId,
+            'messageId' => $this->messageDTO->message->id,
         ];
     }
 }

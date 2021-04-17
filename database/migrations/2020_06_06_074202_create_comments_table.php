@@ -15,7 +15,7 @@ class CreateCommentsTable extends Migration
     {
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->string('body');
+            $table->string('body')->nullable();
             $table->morphs('commentedby'); // facilitator learner parent school professional
             $table->nullableMorphs('commentable'); // summary read school class lesson post request admission ban flag keyword word expression character
             $table->timestamps();

@@ -198,10 +198,9 @@ class ExtracurriculumService
         );
 
         $this->setPayment(
-            item: $extracurriculum,
-            addedby: $extracurriculumDTO->addedby,
-            paymentType: $extracurriculumDTO->type,
-            paymentData: $extracurriculumDTO->paymentData,
+            paymentDTO: $extracurriculumDTO->paymentDTO?->withDashboardItem(
+                $extracurriculum
+            )->withAddedby($extracurriculumDTO->addedby)
         );
 
         $extracurriculum = $this->createAutoDiscussion(
@@ -301,15 +300,15 @@ class ExtracurriculumService
             attachments: $extracurriculumDTO->removedAttachments,
         );
 
-        $extracurriculum = $this->removePayment(
-            item: $extracurriculum,
-            paymentData: $extracurriculumDTO->removedPaymentData,
+        $this->removePayment(
+            paymentDTO: $extracurriculumDTO->removedPaymentDTO
+                ->withDashboardItem($extracurriculum),
         );
 
         $extracurriculumDTO->methodType = 'updated';
         $this->broadcastExtracurriculum($extracurriculum, $extracurriculumDTO);
 
-        return $extracurriculum;
+        return $extracurriculum->refresh();
     }
 
     public function checkExtracurriculumAuthorization

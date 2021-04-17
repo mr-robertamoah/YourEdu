@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\DB;
 
 class AssessmentController extends Controller
 {
-    //
     public function createAssessment(CreateAssessmentRequest $request)
     {
         $assessment = (new AssessmentService())->createAssessment(
@@ -54,6 +53,18 @@ class AssessmentController extends Controller
             'message' => 'successful',
             'assessment' => $assessment instanceof Model ?
                 new AssessmentResource($assessment) : null
+        ]);
+    }
+    
+    public function getWork(Request $request)
+    {
+        $assessmentResource = (new AssessmentService())->getWork(
+            AssessmentDTO::createFromRequest($request, true)
+        );
+
+        return response()->json([
+            'message' => 'successful',
+            'assessment' => $assessmentResource
         ]);
     }
 }

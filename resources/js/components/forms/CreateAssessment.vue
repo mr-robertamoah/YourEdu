@@ -1251,6 +1251,10 @@ import CreateDiscussion from './CreateDiscussion';
                 min-height: 100px;
                 align-items: center;
 
+                .loading{
+                    text-align: center;
+                }
+
                 .search-items{
                     display: flex;
                     margin: 10px;

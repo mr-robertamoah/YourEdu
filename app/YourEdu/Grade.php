@@ -2,13 +2,16 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\GradeFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Grade extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes,
+        HasFactory;
 
     protected $fillable = [
         'name','description','age_group'
@@ -48,5 +51,10 @@ class Grade extends Model
     public function requests()
     {
         return $this->morphMany(Request::class,'requestable');
+    }
+
+    protected static function newFactory()
+    {
+        return GradeFactory::new();
     }
 }

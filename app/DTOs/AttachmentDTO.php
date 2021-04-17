@@ -6,15 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class AttachmentDTO
 {
-    public string | null $account;
-    public string | null $accountId;
-    public string | null $name;
-    public string | null $description;
-    public string | null $rationale;
+    public ?string $account = null;
+    public ?string $accountId = null;
+    public ?string $name = null;
+    public ?string $description = null;
+    public ?string $rationale = null;
     public array $aliases = [];
-    public string | null $type;
-    public string | null $typeId;
+    public ?string $type = null;
+    public ?string $typeId = null;
     public ?Model $addedby = null;
+    public ?string $method = null;
 
     public static function createFromData
     (

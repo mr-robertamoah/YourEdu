@@ -4,28 +4,22 @@ import { TokenService } from "../services/token.service";
 const routerBeforeEach = (to,from,next)=>{
     let isLoggedIn = !! TokenService.getToken()
     let requiresLogin = to.matched.some(record => record.meta.requiresLogin)
-    let requiresLoginNot = to.matched.some(record => record.meta.requiresLoginNot)
+    let doesntRequireLoginNot = to.matched.some(record => record.meta.doesntRequireLoginNot)
 
-    if(requiresLogin){
-        if(!isLoggedIn){
-            return next({
-                name: 'login',
-                query: {
-                    redirectTo: to.fullPath
-                }
-            })
-        }else {
-            return next()
-        }
-    } else if(requiresLoginNot) {
-        if(isLoggedIn){
-            return next(from.fullPath)
-        }else {
-            return next()
-        }
-    } else {
-        return next()
+    if(requiresLogin && !isLoggedIn){
+        return next({
+            name: 'login',
+            query: {
+                redirectTo: to.fullPath
+            }
+        })
     }
+    
+    if(doesntRequireLoginNot && isLoggedIn) {
+        return next(from.fullPath)
+    }
+
+    return next()
     
 }
 

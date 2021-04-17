@@ -2,12 +2,14 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\UserAccountResource;
+use App\Http\Resources\UserMiniResource;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AccountsRequestNotification extends Notification
+class AccountResponseNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -16,10 +18,7 @@ class AccountsRequestNotification extends Notification
      *
      * @return void
      */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(private $requestDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -55,7 +54,19 @@ class AccountsRequestNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            //
+            'message' => $this->requestDTO->message,
+            'account' => property_exists(
+                $this->requestDTO->request->requestto, 'accountType'
+            ) ? new UserAccountResource(
+                $this->requestDTO->request->requestto
+            ) : new UserMiniResource($this->requestDTO->request->requestto),
+        ];
+    }
+
+    public function toDatabase($notifiable)
+    {
+        return [
+            'requestDTO' => $this->requestDTO,
         ];
     }
 }

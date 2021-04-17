@@ -57,7 +57,8 @@ import { dates, strings } from '../../services/helpers'
                 return !this.item ? '' : this.type === 'class' ||
                     this.type === 'course' || this.type === 'subject' ||
                     this.type === 'program' || this.type === 'year' ||
-                    this.type === 'section' || this.item.name ? 
+                    this.type === 'section' || this.item.name ||
+                    this.type.includes('academic') ? 
                     this.item.name : this.type === 'discussion' ? 
                     this.item.title : ''
             },
@@ -90,7 +91,7 @@ import { dates, strings } from '../../services/helpers'
                     msg = `rationale: ${strings.trim(this.item.rationale, 40)}` + `\n`
                 }
                 if (this.item.courses) {
-                    msg = `${this.item.courses} courses` + `\n`
+                    msg = `${this.item.courses.length} courses` + `\n`
                 }
                 if (this.computedDates.length) {
                     msg = this.computedDates
@@ -161,12 +162,16 @@ import { dates, strings } from '../../services/helpers'
             text-align: center;
             text-transform: capitalize;
             font-size: 13px;
+            text-overflow: ellipsis;
+            overflow: hidden;
         }
 
         .description{
             font-size: 12px;
             font-style: italic;
             text-transform: lowercase;
+            text-overflow: ellipsis;
+            overflow: hidden;
         }
 
         .details{

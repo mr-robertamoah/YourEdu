@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\LikeResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,16 +16,12 @@ class NewLike implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $likeArray;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($likeArray)
-    {
-        $this->likeArray = $likeArray;
-    }
+    public function __construct(private $likeDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -34,9 +31,7 @@ class NewLike implements ShouldBroadcastNow
     public function broadcastOn()
     {
         return [
-            // new Channel('youredu.home'),
-            new Channel("youredu.{$this->likeArray['item']}.{$this->likeArray['itemId']}"),
-            new Channel("youredu.{$this->likeArray['itemBelongsTo']}.{$this->likeArray['itemBelongsToId']}")
+            new Channel("youredu.{$this->likeDTO->item}.{$this->likeDTO->itemId}"),
         ];
     }
     
@@ -47,6 +42,8 @@ class NewLike implements ShouldBroadcastNow
     
     public function broadcastWith()
     {
-        return $this->likeArray;
+        return [
+            'like' => new LikeResource($this->likeDTO->like)
+        ];
     }
 }

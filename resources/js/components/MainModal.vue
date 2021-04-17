@@ -27,7 +27,10 @@
                 <div class="main-other" v-if="computedMainOther">
                     <slot name="main-other"></slot>
                 </div>
-                <div class="requests" v-if="!loading && requests">
+                <div class="requests" 
+                    v-if="!loading && requests"
+                    :class="{alone: requestsAlone}"
+                >
                     <slot name="requests"></slot>
                 </div>
             </template>
@@ -71,6 +74,10 @@ import FadeRight from "./transitions/FadeRight";
                 default: false,
             },
             requests: {
+                type: Boolean,
+                default: true,
+            },
+            requestsAlone: {
                 type: Boolean,
                 default: true,
             },
@@ -203,6 +210,7 @@ $modal-margin-height: (100vh - $modal-height)/2;
                 cursor: pointer;
                 text-align: end;
                 padding: 0 10px 0 0;
+                z-index: 1000;
 
                 &:hover{
                     color: rgba(255, 0, 0, 0.603);
@@ -289,10 +297,14 @@ $modal-margin-height: (100vh - $modal-height)/2;
             background: black;
         }
 
-        .requests{
-            overflow-x: hidden;
-            overflow-y: auto;
-            height: 85vh;
+        .requests{ 
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 10px 10px 40px;
+
+            &.alone{
+                padding: 40px 10px 50px;
+            }
         }
     }
 

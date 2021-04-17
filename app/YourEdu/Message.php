@@ -3,13 +3,15 @@
 namespace App\YourEdu;
 
 use App\User;
+use Database\Factories\MessageFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Message extends Model
 {
-    //
-    use SoftDeletes;
+    use SoftDeletes,
+        HasFactory;
 
     protected $fillable = [
         'from_user_id','to_user_id','state','message','user_deletes','updated_at'
@@ -78,5 +80,10 @@ class Message extends Model
     public function flags()
     {
         return $this->morphMany(Flag::class,'flaggable');
+    }
+
+    protected static function newFactory()
+    {
+        return MessageFactory::new();
     }
 }

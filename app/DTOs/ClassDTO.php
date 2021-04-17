@@ -6,7 +6,7 @@ use App\Contracts\ItemDataContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class ClassDTO implements ItemDataContract
+class ClassDTO extends ItemDataContract
 {
     public string | null $name;
     public bool | null $facilitate;
@@ -28,14 +28,13 @@ class ClassDTO implements ItemDataContract
     public string | null $account;
     public string | null $accountId;
     public string | null $description;
-    public string | null $type;
     public ?string $methodType = null;
     public ?string $method = null;
     public ?Model $addedby = null;
     public ?Model $ownedby = null;
     public string | null $state;
-    public array | null $paymentData;
-    public array | null $removedPaymentData;
+    public ?PaymentDTO $paymentDTO = null;
+    public ?PaymentDTO $removedPaymentDTO = null;
     public int | null $userId;
 
 
@@ -62,16 +61,18 @@ class ClassDTO implements ItemDataContract
         $self->userId = (int) $request->user()->id;
         $self->description = $request->description;
         $self->state = $request->state;
-        $self->type = $request->type;
         $self->facilitate = json_decode($request->facilitate);
         $self->items = is_null($request->items) ? [] : 
             json_decode($request->items);
         $self->removedItems = is_null($request->removedItems) ? [] : 
             json_decode($request->removedItems);
-        $self->removedPaymentData = is_null($request->removedPaymentData) ? [] : 
-            json_decode($request->removedPaymentData);
-        $self->paymentData = is_null($request->paymentData) ? [] : 
-            json_decode($request->paymentData);
+        $self->removedPaymentDTO = static::createPaymentDTOForRemovedPayments(
+            $request->removedPaymentData
+        );
+        $self->paymentDTO = static::createPaymentDTOForPayments(
+            $request->paymentType,
+            $request->paymentData
+        );
         $self->discussionData = json_decode($request->discussionData);
         $self->discussionFiles = !$request->hasFile('discussionFile') ? [] : 
             $request->file('discussionFile');

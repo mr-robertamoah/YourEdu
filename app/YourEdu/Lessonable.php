@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\LessonableFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,6 +31,6 @@ class Lessonable extends Model
 
     protected static function newFactory()
     {
-        
+        return LessonableFactory::new();
     }
 }

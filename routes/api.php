@@ -50,6 +50,9 @@ Route::get('/testing', [AuthController::class,'test']);
 Route::get('/profile/{account}/{accountId}', [ProfileController::class,'profileGet'])
     ->middleware(['CheckAccount']);
 
+Route::get('/items/search', [DashboardController::class,'searchItems']);
+Route::get('/assessment/{assessmentId}/work', [AssessmentController::class,'getWork']);
+
 Route::get('/posts', [PostController::class,'posts']);
 Route::get('/posts/{account}/{accountId}', [PostController::class,'postsGet'])
 ->middleware(['CheckAccount']);
@@ -58,8 +61,8 @@ Route::get('/{item}/{itemId}', [DashboardController::class,'itemGet'])
     ->where('item','discussion|post|comment|answer|question|activity|poem|riddle|lesson')
     ->where('itemId','[0-9]+');
 
-Route::get('/comment/{comment}', [CommentController::class,'commentGet']);
-Route::get('/{item}/{itemId}/comments/', [CommentController::class,'commentsGet'])
+Route::get('/comment/{commentId}', [CommentController::class,'getComment']);
+Route::get('/{item}/{itemId}/comments/', [CommentController::class,'getComments'])
 ->middleware(['CheckItem']);
 
 Route::get('/answer/{answerId}/marks', [MarkController::class,'getAnswerMarks']);
@@ -183,9 +186,11 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('/user/request/response', [RequestController::class,'schoolRelatedResponse']);
     Route::post('/request/{requestId}/message', [RequestController::class,'sendMessage']);
     Route::get('/request/{requestId}/messages', [RequestController::class,'getMessages']);
-    Route::post('/request/message/delete', [RequestController::class,'deleteMessage']);
+    Route::delete('/request/message/{messageId}', [RequestController::class,'deleteMessage']);
     Route::get('/request/accounts/search', [RequestController::class,'searchAccounts']);
-    Route::post('/request/accounts/send', [RequestController::class,'sendAccountsRequest']);
+    Route::post('/request/account/send', [RequestController::class,'createAccountRequests']);
+    Route::post('/request/account/respond', [RequestController::class,'createAccountResponse']);
+    Route::get('/request/items/search', [RequestController::class,'searchItems']);
 
     Route::get('/user', [AuthController::class,'getUser']);
     Route::get('/user/search', [AuthController::class,'searchUser']);
@@ -216,32 +221,27 @@ Route::group(['middleware' => 'auth:api'], function () {
     ->middleware(['CheckAccount']);
     Route::delete('/follow/{follow}',[FollowController::class,'unfollow']);
     
-    Route::post('/like/{like}', [LikeController::class,'likeDelete']);
-    Route::post('/{item}/{itemId}/like', [LikeController::class,'likeCreate'])
-    ->middleware(['CheckItem']);
+    Route::delete('/like/{likeId}', [LikeController::class,'deleteLike']);
+    Route::post('/like', [LikeController::class,'createLike']);
     
-    Route::post('/save/{save}', [SaveController::class,'saveDelete']);
-    Route::post('/{item}/{itemId}/save', [SaveController::class,'saveCreate'])
-    ->middleware(['CheckItem']);
+    Route::delete('/save/{saveId}', [SaveController::class,'deleteSave']);
+    Route::post('/save', [SaveController::class,'createSave']);
     
-    Route::post('/flag/{flag}', [FlagController::class,'flagDelete']);
-    Route::post('/{item}/{itemId}/flag', [FlagController::class,'flagCreate'])
-    ->middleware(['CheckItem']);
+    Route::delete('/flag/{flagId}', [FlagController::class,'deleteFlag']);
+    Route::post('/flag', [FlagController::class,'createFlag']);
 
     Route::post('/{answer}/{answerId}/mark', [MarkController::class,'markCreate']);
 
     Route::post('/{media}/{mediaId}/change', [ProfileController::class,'profileMediaChange']);
     Route::post('/{media}/{mediaId}/delete', [ProfileController::class,'profileMediaDelete'])    
         ->where('media', 'image|video|audio');
-;
+
     Route::get('/{requestAccount}/{requestAccountId}/{media}/private', [ProfileController::class,'profilePrivateMediasGet']);
     
-    Route::post('/comment/{comment}', [CommentController::class,'commentEdit'])
-    ->middleware(['CheckAccount','OwnComment']);
-    Route::post('/comment/{comment}/delete', [CommentController::class,'commentDelete'])
-    ->middleware(['OwnComment']);
-    Route::post('/{item}/{itemId}/comment', [CommentController::class,'commentCreate'])
-    ->middleware(['CheckItem']);
+    Route::put('/comment/{commentId}', [CommentController::class,'updateComment'])
+    ->middleware(['CheckAccount']);
+    Route::delete('/comment/{commentId}', [CommentController::class,'deleteComment']);
+    Route::post('/comment', [CommentController::class,'createComment']);
 
     Route::post('/answer/{answer}', [AnswerController::class,'answerEdit'])
     ->middleware(['OwnAnswer']);

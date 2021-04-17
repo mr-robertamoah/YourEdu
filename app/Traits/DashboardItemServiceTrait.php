@@ -3,22 +3,20 @@
 namespace App\Traits;
 
 use App\Contracts\ItemDataContract;
+use App\DTOs\ActivityTrackDTO;
 use App\DTOs\DiscussionDTO;
-use App\Exceptions\AccountNotFoundException;
+use App\DTOs\PaymentDTO;
 use App\Exceptions\DashboardItemServiceTraitException;
 use App\Services\ActivityTrackService;
 use App\Services\CourseService;
 use App\Services\DiscussionService;
-use App\Services\FeeService;
 use App\Services\GradeService;
-use App\Services\PriceService;
+use App\Services\PaymentService;
 use App\Services\ProgramService;
 use App\Services\SubjectService;
-use App\Services\SubscriptionService;
 use App\YourEdu\Admin;
 use App\YourEdu\PostAttachment;
 use Illuminate\Support\Str;
-use \Debugbar;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
@@ -27,6 +25,8 @@ use Illuminate\Support\Collection;
  */
 trait DashboardItemServiceTrait
 {
+    use ServiceTrait;
+
     private function setDtoOwnedby
     (
         $dto,
@@ -67,7 +67,7 @@ trait DashboardItemServiceTrait
 
     private function doesntHaveAuthorization($item,$userId)
     {
-        $ids = $item->ownedby ? $item->ownedby->authorizedIds() : [];
+        $ids = $item->ownedby ? $item->ownedby->getAuthorizedIds() : [];
 
         array_push($ids, ...$item->getAuthorizedUserIds(onlyMain: true));
 
@@ -100,10 +100,12 @@ trait DashboardItemServiceTrait
         $admin = $this->getModel('admin',$dto->adminId);
         
         (new ActivityTrackService())->trackActivity(
-            $item,
-            $item->ownedby,
-            $admin,
-            $dto->method
+            ActivityTrackDTO::createFromData(
+                activity: $item,
+                activityfor: $item->ownedby,
+                performedby: $admin,
+                action: $dto->method
+            )
         );
     }
 
@@ -112,68 +114,20 @@ trait DashboardItemServiceTrait
      */
     private function setPayment
     (
-        $item,
-        $addedby,
-        $paymentType,
-        $paymentData,
-        $academicYears = []
+        PaymentDTO $paymentDTO
     )
     {
-        if ($paymentType == 'price') {
-            foreach ($paymentData as $priceData) {
-                PriceService::set($item,$priceData,$addedby);
-            }
-        } 
-        
-        if ($paymentType == 'fee') {
-            foreach ($paymentData as $feeData) {
-                FeeService::set(
-                    $item,
-                    [
-                        'amount' => $feeData->amount,
-                        'sections' => $feeData->sections ?? [],
-                        'academicYears' => $academicYears
-                    ],
-                    $addedby
-                );
-            }
-        } 
-        
-        if ($paymentType == 'subscription') {
-            foreach ($paymentData as $subscriptionData) {
-                SubscriptionService::set($item,$subscriptionData,$addedby);
-            }
+        if (is_null($paymentDTO)) {
+            return;
         }
+        PaymentService::setMultiplePaymentOnItemBasedOnPaymentType($paymentDTO);
 
-        return $item->refresh();
+        return $paymentDTO->dashboardItem?->refresh();
     }
 
-    private function removePayment($item,$paymentData)
+    private function removePayment(PaymentDTO $paymentDTO)
     {
-        if (!is_array($paymentData)) {
-            return $item;
-        }
-        foreach ($paymentData as $data) {
-            switch ($data->type) {
-                case 'price':
-                    PriceService::unset($item,$data->id);
-                    break;
-                
-                case 'subscription':
-                    SubscriptionService::unset($item,$data->id);
-                    break;
-            
-                case 'fee':
-                    FeeService::unset($item,$data->id);
-                    break;
-                    
-                default:
-                    # code...
-                    break;
-            }
-        }
-
-        return $item->refresh();
+        PaymentService::unsetMultiplePaymentFromItemBasedOnIndividualTypes($paymentDTO);
     }
 
     /**
@@ -357,16 +311,6 @@ trait DashboardItemServiceTrait
                 data: $dto
             );
         }
-    }
-
-    private function getModel($account, $accountId)
-    {
-        $mainAccount = getYourEduModel($account,$accountId);
-            if (is_null($mainAccount)) {
-                throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-            }
-
-        return $mainAccount;
     }
 
     private function checkItemOwnership

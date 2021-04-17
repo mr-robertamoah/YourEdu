@@ -49,8 +49,10 @@ class ClassTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -86,10 +88,16 @@ class ClassTest extends TestCase
                     'id' => $academicYear->id
                 ]
             ]),
-            'type' => 'fee',
+            'paymentType' => 'fee',
             'paymentData' => json_encode([
                 (object) [
                     'amount' => '400',
+                    'feeables' => [
+                        (object) [
+                            'type' => 'academicYear',
+                            'id' => $academicYear->id,
+                        ]
+                    ]
                 ]
             ]),
             'owner' => $school->accountType,
@@ -113,6 +121,7 @@ class ClassTest extends TestCase
             ->assertSuccessful();
 
         $this->assertEquals(1, $response['class']['discussions']);
+        $this->assertEquals(1, count($response['class']['fees']));
 
         Notification::assertNotSentTo($this->user, 
             ClassCreatedNotification::class
@@ -127,7 +136,10 @@ class ClassTest extends TestCase
         Event::fake();
         $account = Facilitator::factory()
             ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -192,16 +204,22 @@ class ClassTest extends TestCase
                     'id' => $academicYears->first()->id
                 ]
             ]),
-            'type' => 'fee',
+            'paymentType' => 'fee',
             'paymentData' => json_encode([
                 (object) [
                     'amount' => '400',
+                    'feeables' => [
+                        (object) [
+                            'type' => 'academicYear',
+                            'id' => $academicYears->last()->id,
+                        ]
+                    ]
                 ]
             ]),
             'removedPaymentData' => json_encode([
                 (object) [
                     'type' => 'fee',
-                    'type' => $fee->id,
+                    'id' => $fee->id,
                 ]
             ]),
             'discussionData' => json_encode(
@@ -223,6 +241,7 @@ class ClassTest extends TestCase
 
         $this->assertEquals('edited', $response['class']['name']);
         $this->assertEquals(1, $response['class']['discussions']);
+        $this->assertEquals(1, count($response['class']['fees']));
         
         Notification::assertNotSentTo($this->user, 
             ClassUpdatedNotification::class
@@ -237,7 +256,10 @@ class ClassTest extends TestCase
         Event::fake();
         $account = Facilitator::factory()
             ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -299,7 +321,10 @@ class ClassTest extends TestCase
         Event::fake();
         $account = Facilitator::factory()
             ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -363,8 +388,10 @@ class ClassTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()
@@ -436,8 +463,10 @@ class ClassTest extends TestCase
         Notification::fake();
         Event::fake();
         $account = Facilitator::factory()
-            ->state(['name' => $this->faker->name])
-            ->for($this->user)
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
             ->create();
 
         $school = School::factory()

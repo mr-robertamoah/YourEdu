@@ -16,12 +16,17 @@ class Fee extends Model
         'class_id', 'amount'
     ];
 
-    public function feeable()
+    public function feeables()
+    {
+        return $this->hasMany(Feeable::class);
+    }
+
+    public function addedby()
     {
         return $this->morphTo();
     }
 
-    public function addedby()
+    public function ownedby()
     {
         return $this->morphTo();
     }

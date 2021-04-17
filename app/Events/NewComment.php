@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\CommentResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,19 +16,14 @@ class NewComment implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $newArray;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($commentArray)
+    public function __construct(private $commentDTO)
     {
-        $this->newArray['comment'] = $commentArray['comment'];
-        $this->newArray['item'] = $commentArray['item'];
-        $this->newArray['itemId'] = $commentArray['itemId'];
-        $this->newArray['account'] =  class_basename_lower(get_class($commentArray['commentable_owner']));
-        $this->newArray['accountId'] = $commentArray['commentable_owner']->id;
+        
     }
 
     /**
@@ -39,13 +35,21 @@ class NewComment implements ShouldBroadcastNow
     {
         $broadcastOn = [
             new Channel('youredu.home'),
-            new Channel("youredu.{$this->newArray['account']}.{$this->newArray['accountId']}"),
         ];
-        if ($this->newArray['item'] === 'class') {
-            $broadcastOn[] = new PrivateChannel("youredu.{$this->newArray['item']}.{$this->newArray['itemId']}");
-        } else {
-            $broadcastOn[] = new Channel("youredu.{$this->newArray['item']}.{$this->newArray['itemId']}");
+
+        if ($this->commentDTO->item) {
+            $channel = 'Illuminate\Broadcasting\Channel';
+            if ($this->commentDTO->item === 'class') {
+                $channel = 'Illuminate\Broadcasting\PrivateChannel';
+            }
+
+            $broadcastOn[] = new $channel("youredu.{$this->commentDTO->item}.{$this->commentDTO->itemId}");
+        } 
+        
+        if ($this->commentDTO->account) {
+            $broadcastOn[] = new Channel("youredu.{$this->commentDTO->account}.{$this->commentDTO->accountId}");
         }
+
         return $broadcastOn;
     }
     
@@ -56,6 +60,10 @@ class NewComment implements ShouldBroadcastNow
     
     public function broadcastWith()
     {
-        return $this->newArray;
+        return [
+            'item' => $this->commentDTO->item,
+            'itemId' => $this->commentDTO->itemId,
+            'comment' => new CommentResource($this->commentDTO->comment->refresh()),
+        ];
     }
 }

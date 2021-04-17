@@ -229,10 +229,10 @@
                                             :key="index"
                                             :item="item"
                                             type="class"
-                                            :hasRemove="inClassesSelection(item)"
+                                            :hasRemove="inItemsSelection(item)"
                                             class="class-badge"
-                                            @clickedItem="classSelected"
-                                            @clickedRemoveItem="removeClass"
+                                            @clickedItem="itemSelected"
+                                            @clickedRemoveItem="removeItem"
                                         ></item-badge>
                                     </div>
                                     <div class="no-data"
@@ -315,7 +315,7 @@
                                     v-if="computedShowPayment"
                                     @paymentType="getPaymentType"
                                     :type="paymentType"
-                                    :radioValue="data.type"
+                                    :radioValue="data.paymentType"
                                     class="other-input"
                                     @paymentTypeError="error"
                                 ></payment-types>
@@ -526,27 +526,26 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 this.checkDiscussion(data)
                 //todo hassections and sections and remove sections
             },
-            //classes
-            inClassesSelection(data) {
-                let index = this.findClassIndex(data)
+            inItemsSelection(data) {
+                let index = this.findItemIndex(data)
                 if (index > -1) {
                     return true
                 }
                 return false
             },
-            classSelected(data) {
-                let index = this.findClassIndex(data)
+            itemSelected(data) {
+                let index = this.findItemIndex(data)
                 if (index === -1) {
                     this.data.items.push(data)
                 }
             },
-            findClassIndex(data) {
+            findItemIndex(data) {
                 return this.data.items.findIndex(cl=>{
                     return cl.id === data.id 
                 })
             },
-            removeClass(data) {
-                let index = this.findClassIndex(data)
+            removeItem(data) {
+                let index = this.findItemIndex(data)
                 if (index > -1) {
                     this.data.items.splice(index,1)
                 }
@@ -663,7 +662,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             this.computedPossibleOwners.length > 1 && 
                             !this.data.owner.account) {
                             msg = 'Please select the owner of this course you are creating.'
-                        } else if (this.data.type !== 'free' && 
+                        } else if (this.data.paymentType !== 'free' && 
                             this.data.paymentData === null) {
                             msg = 'Please enter the required data for the payment.'                    
                         }
@@ -691,7 +690,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                 data.append('standAlone', JSON.stringify(this.standAlone)) 
                 data.append('paymentData', JSON.stringify(this.data.paymentData)) 
                 data.append('sections', JSON.stringify(this.sections)) 
-                data.append('type', this.data.type)
+                data.append('paymentType', this.data.paymentType)
 
                 data.append('items', JSON.stringify(this.data.items.map(cl=>{
                     return {
@@ -821,7 +820,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $color-primary;
             border-radius: 0;
         }
 

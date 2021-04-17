@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\AdminService;
+use App\Services\AdministrationService;
 use App\User;
 use App\YourEdu\AcademicYear;
 use App\YourEdu\AcademicYearSection;
@@ -76,6 +76,15 @@ function class_basename_lower(Model | string $class)
     }
 
     return strtolower(substr($string,0,1)) . substr($string,1);
+}
+
+/**
+ * check if an item is not null
+ * opposite of is_null
+ */
+function is_not_null($item)
+{
+    return !is_null($item);
 }
 
 function getAccountClass($string)

@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\FeeTrait;
 use Database\Factories\AcademicYearFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class AcademicYear extends Model
 {
     //
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, 
+        HasFactory,
+        FeeTrait;
 
     protected $fillable = [
         'start_date','end_date','description', 'name', 'state'

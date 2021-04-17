@@ -3,31 +3,57 @@
 namespace App\Services;
 
 use App\Contracts\PaymentTypeContract;
+use App\DTOs\PriceDTO;
 use App\Exceptions\AccountNotFoundException;
+use App\Exceptions\PriceException;
+use App\Traits\ServiceTrait;
 use Illuminate\Support\Str;
 
-class PriceService extends PaymentTypeContract
+class PriceService
 {   
-    public static function set($item,$priceData,$ownedby)
+    use ServiceTrait;
+
+    public static function set(PriceDTO $priceDTO)
     {
-        //the owned by is actually added by
-        $price = $item->prices()->create([
-            'amount' => $priceData->amount,
-            'description' => $priceData->description ?? '',
-            'for' => Str::upper($priceData->for ?? 'ALL')
+        $price = $priceDTO->dashboardItem->prices()->create([
+            'amount' => $priceDTO->amount,
+            'description' => $priceDTO->description ?? '',
+            'for' => Str::upper($priceDTO->for ?? 'ALL')
         ]);
-        $price->ownedby()->associate($ownedby);
+
+        (new static)->checkPrice($price, $priceDTO);
+
+        $price->ownedby()->associate($priceDTO->addedby);
         $price->save();
+
+        return $price;
     }
 
-    public static function unset($item,$priceId)
+    private function checkPrice($price, $priceDTO)
     {
-        $price = getYourEduModel('price', $priceId);
-        if (is_null($price)) {
-            throw new AccountNotFoundException("price not found with id {$priceId}");
+        if (!is_null($price)) {
+            return;
         }
 
-        $price->priceable()->dissociate($item);
+        $this->throwPriceException(
+            message: 'failed to create price',
+            data: $priceDTO
+        );
+    }
+
+    private function throwPriceException($message, $data = null)
+    {
+        throw new PriceException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    public static function unset(PriceDTO $priceDTO)
+    {
+        $price = (new static)->getModel('price', $priceDTO->priceId);
+        
+        $price->priceable()->dissociate($priceDTO->dashboardItem);
         $price->delete();
     }
 }

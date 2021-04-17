@@ -1,6 +1,6 @@
 <template>
     <div class="welcome-form">
-        <div class="title">
+        <div class="title" :class="{'title-badge': titleBadge}">
             {{title}}
         </div>
         <div class="form-section">
@@ -19,6 +19,10 @@
             title: {
                 type: String,
                 default: ''
+            },
+            titleBadge: {
+                type: Boolean,
+                default: false
             },
         },
         data() {
@@ -51,6 +55,16 @@ $input-color: rgba(22, 233, 205, 1);
             margin: 0 auto 20px;
             text-transform: capitalize;
             text-align: center;
+        }
+
+        .title-badge{
+            padding: 5px;
+            max-width: 140%;
+            margin: 10px 10% 10px -20%;
+            width: 1000px;
+            background: aquamarine;
+            color: gray;
+            font-size: 14px;
         }
 
         .form-section{
@@ -123,19 +137,35 @@ $input-color: rgba(22, 233, 205, 1);
 
 @media screen and (max-width:800px) {
     .welcome-form{
-        width: 80%;
+        width: 80%;        
+
+        .title-badge{
+            max-width: 130%;
+            margin: 10px 7% 10px -15%;
+        }
     }
 }
 
 @media screen and (max-width:600px) {
     .welcome-form{
-        width: 90%;
+        width: 90%;      
+
+        .title-badge{
+            max-width: 120%;
+            margin: 10px 5% 10px -10%;
+        }
     }
 }
 
 @media screen and (max-width:400px) {
     .welcome-form{
-        
+        width: 100%;      
+
+        .title-badge{
+            max-width: 100%;
+            margin: 10px 0;
+        }
+
         .form-section{
 
             .buttons{

@@ -15,7 +15,7 @@ class CreateCommissionsTable extends Migration
     {
         Schema::create('commissions', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('for');
+            $table->nullableMorphs('addedby');
             $table->nullableMorphs('ownedby');
             $table->float('percent',7,4)->nullable();
             $table->timestamps();

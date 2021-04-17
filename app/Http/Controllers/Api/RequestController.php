@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\MessageDTO;
+use App\DTOs\RequestDTO;
+use App\DTOs\RequestSearchDTO;
+use App\DTOs\ResponseDTO;
 use App\Events\DeleteRequestMessage;
 use App\Events\NewRequestMessage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MessageRequest;
+use App\Http\Resources\DashboardItemMiniResource;
 use App\Http\Resources\DashboardSchoolRequestResource;
 use App\Http\Resources\OwnedProfileResource;
 use App\Http\Resources\RequestMessageResource;
@@ -16,6 +21,7 @@ use App\Services\RequestService;
 use Illuminate\Http\Request;
 use \Debugbar;
 use Illuminate\Support\Facades\DB;
+use phpseclib\Crypt\RC2;
 
 class RequestController extends Controller
 {
@@ -23,38 +29,55 @@ class RequestController extends Controller
 
     public function searchAccounts(Request $request)
     {
-        $data = (new RequestService())->searchAccounts($request->account,
-            $request->search,$request->type,$request->account2);
+        $data = (new RequestService())->searchAccounts(
+            RequestSearchDTO::createFromRequest($request)
+        );
         
+        ray($data)->green();
         return UserAndProfileResource::collection(paginate($data,10));
     }
 
-    public function sendAccountsRequest(Request $request)
+    public function searchItems(Request $request)
     {
-        dd($request);
+        $data = (new RequestService())->searchItems(
+            RequestSearchDTO::createFromRequest($request)
+        );
+        
+        ray($data)->green();
+        return DashboardItemMiniResource::collection($data);
+    }
+
+    public function createAccountRequests(Request $request)
+    {
         try {
             DB::beginTransaction();
-            $accountsRequest = (new RequestService())->sendAccountRequest(
-                $request->from,$request->fromId,$request->to,$request->toId,$request->item,
-                $request->itemId,[
-                    'title' => $request->title,
-                    'ward' => $request->ward,
-                    'wardId' => $request->wardId,
-                    'adminId' => $request->adminId,
-                    'level' => $request->level,
-                    'salary' => $request->salary,
-                    'salaryPeriod' => $request->salaryPeriod,
-                    'currency' => $request->currency,
-                    'commission' => $request->commission,
-                    'description' => $request->description,
-                    'attachments' => json_decode($request->attachments),
-                ],$request->file('files') ?? [],$request->what
+            (new RequestService())->createAccountRequests(
+                RequestDTO::createFromRequest($request)
             );
 
-            // DB::commit();
+            DB::commit();
             return response()->json([
                 'message' => 'successful',
-                'request' => $accountsRequest
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function createAccountResponse(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            (new RequestService())->createAccountResponse(
+                ResponseDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+            
+            return response()->json([
+                'message' => 'successful',
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -141,17 +164,23 @@ class RequestController extends Controller
         try {
             DB::beginTransaction();
 
-            $message = (new RequestService())->sendMessage($requestId,
-                $request->account,$request->accountId,auth()->id(),$request->message,
-                'sent',$request->file('file'));
+            $message = (new RequestService)->sendMessage(
+                MessageDTO::createFromRequest($request)
+                    ->addData(
+                        item: 'request',
+                        itemId: $requestId,
+                        state: 'sent',
+                    )
+                    ->addFile(
+                        $request->file('file')
+                    )
+            );
 
             DB::commit();
-            $messageResource =  new RequestMessageResource($message);
-            broadcast(new NewRequestMessage(
-               $messageResource,$requestId))->toOthers();
+
             return response()->json([
                 'message' => 'successful',
-                'requestMessage' =>  $messageResource
+                'requestMessage' =>  new RequestMessageResource($message)
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -162,17 +191,20 @@ class RequestController extends Controller
         }
     }
     
-    public function deleteMessage(Request $request)
+    public function deleteMessage(MessageRequest $request, $messageId)
     {
         try {
             DB::beginTransaction();
 
-            $message = (new MessageService())
-                    ->deleteMessage(auth()->id(),$request->messageId,'delete',false);
+            (new RequestService)->deleteMessage(
+                MessageDTO::createFromRequest($request)->addData(
+                    action: 'delete',
+                    messageId: $messageId
+                )
+            );
             
             DB::commit();
-            broadcast(new DeleteRequestMessage($message['itemId'], 
-                $request->requestId))->toOthers();
+            
             return response()->json([
                 'message' => 'successful'
             ]);

@@ -587,7 +587,7 @@ const actions = {
 
     async createComment({commit},mainData){
         commit('COMMENTING_START')
-        let response = await ProfileService.commentCreate(mainData)
+        let response = await ProfileService.createComment(mainData)
         commit('COMMENTING_END')
         if (response.data.message === 'successful') {
             if (mainData.data.where === 'dashboard') {
@@ -605,7 +605,7 @@ const actions = {
     },
     async deleteComment({commit},data){
         commit('COMMENTING_START')
-        let response = await ProfileService.commentDelete(data)
+        let response = await ProfileService.deleteComment(data)
 
         commit('COMMENTING_END')
         if (response.data.message === 'successful') {
@@ -624,7 +624,7 @@ const actions = {
     },
     async updateComment({commit},data){
         commit('COMMENTING_START')
-        let response = await ProfileService.commentUpdate(data)
+        let response = await ProfileService.updateComment(data)
 
         commit('COMMENTING_END')
         if (response.data.message === 'successful') {

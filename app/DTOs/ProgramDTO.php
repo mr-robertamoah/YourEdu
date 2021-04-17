@@ -6,7 +6,7 @@ use App\Contracts\ItemDataContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class ProgramDTO implements ItemDataContract
+class ProgramDTO extends ItemDataContract
 {
     public string | null $name;
     public bool | null $facilitate;
@@ -24,11 +24,10 @@ class ProgramDTO implements ItemDataContract
     public string | null $account;
     public string | null $accountId;
     public string | null $description;
-    public string | null $type;
     public string | null $state;
-    public array | null $paymentData;
     public array $aliases = [];
-    public array | null $removedPaymentData;
+    public ?PaymentDTO $paymentDTO = null;
+    public ?PaymentDTO $removedPaymentDTO = null;
     public int | null $userId;
     public ?Model $addedby = null;
     public ?Model $ownedby = null;
@@ -50,7 +49,6 @@ class ProgramDTO implements ItemDataContract
         $self->userId = (int) $request->user()->id;
         $self->description = $request->description;
         $self->state = $request->state;
-        $self->type = $request->type;
         $self->facilitate = json_decode($request->facilitate);
         $self->aliases = $request->aliases ?
             json_decode($request->aliases) : [];
@@ -62,10 +60,13 @@ class ProgramDTO implements ItemDataContract
             json_decode($request->attachments) : [];
         $self->removedAttachments = $request->removedAttachments ?
             json_decode($request->removedAttachments) : [];
-        $self->removedPaymentData = $request->removedPaymentData ?
-            json_decode($request->removedPaymentData) : [];
-        $self->paymentData = $request->paymentData ?
-            json_decode($request->paymentData) : [];
+        $self->removedPaymentDTO = static::createPaymentDTOForRemovedPayments(
+            $request->removedPaymentData
+        );
+        $self->paymentDTO = static::createPaymentDTOForPayments(
+            $request->paymentType,
+            $request->paymentData
+        );
         $self->discussionData = $request->discussionData ?
             json_decode($request->discussionData) : null;
         $self->discussionFiles = $request->file('discussionFile');

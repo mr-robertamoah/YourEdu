@@ -35,8 +35,7 @@ trait DashboardItemTrait
 
         if (!$authority) {            
             if ($this->learners && !$onlyMain) {
-                array_push($userIds,...$this->learners->pluck('user_id')->toArray());
-                array_push($userIds,...$this->learners()->with('parents')->get()->pluck('parents.user_id')->toArray());
+                $this->getAuthorizedLearnerUserIds();
             }
 
             if ($this->facilitators) {
@@ -91,6 +90,16 @@ trait DashboardItemTrait
         return array_unique($userIds);
     }
 
+    public function getAuthorizedLearnerUserIds()
+    {
+        $userIds = [];
+
+        array_push($userIds,...$this->learners->pluck('user_id')->toArray());
+        array_push($userIds,...$this->learners()->with('parents')->get()->pluck('parents.user_id')->toArray());
+
+        return array_unique($userIds);
+    }
+
     public function usesFacilitationDetail()
     {
         $item = class_basename_lower($this);
@@ -140,7 +149,7 @@ trait DashboardItemTrait
         return $this->discussions->first();
     }
 
-    public function scopeSearchItems($query,$search)
+    public function scopeSearchItems($query, $search)
     {
         return $query->where(function($q) use ($search){
             $q->where('name','like',"%$search%")
@@ -183,9 +192,24 @@ trait DashboardItemTrait
 
     public function scopeWhereOwnedby($query, $account)
     {
-        return $query
-            ->where('ownedby_type', $account::class)
+        return $query->where(function($query) use ($account) {
+            $query->where('ownedby_type', $account::class)
             ->where('ownedby_id', $account->id);
+        });
+    }
+
+    public function scopeWhereNotOwnedbyBasedOnUserId($query, $userId)
+    {
+        return $query->where(function($query) use ($userId) {
+            $query->whereHasMorph('ownedby', '*', function($query, $type) use ($userId) {
+                $column = 'user_id';
+                if ($type === 'App\\YourEdu\\School') {
+                    $column = 'owner_id';
+                }
+
+                $query->where($column,'!=',$userId);
+            });
+        });
     }
     
     public function allFiles()

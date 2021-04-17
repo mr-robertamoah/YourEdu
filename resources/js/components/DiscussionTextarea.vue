@@ -24,7 +24,8 @@
             </template>
         </just-fade>
         <div class="bottom" v-if="!blocked">
-            <div class="attachments" 
+            <div class="attachments"
+                v-if="!request"
             >
                 <div class="emoji" 
                     @click="clickedEmoji"
@@ -198,7 +199,7 @@ import { files } from '../services/helpers';
                 if (newValue.length && !this.typignState) {
                     this.typingState = true
                     if (this.typingClock) {
-                        clearTimeout()
+                        clearTimeout(this.typingClock)
                     }
                     this.typingClock = setTimeout(() => {
                         this.typingState = false

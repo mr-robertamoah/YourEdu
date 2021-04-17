@@ -2,8 +2,12 @@
 
 namespace App\Services;
 
-use App\Exceptions\AccountNotFoundException;
+use App\DTOs\ActivityTrackDTO;
+use App\DTOs\SaveDTO;
+use App\Events\DeleteSave;
+use App\Events\NewSave;
 use App\Exceptions\SaveException;
+use App\Traits\ServiceTrait;
 use App\YourEdu\Answer;
 use App\YourEdu\Comment;
 use App\YourEdu\Discussion;
@@ -13,60 +17,163 @@ use Illuminate\Database\Eloquent\Collection;
 
 class SaveService
 {
-    public function saveCreate($account,$accountId,$item, $itemId,$id,$adminId)
+    use ServiceTrait;
+
+    public function createSave(SaveDTO $saveDTO)
     {
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-        }
+        $saveDTO = $this->setSavedby($saveDTO);
 
-        $mainItem = getYourEduModel($item,$itemId);
-        if (is_null($mainItem)) {
-            throw new AccountNotFoundException("{$item} not found with id {$itemId}");
-        }
+        $saveDTO = $this->setSaveable($saveDTO);
 
-        $save = $mainAccount->savesMade()->create([
-            'user_id' => $id
-        ]);
+        $save = $this->makeSave($saveDTO);
 
-        $save->saveable()->associate($mainItem);
-        $save->save();
+        $saveDTO = $saveDTO->withSave($save);
+
+        $save = $this->associateSaveToItem($saveDTO);
         
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $save,$save->savedby,$admin,__METHOD__
-                );
-            }
-        }
+        $saveDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($saveDTO);
+
+        $saveDTO = $this->setItemForBroadcast($saveDTO);
+
+        $saveDTO->methodType = 'created';
+        $this->broadcastSave($saveDTO);
 
         return $save;
     }
 
-    public function saveDelete($saveId,$id,$adminId)
-    {        
-        $save = getYourEduModel('save',$saveId);
-        if (is_null($save)) {
-            throw new AccountNotFoundException("save not found with id {$saveId}");
+    private function setItemForBroadcast($saveDTO)
+    {
+        if ($saveDTO->item) {
+            return $saveDTO;
         }
-        if ($save->user_id !== $id) {
-            throw new SaveException('you cannot unsave a save you do not own.');
+
+        if ($saveDTO->saveable) {
+            $saveDTO->item = class_basename_lower($saveDTO->saveable);
+            $saveDTO->itemId = $saveDTO->saveable->id;
+            return $saveDTO;
         }
+
+        if (is_null($saveDTO->save)) {
+            return $saveDTO;
+        }
+
+        $saveDTO->item = class_basename_lower($saveDTO->save->saveable);
+        $saveDTO->itemId = $saveDTO->save->saveable->id;
+        return $saveDTO;
+    }
+
+    private function associateSaveToItem($saveDTO)
+    {
+        $saveDTO->save->saveable()->associate($saveDTO->saveable);
+        $saveDTO->save->save();
+
+        return $saveDTO->save;
+    }
+
+    private function makeSave($saveDTO)
+    {
+        return $saveDTO->savedby->savesMade()->create([
+            'user_id' => $saveDTO->userId
+        ]);
+    }
+
+    private function broadcastSave($saveDTO)
+    {
+        $event = $this->getEvent($saveDTO);
+
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($saveDTO)
+    {
+        if ($saveDTO->methodType === 'created') {
+            return new NewSave($saveDTO);
+        }
+
+        return new DeleteSave($saveDTO);
+    }
+
+    private function setSavedby($saveDTO)
+    {
+        if ($saveDTO->savedby) {
+            return $saveDTO;
+        }
+
+        return $saveDTO->withSavedby(
+            $this->getModel($saveDTO->account,$saveDTO->accountId)
+        );
+    }
+
+    private function setSaveable($saveDTO)
+    {
+        if ($saveDTO->saveable) {
+            return $saveDTO;
+        }
+
+        if ($saveDTO->save) {
+            return $saveDTO->withSaveable($saveDTO->save->saveable);
+        }
+
+        return $saveDTO->withSaveable(
+            $this->getModel($saveDTO->item,$saveDTO->itemId)
+        );
+    }
+
+    private function trackSchoolAdmin($saveDTO)
+    {
+        if (is_null($saveDTO->adminId)) {
+            return;
+        }
+
+        $admin = $this->getModel('admin',$saveDTO->adminId);
+
+        (new ActivityTrackService())->trackActivity(
+            ActivityTrackDTO::createFromData(
+                activity: $saveDTO->save,
+                activityfor: $saveDTO->save->savedby,
+                performedby: $admin,
+                action: $saveDTO->method
+            )
+        );
+    }
+
+    public function deleteSave(SaveDTO $saveDTO)
+    {
+        $save = $this->getModel('save',$saveDTO->saveId);
+
+        $saveDTO = $saveDTO->withSave($save);
         
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $save,$save->savedby,$admin, __METHOD__
-                );
-            }
-        }
+        $this->checkOwnerShip($saveDTO);
 
         $save->delete();
+        
+        $saveDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($saveDTO);
 
-        return "successful";
+        $this->setItemForBroadcast($saveDTO);
+
+        $saveDTO->methodType = 'deleted';
+        $this->broadcastSave($saveDTO);
     }
+
+    private function checkOwnership($saveDTO)
+    {
+        if ($saveDTO->save->user_id == $saveDTO->userId) {
+            return;
+        }
+
+        $this->throwSaveException('you cannot unsave a save you do not own.');
+    }
+
+    private function throwSaveException($message, $data = null)
+    {
+        throw new SaveException(
+            message: $message,
+            data: $data
+        );
+    }
+
 
     public function userSavedGet($type)
     {
@@ -124,5 +231,13 @@ class SaveService
             ->whereHas('beenSaved',function(Builder $query){
                 $query->where('user_id', auth()->id());
             })->latest()->get();
+    }
+
+    private function throwLikeException($message, $data = null)
+    {
+        throw new SaveException(
+            message: $message,
+            data: $data
+        );
     }
 }

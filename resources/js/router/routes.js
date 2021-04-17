@@ -6,6 +6,7 @@ import Welcome from "../views/Welcome.vue";
 import About from "../views/About.vue";
 import Profile from "../views/Profile.vue";
 import PostModal from "../components/PostModal.vue";
+import WorkAnsweringForm from "../components/forms/WorkAnsweringForm.vue";
 import DiscussionModal from "../components/DiscussionModal.vue";
 import ModalSwitcher from "../components/ModalSwitcher.vue";
 import ViewComments from "../components/ViewComments.vue";
@@ -25,7 +26,7 @@ const routes =  [
         path: '/login',
         component: Login,
         meta:{
-            requiresLoginNot:true
+            doesntRequireLoginNot:true
         }
     },
     {
@@ -33,7 +34,7 @@ const routes =  [
         path: '/register',
         component: Registration,
         meta:{
-            requiresLoginNot:true
+            doesntRequireLoginNot:true
         }
     },
     {
@@ -42,7 +43,14 @@ const routes =  [
         component: Dashboard,
         meta:{
             requiresLogin:true
-        }
+        },
+        children: [
+            {
+                path: 'work/:assessmentId',
+                component: WorkAnsweringForm,
+                name: 'work'
+            }
+        ]
     },
     {
         name: 'welcome',

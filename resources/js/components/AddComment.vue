@@ -343,17 +343,18 @@ import { strings } from '../services/helpers'
                 let response = null
                 if (this.edit) {
                     data = {
-                        itemId: this.editableData.id,
+                        commmentId: this.editableData.id,
                         where: this.$route.name,
                     }
+                    
                     response = await this['profile/updateComment']({data,formData})
                 } else {
                     data = {
                         onPostModal: this.onPostModal,
-                        item: this.what,
-                        itemId: this.id,
                         where: this.$route.name,
                     }
+                    formData.append('item', this.what),
+                    formData.append('itemId', this.id),
 
                     response = await this['profile/createComment']({data,formData})
                 }

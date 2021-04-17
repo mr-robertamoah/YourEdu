@@ -291,7 +291,7 @@ import { dates, strings } from '../services/helpers';
                                     isMessage: true,
                                     text: `your request to join discussion with title: ${notification.title.toUpperCase()} has been ${notification.action}`
                                 }
-                                alert.id = Math.floor(Math.random() * 100)
+                                alert.id = Math.floor(Math.random() * 10000)
                                 this.alerts.unshift(alert)
                                 this.clearAlert(alert.id)
                             } else if (notification.type === 'App\\Notifications\\DiscussionInvitationNotification') {
@@ -303,6 +303,18 @@ import { dates, strings } from '../services/helpers';
                                 }
                                 alert.id = Math.floor(Math.random() * 100)
                                 this.alerts.unshift(alert)
+                                this.clearAlert(alert.id)
+                            } else if (notification.type === 'App\\Notifications\\AccountRequestNotification') {
+                                this.requestNotifications.push(notification)
+
+                                let alert = {
+                                    isMessage: true,
+                                    text: notification.message,
+                                    account: notification.account,
+                                }
+                                alert.id = Math.floor(Math.random() * 10000)
+                                this.alerts.unshift(alert)
+                                this.newNotification = true
                                 this.clearAlert(alert.id)
                             } else if (notification.type === 'App\\Notifications\\DiscussionInvitationResponseNotification' ||
                                 notification.type === 'App\\Notifications\\UpdateParticipantStateNotification' ||
@@ -319,7 +331,7 @@ import { dates, strings } from '../services/helpers';
                                     account: notification.account,
                                     text: notification.message
                                 }
-                                alert.id = Math.floor(Math.random() * 100)
+                                alert.id = Math.floor(Math.random() * 10000)
                                 this.alerts.unshift(alert)
                                 this.clearAlert(alert.id)
                                 if (notification.admin && this.$route.name === 'dashboard') {                                    
@@ -357,7 +369,7 @@ import { dates, strings } from '../services/helpers';
                                     account: notification.account,
                                     text: notification.message
                                 }
-                                alert.id = Math.floor(Math.random() * 100)
+                                alert.id = Math.floor(Math.random() * 10000)
                                 this.alerts.unshift(alert)
                                 this.clearAlert(alert.id)
                             }  else if (notification.type === 'App\\Notifications\\BanNotification') {
@@ -374,9 +386,9 @@ import { dates, strings } from '../services/helpers';
                                     }
                                 } else if (notification.ban === 'UNSERVED' || notification.ban === 'RESOLVED') {
                                     if (notifcation.ban.username) {
-                                        message = `your ${action}ban with the due date of ${dates.dateReadable(notification.ban.dueDate)}, has been removed.`
+                                        message = `your ${action} ban with the due date of ${dates.dateReadable(notification.ban.dueDate)}, has been removed.`
                                     } else {
-                                        message = `the ${action}ban served to ${account} account, with due date of ${dates.dateReadable(notification.ban.dueDate)}, has been removed.`
+                                        message = `the ${action} ban served to ${account} account, with due date of ${dates.dateReadable(notification.ban.dueDate)}, has been removed.`
                                     }
                                 }
                                 
@@ -384,7 +396,7 @@ import { dates, strings } from '../services/helpers';
                                     isMessage: true,
                                     text: message
                                 }
-                                alert.id = Math.floor(Math.random() * 100)
+                                alert.id = Math.floor(Math.random() * 10000)
                                 this.alerts.unshift(alert)
                                 this.clearAlert(alert.id)
                             }
@@ -393,7 +405,7 @@ import { dates, strings } from '../services/helpers';
                         .listen('.newFollower', data=>{
                             console.log('data :>> ', data);
                             let alert = {}
-                            alert.id = Math.floor(Math.random() * 100)
+                            alert.id = Math.floor(Math.random() * 10000)
                             alert.account = {
                                 account: strings.getAccount(data.follower.followedby_type),
                                 accountId: data.follower.followedby_id,
@@ -412,7 +424,7 @@ import { dates, strings } from '../services/helpers';
                         .listen('.newDiscussionMessageResponse', data=>{
                             console.log('data :>> ', data);
                             let alert = {}
-                            alert.id = Math.floor(Math.random() * 100)
+                            alert.id = Math.floor(Math.random() * 10000)
                             alert.message = data.message
                             alert.isMessage = true
                             this.alerts.unshift(alert)

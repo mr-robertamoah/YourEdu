@@ -15,9 +15,9 @@ class CreateAdmissionsTable extends Migration
     {
         Schema::create('admissions', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('learner_id');
-            $table->morphs('admissionfrom'); // parent school
-            $table->morphs('admissionto'); // parent school
+            $table->unsignedBigInteger('learner_id')->nullable();
+            $table->unsignedBigInteger('school_id')->nullable();
+            $table->nullableMorphs('addedby'); // learner school
             $table->unsignedBigInteger('grade_id')->nullable();
             $table->enum('state',['PENDING','ACCEPTED','DECLINED'])->nullable();
             $table->enum('type',['TRADITIONAL','VIRTUAL'])->nullable();
@@ -25,6 +25,7 @@ class CreateAdmissionsTable extends Migration
             $table->timestamps();
 
             
+            $table->foreign('school_id')->references('id')->on('schools')->cascadeOnDelete();
             $table->foreign('learner_id')->references('id')->on('learners')->cascadeOnDelete();
             $table->foreign('grade_id')->references('id')->on('grades')->cascadeOnDelete();
         });

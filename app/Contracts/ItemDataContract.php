@@ -2,10 +2,17 @@
 
 namespace App\Contracts;
 
+use App\DTOs\FeeDTO;
+use App\DTOs\PaymentDTO;
+use App\DTOs\PriceDTO;
+use App\DTOs\SubscriptionDTO;
+use App\Traits\PaymentDTOTrait;
 use Illuminate\Http\Request;
 
-interface ItemDataContract
-{
+abstract class ItemDataContract
+{    
+    use PaymentDTOTrait;
     
-    public static function createFromRequest(Request $request);
+    public abstract static function createFromRequest(Request $request);
+
 }

@@ -2,11 +2,13 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\CommentFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Comment extends Model
 {
-    //
+    use HasFactory;
 
     protected $fillable = [
         'body'
@@ -70,5 +72,10 @@ class Comment extends Model
     public function activityTrack()
     {
        return $this->morphOne(ActivityTrack::class,'what');
+    }
+
+    protected static function newFactory()
+    {
+        return CommentFactory::new();
     }
 }

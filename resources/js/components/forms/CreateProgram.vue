@@ -245,7 +245,7 @@
                                     v-if="computedShowPayment"
                                     @paymentType="getPaymentType"
                                     :type="paymentType"
-                                    :radioValue="data.type"
+                                    :radioValue="data.paymentType"
                                     class="other-input"
                                     @paymentTypeError="error"
                                 ></payment-types>
@@ -496,7 +496,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             this.computedPossibleOwners.length > 1 && 
                             !this.data.owner.account) {
                             msg = 'Please select the owner of this program you are creating.'
-                        } else if (this.data.type !== 'free' && 
+                        } else if (this.data.paymentType !== 'free' && 
                             this.data.paymentData === null) {
                             msg = 'Please enter the required data for the payment.'                    
                         }
@@ -521,7 +521,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                         id: attachment.data.id
                     }
                 })))
-                data.append('type', this.data.type)
+                data.append('paymentType', this.data.paymentType)
                 data.append('paymentData', JSON.stringify(this.data.paymentData))
  
                 data.append('items', JSON.stringify(this.data.items.map(cl=>{
@@ -639,7 +639,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $color-primary;
             border-radius: 0;
         }
 

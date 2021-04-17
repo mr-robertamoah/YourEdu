@@ -20,7 +20,7 @@ class DashboardUserAccountResource extends JsonResource
             'name' => $this->profile ? $this->profile->name : $this->name,
             'url' => $this->profile ? $this->profile->url : '',
             'account' => class_basename_lower(get_class($this->resource)),
-            'bans' => BanResource::collection($this->hasBan()->get()),
+            'bans' => BanResource::collection($this->pendingAndServedBans()),
         ];
     }
 }

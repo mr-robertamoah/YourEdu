@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\CommentResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -16,38 +17,12 @@ class UpdateComment implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $commentArray;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($comment,$mainComment)
-    {
-        Debugbar::info($mainComment);
-        $this->commentArray['item'] = class_basename_lower($mainComment->commentable_type);
-        $this->commentArray['itemId'] = $mainComment->commentable_id;
-        if ($this->commentArray['item'] === 'post') {
-            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->addedby));
-            $this->commentArray['accountId'] = $mainComment->commentable->addedby->id;
-        } else if ($this->commentArray['item'] === 'book' || 
-            $this->commentArray['item'] === 'poem' || 
-            $this->commentArray['item'] === 'activity') {
-            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->post->addedby));
-            $this->commentArray['accountId'] = $mainComment->commentable->post->addedby->id;
-        } else if ($this->commentArray['item'] === 'comment' ||
-            $this->commentArray['item'] === 'answer') {
-            $this->commentArray['account'] = null;
-            $this->commentArray['accountId'] = null;
-        } else if ($this->commentArray['item'] === 'discussion') {
-            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->raisedby));
-            $this->commentArray['accountId'] = $mainComment->commentable->raisedby->id;
-        } else if ($this->commentArray['item'] === 'class') {
-            $this->commentArray['account'] = class_basename_lower(get_class($mainComment->commentable->ownedby));
-            $this->commentArray['accountId'] = $mainComment->commentable->ownedby->id;
-        }
-        $this->commentArray['comment'] = $comment;
-    }
+    public function __construct(private $commentDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -58,13 +33,21 @@ class UpdateComment implements ShouldBroadcastNow
     {
         $broadcastOn = [
             new Channel('youredu.home'),
-            new Channel("youredu.{$this->commentArray['account']}.{$this->commentArray['accountId']}"),
         ];
-        if ($this->commentArray['item'] === 'class') {
-            $broadcastOn[] = new PrivateChannel("youredu.{$this->commentArray['item']}.{$this->commentArray['itemId']}");
-        } else {
-            $broadcastOn[] = new Channel("youredu.{$this->commentArray['item']}.{$this->commentArray['itemId']}");
+
+        if ($this->commentDTO->item) {
+            $channel = 'Illuminate\Broadcasting\Channel';
+            if ($this->commentDTO->item === 'class') {
+                $channel = 'Illuminate\Broadcasting\PrivateChannel';
+            }
+
+            $broadcastOn[] = new $channel("youredu.{$this->commentDTO->item}.{$this->commentDTO->itemId}");
+        } 
+        
+        if ($this->commentDTO->account) {
+            $broadcastOn[] = new Channel("youredu.{$this->commentDTO->account}.{$this->commentDTO->accountId}");
         }
+
         return $broadcastOn;
     }
     
@@ -75,6 +58,10 @@ class UpdateComment implements ShouldBroadcastNow
     
     public function broadcastWith()
     {
-        return $this->commentArray;
+        return [
+            'item' => $this->commentDTO->item,
+            'itemId' => $this->commentDTO->itemId,
+            'comment' => new CommentResource($this->commentDTO->comment->refresh()),
+        ];
     }
 }

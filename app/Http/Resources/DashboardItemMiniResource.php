@@ -22,16 +22,11 @@ class DashboardItemMiniResource extends JsonResource
 
         if ($data['type'] === 'class') {      
             $data['name'] = $this->name;
-            // $data['ownedby'] = new UserAccountResource($this->ownedby);
             $data['description'] = $this->description;
             $data['maxLearners'] = $this->max_learners;
             $data['state'] = $this->state;
-            // $data['curricula'] = $this->curricula;
-            // $data['grades'] = GradeResource::collection($this->grades);
-            $data['lessons'] = count($this->lessons);
-            $data['learners'] = count($this->learners);
-            // $data['academicYear'] = DashboardAcademicYearResource::collection($this->academicYear);
-            // $data['subjects'] = count($this->subjects);
+            $data['lessons'] = $this->lessons()->count();
+            $data['learners'] = $this->learners()->count();
             $data['structure'] = $this->structure;
             if ($this->structure === 'courses') {
                 $data['items'] = DashboardItemMiniResource::collection($this->courses);
@@ -42,15 +37,15 @@ class DashboardItemMiniResource extends JsonResource
             }
         } else if ($data['type'] === 'school') {    
             $data['name'] = $this->company_name;
-            $data['classes'] = count($this->ownedClasses);
+            $data['classes'] = $this->ownedClasses()->count();
             $data['academicYearSection'] = $this->academicYearSections;
             $data['about'] = $this->about;
-            $data['courses'] = count($this->courses);
+            $data['courses'] = $this->courses()->count();
             $data['role'] = $this->role;
             $data['types'] = $this->types;
-            $data['learners'] = count($this->learners);
-            $data['professionals'] = count($this->professionals);
-            $data['facilitators'] = count($this->facilitators);
+            $data['learners'] = $this->learners()->count();
+            $data['professionals'] = $this->professionals()->count();
+            $data['facilitators'] = $this->facilitators()->count();
         } else if ($data['type'] === 'academicYear') {       
             $data['name'] = $this->name;
             $data['description'] = $this->description;
@@ -60,7 +55,7 @@ class DashboardItemMiniResource extends JsonResource
         } else if ($data['type'] === 'subject') {    
             $data['name'] = $this->name;
             
-            if ($this->subjectClasses->count()) {
+            if ($this->subjectClasses()->count()) {
 
                 $data['className'] = $this->subjectClasses[0]->name;
                 $data['classId'] = $this->subjectClasses[0]->id;
@@ -71,24 +66,29 @@ class DashboardItemMiniResource extends JsonResource
             $data['name'] = $this->name;
             $data['description'] = $this->description;
             $data['items'] = DashboardItemMiniResource::collection($this->courseSections);
-            $data['lessons'] = count($this->lessons);
-            $data['learners'] = count($this->learners);
+            $data['lessons'] = $this->lessons()->count();
+            $data['learners'] = $this->learners()->count();
         } else if ($data['type'] === 'extracurriculum') {    
             $data['name'] = $this->name;
             $data['description'] = $this->description;
-            $data['lessons'] = count($this->lessons);
-            $data['learners'] = count($this->learners);
+            $data['lessons'] = $this->lessons()->count();
+            $data['learners'] = $this->learners()->count();
+        } else if ($data['type'] === 'assessment') {    
+            $data['name'] = $this->name;
+            $data['description'] = $this->description;
+            $data['assessmentSectionsCount'] = $this->asssessmentSections()->count();
+            $data['addedby'] = new UserAccountResource($this->addedby);
         } else if ($data['type'] === 'courseSection') {    
             $data['name'] = $this->name;
             $data['courseId'] = $this->course_id;
             $data['courseName'] = $this->course->name;
             $data['description'] = $this->description;
-            $data['lessons'] = count($this->lessons);
+            $data['lessons'] = $this->lessons()->count();
         } else if ($data['type'] === 'program') {    
             $data['name'] = $this->name;
             $data['description'] = $this->description;
-            $data['courses'] = count($this->courses);
-            $data['learners'] = count($this->learners);
+            $data['courses'] = $this->courses()->count();
+            $data['learners'] = $this->learners()->count();
             $data['state'] = $this->state;
         } else if ($data['type'] === 'lesson') {    
             $data['title'] = $this->title;

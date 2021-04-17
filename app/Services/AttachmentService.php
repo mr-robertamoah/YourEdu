@@ -2,15 +2,19 @@
 
 namespace App\Services;
 
+use App\DTOs\ActivityTrackDTO;
 use App\DTOs\AttachmentDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\AttachmentException;
+use App\Traits\ServiceTrait;
 use App\YourEdu\PostAttachment;
 use Illuminate\Support\Str;
 use \Debugbar;
 
 class AttachmentService
 {
+    use ServiceTrait;
+
     private $attachmentTypes = [
         'subject', 'grade', 'program', 'course', 'extracurriculum'
     ];
@@ -18,66 +22,55 @@ class AttachmentService
     public function attachmentCreate($account,$accountId,$item,$itemId,$attachable,
         $attachableId,$note,$adminId)
     {
-        $mainAccount = getYourEduModel($account,$accountId); 
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-        }
-
-        $mainItem = getYourEduModel($item,$itemId);
-        if (is_null($mainItem)) {
-            throw new AccountNotFoundException("{$item} not found with id {$itemId}");
-        }
-
-        $attach = getYourEduModel($attachable, $attachableId);
-        if (is_null($attach)) {
-            throw new AccountNotFoundException("{$attachable} not found with id {$attachableId}");
-        }
-
+        $mainAccount = $this->getModel($account,$accountId); 
+        
+        $mainItem = $this->getModel($item,$itemId);
+        
+        $attach = $this->getModel($attachable, $attachableId);
+        
         $attachment = $this->attach($mainAccount,$mainItem,$attach,$note);
 
         if (is_null($attachment)) {
-            throw new AttachmentException('attachment creation failed');
+            $this->throwAttachmentException('attachment creation failed');
         }
         
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $attachment,$attachment->attachedby,$admin,__METHOD__
-                );
-            }
-        }
+        $this->trackSchoolAdmin($attachment, $adminId, __METHOD__);
 
         return $attachment;        
+    }
+
+    private function trackSchoolAdmin($attachment, $adminId, $method)
+    {
+        if (is_null($adminId)) {
+            return;
+        }
+
+        $admin = $this->getModel('admin',$adminId);
+        
+        (new ActivityTrackService)->trackActivity(
+            ActivityTrackDTO::createFromData(
+                activityfor: $attachment->attachedby,
+                performedby: $admin,
+                action: $method,
+                activity: $attachment
+            )
+        );
     }
     //delete an attachment from request
     public function attachmentDelete($attachmentId,$id,$adminId)
     {
-        $mainAttachment = getYourEduModel('postattachment',$attachmentId);
-        if (is_null($mainAttachment)) {
-            throw new AccountNotFoundException("attachment not found with id {$attachmentId}");
-            return response()->json([
-                'message' => 'unsuccessful, attachment does not exist'
-            ],422);
-        }
-
+        $mainAttachment = $this->getModel('postattachment',$attachmentId);
+        
         if (($mainAttachment->attachedby->user_id && 
             $mainAttachment->attachedby->user_id !== $id) ||
             ($mainAttachment->attachedby->owner_id && 
             $mainAttachment->attachedby->owner_id !== $id) ||
             (class_basename_lower($mainAttachment->attachedby) === 'school' && 
             !in_array($id,$mainAttachment->attachedby->getAdminIds()))) {
-            throw new AttachmentException('you cannot delete attachment you did not create');
+            $this->throwAttachmentException('you cannot delete attachment you did not create');
         }
         
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $mainAttachment,$mainAttachment->attachedby,$admin,__METHOD__
-                );
-            }
-        }
+        $this->trackSchoolAdmin($mainAttachment, $adminId,__METHOD__);
 
         $mainAttachment->delete();
 
@@ -129,13 +122,10 @@ class AttachmentService
     public function createAttachment($account,$accountId,$type,$name,$description,$rationale,$aliases)
     {
         $mainAccount = $this->getModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-        }
 
         if ($type !== 'subject' && $type !== 'grade' && $type !== 'program' &&
             $type !== 'course' && $type !== 'extracurriculum') {
-            throw new AttachmentException('not a valid attachment type');
+            $this->throwAttachmentException('not a valid attachment type');
         }
 
         $attachment = PostAttachment::create([
@@ -144,7 +134,7 @@ class AttachmentService
             'rationale' => $rationale,
         ]);
         if (is_null($attachment)) {
-            throw new AttachmentException('attachment creation failed');
+            $this->throwAttachmentException('attachment creation failed');
         }  
         
         $attachment->attachedby->associate($mainAccount);
@@ -166,16 +156,6 @@ class AttachmentService
         $mainAccount->point->save();
 
         return $attachment;
-    }
-
-    private function getModel($account, $accountId)
-    {
-        $mainAccount = getYourEduModel($account,$accountId);
-            if (is_null($mainAccount)) {
-                throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-            }
-
-        return $mainAccount;
     }
 
     private function checkAttachmentType(AttachmentDTO $attachmentDTO)
@@ -211,7 +191,7 @@ class AttachmentService
         ]);
 
         if (is_null($attachment)) {
-            throw new AttachmentException('attachment creation failed');
+            $this->throwAttachmentException('attachment creation failed');
         }
 
         return $attachment;
@@ -291,7 +271,7 @@ class AttachmentService
         $alias->save();
 
         if (is_null($alias)) {
-            throw new AttachmentException('alias was not created');
+            $this->throwAttachmentException('alias was not created');
         }
 
         $account->point->value += 1;

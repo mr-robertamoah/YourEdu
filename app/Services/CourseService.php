@@ -113,7 +113,7 @@ class CourseService
         ]);
 
         if (is_null($course)) {
-            throw new CourseException("course creation failed");
+            $this->throwCourseException("course creation failed");
         }
 
         $courseDTO = $courseDTO->withOwnedby(
@@ -274,10 +274,9 @@ class CourseService
         }
 
         $this->setPayment(
-            item: $course,
-            addedby: $courseDTO->addedby,
-            paymentType: $courseDTO->type,
-            paymentData: $courseDTO->paymentData,
+            paymentDTO: $courseDTO->paymentDTO?->withDashboardItem(
+                $course
+            )->withAddedby($courseDTO->addedby)
         );
 
         $this->createAutoDiscussion(
@@ -493,8 +492,8 @@ class CourseService
         );
 
         $this->removePayment(
-            item: $course,
-            paymentData: $courseDTO->removedPaymentData,
+            paymentDTO: $courseDTO->removedPaymentDTO
+                ->withDashboardItem($course),
         );
 
         $course = $this->removeCourseSections(
@@ -553,12 +552,7 @@ class CourseService
         
         $this->checkCourseAuthorization($course,$courseDTO);
 
-        if ($courseDTO->adminId) {
-            $admin = $this->getModel('admin',$courseDTO->adminId);
-            (new ActivityTrackService())->trackActivity(
-                $course,$course->ownedby,$admin,__METHOD__
-            );
-        }
+        $this->trackSchoolAdmin($course,$courseDTO);
 
         if ($courseDTO->action === 'undo') {
             return $this->changeState($course,'accepted');

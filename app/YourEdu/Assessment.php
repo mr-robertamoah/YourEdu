@@ -224,6 +224,11 @@ class Assessment extends Model
             $this->classes->count();
     }
 
+    public function isntUsedByAnotherItem()
+    {
+        return !$this->isUsedByAnotherItem();
+    }
+
     public function doesntHaveAssessmentSections()
     {
         return $this->assessmentSections->count() < 1;
@@ -241,6 +246,28 @@ class Assessment extends Model
                 );
             })
         ) < $this->assessmentSections->count();
+    }
+
+    public function scopeSearchItems($query, $search)
+    {
+        return $query->where(function($q) use ($search){
+            $q->where('name','like',"%$search%")
+                ->orWhere('description','like',"%$search%");
+        });
+    }
+
+    public function scopeWhereNotOwnedbyBasedOnUserId($query, $userId)
+    {
+        return $query->where(function($query) use ($userId) {
+            $query->whereHasMorph('addedby', '*', function($query, $type) use ($userId) {
+                $column = 'user_id';
+                if ($type === 'App\\YourEdu\\School') {
+                    $column = 'owner_id';
+                }
+
+                $query->where($column,'!=',$userId);
+            });
+        });
     }
 
     protected static function newFactory()

@@ -155,8 +155,44 @@ const actions = {
             return {status: false, response}
         }
     },
+    async searchItems({},data){
+        let response = await DashboardService.searchItems(data)
+
+        if (response.data.data) {
+            return {
+                status: true, 
+                items: response.data.data,
+                next: response.data.links.next
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
+    async getWork({},data){
+        let response = await DashboardService.getWork(data)
+
+        if (response.data.message === 'successful') {
+            return {
+                status: true, 
+                assessment: response.data.assessment,
+            }
+        } else {
+            return {status: false, data: response.data}
+        }
+    },
     async sendRequest({},data){
         let response = await DashboardService.sendRequest(data)
+
+        if (response.data.message === 'successful') {
+            return {
+                status: true, 
+            }
+        } else {
+            return {status: false, response}
+        }
+    },
+    async sendResponse({},data){
+        let response = await DashboardService.sendResponse(data)
 
         if (response.data.message === 'successful') {
             return {

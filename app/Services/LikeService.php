@@ -2,94 +2,170 @@
 
 namespace App\Services;
 
+use App\DTOs\ActivityTrackDTO;
+use App\DTOs\LikeDTO;
+use App\Events\DeleteLike;
+use App\Events\NewLike;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\LikeException;
+use App\Traits\ServiceTrait;
 
 class LikeService
 {
-    public function likeCreate($account,$accountId,$item,$itemId,$id,$adminId)
+    use ServiceTrait;
+
+    public function createLike(LikeDTO $likeDTO)
     {
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
+        $likeDTO = $this->setLikedby($likeDTO);
+
+        $likeDTO = $this->setlikeable($likeDTO);
+
+        $like = $this->makeLike($likeDTO);
+
+        $likeDTO = $likeDTO->withLike($like);
+
+        $like = $this->associateLikeToItem($likeDTO);
+        
+        $likeDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($likeDTO);
+
+        $likeDTO = $this->setItemForBroadcast($likeDTO);
+
+        $likeDTO->methodType = 'created';
+        $this->broadcastLike($likeDTO);
+        
+        return $like;
+    }
+
+    private function setItemForBroadcast($likeDTO)
+    {
+        if ($likeDTO->item) {
+            return $likeDTO;
         }
 
-        $mainItem = getYourEduModel($item,$itemId);
-        if (is_null($mainItem)) {
-            throw new AccountNotFoundException("{$item} not found with id {$itemId}");
+        if ($likeDTO->likeable) {
+            $likeDTO->item = class_basename_lower($likeDTO->likeable);
+            $likeDTO->itemId = $likeDTO->likeable->id;
+            return $likeDTO;
         }
 
-        $like = $mainAccount->likings()->create([
-            'user_id' => $id
+        if (is_null($likeDTO->like)) {
+            return $likeDTO;
+        }
+
+        $likeDTO->item = class_basename_lower($likeDTO->like->likeable);
+        $likeDTO->itemId = $likeDTO->like->likeable->id;
+        return $likeDTO;
+    }
+
+    private function associateLikeToItem($likeDTO)
+    {
+        $likeDTO->like->likeable()->associate($likeDTO->likeable);
+        $likeDTO->like->save();
+
+        return $likeDTO->like;
+    }
+
+    private function makeLike($likeDTO)
+    {
+        return $likeDTO->likedby->likings()->create([
+            'user_id' => $likeDTO->userId
         ]);
-        $like->likeable()->associate($mainItem);
-        $like->save();
-        
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $like,$like->likedby,$admin,__METHOD__
-                );
-            }
-        }
-
-        $itemInfo = $this->getItemInfo($mainItem, $item);
-        return [
-            'like' => $like,
-            'itemBelongsTo' => $itemInfo['itemBelongsTo'],
-            'itemBelongsToId' => $itemInfo['itemBelongsToId'],
-        ];
     }
 
-    private function getItemInfo($mainItem,$item)
+    private function setLikedby($likeDTO)
     {
-        $itemBelongsTo = null;
-        $itemBelongsToId = null;
-        if ($item === 'comment') {
-            $itemBelongsToId = $mainItem->commentable_id;
-            $itemBelongsTo = class_basename_lower($mainItem->commentable_type);
-        } else if ($item === 'answer') {
-            $itemBelongsToId = $mainItem->answerable_id;
-            $itemBelongsTo = class_basename_lower($mainItem->answerable_type);
+        if ($likeDTO->likedby) {
+            return $likeDTO;
         }
 
-        return [
-            'itemBelongsTo' => $itemBelongsTo,
-            'itemBelongsToId' => $itemBelongsToId,
-        ];
+        return $likeDTO->withLikedby(
+            $this->getModel($likeDTO->account,$likeDTO->accountId)
+        );
     }
 
-    public function likeDelete($likeId,$id,$adminId)
+    private function setlikeable($likeDTO)
     {
-        $like = getYourEduModel('like',$likeId);
-        if (is_null($like)) {
-            throw new AccountNotFoundException("like not found with id {$likeId}");
-        }
-        if ($like->user_id !== $id) {
-            throw new LikeException('you cannot unlike a like you do not own.');
+        if ($likeDTO->likeable) {
+            return $likeDTO;
         }
 
-        $item = class_basename_lower($like->likeable_type);
-        $itemId = $like->likeable_id;
+        if ($likeDTO->like) {
+            return $likeDTO->withLikeable($likeDTO->like->likeable);
+        }
 
-        $itemInfo = $this->getItemInfo($like->likeable, $item);
+        return $likeDTO->withLikeable(
+            $this->getModel($likeDTO->item,$likeDTO->itemId)
+        );
+    }
+
+    private function trackSchoolAdmin($likeDTO)
+    {
+        if (is_null($likeDTO->adminId)) {
+            return;
+        }
+
+        $admin = $this->getModel('admin',$likeDTO->adminId);
+
+        (new ActivityTrackService())->trackActivity(
+            ActivityTrackDTO::createFromData(
+                activity: $likeDTO->like,
+                activityfor: $likeDTO->like->likedby,
+                performedby: $admin,
+                action: $likeDTO->method
+            )
+        );
+    }
+
+    private function checkOwnership($likeDTO)
+    {
+        if ($likeDTO->like->user_id == $likeDTO->userId) {
+            return;
+        }
+
+        $this->throwLikeException('you cannot unlike a like you do not own.');
+    }
+
+    private function broadcastLike($likeDTO)
+    {
+        $event = $this->getEvent($likeDTO);
+
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($likeDTO)
+    {
+        if ($likeDTO->methodType === 'created') {
+            return new NewLike($likeDTO);
+        }
+
+        return new DeleteLike($likeDTO);
+    }
+
+    public function deleteLike(LikeDTO $likeDTO)
+    {
+        $like = $this->getModel('like',$likeDTO->likeId);
+
+        $likeDTO = $likeDTO->withLike($like);
         
-        if ($adminId) {
-            $admin = getYourEduModel('admin',$adminId);
-            if (!is_null($admin)) {
-                (new ActivityTrackService())->trackActivity(
-                    $like,$like->likedby,$admin,__METHOD__
-                );
-            }
-        }
+        $this->checkOwnerShip($likeDTO);
+
         $like->delete();
+        
+        $likeDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($likeDTO);
 
-        return [
-            'item' => $item,
-            'itemId' => $itemId,
-            'itemBelongsTo' => $itemInfo['itemBelongsTo'],
-            'itemBelongsToId' => $itemInfo['itemBelongsToId'],
-        ];
+        $this->setItemForBroadcast($likeDTO);
+
+        $likeDTO->methodType = 'deleted';
+        $this->broadcastLike($likeDTO);
+    }
+
+    private function throwLikeException($message, $data = null)
+    {
+        throw new LikeException(
+            message: $message,
+            data: $data
+        );
     }
 }

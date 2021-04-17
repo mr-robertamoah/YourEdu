@@ -23,6 +23,45 @@ class FileService
         );
     }
 
+    public static function createFile($account,$file)
+    {
+        if (is_null($file)) {
+            return null;
+        }
+
+        return self::accountCreateFile(
+            $account, 
+            self::getFileDetails($file),
+        );
+    }
+
+    public static function attachFileToItem($file, $item, $state = null)
+    {
+        $method = (new self)->getMethodFromMime($file->mime);
+
+        $item->$method()->attach($file, ['state', $state]);
+        $item->save();
+
+        return $item->refresh();
+    }
+
+    private function getMethodFromMime($mime)
+    {
+        if (str_contains($mime, 'image')) {
+            return 'images';
+        }
+        
+        if (str_contains($mime, 'video')) {
+            return 'videos';
+        }
+        
+        if (str_contains($mime, 'audio')) {
+            return 'audios';
+        }
+
+        return 'files';
+    }
+
     public static function deleteAndUnattachFiles($file,$item)
     {
         $actualFile = getYourEduModel($file->type,$file->id);
@@ -131,12 +170,11 @@ class FileService
             $paths['medium'] = $file->storeAs($dir,$fileNameMedium);
 
             return $paths;
-        } else {
-            
-            $path = $file->storeAs($dir,$fileName);
-
-            return $path;
         }
+            
+        $path = $file->storeAs($dir,$fileName);
+
+        return $path;
     }
 
     private static function isMimeType($fileMime, $fileType)
@@ -313,6 +351,7 @@ class FileService
             $file = $account->addedFiles()->create($fileDetails);
             $method = 'files';
         }
+
         if(!is_null($associate)){
             $associate->$method()->attach($file);
         }

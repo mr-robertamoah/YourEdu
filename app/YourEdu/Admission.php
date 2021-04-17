@@ -10,6 +10,10 @@ class Admission extends Model
     //
     use SoftDeletes;
 
+    protected $fillable = [
+        'learner_id', 'grade_id', 'school_id', 'state', 'type'
+    ];
+
     public function price()
     {
         return $this->morphOne(Price::class,'priceable');
@@ -25,6 +29,11 @@ class Admission extends Model
         return $this->belongsTo(Learner::class);
     }
 
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
+
     public function admmissionfrom()
     {
         return $this->morphTo();
@@ -33,11 +42,6 @@ class Admission extends Model
     public function admmissionto()
     {
         return $this->morphTo();
-    }
-
-    public function assessments()
-    {
-        return $this->morphMany(Assessment::class,'assessmentable');
     }
 
     public function comments()

@@ -9,8 +9,11 @@ use App\Events\NewAssessmentEvent;
 use App\Events\UpdateAssessmentEvent;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\AssessmentException;
+use App\Http\Resources\AssessmentMiniResource;
 use App\Http\Resources\AssessmentResource;
+use App\Http\Resources\DashboardItemMiniResource;
 use App\Notifications\AssessmentNotification;
+use App\Traits\ServiceTrait;
 use App\User;
 use App\YourEdu\Assessment;
 use Illuminate\Support\Collection;
@@ -20,6 +23,8 @@ use Illuminate\Support\Str;
 
 class AssessmentService
 {
+    use ServiceTrait;
+
     const VALIDANSWERTYPES = [
         'TRUE_FALSE', 'SHORT_ANSWER', 'LONG_ANSWER', 'IMAGE', 'VIDEO',
         'AUDIO', 'OPTION', 'NUMBER', 'ARRANGE', 'FLOW', 'FILE'
@@ -448,16 +453,6 @@ class AssessmentService
         );
     }
 
-    private function getModel($account, $accountId)
-    {
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} with id {$accountId} was not found.");
-        }
-
-        return $mainAccount;
-    }
-
     public function updateAssessment
     (
         AssessmentDTO $assessmentDTO
@@ -802,6 +797,96 @@ class AssessmentService
         }
 
         return $deletionStatus;
+    }
+
+    public function getWork(AssessmentDTO $assessmentDTO)
+    {
+        ray($assessmentDTO)->green();
+        $assessment = $this->getAssessmentWithId($assessmentDTO);
+
+        if (! $this->isValidUser($assessmentDTO)) {
+            return $this->getAssessmentMiniResource($assessment);
+        }
+
+        $hasAccess = $this->checkWorkAccess($assessment, $assessmentDTO);
+
+        if (! $hasAccess) {
+            return $this->getAssessmentMiniResource($assessment);
+        }
+
+        return $this->getAssessmentResource($assessment);
+    }
+
+    private function getAssessmentMiniResource($assessment)
+    {
+        return new AssessmentMiniResource($assessment);
+    }
+
+    private function getAssessmentResource($assessment)
+    {
+        return new AssessmentResource($assessment);
+    }
+
+    private function checkWorkAccess
+    (
+        Assessment $assessment,
+        AssessmentDTO $assessmentDTO
+    ) : bool
+    {
+        if ($assessment->isntUsedByAnotherItem()) {
+            return false;
+        }
+
+        if ($this->hasAccessToItems($assessment->lessons, $assessmentDTO->userId)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($assessment->courses, $assessmentDTO->userId)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($assessment->extracurriculums, $assessmentDTO->userId)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($assessment->classes, $assessmentDTO->userId)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($assessment->programs, $assessmentDTO->userId)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function hasAccessToItems($items, $userId)
+    {
+        if (!count($items)) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if (in_array($userId, $item->getAuthorizedLearnerUserIds())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function learnerHasAccessByUserId
+    (
+        Assessment $assessment, $userId
+    ) : bool
+    {
+        foreach ($assessment->allItems() as $item) {
+            if (in_array($userId, $item->getAuthorizedLearnerUserIds())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

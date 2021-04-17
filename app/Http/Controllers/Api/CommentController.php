@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CommentDTO;
 use App\Events\DeleteComment;
 use App\Events\NewComment;
 use App\Events\UpdateComment;
@@ -17,27 +18,20 @@ use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    //
-
-    public function commentCreate(CommentCreateRequest $request, $item, $itemId)
+    public function createComment(CommentCreateRequest $request)
     {        
         try {
             DB::beginTransaction();
             
-            $commentData = (new CommentService())->commentCreate($request->body,
-                $request->file('file'),$request->account,$request->accountId,
-                auth()->id(),$item,$itemId,$request->adminId);
-            broadcast(new NewComment([
-                'comment' => new CommentResource($commentData['comment']),
-                'item' => $item,
-                'itemId' => $itemId,
-                'commentable_owner' => $commentData['commentableOwner']
-            ]))->toOthers();
+            $comment = (new CommentService())->createComment(
+                CommentDTO::createFromRequest($request)    
+            );
+
             DB::commit();
             
             return response()->json([
                 'message' => "successful",
-                'comment' => new CommentResource($commentData['comment']),
+                'comment' => new CommentResource($comment),
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -48,22 +42,20 @@ class CommentController extends Controller
         }
     }
 
-    public function commentEdit(CommentEditRequest $request, $comment)
+    public function updateComment(CommentEditRequest $request)
     {
        try {
             DB::beginTransaction();
 
-            $commentData = (new CommentService())->commentEdit($request->account,
-                $request->accountId,auth()->id(),$comment,$request->body,$request->adminId);
+            $comment = (new CommentService())->updateComment(
+                CommentDTO::createFromRequest($request)    
+            );
 
             DB::commit();
-            broadcast(new UpdateComment(
-                new CommentResource($commentData['comment']),
-                $commentData['comment']
-            ))->toOthers();
+            
             return response()->json([
                 'message' => "successful",
-                'comment' => new CommentResource($commentData['comment']),
+                'comment' => new CommentResource($comment),
             ]);
             
         } catch (\Throwable $th) {
@@ -75,42 +67,42 @@ class CommentController extends Controller
         }
     }
 
-    public function commentDelete($comment,Request $request)
+    public function deleteComment(Request $request)
     {
         try {
             DB::beginTransaction();
-            $commentData = (new CommentService())->commentDelete($comment,$request->adminId);
-            broadcast(new DeleteComment([
-                'commentId' => $comment,
-                'item' => $commentData['item'],
-                'itemId' => $commentData['itemId'],
-                'account' => $commentData['account'],
-                'accountId' => $commentData['accountId'],
-            ]))->toOthers();
+
+            (new CommentService())->deleteComment(
+                CommentDTO::createFromRequest($request)
+            );
+            
             DB::commit();
-            Debugbar::info($commentData);
             return response()->json([
                 'message' => "successful"
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
-            return response()->json([
-                'message' => "unsuccessful"
-            ]);
+            // return response()->json([
+            //     'message' => "unsuccessful"
+            // ]);
         }
     }
 
-    public function commentsGet($item, $itemId)
+    public function getComments($item, $itemId)
     {
-        $comments = (new CommentService)->commentsGet($item,$itemId);
+        $comments = (new CommentService)->getComments(
+            CommentDTO::createFromData(
+                item: $item, itemId: $itemId
+            )
+        );
 
         return CommentResource::collection(paginate($comments,5));
     }
 
-    public function commentGet($comment)
+    public function getComment($commentId)
     {
-        $item = Comment::find($comment);
+        $item = Comment::find($commentId);
         
         if (!$item) {
             return response()->json([

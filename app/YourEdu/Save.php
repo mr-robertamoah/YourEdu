@@ -2,14 +2,16 @@
 
 namespace App\YourEdu;
 
+use App\User;
+use Database\Factories\SaveFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Save extends Model
 {
-    //
-
-    use SoftDeletes;
+    use SoftDeletes,
+        HasFactory;
 
     protected $fillable = ['user_id'];
 
@@ -26,5 +28,10 @@ class Save extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    protected static function newFactory()
+    {
+        return SaveFactory::new();
     }
 }

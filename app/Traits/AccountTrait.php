@@ -13,8 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  * to learners, parents, facilitators, professionals and schools
  */
 trait AccountTrait
-{    
-
+{
     public $accountType = '';
 
     public function __construct(array $attributes = []) {
@@ -51,7 +50,7 @@ trait AccountTrait
      */
     public function hasFreeResources()
     {
-        $userId = $this->user_id ?? $this->owner_id;
+        $userId = $this->user_id ?: $this->owner_id;
         return (bool) Lesson::whereHasMorph('lessonable',[
             'App\\YourEdu\\Course',
             'App\\YourEdu\\Extracurriculum',
@@ -115,7 +114,7 @@ trait AccountTrait
         return $this->parents->pluck('user_id')->toArray();
     }
     
-    public function authorizedIds() : array
+    public function getAuthorizedIds() : array
     {
         if ($this->accountType === 'school') {
             return $this->getAdminIds();
@@ -130,6 +129,11 @@ trait AccountTrait
         return [$this->user_id];
     }
 
+    public function isAuthorizedUserById($userId)
+    {
+        return in_array($userId, $this->getAuthorizedIds());
+    }
+
     public function notifyUser($notification)
     {
         if ($this->owner) {
@@ -141,8 +145,13 @@ trait AccountTrait
 
     public function allCollaborations()
     {
-        return $this->collaborations->merge($this->addedCollaborations)
-            ->sortByDesc('created_at')->unique();
+        $data = $this->addedCollaborations;
+
+        if ($this->collaborations) {
+            $data = $data->merge($this->collaborations);
+        }
+
+        return $data?->sortByDesc('created_at')->unique();
     }
 
     public function getCommissionShare(Model $commissionFor)
@@ -153,7 +162,14 @@ trait AccountTrait
     public function getCommission(Model $commissionFor): Commission | null
     {
         return $this->commissions()
-            ->whereHasMorph('for',$commissionFor::class)
+            ->whereHas('commissionables',function($query) use ($commissionFor) {
+                $query->whereHasMorph('commissionable', "*", 
+                    function($query) use ($commissionFor) {
+                        $query->where('commissionable_id', $commissionFor->id)
+                            ->where('commissionable_type', $commissionFor::class);
+                    }
+                );
+            })
             ->first();
     }
 

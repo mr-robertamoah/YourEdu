@@ -82,7 +82,7 @@ class ProgramTest extends TestCase
                     'id' => $courses->first()->id
                 ]
             ]),
-            'type' => 'price',
+            'paymentType' => 'price',
             'attachments' => json_encode([
                 (object) [
                     'type' => 'course',
@@ -116,6 +116,7 @@ class ProgramTest extends TestCase
             ->assertSuccessful();
 
         $this->assertEquals(1, $response['program']['discussions']);
+        $this->assertEquals(1, count($response['program']['prices']));
 
         Notification::assertNotSentTo($this->user, 
             ProgramCreatedNotification::class
@@ -156,12 +157,7 @@ class ProgramTest extends TestCase
                     'id' => $course->id
                 ]
             ]),
-            'type' => 'price',
-            'paymentData' => json_encode([
-                (object) [
-                    'amount' => '400',
-                ]
-            ]),
+            'paymentType' => 'price',
             'paymentData' => json_encode([
                 (object) [
                     'amount' => '400',
@@ -258,7 +254,7 @@ class ProgramTest extends TestCase
                     'description' => $this->faker->sentence,
                 ]
             ]),
-            'type' => 'price',
+            'paymentType' => 'price',
             'paymentData' => json_encode([
                 (object) [
                     'amount' => '400',
@@ -267,7 +263,7 @@ class ProgramTest extends TestCase
             'removedPaymentData' => json_encode([
                 (object) [
                     'type' => 'price',
-                    'type' => $price->id,
+                    'id' => $price->id,
                 ]
             ]),
             'discussionData' => json_encode(
@@ -289,6 +285,7 @@ class ProgramTest extends TestCase
 
         $this->assertEquals('edited', $response['program']['name']);
         $this->assertEquals(1, $response['program']['discussions']);
+        $this->assertEquals(1, count($response['program']['prices']));
         
         Notification::assertNotSentTo($this->user, 
             ProgramUpdatedNotification::class

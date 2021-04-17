@@ -2,8 +2,10 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountFilesTrait;
 use App\Traits\AccountTrait;
 use App\Traits\FacilitatingAccountsTrait;
+use App\Traits\AccountSalariesTrait;
 use App\User;
 use Database\Factories\FacilitatorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +15,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Facilitator extends Model
 {
     //
-    use SoftDeletes, AccountTrait, HasFactory, FacilitatingAccountsTrait;
+    use SoftDeletes, 
+        AccountTrait, 
+        HasFactory, 
+        FacilitatingAccountsTrait,
+        AccountSalariesTrait,
+        AccountFilesTrait;
 
     protected $fillable = [
         'user_id','name'
@@ -179,6 +186,11 @@ class Facilitator extends Model
         return $this->morphMany(Commission::class,'ownedby');
     }
 
+    public function addedCommissions()
+    {
+        return $this->morphMany(Commission::class,'addedby');
+    }
+
     public function addedCurricula()
     {
         return $this->morphMany(Curriculum::class,'curriculumable','curriculumables');
@@ -300,46 +312,6 @@ class Facilitator extends Model
     public function requestsReceived()
     {
         return $this->morphMany(Request::class,'requestto');
-    }
-    
-    public function ownedImages()
-    {
-        return $this->morphMany(Image::class,'ownedby');
-    }
-    
-    public function ownedFiles()
-    {
-        return $this->morphMany(File::class,'ownedby');
-    }
-    
-    public function ownedVideos()
-    {
-        return $this->morphMany(Video::class,'ownedby');
-    }
-    
-    public function ownedAudio()
-    {
-        return $this->morphMany(Audio::class,'ownedby');
-    }
-    
-    public function addedImages()
-    {
-        return $this->morphMany(Image::class,'addedby');
-    }
-    
-    public function addedFiles()
-    {
-        return $this->morphMany(File::class,'addedby');
-    }
-    
-    public function addedVideos()
-    {
-        return $this->morphMany(Video::class,'addedby');
-    }
-    
-    public function addedAudio()
-    {
-        return $this->morphMany(Audio::class,'addedby');
     }
 
     public function links()
@@ -502,6 +474,16 @@ class Facilitator extends Model
     public function facilitationDetails()
     {
         return $this->morphMany(FacilitationDetail::class, 'accountable');
+    }
+
+    public function ownedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'ownedby');
+    }
+
+    public function addedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'addedby');
     }
     
     protected static function newFactory()

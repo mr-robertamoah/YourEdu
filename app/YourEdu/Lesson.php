@@ -147,7 +147,7 @@ class Lesson extends DashboardItemContract
 
     public function programs()
     {
-        return $this->morphedByMany(Program::class,'lessonable','lessonables')
+        return $this->morphedByMany(Program::class,'itemable','lessonables')
             ->withTimestamps();
     }
 
@@ -255,6 +255,40 @@ class Lesson extends DashboardItemContract
     public function checkIfFreeOrIntro()
     {
         return $this->state === self::FREE || $this->state === self::INTRO;
+    }
+
+    public function items()
+    {
+        return Lessonable::where(function($query) {
+            $query->where('lesson_id', $this->id)
+                ->whereNotNull('itemable_type');
+        })->with('itemable')->get()->pluck('itemable');
+    }
+
+    public function lessonableItems()
+    {
+        return Lessonable::where(function($query) {
+            $query->where('lesson_id', $this->id)
+                ->whereNotNull('lessonable_type');
+        })->with('lessonable')->get()->pluck('lessonable');
+    }
+
+    public function getAuthorizedLearnerUserIds()
+    {
+        $userIds = [];
+
+        foreach ($this->items() as $item) {
+            array_push($userIds, ...$item->getAuthorizedLearnerUserIds());
+        }
+
+        foreach ($this->lessonableItems() as $item) {
+            if (!method_exists($item, 'getAuthorizedLearnerUserIds')) {
+                continue;
+            }
+            array_push($userIds, ...$item->getAuthorizedLearnerUserIds());
+        }
+
+        return array_unique($userIds);
     }
     
     public function allFiles()

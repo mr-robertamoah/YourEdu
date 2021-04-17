@@ -2,7 +2,9 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountFilesTrait;
 use App\Traits\AccountTrait;
+use App\Traits\AdmissionTrait;
 use App\Traits\DashboardItemTrait;
 use App\Traits\FacilitatingAccountsTrait;
 use App\User;
@@ -13,10 +15,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class School extends Model
 {
-    //
-
-    use SoftDeletes, AccountTrait, DashboardItemTrait, HasFactory, 
-        FacilitatingAccountsTrait;
+    use SoftDeletes, 
+        AccountTrait, 
+        DashboardItemTrait, 
+        HasFactory, 
+        AdmissionTrait,
+        FacilitatingAccountsTrait,
+        AccountFilesTrait;
 
     protected $fillable = [
         'owner_id','company_name', 'role', 'class_structure', 'types', 'about'
@@ -24,6 +29,10 @@ class School extends Model
 
     protected $casts = [
         'types' => 'array'
+    ];
+
+    protected $appends = [
+        'user_id', 'user'
     ];
 
     protected static function booted()
@@ -39,6 +48,16 @@ class School extends Model
                 'user_id' => $school->owner_id
             ]);
         });
+    }
+
+    public function getUserIdAttribute()
+    {
+        return $this->owner_id;
+    }
+
+    public function getUserAttribute()
+    {
+        return $this->owner;
     }
 
     public function follows(){
@@ -160,13 +179,6 @@ class School extends Model
         return $this->hasMany(AcademicYear::class);
     }
 
-    public function currentAcademicYears()
-    {
-        return $this->academicYears()
-            ->whereDate('start_date','<',now())
-            ->whereDate('end_date','>',now());
-    }
-
     public function academicYearSections()
     {
         return $this->hasMany(AcademicYearSection::class);
@@ -286,9 +298,14 @@ class School extends Model
             ->withPivot(['activity'])->withTimestamps();
     }
 
+    public function addedFees()
+    {
+        return $this->morphMany(Fee::class, 'addedby');
+    }
+
     public function fees()
     {
-        return $this->hasMany(Fee::class);
+        return $this->morphMany(Fee::class, 'ownedby');
     }
 
     public function grades(){
@@ -319,16 +336,6 @@ class School extends Model
     {
         return $this->hasMany(ReportSection::class);
     }
-
-    public function admissionsSent()
-    {
-        return $this->morphMany(Admission::class,'admissionfrom');
-    }
-
-    public function admissionsReceived()
-    {
-        return $this->morphMany(Admission::class,'admissionto');
-    }
     
     public function requestsSent()
     {
@@ -339,46 +346,6 @@ class School extends Model
     {
         return $this->morphMany(Request::class,'requestto');
     }
-    
-    public function ownedImages()
-    {
-        return $this->morphMany(Image::class,'ownedby');
-    }
-    
-    public function ownedFiles()
-    {
-        return $this->morphMany(File::class,'ownedby');
-    }
-    
-    public function ownedVideos()
-    {
-        return $this->morphMany(Video::class,'ownedby');
-    }
-    
-    public function ownedAudio()
-    {
-        return $this->morphMany(Audio::class,'ownedby');
-    }
-    
-    public function addedImages()
-    {
-        return $this->morphMany(Image::class,'addedby');
-    }
-    
-    public function addedFiles()
-    {
-        return $this->morphMany(File::class,'addedby');
-    }
-    
-    public function addedVideos()
-    {
-        return $this->morphMany(Video::class,'addedby');
-    }
-    
-    public function addedAudio()
-    {
-        return $this->morphMany(Audio::class,'addedby');
-    }
 
     public function links()
     {
@@ -388,6 +355,11 @@ class School extends Model
     public function sharesOwned()
     {
         return $this->morphMany(Share::class,'ownedby');
+    }
+
+    public function addedCommissions()
+    {
+        return $this->morphMany(Commission::class,'addedby');
     }
 
     public function comments()
@@ -515,9 +487,31 @@ class School extends Model
         return $this->morphMany(Message::class,'toable');
     }
 
-    public function addedCollaboration()
+    public function addedCollaborations()
     {
         return $this->morphMany(Collaboration::class,'addedby');
+    }
+
+    public function ownedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'ownedby');
+    }
+
+    public function addedDiscounts()
+    {
+        return $this->morphMany(Discount::class, 'addedby');
+    }
+
+    public function addedSalaries()
+    {
+        return $this->morphMany(Salary::class, 'addedby');
+    }
+
+    public function currentAcademicYears()
+    {
+        return $this->academicYears()
+            ->whereDate('start_date','<',now())
+            ->whereDate('end_date','>',now());
     }
 
     public function scopeHasMyAdmin($query,$id)

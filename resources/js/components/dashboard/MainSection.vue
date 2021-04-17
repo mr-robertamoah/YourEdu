@@ -1645,7 +1645,7 @@ import {bus} from '../../app';
                 showOptionalActions: false,
                 //invitation
                 showInvitationModal: false,
-                invitationType: false,
+                invitationType: '',
                 //ward
                 ward: null,
                 showWardModal: false,
@@ -2115,7 +2115,7 @@ import {bus} from '../../app';
                 'dashboard/removeCollaboration','dashboard/deleteCollaboration',
                 'dashboard/addAssessment','dashboard/updateAssessment',
                 'dashboard/removeAssessment','dashboard/deleteAssessment',
-                ]),
+            ]),
             clickedHeaderDropdown() {
                 this.showHeaderDropdown = !this.showHeaderDropdown
             },
@@ -2577,9 +2577,10 @@ import {bus} from '../../app';
             clickedAction(data){
                 if (data === 'requests') {
                     this.showOptionalActions = true
-                } else if (data === 'send requests') {
-                    this.showInvitationModal = true
+                    return
                 }
+                
+                this.showInvitationModal = true
             },
             clickedOptionalAction(data){
                 this.showOptionalActions = false
@@ -3324,9 +3325,6 @@ $background-color-section: white;
             }
 
             .section{
-                // max-height: 85vh;
-                // overflow-y: auto;
-                // overflow-x: hidden;
 
                 .back{
                     font-size: 18px;

@@ -15,6 +15,14 @@ class CreateDiscountsTable extends Migration
     {
         Schema::create('discounts', function (Blueprint $table) {
             $table->id();
+            $table->nullableMorphs('ownedby');
+            $table->nullableMorphs('addedby');
+            $table->string('name')->nullable();
+            $table->string('uuid')->nullable();
+            $table->integer('discounted_price')->nullable();
+            $table->float('percentage')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -21,8 +21,8 @@ class UserAndProfileResource extends JsonResource
             $data['profile_name'] = $this->name;
             $data['profile_url'] = $this->url;
             $data['profile'] = $this->profileable_type;
-            $data['userId'] = $this->profileable->user_id ? $this->profileable->user_id :
-                $this->profileable->owner_id;
+            $data['userId'] = $this->profileable ? $this->profileable->user_id :
+                $this->user_id;
         } else {
             $data['username'] = $this->username;
             $data['name'] = $this->full_name;

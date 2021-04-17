@@ -23,7 +23,7 @@ class SchoolFactory extends Factory
     public function definition()
     {
         return [
-            //
+            'company_name' => $this->faker->company
         ];
     }
 }

@@ -12,14 +12,77 @@ class CommissionService
     public function createCommission(CommissionDTO $commissionDTO): Commission
     {
         $this->checkCommissionAllowance($commissionDTO);
-        $commission = $commissionDTO->ownedby->commissions()->create([
+
+        $commission = $commissionDTO->addedby->addedCommissions()->create([
             'percent' => $commissionDTO->percentageOwned
         ]);
 
-        $commission->for()->associate($commissionDTO->for);
+        $this->checkCommission($commission, $commissionDTO);
 
-        $commission->save();
+        $commissionDTO = $commissionDTO->withCommission($commission);
+        
+        $commission = $this->associateCommissionToOwnedby($commissionDTO);
+
+        $commission = $this->associateCommissionToItem($commissionDTO);
+
         return $commission;
+    }
+
+    private function checkCommission($commission, $commissionDTO)
+    {
+        if (is_not_null($commission)) {
+            return;
+        }
+
+        $this->throwCommissionError(
+            message: "creation of the commission failed",
+            data: $commissionDTO
+        );
+    }
+
+    private function associateCommissionToOwnedby(CommissionDTO $commissionDTO)
+    {
+        if (is_null($commissionDTO->ownedby)) {
+            return $commissionDTO->commission;
+        }
+
+        if (is_null($commissionDTO->commission)) {
+            return $commissionDTO->commission;
+        }
+
+        $commissionDTO->commission->ownedby()->associate($commissionDTO->ownedby);
+        $commissionDTO->commission->save();
+
+        return $commissionDTO->commission;
+    }
+
+    private function associateCommissionToItem(CommissionDTO $commissionDTO)
+    {
+        if (is_null($commissionDTO->dashboardItem)) {
+            return $commissionDTO->commission;
+        }
+
+        if (is_null($commissionDTO->commission)) {
+            return $commissionDTO->commission;
+        }
+
+        $commissionable = $commissionDTO->commission->commissionables()->create();
+        $commissionable->Commissionable()->associate($commissionDTO->dashboardItem);
+        $commissionable->save();
+
+        return $commissionDTO->commission->refresh();
+    }
+
+    public function associateCommissionToOwnedbyAndItem
+    (
+        CommissionDTO $commissionDTO
+    )
+    {
+        $commissionDTO->commission = $this->associateCommissionToOwnedby($commissionDTO);
+
+        $commissionDTO->commission = $this->associateCommissionToItem($commissionDTO);
+
+        return $commissionDTO->commission;
     }
 
     public static function updateCommissionPercentage
@@ -65,6 +128,10 @@ class CommissionService
 
     public static function checkCommissionAllowance(CommissionDTO $commissionDTO)
     {
+        if (is_null($commissionDTO->for)) {
+            return;
+        }
+
         if ($commissionDTO->for->doesntHaveCommissionAllowance(
                 $commissionDTO->percentageOwned
             )) {
@@ -78,12 +145,16 @@ class CommissionService
         $currentPercent
     )
     {
+        if (is_null($commissionDTO->for)) {
+            return;
+        }
+        
         if ($commissionDTO->for->doesntHaveCommissionAllowanceForUpdate(
                 $commissionDTO->percentageOwned, $currentPercent
             )) {
             static::throwCommissionError(
                 $commissionDTO->for,
-                "changing the percentage share from {$currentPercent} to {$commissionData->percentageOwned} will make total commsions exceed 100%."
+                "changing the percentage share from {$currentPercent} to {$commissionDTO->percentageOwned} will make total commsions exceed 100%."
             );
         }
     }
@@ -99,7 +170,7 @@ class CommissionService
 
     private static function throwCommissionError
     (
-        $item,
+        $item = null,
         $message = null
     )
     {

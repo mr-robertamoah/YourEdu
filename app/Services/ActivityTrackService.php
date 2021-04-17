@@ -2,15 +2,21 @@
 
 namespace App\Services;
 
+use App\DTOs\ActivityTrackDTO;
+use App\YourEdu\ActivityTrack;
+
 class ActivityTrackService
 {
-    public function trackActivity($what,$for,$who,$action)
+    public function trackActivity(ActivityTrackDTO $activityTrackDTO)
     {
-        $activityTrack = $for->activityTrack()->create([
-            'action' => $action
+
+        $activityTrack = ActivityTrack::create([
+            'action' => $activityTrackDTO->action
         ]);
-        $activityTrack->what()->associate($what);
-        $activityTrack->who()->associate($who);
+
+        $activityTrack->for()->associate($activityTrackDTO->activityfor);
+        $activityTrack->what()->associate($activityTrackDTO->activity);
+        $activityTrack->who()->associate($activityTrackDTO->performedby);
         $activityTrack->save();
 
         return $activityTrack;

@@ -2,13 +2,17 @@
 
 namespace App\YourEdu;
 
+use App\Traits\FeeTrait;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AcademicYearSection extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes,
+        HasFactory,
+        FeeTrait;
 
     protected $fillable = [
         'start_date','end_date','name','promotion','school_id'
@@ -39,13 +43,13 @@ class AcademicYearSection extends Model
             ->withTimestamps();
     }
 
-    public function fees()
-    {
-        return $this->hasMany(Fee::class);
-    }
-
     public function reports()
     {
         return $this->hasMany(Report::class,'academic_year_section_id');
+    }
+
+    protected static function newFactory()
+    {
+        
     }
 }

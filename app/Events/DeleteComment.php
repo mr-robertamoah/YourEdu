@@ -15,16 +15,12 @@ class DeleteComment implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $commentInfo;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($commentInfo)
-    {
-        $this->commentInfo =  $commentInfo;
-    }
+    public function __construct(private $commentDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -35,13 +31,21 @@ class DeleteComment implements ShouldBroadcastNow
     {        
         $broadcastOn = [
             new Channel('youredu.home'),
-            new Channel("youredu.{$this->commentInfo['account']}.{$this->commentInfo['accountId']}"),
         ];
-        if ($this->commentInfo['item'] === 'class') {
-            $broadcastOn[] = new PrivateChannel("youredu.{$this->commentInfo['item']}.{$this->commentInfo['itemId']}");
-        } else {
-            $broadcastOn[] = new Channel("youredu.{$this->commentInfo['item']}.{$this->commentInfo['itemId']}");
+
+        if ($this->commentDTO->item) {
+            $channel = 'Illuminate\Broadcasting\Channel';
+            if ($this->commentDTO->item === 'class') {
+                $channel = 'Illuminate\Broadcasting\PrivateChannel';
+            }
+
+            $broadcastOn[] = new $channel("youredu.{$this->commentDTO->item}.{$this->commentDTO->itemId}");
+        } 
+        
+        if ($this->commentDTO->account) {
+            $broadcastOn[] = new Channel("youredu.{$this->commentDTO->account}.{$this->commentDTO->accountId}");
         }
+        
         return $broadcastOn;
     }
     
@@ -52,6 +56,8 @@ class DeleteComment implements ShouldBroadcastNow
     
     public function broadcastWith()
     {
-        return $this->commentInfo;
+        return [
+            'commentId' => $this->commentDTO->commentId
+        ];
     }
 }

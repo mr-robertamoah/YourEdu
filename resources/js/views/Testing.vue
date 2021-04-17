@@ -1,12 +1,11 @@
 <template>
-    <number-input
-        label="percent share"
-        prepend="%"
-    ></number-input>
+    <work-answering-form
+        :show="true"
+    ></work-answering-form>
 </template>
 
 <script>
-import NumberInput from '../components/NumberInput'
+import WorkAnsweringForm from '../components/forms/WorkAnsweringForm'
 
     export default {
         data() {
@@ -16,7 +15,7 @@ import NumberInput from '../components/NumberInput'
             }
         },
         components: {
-            NumberInput,
+            WorkAnsweringForm,
         },
         methods: {
             clickedTesting(){

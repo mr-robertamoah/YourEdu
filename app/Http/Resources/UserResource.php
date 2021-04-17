@@ -33,7 +33,7 @@ class UserResource extends JsonResource
             'secret_answer' => $this->secret_answer,
             'dob' => $this->dob,
             'age' => $this->age,
-            'bans' => BanResource::collection($this->hasBan()->get()),
+            'bans' => BanResource::collection($this->pendingAndServedBans()),
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'other_names' => $this->other_names,

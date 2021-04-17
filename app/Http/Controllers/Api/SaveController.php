@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\SaveDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SavedResource;
 use App\Http\Resources\SaveResource;
@@ -13,13 +14,19 @@ class SaveController extends Controller
 {
     //
 
-    public function saveDelete($save,Request $request)
+    public function deleteSave(Request $request)
     {   
         try {
-            $saveInfo = (new SaveService())->saveDelete($save,auth()->id(),
-            $request->adminId);
+            DB::beginTransaction();
+
+            (new SaveService())->deleteSave(
+                SaveDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
             return response()->json([
-                'message' => $saveInfo
+                'message' => 'successful'
             ]);
         } catch (\Throwable $th) {
             throw $th;
@@ -29,15 +36,17 @@ class SaveController extends Controller
         }
     }
 
-    public function saveCreate(Request $request,$item, $itemId)
+    public function createSave(Request $request)
     {
         try {
             DB::beginTransaction();
 
-            $save = (new SaveService())->saveCreate($request->account,$request->accountId,
-                $item,$itemId,auth()->id(),$request->adminId);
+            $save = (new SaveService())->createSave(
+                SaveDTO::createFromRequest($request)
+            );
 
             DB::commit();
+            
             return response()->json([
                 'message' => "successful",
                 'save' => new SaveResource($save),

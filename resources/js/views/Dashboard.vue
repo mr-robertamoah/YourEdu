@@ -91,6 +91,8 @@
             :action="accountModalData.action"
             @closeAccountModal="showAccountModal = false"
         ></account-modal>
+
+        <router-view></router-view>
     </div>
 </template>
 
@@ -146,6 +148,11 @@ import CreateLesson from '../components/forms/CreateLesson.vue';
                 showCreateExtracurriculumModal: false,
                 showCreateModal: '',
             }
+        },
+        beforeRouteEnter(to, from, next) {
+            next(vm => {
+                
+            });
         },
         watch: {
             showSmallModal(newValue) {

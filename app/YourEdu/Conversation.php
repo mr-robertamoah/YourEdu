@@ -3,13 +3,15 @@
 namespace App\YourEdu;
 
 use App\YourEdu\ConversationAccount;
+use Database\Factories\ConversationFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Conversation extends Model
 {
-    //
-    use SoftDeletes;
+    use SoftDeletes,
+        HasFactory;
 
     protected $fillable = ['type','state','account_type','description','name',
         'profile_url','conversation_id'];
@@ -52,5 +54,10 @@ class Conversation extends Model
     public function conversationAccounts()
     {
         return $this->hasMany(ConversationAccount::class);
+    }
+
+    protected static function newFactory()
+    {
+        return ConversationFactory::new();
     }
 }

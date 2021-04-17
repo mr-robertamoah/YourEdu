@@ -1,6 +1,6 @@
 <template>
     <div class="payment-types-wrapper">
-        <div class="radio-section">
+        <div class="radio-section" v-if="showRadios">
             <radio-input
                 name="payment"
                 label="free"
@@ -45,10 +45,28 @@
                 v-if="computedFee"
                 key="payment5"
             ></radio-input>
+            <radio-input
+                name="payment"
+                label="salary"
+                radioValue="salary"
+                v-model="payment"
+                class="radio-button"
+                v-if="computedSalary"
+                key="payment6"
+            ></radio-input>
+            <radio-input
+                name="payment"
+                label="discount"
+                radioValue="discount"
+                v-model="payment"
+                class="radio-button"
+                v-if="computedDiscount"
+                key="payment6"
+            ></radio-input>
         </div>
 
         <div class="preview-section" v-if="computedOneTime || computedSubscription || 
-            computedFee">
+            computedFee || computedSalary || computedDiscount">
             <div class="main">
                 <template v-if="computedOneTime">
                     <price-badge
@@ -77,17 +95,95 @@
                         class="payment-badge"
                     ></fee-badge>
                 </template>
+                <template v-if="computedSalary">
+                    <salary-badge
+                        v-if="salary.amount.length"
+                        :data="salary"
+                        @clickedRemoveData="clickedRemoveSalary"
+                        class="payment-badge"
+                    ></salary-badge>
+                </template>
+                <template v-if="computedDiscount">
+                    <discount-badge
+                        v-if="computedHasDiscountData"
+                        :data="discount"
+                        @clickedRemoveData="clickedRemoveDiscount"
+                        class="payment-badge"
+                    ></discount-badge>
+                </template>
+                <template v-if="computedCommission">
+                    <commission-badge
+                        v-if="commission.percentageOwned.length"
+                        :data="commission"
+                        @clickedRemoveData="clickedRemoveCommission"
+                        class="payment-badge"
+                    ></commission-badge>
+                </template>
             </div>
         </div>
         
         <div class="commission-section" v-if="payment === 'commission'">
 
-            <number-input placeholder="commission"
-                v-model="commission"
+            <number-input 
+                placeholder="commission"
+                v-model="commission.percentageOwned"
                 class="input"
                 :noBorder="true"
             ></number-input>
             <div class="per">%</div>
+        </div>
+        <div class="discount-section" v-if="payment === 'discount'">
+            <div class="small-msg">
+                choose how you want to set up the discount
+            </div>
+            <div class="radio-section">
+                <radio-input
+                    name="discount"
+                    label="discounted price"
+                    radioValue="discountedPrice"
+                    v-model="discountType"
+                    class="radio-button"
+                    key="discount1"
+                ></radio-input>
+                <radio-input
+                    name="discount"
+                    label="discount percentage"
+                    radioValue="percentage"
+                    v-model="discountType"
+                    class="radio-button"
+                    key="discount2"
+                ></radio-input>
+            </div>         
+            <text-input
+                placeholder="discount name" 
+                v-model="discount.name"
+                :bottomBorder="true"
+                v-if="discountType.length"
+            ></text-input>
+            <number-input placeholder="discounted price"
+                v-model="discount.discountedPrice"
+                :bottomBorder="true"
+                :hasMax="false"
+                v-if="discountType === 'discountedPrice'"
+            ></number-input>
+            <number-input placeholder="discount percentage"
+                v-model="discount.percentage"
+                :bottomBorder="true"
+                :hasMax="false"
+                v-if="discountType === 'percentage'"
+            ></number-input>
+            <date-picker
+                v-if="discountType.length"
+                :bottomBorder="true"
+                v-model="discount.expiresAt"
+                class="other-input"
+                placeholder="expiration date for discount"
+                :flatPickrConfig="{
+                    dateFormat: 'F j, Y H:i',
+                    enableTime: true,
+                    minDate: computedTomorrowDate,
+                }"
+            ></date-picker>
         </div>
         <div class="fee-section" v-if="payment === 'fee'">
 
@@ -98,11 +194,33 @@
             ></number-input>
 
             <div class="message">
-                Please note: if you do not select academic year section(s) for this fee, the selected academic years will be used for the fee. You can create fees for different academic year sections.
+                Please note: First select an academic year in the class attachments section. Then make a selection from here because you cannot create a fee without selecting academic years (or sections) for it. You can create fees for different academic years and sections.
             </div>
-            <div class="academic-sections" v-if="sections.length">
+        
+            <div class="small-msg" v-if="academicYears.length">
+                choose one and make your selection
+            </div>
+            <div class="radio-section" v-if="academicYears.length">
+                <radio-input
+                    name="feeable"
+                    label="academic years"
+                    radioValue="academicYears"
+                    v-model="feeableType"
+                    class="radio-button"
+                    key="feeable1"
+                ></radio-input>
+                <radio-input
+                    name="feeable"
+                    label="academic year sections"
+                    radioValue="academicYearSections"
+                    v-model="feeableType"
+                    class="radio-button"
+                    key="feeable2"
+                ></radio-input>
+            </div>
+            <div class="academic-sections" v-if="computedAcademicYearsOrSections.length">
                 <item-badge
-                    v-for="(item,index) in sections"
+                    v-for="(item,index) in computedAcademicYearsOrSections"
                     :key="index"
                     :item="item"
                     type="section"
@@ -113,8 +231,11 @@
                 ></item-badge>
             </div>
 
-            <div class="message" v-if="!sections.length">
-                there are no academic year sections
+            <div class="small-msg" v-if="computedFeeableSelectionMessage.length">
+                {{computedFeeableSelectionMessage}}
+            </div>
+            <div class="message" v-if="!academicYears.length">
+                there are no academic years or sections
             </div>
             <div class="fee-ok" @click="clickedFeeOk">
                 set up fee
@@ -184,6 +305,26 @@
                 placeholder="set subscription for"
             ></main-select>
         </div>
+        <div class="salary-section" v-if="payment === 'salary'">
+            <div class="sub-section">
+                <number-input placeholder="amount"
+                    v-model="salary.amount"
+                    :bottomBorder="true"
+                    :hasMax="false"
+                    class="text-input"
+                ></number-input>
+                <div class="per">per</div>
+                <main-select
+                    :items="['month','quarter','year',]"
+                    :value="salary.period"
+                    backgroundColor="white"
+                    @selection="salaryPeriodSelection"
+                    class="main-select"
+                    placeholder="select a period*"
+                ></main-select>
+            </div>
+            <!-- add currency implementation here -->
+        </div>
     </div>
 </template>
 
@@ -193,15 +334,24 @@ import ItemBadge from './dashboard/ItemBadge';
 import MainSelect from './MainSelect';
 import TextInput from './TextInput';
 import PriceBadge from './PriceBadge';
+import CommissionBadge from './CommissionBadge';
 import FeeBadge from './FeeBadge';
+import SalaryBadge from './SalaryBadge';
+import DiscountBadge from './DiscountBadge';
 import SubscriptionBadge from './SubscriptionBadge';
 import NumberInput from './NumberInput';
+import DatePicker from './DatePicker';
 import TextTextarea from './TextTextarea.vue';
+import { dates } from '../services/helpers';
     export default {
         components: {
+            DatePicker,
             NumberInput,
             SubscriptionBadge,
+            DiscountBadge,
+            SalaryBadge,
             FeeBadge,
+            CommissionBadge,
             PriceBadge,
             TextInput,
             MainSelect,
@@ -218,12 +368,16 @@ import TextTextarea from './TextTextarea.vue';
                 type: String,
                 default: ''
             },
-            sections: {
+            showRadios: {
+                type: Boolean,
+                default: true
+            },
+            academicYears: {
                 type: Array,
                 default() {
                     return []
                 }
-            }
+            },
         },
         data() {
             return {
@@ -231,7 +385,14 @@ import TextTextarea from './TextTextarea.vue';
                 fee: {
                     amount: '',
                     id: '',
-                    sections: [],
+                    feeables: [],
+                },
+                discount: {
+                    name: '',
+                    discountedPrice: '',
+                    percentage: '',
+                    expiresAt: '',
+                    type: '',
                 },
                 price: {
                     amount: '',
@@ -245,18 +406,30 @@ import TextTextarea from './TextTextarea.vue';
                     description: '',
                     period: '',
                 },
+                salary: {
+                    amount: '',
+                    currency: '',
+                    period: '',
+                },
                 prices: [],
                 fees: [],
-                commission: '',
+                feeableType: '',
+                discountType: '',
+                commission: {
+                    percentageOwned: ''
+                },
                 errorMessage: '',
                 errorLengthy: false,
                 subscriptions: [],
             }
         },
         watch: {
-            radioValue(newValue) {
-                if (newValue.length && newValue !== this.payment) {
-                    this.payment = newValue
+            radioValue: {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue.length && newValue !== this.payment) {
+                        this.payment = newValue
+                    }
                 }
             },
             prices(newValue) {
@@ -271,6 +444,25 @@ import TextTextarea from './TextTextarea.vue';
                     data: newValue
                 })
             },
+            discountType(newValue) {
+                this.discount.percentage = ''
+                this.discount.discountedPrice = ''
+            },
+            "salary.amount": {
+                handler(newValue) {
+                    this.$emit('paymentType',{type: this.payment,data: this.salary})
+                }
+            },
+            "salary.currency": {
+                handler(newValue) {
+                    this.$emit('paymentType',{type: this.payment,data: this.salary})
+                }
+            },
+            "salary.period": {
+                handler(newValue) {
+                    this.$emit('paymentType',{type: this.payment,data: this.salary})
+                }
+            },
             payment(newValue){
                 if (newValue === 'free') {
                     this.$emit('paymentType',{type: this.payment,data: ''})
@@ -279,27 +471,97 @@ import TextTextarea from './TextTextarea.vue';
                 }
                 this.cleanUp()
             },
-            price: {
+            discount: {
                 deep: true,
-                handler(newValue,oldValue){
-                    if ((newValue.amount.length === 1 || newValue.description.length === 1) 
-                        && newValue.for.length) {
+                handler(newValue) {
+                    if (this.computedHasDiscountData) {
+                        this.$emit('paymentType',{type: this.payment, data: [newValue]})
+                    } else {
+                        this.$emit('paymentType',{type: this.payment, data: null})
+                    }
+                }
+            },
+            "commission.percentageOwned": {
+                handler(newValue) {
+                    if (newValue.length) {
+                        this.$emit('paymentType',{type: this.payment, data: [this.commission]})
+                    } else {
+                        this.$emit('paymentType',{type: this.payment, data: null})
+                    }
+                }
+            },
+            "price.amount": {
+                handler(newValue) {
+                    if (
+                        newValue.length === 1 && this.price.for.length
+                    ) {
                         this.price.for = ''
-                    } else if (newValue.amount.length && newValue.for.length) {
+                    }
+                }
+            },
+            "price.amount": {
+                handler(newValue) {
+                    if (
+                        newValue.length === 1 && this.price.for.length
+                    ) {
+                        this.price.for = ''
+                    }
+                }
+            },
+            "price.for": {
+                handler(newValue) {
+                    if (
+                        this.price.amount.length && 
+                        newValue.length
+                    ) {
                         this.updatePrices()
                     }
                 }
             },
-            subscription: {
-                deep: true,
-                handler(newValue){
-                    if ((newValue.name.length === 1 || newValue.amount.length === 1 ||
-                        newValue.period.length === 1 || newValue.description.length === 1) 
-                        && newValue.for.length) {
-                        this.subscription.for = ''
-                    } else if (newValue.name.length && newValue.amount.length && 
-                        newValue.for.length) {
+            "subscription.for": {
+                handler(newValue) {
+                    if (
+                        this.subscription.name.length && 
+                        this.subscription.amount.length && 
+                        newValue.length
+                    ) {
                         this.updateSubscriptions()
+                    }
+                }
+            },
+            "subscription.name": {
+                handler(newValue) {
+                    if (
+                        newValue.length === 1 && this.subscription.for.length
+                    ) {
+                        this.subscription.for = ''
+                    }
+                }
+            },
+            "subscription.amount": {
+                handler(newValue) {
+                    if (
+                        newValue.length === 1 && this.subscription.for.length
+                    ) {
+                        this.subscription.for = ''
+                    }
+                }
+            },
+            "subscription.description": {
+                handler(newValue) {
+                    if (
+                        newValue.length === 1 && this.subscription.for.length
+                    ) {
+                        this.subscription.for = ''
+                    }
+                }
+            },
+            "subscription.period": {
+                handler(newValue) {
+                    if (
+                        newValue.length === 1 && this.subscription.for.length
+                    ) {
+                        this.subscription.for = ''
                     }
                 }
             },
@@ -312,29 +574,99 @@ import TextTextarea from './TextTextarea.vue';
                     this.errorLengthy = false
                 }
             },
+            feeableType(newValue) {
+                this.fee.feeables = []
+            },
         },
         computed: {
             computedSubscription() {
-                return this.type === 'subsciption' || this.type === 'subscription and one-time'
+                return this.type.includes('subscription')
             },
             computedOneTime() {
-                return this.type === 'one-time' || this.type === 'subscription and one-time' ||
-                    this.type === 'fee and one-time'
+                return this.type.includes('one-time')
             },
             computedFee() {
-                return this.type === 'fee' || this.type === 'fee and one-time'
+                return this.type.includes('fee')
+            },
+            computedSalary() {
+                return this.type.includes('salary')
             },
             computedCommission() {
-                return this.type === 'commission'
+                return this.type.includes('commission')
             },
+            computedDiscount() {
+                return this.type.includes('discount')
+            },
+            computedCommission() {
+                return this.type.includes('commission')
+            },
+            computedAcademicYearsOrSections() {
+                if (this.feeableType === 'academicYears') {
+                    return this.computedMappedAcademicYears
+                }
+
+                if (this.feeableType === 'academicYearSections') {
+                    return this.computedMappedAcademicYearSections
+                }
+
+                return []
+            },
+            computedMappedAcademicYears() {
+                return this.academicYears.map(academicYear=>{
+                    return {
+                        id: academicYear.id,
+                        name: academicYear.name,
+                        description: academicYear.description,
+                        endDate: academicYear.endDate,
+                        startDate: academicYear.startDate,
+                        type: academicYear.type,
+                    }
+                })
+            },
+            computedMappedAcademicYearSections() {
+                let sections = []
+                this.academicYears.forEach(academicYear=>{
+                    sections.push(...academicYear.sections.map(section=>{
+                        return {
+                            id: section.id,
+                            name: section.name,
+                            academicYearId: section.academicYearId,
+                            endDate: section.endDate,
+                            startDate: section.startDate,
+                            type: 'academicYearSection'
+                        }
+                    }))
+                })
+
+                return sections
+            },
+            computedFeeableSelectionMessage() {
+                return this.feeableType === 'academicYearSections' && 
+                    !this.computedMappedAcademicYearSections.length ?
+                    'there are no academic year sections for the selected academic years' : ''
+            },
+            computedHasDiscountData() {
+                return this.discount.name.length && 
+                    (this.discount.discountedPrice.length || 
+                    this.discount.percentage.length)
+            },
+            computedTomorrowDate() {
+                return this.payment === 'discount' ? dates.tomorrow() : null
+            }
         },
         methods: {
             clickedFeeOk() {
-                if (this.fee.amount.length) {
-                    this.updateFees()
-                } else {
+                if (!this.fee.amount.length) {
                     this.errorMessage = 'please enter fee amount'
+                    return
                 }
+                
+                if (!this.fee.feeables.length) {
+                    this.errorMessage = 'please you require an academic year or academic year section for a selected academic year'
+                    return
+                }
+
+                this.updateFees()
             },
             inItemSelection(data) {
                 let index = this.findItemIndex(data)
@@ -346,18 +678,18 @@ import TextTextarea from './TextTextarea.vue';
             itemSelected(data) {
                 let index = this.findItemIndex(data)
                 if (index === -1) {
-                    this.fee.sections.push(data)
+                    this.fee.feeables.push(data)
                 }
             },
             findItemIndex(data) {
-                return this.fee.sections.findIndex(cl=>{
-                    return cl.id === data.id
+                return this.fee.feeables.findIndex(cl=>{
+                    return cl.id === data.id && cl.type === data.type
                 })
             },
             removeItem(data) {
                 let index = this.findItemIndex(data)
                 if (index > -1) {
-                    this.fee.sections.splice(index,1)
+                    this.fee.feeables.splice(index,1)
                 }
             },
             priceForSelection(data) {
@@ -368,6 +700,9 @@ import TextTextarea from './TextTextarea.vue';
             },
             subscriptionPeriodSelection(data){
                 this.subscription.period = data
+            },
+            salarySelection(data){
+                this.salary.period = data
             },
             clickedRemovePrice(data){
                 let index = this.prices.findIndex(price=>{
@@ -394,6 +729,15 @@ import TextTextarea from './TextTextarea.vue';
                 if (index > -1) {
                     this.fees.splice(index,1)
                 }
+            },
+            clickedRemoveSalary(data){
+                this.clearSalary()
+            },
+            clickedRemoveDiscount(data){
+                this.clearDiscount()
+            },
+            clickedRemoveCommission(data){
+                this.clearCommission()
             },
             clickedAction(data){
                 if (this.payment === 'price') {
@@ -423,6 +767,7 @@ import TextTextarea from './TextTextarea.vue';
                 this.clearPrice()
             },
             updateSubscriptions(){
+                console.log('in subscription update');
                 let index = this.subscriptions.findIndex(subscription=>{
                     return subscription.for === this.subscription.for
                 })
@@ -443,17 +788,18 @@ import TextTextarea from './TextTextarea.vue';
                 this.clearSubscription()
             },
             updateFees() {
-                let sectionIndex
+                let feeableIndex
                 let index = this.fees.findIndex(fee=>{
-                    for (let i = 0; i < this.fee.sections.length; i++) {
-                        const section = this.fee.sections[i];
-                        sectionIndex = fee.sections.findIndex(sec=>{
-                            return sec.id === section.id
+                    for (let i = 0; i < this.fee.feeables.length; i++) {
+                        const feeable = this.fee.feeables[i];
+                        feeableIndex = fee.feeables.findIndex(f=>{
+                            return f.id === feeable.id &&
+                                f.type === feeable.type
                         })
-                        if (sectionIndex > -1) {
+                        if (feeableIndex > -1) {
                             return true
                         }
-                        if (!fee.sections.length && !section.length) {
+                        if (!fee.feeables.length && !feeable.length) {
                             return true
                         }
                     }
@@ -461,20 +807,20 @@ import TextTextarea from './TextTextarea.vue';
                 })
                 if (index > -1) {
                     this.errorLengthy = true
-                    if (this.fee.sections.length) {
-                        this.errorMessage = `There is already a fee for one of the selected academic year sections. Either remove existing fee or change it for this.`
+                    if (this.fee.feeables.length) {
+                        this.errorMessage = `There is already a fee for one of the selected academic year (or section). Either remove existing fee or change it for this.`
                     } else {
-                        this.errorMessage = 'There is a fee for the academic years selected. Either remove that or set up this fee for specific academic year sections.'
+                        this.errorMessage = 'There is a fee for the academic year (or section) selected. Either remove that or set up this fee for specific academic year (or section).'
                     }
                     return
                 }
+
                 this.fees.push({
                     amount: this.fee.amount,
-                    sections: this.fee.sections.map(section=>{
+                    feeables: this.fee.feeables.map(feeable=>{
                         return {
-                            id: section.id,
-                            name: section.name,
-                            type: 'academicYearSection'
+                            id: feeable.id,
+                            type: feeable.type
                         }
                     }),
                     id: Math.round(Math.random() * 100)
@@ -495,10 +841,27 @@ import TextTextarea from './TextTextarea.vue';
                 this.subscription.period = ''
                 this.errorLengthy = false
             },
+            clearSalary(){
+                this.salary.amount = ''
+                this.salary.currency = ''
+                this.salary.period = ''
+                this.errorLengthy = false
+            },
+            clearDiscount(){
+                this.discount.name = ''
+                this.discount.expiresAt = ''
+                this.discount.percentage = ''
+                this.discount.discountedPrice = ''
+                this.errorLengthy = false
+            },
+            clearCommission(){
+                this.commission.percentageOwned = ''
+                this.errorLengthy = false
+            },
             clearFee() {
                 this.fee.amount = ''
                 this.fee.id = ''
-                this.fee.sections = []
+                this.fee.feeables = []
                 this.errorLengthy = false
             },
             cleanUp(){
@@ -596,7 +959,8 @@ import TextTextarea from './TextTextarea.vue';
             }
         }
 
-        .subscription-section{
+        .subscription-section,
+        .salary-section{
 
             .sub-section{
                 display: flex;
@@ -617,6 +981,10 @@ import TextTextarea from './TextTextarea.vue';
                     max-width: 150px;
                 }
             }
+        }
+
+        .discount-section{
+
         }
 
         .action-button{

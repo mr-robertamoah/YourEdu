@@ -280,4 +280,13 @@ class DashboardController extends Controller
             'item' => new DashboardItemResource($mainItem)
         ]);
     }
+
+    public function searchItems(Request $request)
+    {
+        $items = (new DashboardService())->getAccountItems(
+            DashboardSearchItemsDTO
+        );
+
+        return DashboardAccountItemResource::collection($items);
+    }
 }

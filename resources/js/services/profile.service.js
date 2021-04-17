@@ -243,12 +243,10 @@ const ProfileService = {
 
     //////////////////////////////////// likes
 
-    async likeCreate(main){
+    async likeCreate(data){
         try {
-            let {accountId, account, item, itemId} = main
-            let response = await ApiService.post(`/api/${item}/${itemId}/like`,{
-                account, accountId
-            })
+            
+            let response = await ApiService.post(`/api/like`, data)
     
             return response
         } catch (error) {
@@ -258,7 +256,7 @@ const ProfileService = {
     async likeDelete(data){
         let {likeId, adminId} = data
         try {
-            let response = await ApiService.post(`/api/like/${likeId}`,{adminId})
+            let response = await ApiService.delete(`/api/like/${likeId}`,{adminId})
     
             return response
         } catch (error) {
@@ -439,12 +437,10 @@ const ProfileService = {
 
     //////////////////////////////////// saves
 
-    async saveCreate(main){
+    async saveCreate(data){
         try {
-            let {accountId, account, item, itemId} = main
-            let response = await ApiService.post(`/api/${item}/${itemId}/save`,{
-                account, accountId
-            })
+            
+            let response = await ApiService.post(`/api/save`,data)
     
             return response
         } catch (error) {
@@ -454,7 +450,7 @@ const ProfileService = {
     async saveDelete(data){
         let {saveId, adminId} = data
         try {
-            let response = await ApiService.post(`/api/save/${saveId}`,{adminId})
+            let response = await ApiService.delete(`/api/save/${saveId}`,{adminId})
     
             return response
         } catch (error) {
@@ -464,12 +460,10 @@ const ProfileService = {
 
     //////////////////////////////////// flags
 
-    async flagCreate(main){
+    async flagCreate(data){
         try {
-            let {accountId, account, reason, item, itemId} = main
-            let response = await ApiService.post(`/api/${item}/${itemId}/flag`,{
-                account, accountId, reason
-            })
+            
+            let response = await ApiService.post(`/api//flag`, data)
     
             return response
         } catch (error) {
@@ -479,7 +473,7 @@ const ProfileService = {
     async flagDelete(data){
         let {flagId, adminId} = data
         try {
-            let response = await ApiService.post(`/api/flag/${flagId}`,{adminId})
+            let response = await ApiService.delete(`/api/flag/${flagId}`,{adminId})
     
             return response
         } catch (error) {
@@ -586,32 +580,31 @@ const ProfileService = {
             return error.response
         }
     },
-    async commentDelete(data){
+    async deleteComment(data){
         let {commentId,adminId} = data
         try {
-            let response = await ApiService.post(`/api/comment/${commentId}/delete`,{adminId})
+            let response = await ApiService.delete(`/api/comment/${commentId}`,{adminId})
     
             return response
         } catch (error) {
             return error.response
         }
     },
-    async commentCreate(main){        
+    async createComment(main){        
         try {
-            let {data, formData} = main
-            let response = await ApiService.post(`/api/${data.item}/${data.itemId}/comment`,
-                formData,true)
+            let {formData} = main
+            let response = await ApiService.post(`/api/comment`,formData,true)
     
             return response
         } catch (error) {
             return error.response
         }
     },
-    async commentUpdate(main){
+    async updateComment(main){
         
         try {
             let {data, formData} = main
-            let response = await ApiService.post(`/api/comment/${data.itemId}`,
+            let response = await ApiService.put(`/api/comment/${data.commentId}`,
                 formData,true)
     
             return response

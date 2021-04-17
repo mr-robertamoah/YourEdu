@@ -148,6 +148,7 @@ export default {
             padding: 10px;
             font-size: 12px;
             color: gray;
+            width: 100%;
 
             .heading{
                 @include text-overflow();

@@ -281,18 +281,10 @@ const actions = {
                 
                 commit('RELOAD_SUCCESS', data.user)
             } else {
-                // TokenService.removeToken()
-                // router.push({
-                //     name: 'login',
-                //     query: {
-                //         redirectTo: router.currentRoute
-                //     }
-                // })
+
                 dispatch('logout')
             }
         }catch (e){
-            TokenService.removeToken()
-            // router.push('/login')
             console.log(e)
             if (e && e.response.config.url.includes('api/user')) {
                 commit('RELOAD_FAILURE',e.response.data.message)

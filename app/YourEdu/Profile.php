@@ -83,14 +83,18 @@ class Profile extends Model
         $account = '',
         $accountId = '',
         $only = [],
+        $userId = null,
+        $others = false
     )
     {
+        if (! str_contains($search, "%")) {
+            $search = "%{$search}%";
+        }
+        
         return $query
-            ->whereIn('profileable_type',$only)
-            ->when(strlen($searchAccount),
-                function($query) use ($searchAccount) {
-                    $query
-                        ->where('profileable_type',$searchAccount);
+            ->when(count($only), 
+                function($query) use ($only) {
+                    $query->whereIn('profileable_type',$only);
                 }
             )
             ->when($account && $accountId,
@@ -100,9 +104,28 @@ class Profile extends Model
                         ->where('profileable_type','!=',$accountId);
                 }
             )
+            ->when($others && $userId, 
+                function($query) use ($userId) {
+                    $query->orWhereHasMorph('profileable','*',
+                        function($query, $type) use ($userId) {
+                            if ($type === 'App\\YourEdu\\School') {
+                                $query->where('owner_id', '!=',$userId);
+                            } else {
+                                $query->where('user_id', '!=',$userId);
+                            }
+                        }
+                    );
+                }
+            )
+            ->when(strlen($searchAccount),
+                function($query) use ($searchAccount) {
+                    $query
+                        ->where('profileable_type',$searchAccount);
+                }
+            )
             ->where(
                 function($query) use ($search) {
-                    $query->whereHasMorph('profileable','*',
+                    $query->orWhereHasMorph('profileable','*',
                         function($query) use ($search) {
                             $query->searchAccounts($search);
                         }

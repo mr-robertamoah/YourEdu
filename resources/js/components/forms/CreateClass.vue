@@ -265,9 +265,9 @@
                                     v-if="computedShowPayment"
                                     @paymentType="getPaymentType"
                                     :type="paymentType"
-                                    :radioValue="data.type"
+                                    :radioValue="data.paymentType"
                                     class="payment-types"
-                                    :sections="computedAcademicYearSections"
+                                    :academicYears="selectedAcademicYears"
                                     @paymentTypeError="error"
                                 ></payment-types>
 
@@ -689,10 +689,10 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                             this.computedPossibleOwners.length > 1 && 
                             !this.data.owner.account) {
                             msg = 'Please select the owner of this class you are creating.'
-                        } else if (this.data.type !== 'free' && 
+                        } else if (this.data.paymentType !== 'free' && 
                             this.data.paymentData === null) {
                             msg = 'Please enter the required data for the payment.'                    
-                        } else if (this.data.type === 'fee' && !this.selectedAcademicYears.length) {
+                        } else if (this.data.paymentType === 'fee' && !this.selectedAcademicYears.length) {
                             msg = 'You need an academic year to use the fee payment type.'
                         } else if ((!this.data.structure || !this.data.structure.length) &&
                             (this.computedCreator.account === 'facilitator' ||
@@ -717,24 +717,13 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     this.data.structure : this['dashboard/getAccountDetails'].classStructure
                 )
                 data.append('description', this.data.description)
-                data.append('type', this.data.type)
+                data.append('paymentType', this.data.paymentType)
                 data.append('paymentData', JSON.stringify(this.data.paymentData))
                 data.append('maxLearners', this.hasMaxLearners || 
                     (this.data.maximum.length && this.data.maximum !== 'null') ? this.data.maximum :
                     JSON.stringify(null)
                 )
                 data.append('gradeId', this.data.grade.id)
-    
-                // if (this.data.type === 'fee') {
-                    // if (!this.edit && !this.computedAcademicYearSections) {
-                    //     this.data.feeable = 'academicYear'
-                    // }
-                    // data.append('feeable', this.data.feeable)
-                    // data.append('feeableId', this.data.feeable === 'academicYear' ?
-                    //     this.computedAcademicYear.id : 
-                    //     this.computedAcademicYearSections[0].id)
-                    
-                // }
                 if (this.computedAccount.account === 'facilitator' ||
                     this.computedAccount.account === 'professional') { 
                     data.append('facilitate', JSON.stringify(this.data.facilitate))
@@ -887,7 +876,6 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
             width: 90%;
             margin: 10px auto;
             border: none;
-            border-bottom: 2px solid $color-primary;
             border-radius: 0;
         }
 

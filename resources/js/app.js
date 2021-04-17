@@ -97,12 +97,16 @@ const app = new Vue({
             store.dispatch('reloadUser')
             setTimeout(() => {
                 store.dispatch('getFollowers')
+            }, 500);
+            setTimeout(() => {
                 store.dispatch('getFollowings')
             }, 1000);
         } 
-        else {
-            
+
+        if (!token) {
+            router.push('/login')
         }
+
         ApiService.mount401Interceptor()
     }
 });

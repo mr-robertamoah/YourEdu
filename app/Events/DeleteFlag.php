@@ -15,16 +15,12 @@ class DeleteFlag implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $flagInfo;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($flagInfo)
-    {
-        $this->flagInfo = $flagInfo;
-    }
+    public function __construct(private $flagDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -33,10 +29,8 @@ class DeleteFlag implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = getAccountString($this->flagInfo->account);
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$this->flagInfo->accountId}")
+            new Channel("youredu.{$this->flagDTO->item}.{$this->flagDTO->itemId}")
         ];
     }
     
@@ -48,7 +42,7 @@ class DeleteFlag implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'flagInfo' => $this->flagInfo
+            'flagId' => $this->flagDTO->flagId
         ];
     }
 }

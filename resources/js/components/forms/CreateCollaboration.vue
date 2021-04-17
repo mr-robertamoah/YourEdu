@@ -698,7 +698,6 @@ import { bus } from '../../app';
                 width: 90%;
                 margin: 10px auto;
                 border: none;
-                border-bottom: 2px solid $color-primary;
                 border-radius: 0;
             }
 

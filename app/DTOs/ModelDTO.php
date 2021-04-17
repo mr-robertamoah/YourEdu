@@ -14,8 +14,10 @@ class ModelDTO
 
         foreach ($dataArray as $data) {
             $sections[] = static::createFromData(
-                item: $data->item ?? null,
-                itemId: $data->itemId ?? null,
+                item: property_exists($data, 'item') ? $data->item : 
+                    (property_exists($data, 'type') ? $data->type : null),
+                itemId: property_exists($data, 'itemId') ? $data->itemId :
+                    (property_exists($data, 'id') ? $data->id : null),
                 extraItemId: $data->extraItemId ?? null,
             );
         }

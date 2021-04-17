@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountSalariesTrait;
 use App\User;
 use Database\Factories\AdminFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +12,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Admin extends Model
 {
     //
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, 
+        HasFactory,
+        AccountSalariesTrait;
     
     const SUPERADMIN = 'SUPERADMIN';
     const SUPERVISOR = 'SUPERVISOR';

@@ -2,8 +2,13 @@
 
 namespace App\Services;
 
+use App\DTOs\ActivityTrackDTO;
+use App\DTOs\FlagDTO;
+use App\Events\DeleteFlag;
+use App\Events\NewFlag;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\FlagException;
+use App\Traits\ServiceTrait;
 use App\YourEdu\Answer;
 use App\YourEdu\Comment;
 use App\YourEdu\Discussion;
@@ -16,72 +21,189 @@ use Illuminate\Support\Arr;
 
 class FlagService
 {
-    public function flagDelete($flagId,$id)
+    use ServiceTrait;
+
+    public function deleteFlag(FlagDTO $flagDTO)
     {
-        $flag = getYourEduModel('flag',$flagId);
-        if (is_null($flag)) {
-            throw new AccountNotFoundException("flag not found with id {$flagId}");
-        }
-        if ($flag->user_id !== $id) {
-            throw new FlagException('you cannot unflag a flag you do not own.');
-        }
+        $flag = $this->getModel('flag',$flagDTO->flagId);
+
+        $flagDTO = $flagDTO->withFlag($flag);
+        
+        $this->checkOwnerShip($flagDTO);
 
         $flag->delete();
+        
+        $flagDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($flagDTO);
 
-        return 'successful';
+        $this->setItemForBroadcast($flagDTO);
+
+        $flagDTO->methodType = 'deleted';
+        $this->broadcastFlag($flagDTO);
     }
 
-    private function dontFlagOwn($mainItem,$item,$id)
+    private function setItemForBroadcast($flagDTO)
     {
-        if ($item === 'learner') {
-            if ($mainItem && $mainItem->user_id === $id) {
-                throw new FlagException("you cannot flag your own account");
-            }
-        } else if ($item === 'facilitator') {
-            if ($mainItem && $mainItem->user_id === $id) {
-                throw new FlagException("you cannot flag your own account");
-            }
-        } else if ($item === 'parent') {
-            if ($mainItem && $mainItem->user_id === $id) {
-                throw new FlagException("you cannot flag your own account");
-            }
-        } else if ($item === 'school') {
-            if ($mainItem && $mainItem->user_id === $id) {
-                throw new FlagException("you cannot flag your own account");
-            }
-        } else if ($item === 'professional') {
-            if ($mainItem && $mainItem->user_id === $id) {
-                throw new FlagException("you cannot flag your own account");
-            }
+        if ($flagDTO->item) {
+            return $flagDTO;
         }
+
+        if ($flagDTO->flaggable) {
+            $flagDTO->item = class_basename_lower($flagDTO->flaggable);
+            $flagDTO->itemId = $flagDTO->flaggable->id;
+            return $flagDTO;
+        }
+
+        if (is_null($flagDTO->flag)) {
+            return $flagDTO;
+        }
+
+        $flagDTO->item = class_basename_lower($flagDTO->flag->flaggable);
+        $flagDTO->itemId = $flagDTO->flag->flaggable->id;
+        return $flagDTO;
     }
 
-    public function flagCreate($account,$accountId,$item, $itemId,$reason,$id)
+    private function associateFlagToItem($flagDTO)
     {
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-        }
+        $flagDTO->flag->flaggable()->associate($flagDTO->flaggable);
+        $flagDTO->flag->save();
 
-        $mainItem = getYourEduModel($item,$itemId);
-        if (is_null($mainItem)) {
-            throw new AccountNotFoundException("{$item} not found with id {$itemId}");
-        }
+        return $flagDTO->flag;
+    }
 
-        $this->dontFlagOwn($mainItem,$item,$id);
-
-        if (Arr::has($mainItem->flags->pluck('user_id'),$id)) {
-            throw new FlagException("you cannot flag something you have already flagged.");
-        }
-
-        $flag = $mainAccount->flagsRaised()->create([
-            'user_id' => $id,
-            'status' => 'PENDING',
-            'reason' => $reason,
+    private function makeFlag($flagDTO)
+    {
+        return $flagDTO->flaggedby->flagsRaised()->create([
+            'user_id' => $flagDTO->userId,
+            'reason' => $flagDTO->reason,
+            'status' => "PENDING",
         ]);
+    }
 
-        $flag->flaggable()->associate($mainItem);
-        $flag->save();
+    private function setFlaggedby($flagDTO)
+    {
+        if ($flagDTO->flaggedby) {
+            return $flagDTO;
+        }
+
+        return $flagDTO->withFlaggedby(
+            $this->getModel($flagDTO->account,$flagDTO->accountId)
+        );
+    }
+
+    private function setFlaggable($flagDTO)
+    {
+        if ($flagDTO->flaggable) {
+            return $flagDTO;
+        }
+
+        if ($flagDTO->flag) {
+            return $flagDTO->withFlaggable($flagDTO->flag->flaggable);
+        }
+
+        return $flagDTO->withFlaggable(
+            $this->getModel($flagDTO->item,$flagDTO->itemId)
+        );
+    }
+
+    private function trackSchoolAdmin($flagDTO)
+    {
+        if (is_null($flagDTO->adminId)) {
+            return;
+        }
+
+        $admin = $this->getModel('admin',$flagDTO->adminId);
+
+        (new ActivityTrackService())->trackActivity(
+            ActivityTrackDTO::createFromData(
+                activity: $flagDTO->flag,
+                activityfor: $flagDTO->flag->flaggedby,
+                performedby: $admin,
+                action: $flagDTO->method
+            )
+        );
+    }
+
+    private function checkOwnership($flagDTO)
+    {
+        if ($flagDTO->flag->user_id == $flagDTO->userId) {
+            return;
+        }
+
+        $this->throwFlagException('you cannot unflag a flag you do not own.');
+    }
+
+    private function broadcastFlag($flagDTO)
+    {
+        $event = $this->getEvent($flagDTO);
+
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($flagDTO)
+    {
+        if ($flagDTO->methodType === 'created') {
+            return new NewFlag($flagDTO);
+        }
+
+        return new DeleteFlag($flagDTO);
+    }
+
+    private function throwFlagException($message, $data = null)
+    {
+        throw new FlagException(
+            message: $message,
+            data: $data
+        );
+    }
+
+    private function dontFlagOwnedItem(FlagDTO $flagDTO)
+    {
+        if ($flagDTO->flaggable->user_id !== $flagDTO->userId) {
+            return;
+        }
+
+        $this->throwFlagException(
+            message: "you cannot flag your own account",
+            data: $flagDTO
+        );
+    }
+
+    private function preventDoubleFlagging($flagDTO)
+    {
+        if (! Arr::has($flagDTO->flaggable->flags->pluck('user_id'), $flagDTO->userId)) {
+            return;
+        }
+
+        $this->throwFlagException(
+            message: "you cannot flag something you have already flagged.",
+            data: $flagDTO
+        );
+    }
+
+    public function createFlag(FlagDTO $flagDTO)
+    {
+        $flagDTO = $this->setFlaggedby($flagDTO);
+
+        $flagDTO = $this->setFlaggable($flagDTO);
+        
+        $this->dontFlagOwnedItem($flagDTO);
+
+        $this->preventDoubleFlagging($flagDTO);
+
+        $flag = $this->makeFlag($flagDTO);
+
+        $flagDTO = $flagDTO->withFlag($flag);
+
+        $flag = $this->associateFlagToItem($flagDTO);
+        
+        $flagDTO->method = __METHOD__;
+        $this->trackSchoolAdmin($flagDTO);
+
+        $flagDTO = $this->setItemForBroadcast($flagDTO);
+
+        $flagDTO->methodType = 'created';
+        $this->broadcastFlag($flagDTO);
 
         return $flag;
     }

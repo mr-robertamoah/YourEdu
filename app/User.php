@@ -2,7 +2,8 @@
 
 namespace App;
 
-use App\Http\Resources\OwnedProfileResource;
+use App\Traits\AccountFilesTrait;
+use App\Traits\AccountSalariesTrait;
 use App\YourEdu\Account;
 use App\YourEdu\Admin;
 use App\YourEdu\Ban;
@@ -18,9 +19,6 @@ use App\YourEdu\Professional;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
 use App\YourEdu\School;
-use Database\Factories\UserFactory;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -29,7 +27,12 @@ use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use Notifiable, HasApiTokens, SoftDeletes, HasFactory;
+    use Notifiable, 
+        HasApiTokens, 
+        SoftDeletes, 
+        HasFactory,
+        AccountSalariesTrait,
+        AccountFilesTrait;
 
     /**
      * The attributes that are mass assignable.
@@ -68,6 +71,8 @@ class User extends Authenticatable
     protected $appends = ['full_name','age','is_superadmin',
         'is_supervisoradmin',
     ];
+
+    public $accountType = 'user';
 
     public function receivesBroadcastNotificationsOn()
     {
@@ -113,19 +118,6 @@ class User extends Authenticatable
     public function bans()
     {
        return $this->morphMany(Ban::class,'bannable');
-    }
-    public function hasBan()
-    {
-        return $this->bans()->where(function($query){
-                $query->where(function($query){
-                    $query->whereDate('due_date','>',now())
-                        ->whereIn('state',['PENDING','SERVED']);
-                })
-                ->orWhere(function($query){
-                    $query->whereNull('due_date')
-                        ->whereIn('state',['PENDING','SERVED']);
-                });
-            });
     }
 
     public function points()
@@ -191,5 +183,34 @@ class User extends Authenticatable
     public function messagesReceived()
     {
         return $this->hasMany(Message::class,'to_user_id');
+    }
+    
+    public function requestsSent()
+    {
+        return $this->morphMany(Request::class,'requestfrom');
+    }
+    
+    public function requestsReceived()
+    {
+        return $this->morphMany(Request::class,'requestto');
+    }
+
+    public function getAuthorizedIds()
+    {
+        return [$this->id];
+    }
+    
+    public function pendingAndServedBans()
+    {
+        return $this->bans()->where(function($query){
+                $query->where(function($query){
+                    $query->whereDate('due_date','>',now())
+                        ->whereIn('state',['PENDING','SERVED']);
+                })
+                ->orWhere(function($query){
+                    $query->whereNull('due_date')
+                        ->whereIn('state',['PENDING','SERVED']);
+                });
+            })->get();
     }
 }

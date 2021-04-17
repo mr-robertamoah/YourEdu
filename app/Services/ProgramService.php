@@ -316,10 +316,9 @@ class ProgramService
         );
 
         $program = $this->setPayment(
-            item: $program,
-            addedby: $programDTO->addedby,
-            paymentType: $programDTO->type,
-            paymentData: $programDTO->paymentData,
+            paymentDTO: $programDTO->paymentDTO?->withDashboardItem(
+                $program
+            )->withAddedby($programDTO->addedby)
         );
 
         $program = $this->createAutoDiscussion(
@@ -469,8 +468,8 @@ class ProgramService
         );
 
         $this->removePayment(
-            item: $program,
-            paymentData: $programDTO->removedPaymentData,
+            paymentDTO: $programDTO->removedPaymentDTO
+                ->withDashboardItem($program),
         );
 
         $programDTO->methodType = 'updated';

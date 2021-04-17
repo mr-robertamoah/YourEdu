@@ -1,13 +1,26 @@
 <template>
     <transition name="main-alert">
         <div class="main-alert-wrapper"
-            :class="{messageText:text.length && isMessage}"
+            :class="{messageText:computedIsMessageAndHasText}"
         >
             <div class="close" @click="clickedRemoveAlert">
                 <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
             </div>
-            <div class="message" v-if="isMessage && text.length">
-                {{text}}
+            <div class="name" v-if="computedMessageAccount">
+                {{account.name}}
+            </div>
+            <div class="section">
+                <profile-picture 
+                    class="profile-picture"
+                    v-if="computedMessageAccount"
+                >
+                    <template slot="image">
+                        <img :src="account.url">
+                    </template>
+                </profile-picture>
+                <div class="message" v-if="computedIsMessageAndHasText">
+                    {{text}}
+                </div>
             </div>
             <discussion-badge
                 v-if="isMessage && !text.length"
@@ -27,10 +40,12 @@
 <script>
 import AccountBadge from '../dashboard/AccountBadge';
 import DiscussionBadge from '../DiscussionBadge';
+import ProfilePicture from "../profile/ProfilePicture"
     export default {
         components: {
             DiscussionBadge,
             AccountBadge,
+            ProfilePicture,
         },
         props: {
             account: {
@@ -78,6 +93,14 @@ import DiscussionBadge from '../DiscussionBadge';
                 }
             }
         },
+        computed: {
+            computedMessageAccount() {
+                return this.isMessage && this.account
+            },
+            computedIsMessageAndHasText() {
+                return this.text.length && this.isMessage
+            },
+        },
         methods: {
             clickedRemoveAlert(){
                 this.removeAlert()
@@ -109,6 +132,27 @@ import DiscussionBadge from '../DiscussionBadge';
     .main-alert-wrapper{
         width: 100%;
         position: relative;
+
+        .name{
+            @include small-msg;
+            text-align: left;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .section{
+            display: flex;
+            align-items: flex-start;
+            flex-wrap: nowrap;
+            width: 100%;
+
+            .profile-picture{
+                min-width: 30px;
+                width: 30px;
+                height: 30px;
+                margin-right: 5px;
+            }
+        }
 
         .close{
             position: absolute;

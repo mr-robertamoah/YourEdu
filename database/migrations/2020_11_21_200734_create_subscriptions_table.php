@@ -15,13 +15,14 @@ class CreateSubscriptionsTable extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->morphs('subscribable'); // book extracurriculum course class classsection request admission permission
-            $table->morphs('ownedby'); //professional school facilitator 
+            $table->nullableMorphs('subscribable'); // book extracurriculum course class classsection request admission permission
+            $table->nullableMorphs('ownedby'); //professional school facilitator 
             $table->string('name')->nullable();
             $table->float('amount');
             $table->string('description')->nullable();
             $table->enum('period',['MONTH','QUARTER','YEAR'])->default('YEAR');
             $table->enum('for',['ALL','LEARNERS','PARENTS','FACILITATORS','PROFESSIONALS','SCHOOLS'])->default('ALL');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -208,11 +208,9 @@ class ClassService
         );
 
         $this->setPayment(
-            item: $class,
-            addedby: $classDTO->addedby,
-            paymentType: $classDTO->type,
-            paymentData: $classDTO->paymentData,
-            academicYears: $classDTO->academicYears
+            paymentDTO: $classDTO->paymentDTO?->withDashboardItem(
+                $class
+            )->withAddedby($classDTO->addedby),
         );
 
         $this->attachToItems( 
@@ -269,8 +267,8 @@ class ClassService
         }
 
         $this->removePayment(
-            item: $class,
-            paymentData: $classDTO->removedPaymentData,
+            paymentDTO: $classDTO->removedPaymentDTO
+                ->withDashboardItem($class),
         );
         
         $this->detachFromItems(

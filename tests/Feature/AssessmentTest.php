@@ -11,6 +11,10 @@ use App\YourEdu\Assessment;
 use App\YourEdu\AssessmentSection;
 use App\YourEdu\Course;
 use App\YourEdu\Discussion;
+use App\YourEdu\Facilitator;
+use App\YourEdu\Learner;
+use App\YourEdu\Lesson;
+use App\YourEdu\Lessonable;
 use App\YourEdu\Payment;
 use App\YourEdu\Professional;
 use App\YourEdu\Question;
@@ -453,8 +457,56 @@ class AssessmentTest extends TestCase
         
     }
 
-    public function test_can_take_assessment()
+    public function test_can_take_assessment_through_course()
     {
+        $account = Facilitator::factory()
+            ->state([
+                'name' => $this->faker->name
+            ])
+            ->for(User::factory())
+            ->create();
         
+        $learner = Learner::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id,
+            ])
+            ->create();
+            
+        //facilitator create course
+        $course = Course::factory()->create();
+        $account->ownedCourses()->save($course);
+        $account->addedCourses()->save($course);
+
+        $course->learners()->attach($learner);
+        $course->save();
+
+        $assessment = Assessment::factory()->create();
+        $lesson = Lesson::factory()->state([
+            'addedby_type' => $account::class,
+            'addedby_id' => $account->id,
+        ])->create();
+        $lesson->save();
+        // $course->lessons()->attach($lesson);
+        // $course->save();
+        $assessment->lessons()->attach($lesson);
+        $assessment->save();
+
+        $lessonable = Lessonable::factory()->state([
+            'lesson_id' => $lesson->id
+        ])->create();
+
+        $lessonable->lessonable()->associate($course);
+        $lessonable->save();
+
+        $data = [
+            'assessmentId' => $assessment->id
+        ];
+
+        $response = $this->json('GET', '/api/assessment/work', $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful();
     }
 }

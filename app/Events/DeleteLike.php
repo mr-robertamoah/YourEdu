@@ -15,16 +15,12 @@ class DeleteLike implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $likeInfo;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($likeInfo)
-    {
-        $this->likeInfo = $likeInfo;
-    }
+    public function __construct(private $likeDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -34,9 +30,7 @@ class DeleteLike implements ShouldBroadcastNow
     public function broadcastOn()
     {
         return [
-            // new Channel('youredu.home'),
-            new Channel("youredu.{$this->likeInfo['item']}.{$this->likeInfo['itemId']}"),
-            new Channel("youredu.{$this->likeInfo['itemBelongsTo']}.{$this->likeInfo['itemBelongsToId']}")
+            new Channel("youredu.{$this->likeDTO->item}.{$this->likeDTO->itemId}"),
         ];
     }
     
@@ -47,6 +41,8 @@ class DeleteLike implements ShouldBroadcastNow
     
     public function broadcastWith()
     {
-        return $this->likeInfo;
+        return [
+            'likeId' => $this->likeDTO->likeId
+        ];
     }
 }
