@@ -2,18 +2,31 @@
 
 namespace App\DTOs;
 
+use App\Traits\DTOTrait;
 use Illuminate\Database\Eloquent\Model;
 
 class AnswerDTO
 {
-    public string | null $answerId;
-    public string | null $answer;
-    public string | null $answerType;
-    public Model | null $answerable;
-    public Model | null $answeredby;
-    public int | null $possibleAnswerId;
-    public int | null $workId;
-    public array $possibleAnswerIds;
+    use DTOTrait;
+
+    public ?string $userId = null;
+    public ?string $answerId = null;
+    public ?string $answer = null;
+    public ?string $itemId = null;
+    public ?string $item = null;
+    public ?string $accountId = null;
+    public ?string $account = null;
+    public ?string $answerType = null;
+    public ?MarkDTO $markDTO = null;
+    public ?Model $answerable = null;
+    public ?Model $answeredby = null;
+    public ?int $workId = null;
+    public bool $chat = false;
+    public bool $checkAnswerType = true;
+    public ?string $possibleAnswerId = null;
+    public array $possibleAnswerIds = [];
+    public array $files = [];
+    public array $removedFiles = [];
 
     public static function createFromArray(array $dataArray) : array
     {
@@ -24,7 +37,6 @@ class AnswerDTO
                 answerId: $data->answerId ?? null,
                 answer: $data->answer ?? null,
                 workId: $data->workId ?? null,
-                possibleAnswerId: $data->possibleAnswerId ?? null,
                 answerType: $data->answerType ? 
                     strtoupper($data->answerType) : null,
                 possibleAnswerIds: $data->possibleAnswerIds ?? [],
@@ -39,20 +51,90 @@ class AnswerDTO
         $answerId = null, 
         $answer = null,
         $workId = null,
-        $possibleAnswerId = null,
+        $account = null,
+        $accountId = null,
+        $item = null,
+        $itemId = null,
         $answerType = null,
-        array $possibleAnswerIds,
+        $userId = null,
+        array $possibleAnswerIds = [],
+        array $files = [],
+        array $removedFiles = [],
     )
     {
         $static = new static();
 
+        $static->userId = $userId;
+        $static->files = $files;
+        $static->removedFiles = FileDTO::createFromArray($removedFiles);
         $static->answerId = $answerId;
         $static->answer = $answer;
         $static->possibleAnswerIds = $possibleAnswerIds;
+        $static->itemId = $itemId;
+        $static->item = $item;
+        $static->accountId = $accountId;
+        $static->account = $account;
         $static->workId = $workId;
-        $static->possibleAnswerId = $possibleAnswerId;
         $static->answerType = $answerType ? strtoupper($answerType) : null;
 
         return $static;
+    }
+
+    public function addFiles($files)
+    {
+        if (is_null($files)) {
+            return $this;
+        }
+
+        $this->files = $files;
+
+        return $this;
+    }
+
+    public function withAnswerable(Model $answerable)
+    {
+        $clone = clone $this;
+
+        $clone->answerable = $answerable;
+
+        return $clone;
+    }
+
+    public function withAnsweredby(Model $answeredby)
+    {
+        $clone = clone $this;
+
+        $clone->answeredby = $answeredby;
+
+        return $clone;
+    }
+
+    public function addMarkData($markData)
+    {
+        $clone = clone $this;
+
+        if (is_null($markData)) {
+            $clone->markDTO = MarkDTO::new();
+            return $clone;
+        }
+
+        if (is_string($markData)) {
+            $markData = json_decode($markData);
+        }
+
+        $clone->markDTO = MarkDTO::createFromData(
+            remark: $markData->remark,
+            score: $markData->score,
+            userId: $this->userId,
+        );
+
+        return $clone;
+    }
+
+    public function dontCheckAnswerType()
+    {
+        $this->checkAnswerType = false;
+
+        return $this;
     }
 }

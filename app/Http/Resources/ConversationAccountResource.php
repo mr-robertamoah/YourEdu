@@ -16,9 +16,9 @@ class ConversationAccountResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'state' => $this->state,
-            'name' => $this->accountable->profile->name,
-            'url' => $this->accountable->profile->url,
+            'state' => strtolower($this->state),
+            'name' => $this->accountable->profile?->name,
+            'url' => $this->accountable->profile?->url,
             'accountId' => $this->accountable_id,
             'account' => class_basename_lower($this->accountable_type),
             'user_id' => $this->user_id,

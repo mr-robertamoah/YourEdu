@@ -117,10 +117,8 @@
                     </span>
                     <div :key="key" v-for="(profile,key) in computedProfiles">
                         <profile-bar
-                            :name="profile.name"
-                            :type="profile.params.account"
                             :smallType="true"
-                            :routeParams="profile.params"
+                            :profile="profile"
                             :navigate="false"
                             @clickedProfile="clickedProfile"
                         ></profile-bar>
@@ -494,7 +492,7 @@ import { mapGetters, mapActions } from 'vuex'
                 if (profiles) {
                     
                     profile =  profiles.findIndex(el=>{
-                        return this.comment.commentedby_id === el.params.accountId && 
+                        return this.comment.commentedby_id === el.accountId && 
                             this.comment.commentedby_type === el.profile
                     })
 
@@ -929,8 +927,8 @@ import { mapGetters, mapActions } from 'vuex'
                     commentId: this.comment.id,
                     owner: this.comment.commentable_type,
                     ownerId: this.comment.commentable_id,
-                    account: this.profile.params.account,
-                    accountId: this.profile.params.accountId,
+                    account: this.profile.account,
+                    accountId: this.profile.accountId,
                     where: this.$route.name
                 }
 

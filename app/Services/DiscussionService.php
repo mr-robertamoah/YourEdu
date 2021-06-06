@@ -3,388 +3,736 @@
 namespace App\Services;
 
 use App\DTOs\DiscussionDTO;
+use App\DTOs\SearchDTO;
+use App\DTOs\InvitationDTO;
+use App\DTOs\MessageDTO;
 use App\Events\DeleteDiscussion;
-use App\Exceptions\AccountNotFoundException;
+use App\Events\DeleteDiscussionMessage;
+use App\Events\NewDiscussion;
+use App\Events\NewDiscussionMessage;
+use App\Events\NewDiscussionParticipant;
+use App\Events\NewDiscussionPendingParticipant;
+use App\Events\RemoveDiscussionParticipant;
+use App\Events\RemoveDiscussionPendingParticipant;
+use App\Events\UpdatedDiscussionParticipant;
+use App\Events\UpdateDiscussionMessage;
+use App\Events\UpdateDiscussion;
 use App\Exceptions\DiscussionException;
-use App\Notifications\DiscussionRequestNotification;
+use App\Notifications\DiscussionContributionResponseNotification;
+use App\Notifications\DiscussionInvitationNotification;
+use App\Notifications\DiscussionInvitationResponseNotification;
+use App\Notifications\DiscussionJoinNotification;
+use App\Notifications\DiscussionJoinRequestNotification;
+use App\Notifications\DiscussionJoinResponseNotification;
+use App\Notifications\NewDiscussionMessageNotification;
+use App\Notifications\RemoveDiscussionParticipantNotification;
+use App\Notifications\UpdateDiscussionParticipantNotification;
+use App\Traits\InvitationTrait;
+use App\Traits\ParticipationServiceTrait;
+use App\Traits\ServiceTrait;
+use App\User;
 use App\YourEdu\Discussion;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
 use Illuminate\Support\Str;
 use \Debugbar;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class DiscussionService
 {
-    public function createDiscussion($raiserType,$raiserId,$title,$preamble,
-        $restricted,$type,$allowed, $files,$attachments)
+    use ServiceTrait,
+        InvitationTrait,
+        ParticipationServiceTrait;
+
+    const PAGINATION = 10;
+
+    const MAX_NUMBER_OF_FILES = 3;
+
+    public function createDiscussion(DiscussionDTO $discussionDTO)
     {
-        $raisedby = $this->getModel($raiserType, $raiserId);
+        $discussionDTO = $this->setRaisedby($discussionDTO);
 
-        $discussion = $raisedby->discussions()->create([
-            'title' => $title,
-            'preamble' => $preamble,
-            'restricted' => (bool)$restricted,  
-            'type' => Str::upper($type),
-            'allowed' => Str::upper($allowed),
-        ]);
+        $discussion = $this->addDiscussion($discussionDTO);
 
-        if (is_null($discussion)) {
-            throw new DiscussionException("Discussion creation failed.");
-        }
-
-        if (!is_null($files)) {
-            foreach ($files as $file) {
-                FileService::createAndAttachFiles(
-                    account: $raisedby,
-                    file: $file,
-                    item: $discussion
-                );
-            }
-        }
-            
-        if (!is_null($attachments)) {
-            foreach ($attachments as $attachment) {
-                $attach = getYourEduModel($attachment->attachable, $attachment->attachableId);
-                (new AttachmentService())->attach($raisedby,$discussion,$attach);
-            }
-        }
-
-        return $discussion->load(['likes','messages','comments','flags','beenSaved',
-        'attachments','participants','raisedby.profile']);
-    }
-
-    public function getMessages($discussionId, $type)
-    {
-        $discussion = getYourEduModel('discussion', $discussionId);
-
-        if (is_null($discussion)) {
-            throw new DiscussionException("discussion with id {$discussionId} not found.");
-        }
-
-        $messages = [];
-        if ($discussion->restricted && $type !== 'all') {
-            $messages = $this->getMessagesByState($discussion,Str::upper($type));
-        } else {
-            $messages = $this->getMessagesByState($discussion,'ACCEPTED');
-        }
-
-        return $messages->sortByDesc('updated_at');
-    }
-
-    private function getMessagesByState($discussion, $state)
-    {
-        $messages = $discussion->messages()->where('state', $state)
-            ->orderBy('updated_at','desc')->get();
-
-        return $messages;
-    }
-
-    private function canUpdate($discussion, $id)
-    {        
-        if ($discussion->raisedby->user_id !== $id && 
-            is_null($discussion->participants()->where('user_id', $id)
-            ->where('state', 'ADMIN')->first())) {
-            throw new DiscussionException('you are not authorized to update this discussion');
-        }
-    }
-    
-    public function updateDiscussion($discussionId, $id,$account,$accountId,$title,$restricted,
-        $allowed,$type,$preamble,$files,$deletableFiles)
-    {
-        $adminAccount = $this->getModel($account, $accountId);
+        $this->checkDiscussion($discussion);
         
-        $discussion = $this->getModel('discussion', $discussionId);
+        $discussionDTO = $discussionDTO->withDiscussion($discussion);
+
+        $this->checkFiles($discussionDTO);
+
+        $discussion = $this->addFiles($discussionDTO);
+
+        $discussion = $this->addAttachmentsToDiscussion($discussionDTO);
+
+        $discussionDTO->methodType = 'created';
+        $this->broadcastDiscussion($discussionDTO);
+
+        return $this->withLoadedRelationships($discussion);
+    }
+
+    private function checkNumberOfFiles($discussionDTO)
+    {
+        $itemFilesDTO = (new FileService)->countPossibleItemFiles(
+            $discussionDTO->discussion,
+            $discussionDTO
+        );
         
-        $this->canUpdate($discussion, $id);
+        if ($itemFilesDTO->totalFiles() <= self::MAX_NUMBER_OF_FILES) {
+            return;
+        }
 
-        $discussion->update([
-            'title' => $title,
-            'type' => Str::upper($type),
-            'preamble' => $preamble,
-            'allowed' => Str::upper($allowed),
-            'restricted' => (bool)$restricted,
-        ]);
+        $maxFiles = self::MAX_NUMBER_OF_FILES;
+        $this->throwDiscussionException(
+            message: "sorry 😞, you cannot have more than {$maxFiles} files for a discussion.",
+            data: $discussionDTO
+        );
+    }
 
-        if (is_array($files)) {
+    private function checkFiles($discussionDTO)
+    {
+        $this->checkNumberOfFiles($discussionDTO);
+
+        // $this->checkTypeOfFiles($discussionDTO);
+
+        // $this->checkDurationOfFiles($discussionDTO);
+
+        // $this->checkSizeOfFiles($discussionDTO);
+    }
+
+    private function addAttachmentsToDiscussion($discussionDTO)
+    {
+        foreach ($discussionDTO->attachments as $attachment) {
             
-            foreach ($files as $file) {
-                FileService::createAndAttachFiles(
-                    account: $adminAccount,
-                    file: $file,
-                    item: $discussion
-                );
-            }
-        }
-        foreach ($deletableFiles as $file) {
-            FileService::deleteAndUnattachFiles($file,$discussion);
+            (new AttachmentService())->attach(
+                $discussionDTO->raisedby,
+                $discussionDTO->discussion,
+                $this->getModel($attachment->type, $attachment->typeId)
+            );
         }
 
+        return $discussionDTO->discussion->refresh();
+    }
+
+    private function addFiles($discussionDTO)
+    {
+        foreach ($discussionDTO->files as $file) {
+            FileService::createAndAttachFiles(
+                account: $discussionDTO->raisedby,
+                file: $file,
+                item: $discussionDTO->discussion
+            );
+        }
+
+        return $discussionDTO->discussion->refresh();
+    }
+
+    private function checkDiscussion($discussion)
+    {
+        if (is_not_null($discussion)) {
+            return;
+        }
+
+        $this->throwDiscussionException(
+            message: "sorry 😞, creation of discussion failed.",
+        );
+    }
+
+    private function addDiscussion($discussionDTO)
+    {
+        return $discussionDTO->raisedby->discussions()->create([
+            'title' => $discussionDTO->title,
+            'preamble' => $discussionDTO->preamble,
+            'restricted' => $discussionDTO->restricted,  
+            'type' => Str::upper($discussionDTO->type),
+            'allowed' => Str::upper($discussionDTO->allowed),
+        ]);
+    }
+
+    private function setRaisedby($discussionDTO)
+    {
+        if (is_not_null($discussionDTO->discussion)) {
+            return $discussionDTO->withRaisedby(
+                $discussionDTO->discussion->getAdmin($discussionDTO->userId)
+            );
+        }
+
+        if (is_not_null($discussionDTO->raisedby)) {
+            return $discussionDTO;
+        }
+
+        return $discussionDTO->withRaisedby(
+            $this->getModel($discussionDTO->account, $discussionDTO->accountId)
+        );
+    }
+
+    private function withLoadedRelationships($discussion)
+    {
         return $discussion->load(['likes','messages','comments','flags','beenSaved',
             'attachments','participants','raisedby.profile']);
     }
-    
-    public function sendMessage($discussionId,$account, $accountId, $userId,$message,
-        $state,$file)
+
+    public function getMessages(DiscussionDTO $discussionDTO)
     {
-        $discussion = $this->getModel('discussion', $discussionId);
-        
-        $participant = null;
-        if (!is_null($userId)) {
+        $discussionDTO = $this->setDiscussion($discussionDTO);
 
-            $participant = $discussion->participants()->where('user_id', $userId)->first();
-            $account = class_basename_lower($participant->accountable_type);
-            $accountId = $participant->accountable_id;
-        } else{
-            $participantAccount = $this->getModel($account, $accountId);
-            
-            $participant = $discussion->participants()
-                ->whereHasMorph('accountable','*',function(MorphTo $query,$type) use ($participantAccount){
-                    if ($type === 'App\YourEdu\School') {
-                        $query->where('owner_id',$participantAccount->owner_id);
-                    } else {
-                        $query->where('user_id',$participantAccount->user_id);
-                    }
-                })
-                ->first();
+        if (! $discussionDTO->discussion->restricted) {
+            return $discussionDTO->discussion->getPaginatedMessages();
         }
 
-        $messageData = (new MessageService())->createMessage('discussion',$discussionId,
-            $account,$accountId,auth()->id(),$message,$state,$file);
-
-        $request = null;
-        if ($discussion->restricted) {
-            $request = new Request();
-            $request->state = 'PENDING';
-            $request->requestto()->associate($discussion->raisedby);
-            $request->requestable()->associate($messageData['message']);
-            $request->requestfrom()->associate($participant->accountable);
-            $request->save();
+        if ($discussionDTO->discussion->isNotAdmin($discussionDTO->userId)) {
+            return $discussionDTO->discussion->getPaginatedAcceptedMessages();
         }
-        return [
-            'message' => $messageData['message'],
-            'request' => $request,
-            'users' => $discussion->raisedby->user,
-            'discussionRestriction' => $discussion->restricted
-        ];
+
+        return $discussionDTO->discussion
+            ->getPaginatedMessagesByState(Str::upper($discussionDTO->state));
     }
 
-    public function contributionResponse($messageId, $userId, $action)
+    private function ensureIsAdminOfDiscussion($discussionDTO)
     {
-        $message = $this->getModel('message', $messageId);
-        
-        $discussion = $this->getModel('discussion',$message->messageable_id);
-        
-        $this->canUpdate($discussion,$userId);
-
-        $request = Request::where('requestable_type','App\YourEdu\Message')
-            ->where('requestable_id',$message->id)
-            ->where('state','PENDING')
-            ->first();
-        if (!is_null($request)) {
-            if ($action === 'accepted') {
-                $request->state = 'ACCEPTED';
-            } else {
-                $request->state = 'DECLINED';
-            }
-            $request->save();
+        if (! $discussionDTO->main) {
+            return;
         }
 
-        $message->state = Str::upper($action);
+        if ($discussionDTO->discussion->isAdmin($discussionDTO->userId)) {
+            return;
+        }
+        
+        $this->throwDiscussionException(
+            message: 'you are not authorized to perform this action on this discussion',
+            data: $discussionDTO
+        );
+    }
+
+    private function putDiscussion($discussionDTO)
+    {
+        $discussionDTO->discussion->update([
+            'title' => $discussionDTO->title,
+            'type' => Str::upper($discussionDTO->type),
+            'preamble' => $discussionDTO->preamble,
+            'allowed' => Str::upper($discussionDTO->allowed),
+            'restricted' => $discussionDTO->restricted,
+        ]);
+
+        return $discussionDTO->discussion->refresh();
+    }
+    
+    public function updateDiscussion(DiscussionDTO $discussionDTO)
+    {
+        $discussion = $this->getModel('discussion', $discussionDTO->discussionId);
+        
+        $discussionDTO = $discussionDTO->withDiscussion($discussion);
+        
+        $this->ensureIsAdminOfDiscussion($discussionDTO);
+        
+        $this->checkFiles($discussionDTO);
+
+        $discussionDTO = $this->setRaisedby($discussionDTO);
+        
+        $discussion = $this->putDiscussion($discussionDTO);
+
+        $discussion = $this->addFiles($discussionDTO);
+
+        $discussion = $this->deleteFiles($discussionDTO);
+
+        $discussion = $this->addAttachmentsToDiscussion($discussionDTO);
+
+        $discussion = $this->removeAttachmentsFromDiscussion($discussionDTO);
+
+        $discussionDTO->methodType = 'updated';
+        $this->broadcastDiscussion($discussionDTO);
+        
+        return $this->withLoadedRelationships($discussion);
+    }
+
+    private function removeAttachmentsFromDiscussion(DiscussionDTO $discussionDTO)
+    {
+        foreach ($discussionDTO->removedAttachments as $attachment) {
+            (new AttachmentService)->detach(
+                attachable: $discussionDTO->discussion,
+                attach: $this->getModel($attachment->item, $attachment->itemid)
+            );
+        }
+
+        return $discussionDTO->discussion->refresh();
+    }
+
+    private function deleteFiles(DiscussionDTO $discussionDTO)
+    {
+        foreach ($discussionDTO->removedFiles as $file) {
+            FileService::deleteAndUnattachFiles(
+                $file,
+                $discussionDTO->discussion
+            );
+        }
+
+        return $discussionDTO->discussion->refresh();
+    }
+
+    private function setDiscussion($discussionDTO)
+    {
+        if (is_not_null($discussionDTO->discussion)) {
+            return $discussionDTO;
+        }
+
+        return $discussionDTO->withDiscussion(
+            $this->getModel('discussion', $discussionDTO->discussionId)
+        );
+    }
+
+    private function getDiscussionParticipantAccountUsingUserId($discussion, $userId)
+    {
+        if ($discussion->isOwner($userId)) {
+            return $discussion->raisedby;
+        }
+
+        $account = $discussion->getParticipantAccountUsingUserId($userId);
+
+        if (is_not_null($account)) {
+            return $account;
+        }
+
+        $this->throwDiscussionException(
+            message: "sorry 😞, you are not a participant of this discussion",
+            data: [$discussion, $userId]
+        );
+    }
+    
+    public function sendMessage(MessageDTO $messageDTO)
+    {
+        $discussion = $this->getModel($messageDTO->item, $messageDTO->itemId);
+        
+        $messageDTO = $messageDTO->withFromable(
+            $this->getDiscussionParticipantAccountUsingUserId($discussion, $messageDTO->userId)
+        );
+        
+        $messageDTO = $messageDTO->withMessageable($discussion);
+
+        $messageDTO->state = $this->getNewMessageState($messageDTO);
+
+        $message = (new MessageService())->createMessage($messageDTO);
+
+        $message = $this->withLoadedMessageRelationships($message);
+
+        $messageDTO = $messageDTO->withMessage($message);
+
+        $this->sendMessageRequest($messageDTO);
+
+        if ($message->state === 'ACCEPTED') {
+            
+            $messageDTO->methodType = 'createdMessage';
+            $this->broadcastDiscussion($messageDTO);
+        }
+
+        return $message->messageable->restricted ? null : $message;
+    }
+
+    private function getNewMessageState($messageDTO)
+    {
+        if (! $messageDTO->messageable->restricted) {
+            return 'accepted';
+        }
+
+        if ($messageDTO->messageable->isAdmin($messageDTO->userId)) {
+            return 'accepted';
+        }
+
+        return 'pending';
+    }
+
+    private function sendMessageRequest($messageDTO)
+    {
+        if (! $messageDTO->messageable->restricted) {
+            return;
+        }
+
+        $request = (new RequestService)->createRequest(
+            from: $messageDTO->fromable,
+            to: $messageDTO->messageable->raisedby,
+            requestable: $messageDTO->message
+        );
+
+        $this->sendNotification(
+            User::find($this->getDiscussionAdminIds($messageDTO->messageable)),
+            $request,
+        );
+    }
+
+    private function sendNotification($users, $item) 
+    {
+        if (is_null($users)) {
+            return;
+        }
+
+        $notification = $this->getNotification($item);
+
+        if (is_null($notification)) {
+            return;
+        }
+
+        Notification::send($users, $notification);
+    }
+
+    private function getNotification($item)
+    {
+        if (method_exists($item, 'isMessageRequest')) {
+            return new NewDiscussionMessageNotification($item);
+        }
+
+        if ($item->methodType === 'invitationResponse') {
+            return new DiscussionInvitationResponseNotification($item);
+        }
+
+        if ($item->methodType === 'createdMessage') {
+            return new DiscussionContributionResponseNotification($item);
+        }
+
+        if ($item->methodType === 'updateParticipant') {
+            return new UpdateDiscussionParticipantNotification($item);
+        }
+
+        if ($item->methodType === 'deleteParticipant') {
+            return new RemoveDiscussionParticipantNotification($item);
+        }
+
+        if ($item->methodType === 'inviteParticipant') {
+            return new DiscussionInvitationNotification($item);
+        }
+
+        if ($item->methodType === 'joinResponse') {
+            return new DiscussionJoinResponseNotification($item);
+        }
+
+        if ($item->methodType === 'joinRequest') {
+            return new DiscussionJoinRequestNotification($item);
+        }
+        
+        if ($item->methodType === 'joinDiscussion') {
+            return new DiscussionJoinNotification($item);
+        }
+        
+        return null;
+    }
+
+    private function checkMessageDeletionAuthorization($messageDTO)
+    {
+        if ($messageDTO->action !== 'delete' &&
+            $messageDTO->message->messageable->isAdmin($messageDTO->userId)) {
+            return;
+        }
+
+        if ($messageDTO->action === 'self' && 
+            $messageDTO->message->messageable->isParticipant($messageDTO->userId)) {
+            return;
+        }
+
+        if ($messageDTO->action === 'delete' && 
+            $messageDTO->message->isFromable($messageDTO->userId) &&
+            $messageDTO->message->messageable->isParticipant($messageDTO->userId)) {
+            return;
+        }
+
+        $this->throwDiscussionException(
+            message: "sorry 😞, you are not authorized to perform this action",
+            data: $messageDTO
+        );
+    }
+
+    public function deleteMessage(MessageDTO $messageDTO)
+    {
+        $messageDTO = $messageDTO->withMessage(
+            $this->getModel('message', $messageDTO->messageId)
+        );
+
+        $this->checkMessageDeletionAuthorization($messageDTO);
+
+        // $this->deleteMessageQuestions($messageDTO);
+
+        $messageDTO->requireAuthorization = false;
+        (new MessageService)->deleteMessage($messageDTO);
+
+        $messageDTO->methodType = 'deletedMessage';
+        if (in_array($messageDTO->action, ['all', 'self'])) {
+            $messageDTO->methodType = 'updatedMessage';
+        }
+
+        $this->broadcastDiscussion($messageDTO);
+
+        if ($messageDTO->action === 'delete') {
+            return null;
+        }
+
+        return $messageDTO->message->refresh();
+    }
+
+    public function contributionResponse(MessageDTO $messageDTO)
+    {
+        $message = $this->getModel('message', $messageDTO->messageId);
+        
+        $this->ensureIsAdminOfDiscussion(
+            DiscussionDTO::new()
+                ->withDiscussion($message->discussion())
+                ->addData(userId: $messageDTO->userId, main: true)
+        );
+
+        $this->checkMessageState($messageDTO);
+
+        $messageDTO = $messageDTO->withMessage($message);
+
+        $this->updateRequestState($messageDTO);
+
+        $message->state = Str::upper($messageDTO->action);
         $message->save();
 
+        if ($messageDTO->action !== 'accepted') {
+            return null;
+        }
+
+        $messageDTO = $messageDTO->withMessage(
+            $this->withLoadedMessageRelationships($message)
+        );
+
+        $messageDTO->methodType = 'createdMessage';
+        $this->broadcastDiscussion($messageDTO);
+
+        $this->sendNotification(
+            $message->fromable->user,
+            $messageDTO
+        );
+
+        return $message;
+    }
+
+    private function checkMessageState($messageDTO)
+    {
+        if (in_array($messageDTO->action, ['accepted', 'declined'])) {
+            return;
+        }
+
+        $this->throwDiscussionException(
+            message: "sorry 😞, {$messageDTO->action} is not a valid response",
+            data: $messageDTO
+        );
+    }
+
+    private function withLoadedMessageRelationships($message)
+    {
         return $message->load(['images','videos','audios','files','fromable.profile']);
+    }
+
+    private function updateRequestState($messageDTO)
+    {
+        $request = Request::query()
+            ->whereMessageRequest()
+            ->wherePending()
+            ->whereSentTo($messageDTO->message->messageable->raisedby)
+            ->first();
+            
+        if (is_null($request)) {
+            return;
+        }
+
+        $request->state = Str::upper($messageDTO->action);
+        $request->save();
+    }
+
+    public function getParticipants(DiscussionDTO $discussionDTO)
+    {
+        $this->getModel('discussion',$discussionDTO->discussionId);
+
+        if (is_null($discussionDTO->state)) {
+            $discussionDTO->state = 'active';
+        }
+
+        $participantsProfiles = Profile::query()
+            ->wherePartOfDiscussion(
+                $discussionDTO->discussionId, 
+                $discussionDTO->state
+            )
+            ->orderBy('name')
+            ->paginate(self::PAGINATION);
+
+        return $participantsProfiles;
     }
 
     private function getDiscussionAdminIds($discussion)
     {
         $ids = $discussion->participants->pluck('user_id');
-        $ids->push($discussion->raisedby->user_id ? $discussion->raisedby->user_id :
-            $discussion->raisedby->owner_id);
+        $ids->push(...$discussion->raisedby->getAuthorizedIds());
 
         return $ids;
     }
     
-    public function updateParticipantState($discussionId,$participantId,$action,$id)
+    public function updateDiscussionParticipant(DiscussionDTO $discussionDTO)
     {
-        $discussion = $this->getModel('discussion',$discussionId);
-        
-        $this->canUpdate($discussion,$id);
+        $participant = $this->getParticipant($discussionDTO);
 
-        $participant = $discussion->participants()->where('id',$participantId)->first();
-        if (is_null($participant)) {
-            $this->throwDiscussionException("participant with id {$participantId} does not belong to discussion not found with id {$discussionId}");
+        $discussionDTO = $discussionDTO->withParticipant($participant);
+        
+        $discussionDTO = $discussionDTO->withDiscussion($participant->participation);
+        
+        $this->ensureIsAdminOfDiscussion($discussionDTO);
+
+        $participant = $this->updateParticipantStateUsingAction($discussionDTO);
+
+        $discussionDTO->methodType = 'updateParticipant';
+
+        $this->broadcastDiscussion($discussionDTO);
+
+        $this->sendNotification(
+            $participant->user,
+            $discussionDTO
+        );
+
+        return $participant;
+    }
+
+    private function getParticipant($discussionDTO)
+    {
+        if (is_null($discussionDTO->discussion)) {
+            return $this->getModel('participant', $discussionDTO->participantId);
         }
 
-        $participant->state = Str::upper($action);
-        $participant->save();
+        $participant = $discussionDTO->discussion->getParticipant($discussionDTO->participantId);
 
-        return [
-            'participant' => $participant,
-            'title' => $discussion->title,
-        ];
+        if (is_not_null($participant)) {
+            return $participant;
+        }
+
+        $this->throwDiscussionException(
+            message: "sorry 😞, participant with id {$discussionDTO->participantId} not a participant of the discussion with title: {$discussionDTO->discussion->title}",
+            data: $discussionDTO
+        );
     }
     
-    public function deleteDiscussionParticipant($discussionId,$participantId,$id,$userId)
+    public function deleteDiscussionParticipant(DiscussionDTO $discussionDTO)
     {
-        $discussion = $this->getModel('discussion',$discussionId);
+        $participant = $this->getParticipant($discussionDTO);
+
+        $discussionDTO = $discussionDTO->withParticipant($participant);
+
+        $discussionDTO = $discussionDTO->withDiscussion($participant->participation);
         
-        if ($id != $userId) {
-            $this->canUpdate($discussion,$id);
+        if ($participant->accountable->isNotAuthorizedUser($discussionDTO->userId)) {
+            
+            $this->ensureIsAdminOfDiscussion($discussionDTO);
         }
 
-        $participant = $discussion->participants()->where('id',$participantId)->first();
-        if (is_null($participant)) {
-            $this->throwDiscussionException("participant with id {$participantId} does not belong to discussion not found with id {$discussionId}");
-        }
-
-        $theParticipant = $participant;
         $participant->delete();
 
-        return [
-            'participant' => $theParticipant,
-            'title' => $discussion->title,
-            'userIds' => $this->getDiscussionAdminIds($discussion),
-        ];
+        $discussionDTO->methodType = 'deleteParticipant';
+
+        $this->broadcastDiscussion($discussionDTO);
+
+        $this->sendNotification(
+            $this->getDiscussionParticipantOrAdminsUsers($discussionDTO),
+            $discussionDTO
+        );
+    }
+
+    private function getDiscussionParticipantOrAdminsUsers($discussionDTO)
+    {
+        if ($discussionDTO->participant->accountable->isNotAuthorizedUser($discussionDTO->userId)) {
+            return $discussionDTO->participant->accountable->user;
+        }
+
+        return $this->getDiscussionAdminsUsers($discussionDTO->discussion);
+    }
+
+    private function getDiscussionParticipantAndAdminsUsers($discussionDTO)
+    {
+        $users = $discussionDTO->discussion->participants()
+            ->with(['accountable.user'])
+            ->get()
+            ->pluck('accountable.user');
+
+        return $users->merge(
+            $this->getDiscussionAdminsUsers($discussionDTO->discussion)
+        )->unique();
+    }
+
+    private function getDiscussionAdminsUsers($discussion)
+    {
+        return User::find($this->getDiscussionAdminIds($discussion));
     }
 
     private function getDiscussionAdminsId($discussion)
     {
-        $array = $discussion->participants()->where('state','ADMIN')
-            ->get()->pluck('user_id');
+        $array = $discussion->getAdminParticipants()->pluck('user_id');
+
         $array[] = $discussion->raisedby->user_id;
 
         return $array;
     }
 
-    public function discussionSearch($discussionId,$search,$searchType,$user)
+    public function discussionSearch(SearchDTO $searchDTO)
     {
-        $discussion = $this->getModel('discussion',$discussionId);
-        
-        $discussion->load('raisedby');
-        $adminsUserIds = $this->getDiscussionAdminsId($discussion);
-
-        $withoutUserIds = $discussion->participants->pluck('user_id'); 
-        $withoutUserIds[] = $discussion->raisedby->user_id;
-
-        $theOther = $discussion->requests()
-        ->whereHasMorph('requestfrom','*',function(Builder $query,$type) use ($adminsUserIds){
-            if ($type === 'App\YourEdu\School') {
-                $query->whereIn('owner_id',$adminsUserIds);
-            } else {
-                $query->whereIn('user_id',$adminsUserIds);
-            }                
-        })->where('state','PENDING')->get()->pluck('requestto')->map(function($item,$index){
-            if ($item['user_id']) {
-                return $item['user_id'];
-            }
-            $item['owner_id'];
-        });
-
-        $withoutUserIds = $withoutUserIds->merge($theOther);
-
-        $searchClass = null;
-        if ($searchType === 'profiles') {
-            $searchClass = '*';
-        } else {
-            $searchClass = getAccountClass($searchType);
-        }
-
-        if ($user->learner && count($user->learner->parents)) {
-            $parentsLearnerUserIds = $user->learner->parents->pluck('user_id');
-        }
-        $parentsLearnerUserIds[] = $user->id;
-
-        $accounts = Profile::where(function($query) use ($search,$searchClass){
-                $query->where('name','like',"%{$search}%")
-                ->orWhereHasMorph('profileable',$searchClass,function(Builder $query) use ($search){
-                    $query->where('name','like',"%{$search}%");
-                });
-            })
-            ->whereNotIn('user_id',$withoutUserIds)
-            ->hasNoFlags($parentsLearnerUserIds)
-            ->get()->pluck('profileable');
-
-        return $accounts;
+        return $this->profileSearch($searchDTO);
     }
 
-    public function inviteParticipant($discussionId,$account,$accountId,$id)
+    public function inviteParticipant(InvitationDTO $invitationDTO)
     {
-        $discussion = $this->getModel('discussion',$discussionId);
+        $invitationDTO = $this->setItemModel($invitationDTO);
         
-        $invitedAccount = $this->getModel($account,$accountId);
-        
-        $adminAccount = null;
-        if ($discussion->raisedby->user_id &&
-            $discussion->raisedby->user_id === $id) {
-            $adminAccount = $discussion->raisedby;
-        } else {
-            $adminAccount = $discussion->participants()->where('user_id',$id)
-                ->where('state',"ADMIN")->first();
-        }
-        if (is_null($adminAccount)) {
-            $this->throwDiscussionException("admin account was not found");
-        }
+        $invitationDTO = $this->setInvitee($invitationDTO);
 
-        $request = $adminAccount->requestsSent()->create();
-        $request->requestable()->associate($discussion);
-        $request->requestto()->associate($invitedAccount);
-        $request->state = 'PENDING';
-        $request->save();
+        $discussionDTO = DiscussionDTO::new()
+            ->withDiscussion($invitationDTO->itemModel)
+            ->withInvitationDTO($invitationDTO)
+            ->addData(
+                userId: $invitationDTO->userId, 
+                main: true, 
+                action: 'pending'
+            );
 
-        return [
-            'request' => $request,
-            'admin' => $adminAccount,
-            'title' => $discussion->title,
-            'user' => !is_null($invitedAccount->user_id) ? $invitedAccount->user : 
-                $invitedAccount->owner,
-        ];
+        $this->ensureAccountUserDoesHaveParticipatingAccount(
+            item: $discussionDTO->discussion,
+            account: $invitationDTO->invitee
+        );
+
+        $this->ensureIsAdminOfDiscussion($discussionDTO);
+
+        $this->ensureAccountHasAllowedType($discussionDTO);
+
+        $request = $this->createInviteRequest($invitationDTO);
+
+        $invitationDTO = $invitationDTO->withRequest($request);
+
+        $participant = $this->createParticipant(
+            $invitationDTO->itemModel,
+            $invitationDTO->invitee
+        );
+
+        $discussionDTO = $discussionDTO->withParticipant($participant);
+        $participant = $this->updateParticipantStateUsingAction($discussionDTO);
+
+        $invitationDTO->methodType = 'inviteParticipant';
+        $discussionDTO->methodType = 'pendingParticipant';
+
+        $this->broadcastDiscussion(
+            $discussionDTO
+        );
+
+        $this->sendNotification(
+            $invitationDTO->invitee->user,
+            $invitationDTO
+        );
+
+        return $request;
     }
-    
-    private function createParticipant($discussion,$account){
-        $participant = $discussion->participants()->create([
-            'user_id' => $account->user_id ? $account->user_id : $account->owner_id,
-            'state' => 'ACTIVE'
-        ]);
 
-        $participant->accountable()->associate($account);
-        $participant->save();
-
-        return $participant;
-    }
-
-    private function joinInvitationResponseData($requestId,$discussionId,$account,$accountId)
+    private function checkRequestType($request)
     {
-        $request = $this->getModel('request',$requestId);
-        
-        if ($request->requestable_type !== 'App\YourEdu\Discussion') {
-            $this->throwDiscussionException("request with id {$requestId} not a request to join discussion");
+        if ($request->isDiscussionRequest()) {
+            return;
         }
 
-        $mainAccount = $this->getModel($account,$accountId);
-        
-        if ($request->requestfrom->user_id !== $mainAccount->user_id && 
-            $request->requestfrom->owner_id !== $mainAccount->owner_id) {
-            $this->throwDiscussionException("request with id {$requestId} not from this account");
-        }
-
-        $discussion = $this->getModel('discussion',$discussionId);
-        
-        return [
-            'discussion' => $discussion,
-            'requestfrom' => $mainAccount,
-            'requestto' => $request->requestto,
-            'request' => $request,
-        ];
+        $this->throwDiscussionException(
+            message: "request with id {$request->id} is not related to a discussion",
+            data: $request
+        );
     }
 
-    private function throwDiscussionException
-    (
-        $message,
-        $data = null
-    )
+    private function throwDiscussionException($message, $data = null)
     {
         throw new DiscussionException(
             message: $message,
@@ -392,66 +740,110 @@ class DiscussionService
         );
     }
 
-    public function joinResponse($account,$accountId,$requestId,$discussionId,$response)
+    public function joinResponse(InvitationDTO $invitationDTO)
     {
-        $data = $this->joinInvitationResponseData($requestId,$discussionId,$account,$accountId);
+        $request = $this->getModel('request',$invitationDTO->requestId);
+        
+        $this->checkRequestType($request);
+        
+        $this->validateAction($invitationDTO);
 
-        $data['request']->state = Str::upper($response);
-        $data['request']->save();
-        if ($response === 'declined') {
-            return [
-                'type' => 'request',
-                'title' => $data['discussion']->title,
-                'requestfrom' => $data['requestfrom'],
-                'user'=> $data['requestfrom']->user ? $data['requestfrom']->user : $data['requestfrom']->owner
-            ];
+        $discussionDTO = DiscussionDTO::new()
+            ->withDiscussion($request->requestable)
+            ->addData(
+                main: true, 
+                userId: $invitationDTO->userId,
+                action: 'active'
+            );
+
+        $this->ensureIsAdminOfDiscussion($discussionDTO);
+
+        $request->state = Str::upper($invitationDTO->action);
+        $request->save();
+
+        $participant = $this->getJoinRequestParticipant($discussionDTO, $request);
+
+        $invitationDTO->methodType = 'removePendingParticipant';
+        $invitationDTO->participantId = $participant->id;
+        $this->broadcastDiscussion($invitationDTO);
+
+        $invitationDTO->methodType = 'joinResponse';
+        $this->sendNotification(
+            $request->requestfrom->user,
+            $invitationDTO,
+        );
+
+        if ($invitationDTO->action === 'declined') {
+            
+            $participant->delete();
+
+            return null;
         }
 
-        $participant = $this->createParticipant($data['discussion'], $data['requestfrom']);
-        
-        return [
-            'type' => 'participant',
-            'title' => $data['discussion']->title,
-            'requestfrom' => $data['requestfrom'],
-            'participant' => $participant,
-            'user'=> $data['requestfrom']->user ? $data['requestfrom']->user : $data['requestfrom']->owner
-        ];
-    }    
-    
-    public function invitationResponse($account,$accountId,$requestId,$discussionId,$response)
-    {
-        $data = $this->joinInvitationResponseData($requestId,$discussionId,$account,$accountId,false);
+        $participant = $this->updateParticipantStateUsingAction(
+            $discussionDTO->withParticipant($participant)
+        );
 
-        $data['request']->state = Str::upper($response);
-        $data['request']->save();
-        if ($response === 'declined') {
-            return [
-                'title' => $data['discussion']->title,
-                'requestto' => $data['requestto'],
-                'user'=> $data['request']->requestfrom->user ? $data['request']->requestfrom->user :
-                    $data['request']->requestfrom->owner
-            ];
-        }
+        $discussionDTO->methodType = 'joinDiscussion';
 
-        $participant = $this->createParticipant($data['discussion'], $data['requestto']);
+        $this->broadcastDiscussion($discussionDTO);
+
+        $invitationDTO =  $invitationDTO->withRequest($request);
         
-        return [
-            'title' => $data['discussion']->title,
-            'requestto' => $data['requestto'],
-            'participant' => $participant,
-            'user'=> $data['request']->requestfrom->user ? $data['request']->requestfrom->user :
-                $data['request']->requestfrom->owner
-        ];
+        return $participant;
     }
 
-    private function getModel($account, $accountId)
+    private function validateAction($invitationDTO)
     {
-        $main = getYourEduModel($account, $accountId);
-        if (is_null($main)) {
-            throw new AccountNotFoundException("$account with id $accountId not found.");
+        if (in_array($invitationDTO->action, ['accepted', 'declined'])) {
+            return;
         }
 
-        return $main;
+        $this->throwDiscussionException(
+            message: "sorry 😞, {$invitationDTO->action} is not a valid response",
+            data: $invitationDTO
+        );
+    }
+    
+    public function invitationResponse(InvitationDTO $invitationDTO)
+    {
+        $request = $this->getModel('request',$invitationDTO->requestId);
+        
+        $invitationDTO = $invitationDTO->withRequest($request);
+
+        $this->checkRequestOwnership($invitationDTO);
+
+        $this->checkRequestType($request);
+
+        $this->validateAction($invitationDTO);
+
+        $request->state = Str::upper($invitationDTO->action);
+        $request->save();
+
+        if ($invitationDTO->action === 'declined') {
+            return null;
+        }
+
+        $participant = $this->createParticipant(
+            $request->requestable, 
+            $request->requestto
+        );
+
+        $this->broadcastDiscussion(
+            DiscussionDTO::new()
+                ->addData(methodType: 'joinDiscussion', main: true)
+                ->withParticipant($participant)
+        );
+
+        $invitationDTO = $invitationDTO->withRequest($request);
+
+        $invitationDTO->methodType = 'invitationResponse';
+        $this->sendNotification(
+            $this->getDiscussionAdminsUsers($request->requestable),
+            $invitationDTO,
+        );
+
+        return $participant;
     }
 
     private function deleteDiscussionFiles(Discussion $discussion)
@@ -461,65 +853,29 @@ class DiscussionService
     
     public function deleteDiscussion(DiscussionDTO $discussionDTO)
     {
-        try {
-            $discussion = $this->getModel('discussion', $discussionDTO->discussionId);
-            
-            if ($discussionDTO->main) {
-                DB::beginTransaction();
-                
-                $this->canUpdate($discussion, $discussionDTO->userId);
-            }
+        $discussion = $this->getModel('discussion', $discussionDTO->discussionId);
+        
+        $discussionDTO = $discussionDTO->withDiscussion($discussion);
 
-            $discussionDTO = $this->setDiscussionDTORaisedby($discussionDTO, $discussion);
+        $this->ensureIsAdminOfDiscussion($discussionDTO);
 
-            $this->deleteDiscussionFiles($discussion);
+        $discussionDTO = $this->setRaisedby($discussionDTO);
 
-            $deletionStatus = $discussion->delete();
+        $this->deleteDiscussionFiles($discussion);
 
-            if ($deletionStatus) {
-                
-                $discussionDTO->methodType = 'deleted';
-                $this->broadcastDiscussion($discussion, $discussionDTO);
-            }
+        $discussion->delete();
 
-            return $deletionStatus;
-        } catch (\Throwable $th) {
-            DB::rollback();
-            throw $th;
-        }
+        $discussionDTO->methodType = 'deleted';
+        $this->broadcastDiscussion($discussionDTO);
     }
 
-    private function setDiscussionDTORaisedby
-    (
-        $discussionDTO,
-        $discussion = null,
-    )
+    private function broadcastDiscussion($dto)
     {
-        if ($discussion) {
-            return $discussionDTO->withRaisedby(
-                $discussion->raisedby
-            );
-        }
-
-        return $discussionDTO->withRaisedby(
-            $this->getModel(
-                $discussionDTO->account,
-                $discussionDTO->accountId
-            )
-        );
-    }
-
-    private function broadcastDiscussion
-    (
-        $discussion,
-        $discussionDTO
-    )
-    {
-        if (!$discussionDTO->main) {
+        if (property_exists($dto, 'main') && ! $dto->main) {
             return;
         }
 
-        $event = $this->getEvent($discussion, $discussionDTO);
+        $event = $this->getEvent($dto);
 
         if (is_null($event)) {
             return;
@@ -528,47 +884,194 @@ class DiscussionService
         broadcast($event)->toOthers();
     }
 
-    private function getEvent($discussion, $discussionDTO)
+    private function getEvent($dto)
     {
-        if ($discussionDTO->methodType === 'deleted') {
-            return new DeleteDiscussion([
-                'discussionId' => $discussionDTO->discussionId,
-                'account' => class_basename_lower($discussionDTO->raisedby),
-                'accountId' => $discussionDTO->raisedby->id,
-            ]);
+        if ($dto->methodType === 'created') {
+            return new NewDiscussion($dto);
+        }
+
+        if ($dto->methodType === 'updated') {
+            return new UpdateDiscussion($dto);
+        }
+
+        if ($dto->methodType === 'deleted') {
+            return new DeleteDiscussion($dto);
+        }
+        
+        if ($dto->methodType === 'createdMessage') {
+            return new NewDiscussionMessage($dto);
+        }
+
+        if ($dto->methodType === 'updatedMessage') {
+            return new UpdateDiscussionMessage($dto);
+        }
+
+        if ($dto->methodType === 'deletedMessage') {
+            return new DeleteDiscussionMessage($dto);
+        }
+
+        if ($dto->methodType === 'removePendingParticipant') {
+            return new RemoveDiscussionPendingParticipant($dto);
+        }
+
+        if ($dto->methodType === 'pendingParticipant') {
+            return new NewDiscussionPendingParticipant($dto);
+        }
+
+        if ($dto->methodType === 'joinRequest') {
+            return new NewDiscussionPendingParticipant($dto);
+        }
+
+        if ($dto->methodType === 'updateParticipant') {
+            return new UpdatedDiscussionParticipant($dto);
+        }
+
+        if ($dto->methodType === 'joinDiscussion') {
+            return new NewDiscussionParticipant($dto);
+        }
+
+        if ($dto->methodType === 'deleteParticipant') {
+            return new RemoveDiscussionParticipant($dto);
         }
 
         return null;
     }
 
-    public function joinDiscussion($discussionId,$account,$accountId,$userId)
+    private function ensureAccountHasAllowedType($dto)
     {
-        $discussion = $this->getModel('discussion', $discussionId);
+        if (is_null($dto->invitationDTO)) {
+            return;
+        }
 
-        $joiningAccount = $this->getModel($account, $accountId);
+        if ($dto->discussion->allowed === 'ALL') {
+            return;
+        }
 
-        //if private, make request and send notification
-        //else make participant
-        if ($discussion->type === 'PRIVATE') {
-            $request = $joiningAccount->requestsSent()->create();
-            $request->requestto()->associate($discussion->raisedby);
-            $request->requestable()->associate($discussion);
-            $request->state = 'PENDING';
-            $request->save();
-            $discussion->raisedby->user->notifyNow(new DiscussionRequestNotification([
-                'requestId' => $request->id
-            ]));
-            return [
-                'type' => 'pendingParticipant',
-                'requestfrom' => $joiningAccount
-            ];
-        } 
+        $account = $dto->invitationDTO->joiner ?
+            $dto->invitationDTO->joiner : $dto->invitationDTO->invitee;
 
-        $participant = $this->createParticipant($discussion,$joiningAccount);
-        return [
-            'type' => 'participant',
-            'participant' => $participant
-        ];
+        if ($dto->discussion->allowed === Str::upper("{$account->accountType}s")) {
+            return;
+        }
+
+        $type = strtolower(substr_replace($dto->discussion->allowed, '', -1));
+        $this->throwDiscussionException(
+            message: "sorry 😞, {$account->accountType} account is not allowed. please use a {$type} account",
+            data: $dto
+        );
+    }
+
+    public function joinDiscussion(InvitationDTO $invitationDTO)
+    {
+        $invitationDTO = $this->setItemModel($invitationDTO);
+
+        $invitationDTO = $this->setJoiner($invitationDTO);
+
+        $discussionDTO = DiscussionDTO::new()
+            ->addData(
+                userId: $invitationDTO->userId, 
+                main: true, 
+                methodType: "joinDiscussion"
+            )
+            ->withInvitationDTO($invitationDTO)
+            ->withDiscussion($invitationDTO->itemModel);
+
+        $this->ensureAccountUserDoesHaveParticipatingAccount(
+            item: $discussionDTO->discussion,
+            account: $invitationDTO->joiner
+        );
+
+        $this->ensureNotAdminOrParticipant($discussionDTO);
+
+        $this->ensureAccountHasAllowedType($discussionDTO);
+
+        if ($invitationDTO->itemModel->type === 'PRIVATE') {
+            
+            return $this->sendJoinRequest($invitationDTO);
+        }
+
+        $participant = $this->createParticipant(
+            $invitationDTO->itemModel,
+            $invitationDTO->joiner
+        );
+
+        $this->sendNotification(
+            $this->getDiscussionAdminsUsers($discussionDTO->discussion),
+            $discussionDTO
+        );
+        
+        $this->broadcastDiscussion(
+            $discussionDTO->withParticipant($participant)
+        );
+
+        return $participant;
+    }
+
+    private function ensureNotAdminOrParticipant($discussionDTO)
+    {
+        if ($discussionDTO->discussion->isNotOwner($discussionDTO->userId) &&
+            $discussionDTO->discussion->isNotParticipant($discussionDTO->userId)) {
+            return;
+        }
+
+        $this->throwDiscussionException(
+            message: "sorry 😞, an admin or participant cannot perform this action.",
+            data: $discussionDTO
+        );
+    }
+
+    private function ensureNoPendingJoinRequests($invitationDTO)
+    {
+        $request = Request::query()
+            ->whereDiscussionRequest()
+            ->wherePending()
+            ->whereRequestFromUser($invitationDTO->userId)
+            ->exists();
+
+        if (! $request) {
+            return;
+        }
+
+        $this->throwDiscussionException(
+            message: "sorry 😞, you already have a pending request to join this discussion",
+            data: $invitationDTO
+        );
+    }
+
+    public function sendJoinRequest($invitationDTO)
+    {
+        $this->ensureNoPendingJoinRequests($invitationDTO);
+
+        $request = $this->createJoinRequest($invitationDTO);
+
+        $invitationDTO = $invitationDTO->withRequest($request);
+
+        $invitationDTO->methodType = 'joinRequest';
+
+        $this->sendNotification(
+            $this->getDiscussionAdminsUsers($request->requestable),
+            $invitationDTO,
+        );
+
+        $participant = $this->createParticipant(
+            $request->requestable,
+            $request->requestfrom
+        );
+
+        $discussionDTO = DiscussionDTO::new()
+            ->withParticipant($participant)
+            ->addData(
+                main: true, 
+                userId: $invitationDTO->userId, 
+                methodType: 'joinRequest',
+                action: 'pending'
+            );
+
+        $this->updateParticipantStateUsingAction($discussionDTO);
+
+        $this->broadcastDiscussion($discussionDTO);
+
+        return null;
     }
 }
 

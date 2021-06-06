@@ -28,7 +28,7 @@ class AccountResponseNotification extends Notification implements ShouldQueue
      */
     public function via($notifiable)
     {
-        return ['mail'];
+        return ['database', 'broadcast'];
     }
 
     /**
@@ -55,11 +55,9 @@ class AccountResponseNotification extends Notification implements ShouldQueue
     {
         return [
             'message' => $this->requestDTO->message,
-            'account' => property_exists(
-                $this->requestDTO->request->requestto, 'accountType'
-            ) ? new UserAccountResource(
-                $this->requestDTO->request->requestto
-            ) : new UserMiniResource($this->requestDTO->request->requestto),
+            'account' => new UserAccountResource(
+                    $this->requestDTO->request->requestto
+                ),
         ];
     }
 

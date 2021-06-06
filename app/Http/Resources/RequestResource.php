@@ -86,11 +86,8 @@ class RequestResource extends JsonResource
             $data['fees'] = PaymentTypeResource::collection($this->fees);
             $data['discounts'] = PaymentTypeResource::collection($this->discounts);
             $data['action'] = $requestDTO->action;
-            $data['state'] = strtolower($this->state);
             $data['message'] = $requestDTO->message;
-            $data['name'] = $this->requestfrom->profile->name ?? $this->requestfrom->full_name;
-            $data['username'] = $this->requestfrom->user_name;
-            $data['url'] = $this->requestfrom->profile?->url;
+            $data['state'] = strtolower($this->state);
             $data['createdAt'] = $this->created_at->diffForHumans();
             $data['account'] = new UserAccountResource($this->requestfrom);
             $data['myAccount'] = new UserAccountResource($this->requestto);

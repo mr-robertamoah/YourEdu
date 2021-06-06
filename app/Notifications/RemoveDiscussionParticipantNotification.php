@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\ParticipantResource;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,18 +12,12 @@ class RemoveDiscussionParticipantNotification extends Notification
 {
     use Queueable;
 
-    private $account;
-    private $message;
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($account,$message)
-    {
-        $this->account = $account;
-        $this->message = $message;
-    }
+    public function __construct(private $discussionDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -57,9 +52,16 @@ class RemoveDiscussionParticipantNotification extends Notification
      */
     public function toArray($notifiable)
     {
+        $message = "you have been removed from the discussion with title: {$this->discussionDTO->discussion->title}";
+        
+        if ($this->discussionDTO->discussion->isAdmin($notifiable->id) &&
+            $this->discussionDTO->participant->accountable->isNotUser($notifiable->id)) {
+            $message = "this participant just left the discussion with title: {$this->discussionDTO->discussion->title}";
+        }
+
         return [
-            'account' => $this->account,
-            'message' => $this->message,
+            'account' => new ParticipantResource($this->discussionDTO->participant),
+            'message' => $message,
         ];
     }
 }

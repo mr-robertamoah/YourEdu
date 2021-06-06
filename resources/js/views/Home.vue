@@ -391,9 +391,8 @@ import { mapActions, mapGetters } from 'vuex'
             },
             removeMyfollow(data){
                 this.searchData.forEach(searchItem=>{
-                    if (searchItem.hasOwnProperty('account_id') &&
-                        searchItem.account_id === data.accountId &&
-                        searchItem.account_type === data.account) {
+                    if (searchItem.accountId === data.accountId &&
+                        searchItem.account === data.account) {
                         let followIndex = searchItem.follows.findIndex(follow=>{
                             return follow.id === data.follow.id
                         })
@@ -405,9 +404,8 @@ import { mapActions, mapGetters } from 'vuex'
             },
             addMyfollow(data){
                 this.searchData.forEach(searchItem=>{
-                    if (searchItem.hasOwnProperty('account_id') &&
-                        searchItem.account_id === data.accountId &&
-                        searchItem.account_type === data.account) {
+                    if (searchItem.accountId === data.accountId &&
+                        searchItem.account === data.account) {
                         searchItem.follows.push(data.follow)
                     }
                 })
@@ -1097,6 +1095,7 @@ import { mapActions, mapGetters } from 'vuex'
             }
 
             .main{
+                padding-top: 20px;
                 width: 50%;
                 background-color: inherit;
             }

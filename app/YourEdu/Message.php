@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\ItemFilesTrait;
 use App\User;
 use Database\Factories\MessageFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,22 +12,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Message extends Model
 {
     use SoftDeletes,
-        HasFactory;
+        HasFactory,
+        ItemFilesTrait;
 
     protected $fillable = [
-        'from_user_id','to_user_id','state','message','user_deletes','updated_at'
+        'from_user_id','to_user_id','state','message','user_deletes',
+        'updated_at', 'user_seen',
     ];
 
-    protected $touches = ['conversation','messageable'];
+    protected $touches = ['messageable'];
 
     protected $casts = [
-        'user_deletes' => 'json'
+        'user_deletes' => 'array',
+        'user_seen' => 'array'
     ];
-
-    public function conversation()
-    {
-        return $this->belongsTo(Conversation::class);
-    }
 
     public function messageable()
     {
@@ -80,6 +79,40 @@ class Message extends Model
     public function flags()
     {
         return $this->morphMany(Flag::class,'flaggable');
+    }
+
+    public function questions()
+    {
+        return $this->morphMany(Question::class,'questionable');
+    }
+
+    public function conversation()
+    {
+        return class_basename_lower($this->messageable) === 'conversation' ?
+            $this->messageable : null;
+    }
+
+    public function discussion()
+    {
+        return class_basename_lower($this->messageable) === 'discussion' ?
+            $this->messageable : null;
+    }
+
+    public function isSeenBy($userId)
+    {
+        return in_array($userId, $this->user_seens);
+    }
+
+    public function isFromable($userId)
+    {
+        return $this->fromable()
+            ->whereUser($userId)
+            ->exists();
+    }
+
+    public function scopeWhereState($query, $state)
+    {
+        return $query->where('state', $state);
     }
 
     protected static function newFactory()

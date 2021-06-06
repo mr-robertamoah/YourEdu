@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\DTOs\PostDTO;
+use App\DTOs\PostsDTO;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\DiscussionPostResource;
+use App\Http\Resources\HomeItemResource;
 use App\Http\Resources\PostResource;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\DeletePostRequest;
@@ -37,35 +38,12 @@ class PostController extends Controller
 
     public function getUserPosts(Request $request)
     {
-        ray($request)->green();
-        $parentsLearnerUserIds = [];
-        $learner = auth()->user()->learner;
         try {
-            if ($learner && $learner->parents) {
-                $parentsLearnerUserIds = $learner->parents->pluck('user_id');
-                $parentsLearnerUserIds[] = $learner->user_id;
-            }
-
-            $items = Post::with(['books'=>function(MorphMany $query){
-                    $query->with(['images','videos','audios','files','comments']);
-                },'poems'=>function(MorphMany $query){
-                    $query->with(['images','videos','audios','files','comments']);
-                },'activities'=>function(MorphMany $query){
-                    $query->with(['images','videos','audios','files','comments']);
-                },'riddles'=>function(MorphMany $query){
-                    $query->with(['images','videos','audios','files','answers']);
-                },'questions'=>function(MorphMany $query){
-                    $query->with(['images','videos','audios','files','answers']);
-                },'comments'])->hasPostTypes()->withFilter()->hasPublished()
-                ->hasNoFlags($parentsLearnerUserIds)
-                ->get();
-
-            $items = $items->merge(Discussion::notSocial()->with([
-                'images','videos','audios','files','comments','flags','attachments',
-                'beenSaved','messages','raisedby.profile','requests.requestfrom'])
-                ->get());
+            $items = (new PostService)->getUserPosts(
+                PostsDTO::createFromRequest($request)
+            );
                            
-            return DiscussionPostResource::collection(paginate($items->sortByDesc('updated_at'), 5));            
+            return HomeItemResource::collection($items);            
         } catch (\Throwable $th) {
             // return response()->json([
             //     'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
@@ -76,12 +54,12 @@ class PostController extends Controller
 
     public function posts(Request $request)
     {
-        $posts = null;
         try {
-            $posts = Post::hasNoApprovedFlags()->hasPostTypes()
-                ->withFilter()->hasPublished()->orderBy('updated_at', 'desc')->paginate(5);
-
-            return PostResource::collection($posts);            
+            $items = (new PostService)->getPosts(
+                PostsDTO::createFromRequest($request)
+            );
+                           
+            return HomeItemResource::collection($items);          
         } catch (\Throwable $th) {
             // return response()->json([
             //     'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
@@ -164,6 +142,6 @@ class PostController extends Controller
             'attachments','participants','beenSaved','flags','raisedby.profile',
         ])->get());
 
-        return DiscussionPostResource::collection(paginate($items->sortByDesc('updated_at'), 5));
+        return HomeItemResource::collection(paginate($items->sortByDesc('updated_at'), 5));
     }
 }

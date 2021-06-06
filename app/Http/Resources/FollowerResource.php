@@ -16,17 +16,12 @@ class FollowerResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
-            'followedby_type' => $this->followedby_type,
-            'followedby_id' => $this->followedby_id,
             'followedby_chat_status' => $this->followedby_chat_status,
             'followable_chat_status' => $this->followable_chat_status,
-            'name' => $this->followedby->profile->name,
             'conversation_id' => $this->conversation_id,
-            'my_name' => $this->followable->profile->name,
-            'url' => $this->followedby->profile->url,
-            'followable_type' => $this->followable_type,
-            'followable_id' => $this->followable_id,
+            'myAccount' => $this->followable_type,
+            'myAccountId' => $this->followable_id,
+            'otherAccount' => new UserAccountResource($this->followedby),
         ];
     }
 }

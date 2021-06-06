@@ -30,7 +30,7 @@ require('./bootstrap');
 
 require("flatpickr");
 
-window.Vue = require('vue');
+window.Vue = require('vue').default;
 // Install BootstrapVue
 Vue.use(BootstrapVue)
 Vue.use(VuePageTransition)
@@ -62,7 +62,7 @@ Vue.component('app-nav', AppNav);
 // const files = require.context('./', true, /\.vue$/i)
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default))
 
-Vue.component('example-component', require('./components/ExampleComponent.vue').default);
+Vue.component('reaction-component', require('./components/ReactionComponent.vue').default);
 Vue.component('comment-single', require('./components/CommentSingle.vue').default);
 Vue.component('view-comments', require('./components/ViewComments.vue').default);
 Vue.component('small-modal', require('./components/SmallModal.vue').default);

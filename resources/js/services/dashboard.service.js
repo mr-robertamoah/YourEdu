@@ -186,7 +186,7 @@ const DashboadService = {
             return error.response
         }
     },
-    async sendRequest(data){
+    async sendResponse(data){
         try {
             let response = await ApiService.post(`api/request/account/respond`,data)
 
@@ -321,7 +321,7 @@ const DashboadService = {
     },
     async updateAssessment(data){
         try {
-            let response = await ApiService.post(`api/assessment/${data.get('assessmentId')}`,data)
+            let response = await ApiService.put(`api/assessment/${data.get('assessmentId')}`,data)
 
             return response
         } catch (error) {

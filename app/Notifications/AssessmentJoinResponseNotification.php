@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AccountsResponseNotification extends Notification
+class AssessmentJoinResponseNotification extends Notification
 {
     use Queueable;
 
@@ -16,10 +16,7 @@ class AccountsResponseNotification extends Notification
      *
      * @return void
      */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(private $invitationDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -29,7 +26,7 @@ class AccountsResponseNotification extends Notification
      */
     public function via($notifiable)
     {
-        return ['mail'];
+        return ['database', 'broadcast'];
     }
 
     /**
@@ -55,7 +52,7 @@ class AccountsResponseNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            //
+            'message' => "{$this->invitationDTO->action} your request to join the assessment with name: {$this->invitationDTO->request->requestable->name}",
         ];
     }
 }

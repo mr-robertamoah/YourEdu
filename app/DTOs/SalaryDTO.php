@@ -17,6 +17,7 @@ class SalaryDTO
     public ?string $currency = null;
     public ?string $period = null;
     public ?string $name = null;
+    public ?AccountDTO $dashboardItemDTO = null;
 
     public static function createFromData
     (
@@ -74,6 +75,15 @@ class SalaryDTO
         $clone = clone $this;
 
         $clone->dashboardItem = $dashboardItem;
+
+        return $clone;
+    }
+
+    public function withDashboardItemDTO(AccountDTO $dashboardItemDTO)
+    {
+        $clone = clone $this;
+
+        $clone->dashboardItemDTO = $dashboardItemDTO;
 
         return $clone;
     }

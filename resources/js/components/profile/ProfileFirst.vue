@@ -47,10 +47,8 @@
                         </span>
                         <div :key="key" v-for="(profile,key) in computedProfiles">
                             <profile-bar
-                                :name="profile.name"
-                                :type="profile.params.account"
                                 :smallType="true"
-                                :routeParams="profile.params"
+                                :profile="profile"
                                 :navigate="false"
                                 @clickedProfile="clickedProfile"
                             ></profile-bar>
@@ -127,7 +125,7 @@
                                         :icon="['fa','file-image']"
                                     ></font-awesome-icon>
                                 </div>
-                                <input type="file" ref="inputfile" class="d-none"
+                                <input type="file" ref="inputfile" class="hidden"
                                     @change="inputFileChange">
                             </template>
                             <template slot="buttons" v-if="showPictureAdd">

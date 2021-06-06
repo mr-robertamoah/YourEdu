@@ -67,11 +67,11 @@
 <style lang="scss" scoped>
 @mixin label-after() {
     border-radius: 11px;
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     position: absolute;
-    top: 12px;
-    left: 9px;
+    top: 8px;
+    left: 10px;
     content: '';
     display: block;
     background: $color-primary;

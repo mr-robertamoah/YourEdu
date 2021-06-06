@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\ConversationResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -16,18 +17,12 @@ class NewConversation implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $conversation;
-    public $user_id;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($conversation, $user_id)
-    {
-        $this->conversation = $conversation;
-        $this->user_id = $user_id;
-    }
+    public function __construct(private $conversationDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -36,7 +31,7 @@ class NewConversation implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.message.{$this->user_id}");
+        return new PrivateChannel("youredu.message.{$this->conversationDTO->otherChattingAccount->user_id}");
     }
     
     public function broadcastAs()
@@ -47,7 +42,8 @@ class NewConversation implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'conversation' => $this->conversation
+            'conversation' => new ConversationResource($this->conversationDTO->conversation->refresh()),
+            'type' => $this->conversationDTO->methodType,
         ];
     }
 }

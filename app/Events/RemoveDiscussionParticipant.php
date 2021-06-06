@@ -14,18 +14,12 @@ class RemoveDiscussionParticipant implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    private $userId;
-    private $discussionId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($userId,$discussionId)
-    {
-        $this->userId = $userId;
-        $this->discussionId = $discussionId;
-    }
+    public function __construct(private $discussionDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -34,19 +28,18 @@ class RemoveDiscussionParticipant implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel("youredu.discussion.{$this->discussionId}");
+        return new Channel("youredu.discussion.{$this->discussionDTO->participant->participation_id}");
     }
 
     public function broadcastAs()
     {
-        return 'removeDiscussionParticipant';
+        return 'removeParticipant';
     }
 
     public function broadcastWith()
     {
         return [
-            'userId' => $this->userId,
-            'discussionId' => $this->discussionId,
+            'userId' => $this->discussionDTO->participant->user_id,
         ];
     }
 }

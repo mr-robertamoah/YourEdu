@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\AdministrationDTO;
 use App\Exceptions\AdministrationException;
 use App\Http\Resources\AdminResource;
 use App\Http\Resources\UserAccountResource;
@@ -149,8 +150,109 @@ class AdministrationService
         ]);
     }
 
-    public function createAdmin()
+    public function createAdmin(AdministrationDTO $administrationDTO)
     {
+        $administrationDTO = $this->setCreator($administrationDTO);
+
+        $admin = $this->addAdministrator($administrationDTO);
+
+        $this->checkAdministrator($admin, $administrationDTO);
+
+        $administrationDTO = $administrationDTO->withAdministrator($admin);
+
+        $this->attachAdminToSchool($administrationDTO);
+
+        return $admin;
+    }
+
+    public function attachAdminToSchool($administrationDTO)
+    {
+        $school = null;
+        if (is_not_null($administrationDTO->school)) {
+            $school = $administrationDTO->school;
+        }
         
+        if (is_not_null($administrationDTO->schoolId)) {
+            $school = $this->getModel('school', $administrationDTO->schoolId);
+        }
+
+        if (is_null($school)) {
+            return;
+        }
+
+        $this->validateAdministratorAsSchooladmin($administrationDTO);
+
+        $school->admins()->attach($administrationDTO->administrator);
+        $school->save();
+    }
+
+    private function validateAdministratorAsSchooladmin($administrationDTO)
+    {
+        if ($administrationDTO->administrator?->isSchooladmin()) {
+            return;
+        }
+
+        $this->throwAdministrationException(
+            message: "you are not authorized. this administrator is required to be a school administrator",
+            data: $administrationDTO
+        );
+    }
+
+    public function setAdminState($administrator, $administrationDTO)
+    {
+        $this->validateCreatorAsSupervisor($administrationDTO);
+
+        $administrator->state = $administrationDTO->state;
+        $administrator->save();
+
+        return $administrator;
+    }
+
+    private function validateCreatorAsSupervisor($administrationDTO)
+    {
+        if ($administrationDTO->creator->is_superadmin ||
+            $administrationDTO->creator->is_supervisoradmin) {
+            return;
+        }
+
+        $this->throwAdministrationException(
+            message: "you are not authorized. you are required to be a YourEdu supervisor or super admin",
+            data: $administrationDTO
+        );
+    }
+
+    private function addAdministrator($administrationDTO)
+    {
+        return $administrationDTO->creator->admins()->create([
+            'name' => $administrationDTO->name,
+            'role' => strtoupper($administrationDTO->role),
+            'title' => $administrationDTO->title,
+            'level' => $administrationDTO->level ?: 1,
+            'description' => $administrationDTO->description,
+            'state' => "ACTIVE"
+        ]);
+    }
+
+    private function checkAdministrator($administrator, $administrationDTO)
+    {
+        if (is_not_null($administrator)) {
+            return;
+        }
+
+        $this->throwAdministrationException(
+            message: "failed creating administrator",
+            data: $administrationDTO
+        );
+    }
+
+    private function setCreator(AdministrationDTO $administrationDTO)
+    {
+        if (is_not_null($administrationDTO->creator)) {
+            return $administrationDTO;
+        }
+
+        return $administrationDTO->withCreator(
+            $this->getModel($administrationDTO->account, $administrationDTO->accountId)
+        );
     }
 }

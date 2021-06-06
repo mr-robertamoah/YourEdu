@@ -86,14 +86,14 @@ const routes =  [
         component: About,
     },
     {
-        name: 'item',
-        path: '/:item/:itemId',
-        component: ModalSwitcher,
-    },
-    {
         name: 'profile',
         path: '/profile/:account/:accountId',
         component: Profile,
+    },
+    {
+        name: 'item',
+        path: '/:item/:itemId',
+        component: ModalSwitcher,
     },
     {
         name: 'testing',

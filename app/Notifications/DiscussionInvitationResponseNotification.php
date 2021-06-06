@@ -12,26 +12,12 @@ class DiscussionInvitationResponseNotification extends Notification
 {
     use Queueable;
 
-    public $title;
-    public $account;
-    public $accountType;
-    public $accountName;
-    public $action;
-    public $discussionId;
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($title,$action,$discussionId,$account)
-    {
-        $this->title = $title;
-        $this->action = $action;
-        $this->account = new UserAccountResource($account);
-        $this->accountType = class_basename_lower(get_class($account));
-        $this->accountName = $account->name ? $account->name : $account->company_name;
-        $this->discussionId = $discussionId;
-    }
+    public function __construct(private $invitationDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -67,8 +53,8 @@ class DiscussionInvitationResponseNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            'message' => "{$this->accountName}({$this->accountType}) {$this->action} your invitation to join your discussion with title: {$this->title}",
-            'account' => $this->account,
+            'message' => "{$this->invitationDTO->action} your invitation to join your discussion with title: {$this->invitationDTO->request->requestable->title}",
+            'account' => new UserAccountResource($this->invitationDTO->request->requestto),
         ];
     }
 }

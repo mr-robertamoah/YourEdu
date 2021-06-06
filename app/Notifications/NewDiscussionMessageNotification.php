@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\UserAccountResource;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,16 +12,12 @@ class NewDiscussionMessageNotification extends Notification
 {
     use Queueable;
 
-    public $requestId;
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($requestId)
-    {
-        $this->requestId = $requestId;
-    }
+    public function __construct(private $request){}
 
     /**
      * Get the notification's delivery channels.
@@ -56,7 +53,8 @@ class NewDiscussionMessageNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            'requestId' => $this->requestId
+            'message' => "{$this->request->requestfrom->name} has sent a message to the discussion with title: {$this->request->requestable->messageable->title}",
+            'account' => new UserAccountResource($this->request->requestfrom)
         ];
     }
 }

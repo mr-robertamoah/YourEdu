@@ -2,265 +2,342 @@
 
 namespace App\Services;
 
-use App\Exceptions\AccountNotFoundException;
+use App\DTOs\FollowDTO;
+use App\DTOs\RequestDTO;
+use App\Events\DeleteFollow;
+use App\Events\NewFollow;
+use App\Events\NewFollowBack;
 use App\Exceptions\FollowException;
-use App\Exceptions\RequestException;
-use App\User;
+use App\Traits\ServiceTrait;
 use App\YourEdu\Follow;
 use App\YourEdu\Request;
 use App\YourEdu\School;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use \Debugbar;
 use Illuminate\Database\Eloquent\Builder;
 
 class FollowService
 {
-    public function getFollowers($id)
+    use ServiceTrait;
+
+    public function getFollowers($userId)
     {
-        $followers = Follow::withAccounts()->with(['followedby.conversations'=>function(MorphToMany $query) use ($id){
-            $query->whereIn('type',['PRIVATE','GROUP'])
-                ->with(['conversationAccounts'=>function(HasMany $query) use ($id){
-                    $query->where('user_id',$id);
-                }]);
-        }])
-            ->where('followed_user_id', $id)
-            ->whereNotNull('user_id')->get();
+        $followers = Follow::query()
+            ->withAccounts()
+            ->whereHasMorph('followable', '*', function($query) use ($userId) {
+                $query->whereUser($userId);
+            })
+            ->whereNotNull('followedby_type')
+            ->get();
 
         return $followers;
     }
 
-    public function getFollowings($id)
+    public function getFollowings($userId)
     {
-        $followings = Follow::withAccounts()->with(['followedby.conversations'=>function(MorphToMany $query) use ($id){
-            $query->whereIn('type',['PRIVATE','GROUP'])
-                ->with(['conversationAccounts'=>function(HasMany $query) use ($id){
-                    $query->where('user_id',$id);
-                }]);
-        }])->where('user_id', $id)->get();
+        $followings = Follow::query()
+            ->withAccounts()
+            ->whereHasMorph('followedby', '*', function($query) use ($userId) {
+                $query->whereUser($userId);
+            })
+            ->whereNotNull('followable_type')
+            ->get();
 
         return $followings;
     }
 
-    public function unfollow($followId,$userId)
+    private function getFollow($followDTO)
     {
-        //user_id of follow belongs to follower, meaning follow belongs to follower 
-        $mainFollow = getYourEduModel('follow',$followId);
-        if ($mainFollow) {
-            if ($mainFollow->user_id !== $userId) {
-                throw new FollowException("you cannot unfollow a follow you do not own");
-            }
-        } else {
-            throw new AccountNotFoundException("follow not found");
+        if (is_not_null($followDTO->follow)) {
+            return $followDTO->follow;
         }
 
-        $request = $mainFollow->request;
-        if (!is_null($request) && $request->state === 'PENDING') {
-            $request->delete();
-        }
-
-        $mainAccount = $mainFollow->followedby;
-        $account = class_basename_lower($mainFollow->followedby_type);
-        $accountId = $mainFollow->followedby_id;
-        $unfollowRequestInfo = [
-            'followId' => $mainFollow->id,
-            'account' => $account,
-            'accountId' => $accountId,
-        ];
-        $mainFollow->delete();
-
-        $users = null;
-        if ($account === 'school') {
-            $users = User::whereIn('id',$mainAccount->admins->pluck('user_id'))->get();
-        } else {
-            $users = User::find($mainAccount->user_id);
-        }
-        
-        return [
-            'users' => $users,
-            'unfollowRequestInfo' => $unfollowRequestInfo,
-        ];
+        return $this->getModel('follow', $followDTO->followId);
     }
 
-    public function followBack($account,$accountId,$myAccount, $myAccountId,$id)
+    private function checkFollowOwnership($followDTO)
     {
-        $requestData = $this->getFollowRequest($account, $accountId, $myAccount, $myAccountId);
-        
-        $follow = $requestData['request']->requestable;
-        if(($requestData['requestto']->user_id && 
-            $requestData['requestto']->user_id !== $id) ||
-            ($requestData['requestto']->owner_id && 
-            $requestData['requestto']->owner_id !== $id)){
-            throw new FollowException("unsuccessful. you do not own the account that wants to follow");
+        if ($followDTO->follow->followedby->isUser($followDTO->userId)) {
+            return;
         }
-        $follow->followedby()->associate($requestData['requestto']);
-        $follow->user_id = auth()->id();
-        $follow->save();
 
-        $users = null;
-        if ($account === 'school') {
-            $users = User::whereIn('id',$requestData['requestfrom']->admins->pluck('user_id'))->get();
-        } else {
-            $users = User::find($requestData['requestfrom']->user_id);
-        }
-        $requestData['request']->update([
+        $this->throwFollowException(
+            message: "charlie you cannot unfollow because you are not the one following 😏",
+            data: $followDTO
+        );
+    }
+
+    public function unfollow(FollowDTO $followDTO)
+    {
+        $follow = $this->getFollow($followDTO);
+
+        $followDTO = $followDTO->withFollow($follow);
+
+        $this->checkFollowOwnership($followDTO);
+
+        $follow->delete();
+        
+        $followDTO->methodType = 'deleted';
+        $this->broadcastFollow($followDTO);
+    }
+
+    public function followBack(FollowDTO $followDTO)
+    {
+        $request = $this->getFollowRequest($followDTO);
+        
+        $followDTO = $followDTO->withFollow($request->requestable);
+
+        $followDTO = $followDTO->withFollowable($request->requestfrom);
+
+        $followDTO = $followDTO->withFollowedby($request->requestto);
+
+        $this->checkAccountOwnership(
+            $request->requestto,
+            $followDTO->userId
+        );
+        
+        $follow = $this->associateFollowableToFollow($followDTO);
+
+        $follow = $this->associateFollowedbyToFollow($followDTO);
+
+        $request->update([
             'state' => 'ACCEPTED'
         ]);
-        return [
-            'follow' => $follow->load(['followedby.profile','followable.profile']),
-            'account' => $requestData['requestto'],
-            'users' => $users
-        ];        
+
+        $this->broadcastFollow($followDTO);
+
+        return $this->withLoadedRelationships($follow);        
     }
 
-    private function getFollowRequest($account, $accountId, $myAccount, $myAccountId)
+    private function withLoadedRelationships($follow)
     {
-        $requestfrom = getYourEduModel($account, $accountId);
-        if (is_null($requestfrom)) {
-            throw new AccountNotFoundException("{$account} with id {$accountId} not found");
-        }
-        $requestto = getYourEduModel($myAccount, $myAccountId);
-        if (is_null($requestto)) {
-            throw new AccountNotFoundException("{$myAccount} with id {$myAccountId} not found");
-        }
-        $request = Request::where('requestfrom_type',get_class($requestfrom))
-            ->where('requestfrom_id', $requestfrom->id)
-            ->where('requestto_type',get_class($requestto))
-            ->where('requestto_id', $requestto->id)
-            ->where('state','PENDING')
-            ->where('requestable_type','App\YourEdu\Follow')->latest()->first();
+        return $follow->load(['followedby.profile','followable.profile']);
+    }
+
+    private function getFollowRequest($followDTO)
+    {
+        $followDTO = $this->setFollowable($followDTO);
         
-        if (is_null($request)) {
-            throw new AccountNotFoundException("follow request was not found");
+        $followDTO = $this->setFollowedby($followDTO);
+        
+        $requests = $followDTO->followedby->pendingFollowRequestsSentByAccount($followDTO->followable);
+        
+        if ($requests->count()) {
+            return $requests->first();
         }
-
-        return [
-            'request' => $request,
-            'requestto' => $requestto,
-            'requestfrom' => $requestfrom,
-        ];
+        
+        $this->throwAccountNotFoundException(
+            "follow request was not found"
+        );
     }
 
-    public function declineFollowRequest($account, $accountId, $myAccount, $myAccountId)
+    private function checkFollowRequestOwnership($request, $followDTO)
     {
-        $requestArray = $this->getFollowRequest($account, $accountId, $myAccount, $myAccountId);
+        if ($request->requestto->isUser($followDTO->userId)) {
+            return;
+        }
 
-        $requestArray['request']->update([
+        $this->throwFollowException(
+            message: "charlie you cannot decline this request because it is not for you 😏",
+            data: $followDTO
+        );
+    }
+
+    public function declineFollowRequest(FollowDTO $followDTO)
+    {
+        $request = $this->getFollowRequest($followDTO);
+
+        $this->checkFollowRequestOwnership($request, $followDTO);
+
+        $request->update([
             'state' => 'DECLINED'
         ]);
-        return 'successful';
     }
 
-    public function follow($account,$accountId,$myAccount,$myAccountId,$id)
+    private function throwFollowException($message, $data = null)
     {
-        //check if there is a request with the a follow
-        $mainAccount = getYourEduModel($account, $accountId);
-        if (!$mainAccount) {
-            throw new AccountNotFoundException("unsuccessful. the account you are trying to follow does not exist");
-        }
+        throw new FollowException(
+            message: $message,
+            data: $data
+        );
+    }
 
-        $followerAccount = getYourEduModel($myAccount, $myAccountId);
-        if (!$followerAccount) {
-            throw new AccountNotFoundException("unsuccessful. your account does not exist");
-        } 
-        if ($followerAccount->user_id === $mainAccount->user_id) {
-            throw new FollowException("unsuccessful. you cannot follow one of your own accounts");
+    private function ensureNotFollowingOwnAccount($followDTO)
+    {
+        if ($followDTO->followable->user_id !== $followDTO->followedby->user_id) {
+            return;
         }
-        if ($mainAccount->follows()->where('user_id',$id)->first()) {
-            throw new FollowException("unsuccessful. you already follow this account");
-        }
-
-        $followedUserId = $mainAccount->user_id;
-        if ($account === 'school') {
-            $followedUserId = $mainAccount->owner_id;
-        }
-        $follow = $mainAccount->follows()->create([
-            'user_id' => $id,
-            'followed_user_id' => $followedUserId
-        ]);
-        if (is_null($follow)) {
-            throw new FollowException("unsuccessful. follow was not created");
-        }
-
-        Debugbar::info("followedUserId {$followedUserId}");
-        $follow->followedby()->associate($followerAccount);
-        $follow->save();
-
-        //ensure that requests will only be sent when there is no pending request from a
-        //any of the followers user accounts
-        $requestCounter = Request::where('requestable_type','App\YourEdu\Follow')
-            ->where('state','PENDING')
-            ->where('requestto_type',get_class($mainAccount))
-            ->where('requestto_id',$mainAccount->id)
-            ->whereHasMorph('requestfrom','*',function(Builder $builder,$type) use ($id){
-                if ($type === 'App\YourEdu\School') {
-                    $builder->whereIn('owner_id', $id);
-                } else {
-                    $builder->where('user_id',$id);
-                }
-            })
-            ->count();
         
-        Debugbar::info("requestCounter {$requestCounter}");
-        if (!$requestCounter) {
-            $newFollow = $followerAccount->follows()->create([
-                'followed_user_id' => $id
-            ]); //create an follow where this is being followed
-            $followRequest = Request::create([
-                'state' => 'PENDING'
-            ]);
-            $followRequest->requestFrom()->associate($followerAccount);
-            $followRequest->requestto()->associate($mainAccount);
-            $followRequest->requestable()->associate($newFollow);
-            $followRequest->save();
-
-            $followRequestInfo = [
-                'requestId' => $followRequest->id,
-                'account' => $myAccount,
-                'accountId' => $myAccountId,
-            ];
-            $users = null;
-            if ($account === 'school') {
-                $users = User::whereIn('id',$mainAccount->admins->pluck('user_id'))->get();
-            } else {
-                $users = User::find($mainAccount->user_id);
-            }
-
-            return [
-                'users' => $users,
-                'followRequestInfo' => $followRequestInfo,
-                'follow' => $follow->load(['followable.profile','followedby.profile']),
-                'account' => $followerAccount,
-                'userId'=> $followedUserId
-            ];
-        } else {
-            throw new FollowException("unsuccessful. you have a pending request to this account.");
-        }
+        $this->throwFollowException(
+            message: "unsuccessful. you cannot follow one of your own accounts",
+            data: $followDTO
+        );
     }
 
-    public function followRequests($id)
+    private function ensureNotAlreadyFollowingFollowable($followDTO)
     {
-        $schools = School::whereHas('admins', function(Builder $query) use ($id){
-            $query->where('user_id',$id);
-        })->get();
-        $schoolOwnerIds = [];
-        foreach ($schools as $school) {
-            $schoolOwnerIds[] = $school->owner_id;
+        if ($followDTO->followable->notFollowedbyUser($followDTO->userId)) {
+            return;
         }
 
-        Debugbar::info('schoolOwnerIds');
-        Debugbar::info($schoolOwnerIds);
-        $requests = Request::where('requestable_type','App\YourEdu\Follow')
-            ->where('state','PENDING')
-            ->whereHasMorph('requestto','*',function(Builder $builder,$type) use ($id,$schoolOwnerIds) {
+        $this->throwFollowException(
+            message: "unsuccessful. you already follow this account",
+            data: $followDTO
+        );
+    }
+
+    private function addFollow()
+    {
+        return Follow::create();
+    }
+
+    private function associateFollowableToFollow($followDTO)
+    {
+        $followDTO->follow->followable()->associate($followDTO->followable);
+        $followDTO->follow->save();
+
+        return $followDTO->follow;
+    }
+
+    private function associateFollowedbyToFollow($followDTO)
+    {
+        $followDTO->follow->followedby()->associate($followDTO->followedby);
+        $followDTO->follow->save();
+
+        return $followDTO->follow;
+    }
+
+    private function ensureFollowableDoesntHavePendingRequestFromFollowedby($followDTO)
+    {
+        if ($followDTO->followable->doesntHavePendingFollowRequestsSentByUser($followDTO->userId)) {
+            return;
+        }
+
+        $this->throwFollowException(
+            message: "unsuccessful. you have a pending request to this account."
+        );
+    }
+
+    private function setFollowedby(FollowDTO $followDTO)
+    {
+        if (is_not_null($followDTO->followedby)) {
+            return $followDTO;
+        }
+
+        return $followDTO->withFollowedby(
+            $this->getModel($followDTO->myAccount, $followDTO->myAccountId)
+        );
+    }
+
+    private function setFollowable(FollowDTO $followDTO)
+    {
+        if (is_not_null($followDTO->followable)) {
+            return $followDTO;
+        }
+
+        return $followDTO->withFollowable(
+            $this->getModel($followDTO->otherAccount, $followDTO->otherAccountId)
+        );
+    }
+
+    public function follow(FollowDTO $followDTO)
+    {
+        $followDTO = $this->setFollowedby($followDTO);
+        
+        $this->checkAccountOwnership(
+            $followDTO->followedby,
+            $followDTO->userId
+        );
+
+        $followDTO = $this->setFollowable($followDTO);
+       
+        $this->ensureNotFollowingOwnAccount($followDTO);
+        
+        $this->ensureNotAlreadyFollowingFollowable($followDTO);
+
+        $this->ensureFollowableDoesntHavePendingRequestFromFollowedby($followDTO);
+        
+        $follow = $this->addFollow();
+
+        $followDTO = $followDTO->withFollow($follow);
+
+        $follow = $this->associateFollowableToFollow($followDTO);
+
+        $follow = $this->associateFollowedbyToFollow($followDTO);
+
+        $this->createFollowRequest($followDTO);
+
+        $followDTO->methodType = 'created';
+        $this->broadcastFollow($followDTO);
+
+        return $this->withLoadedRelationships($follow);
+    }
+
+    private function createFollowRequest($followDTO)
+    {
+        if ($followDTO->followedby->hasPendingFollowRequestsSentByUser($followDTO->followable->user_id)) {
+            return;
+        }
+
+        $requestDTO = RequestDTO::new()
+            ->withRequestable($this->addFollow())
+            ->withRequestto($followDTO->followable)
+            ->withRequestfrom($followDTO->followedby);
+
+        (new RequestService)->createFollowRequest($requestDTO);
+    }
+
+    private function broadcastFollow($followDTO)
+    {
+        $event = $this->getEvent($followDTO);
+        
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($followDTO)
+    {
+        if ($followDTO->methodType == 'created') {
+            return new NewFollow($followDTO);
+        }
+        
+        if ($followDTO->methodType == 'deleted') {
+            return new DeleteFollow($followDTO);
+        }
+
+        return new NewFollowBack($followDTO);
+    }
+
+    public function followRequests($userId)
+    {
+        $schoolOwnerIds = School::whereHas('admins', function(Builder $query) use ($userId){
+            $query->where('user_id',$userId);
+        })->get()->pluck('owner_id')->toArray();
+
+        $requests = Request::query()
+            ->whereFollowRequest()
+            ->wherePending()
+            ->whereHasMorph('requestto','*',function($builder,$type) use ($userId, $schoolOwnerIds) {
                 if ($type === 'App\YourEdu\School') {
                     $builder->whereIn('owner_id', $schoolOwnerIds);
                 } else {
-                    $builder->where('user_id',$id);
+                    $builder->where('user_id',$userId);
                 }
-            })->latest()->paginate(10);
+            })
+            ->latest()
+            ->paginate(10);
 
         return $requests;
+    }
+
+    public static function updateFollowFillable
+    (
+        Follow $follow,
+        $fillable,
+        $data
+    ) : Follow
+    {
+        $follow->$fillable = $data;
+        $follow->save();
         
+        return $follow;
     }
 }

@@ -2,10 +2,13 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountCommissionTrait;
 use App\Traits\AccountFilesTrait;
+use App\Traits\AccountQuestionsTrait;
 use App\Traits\AccountTrait;
 use App\Traits\FacilitatingAccountsTrait;
 use App\Traits\AccountSalariesTrait;
+use App\Traits\MarkerTrait;
 use App\User;
 use Database\Factories\FacilitatorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +23,10 @@ class Facilitator extends Model
         HasFactory, 
         FacilitatingAccountsTrait,
         AccountSalariesTrait,
-        AccountFilesTrait;
+        AccountCommissionTrait,
+        AccountFilesTrait,
+        AccountQuestionsTrait,
+        MarkerTrait;
 
     protected $fillable = [
         'user_id','name'
@@ -32,7 +38,7 @@ class Facilitator extends Model
             $user = $facilitator->user;
             $facilitator->profile()->create([
                 'user_id' => $user->id,
-                'name' => $facilitator->name ? $facilitator->name : $user->full_name,
+                'name' => $facilitator->name ? $facilitator->name : $user->name,
             ]);
 
             $facilitator->verification()->create();
@@ -53,11 +59,11 @@ class Facilitator extends Model
         });
     }
 
-    public function follows(){ //where i am being followed followed_user_id
+    public function follows(){ 
         return $this->morphMany(Follow::class,'followable');
     }
 
-    public function followings(){ //where i am the follower user_id
+    public function followings(){
         return $this->morphMany(Follow::class,'followedby');
     }
 
@@ -179,16 +185,6 @@ class Facilitator extends Model
     public function collabos()
     {
         return $this->morphMany(Collabo::class,'collaborationable');
-    }
-
-    public function commissions()
-    {
-        return $this->morphMany(Commission::class,'ownedby');
-    }
-
-    public function addedCommissions()
-    {
-        return $this->morphMany(Commission::class,'addedby');
     }
 
     public function addedCurricula()
@@ -374,11 +370,6 @@ class Facilitator extends Model
     public function booksAdded()
     {
         return $this->morphMany(Book::class,'addedby');
-    }
-
-    public function questionsAdded()
-    {
-        return $this->morphMany(Question::class,'addedby');
     }
 
     public function readsJoined()

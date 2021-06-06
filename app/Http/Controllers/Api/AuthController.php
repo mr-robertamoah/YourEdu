@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\AuthDTO;
+use App\DTOs\UserDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateAccountRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterUserRequest;
+use App\Http\Resources\OwnedProfileResource;
 use App\Http\Resources\SecretQuestionResource;
 use App\Http\Resources\UserResource;
+use App\Services\AuthService;
 use App\User;
 use App\YourEdu\Admin;
 use App\YourEdu\School;
@@ -19,7 +25,6 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    //
     public function authFailed(Request $request)
     {
         return response()->json([
@@ -36,206 +41,279 @@ class AuthController extends Controller
 
     public function searchUser(Request $request)
     {
-        $users = User::where('username','like',"%$request->search%")
-            ->orWhere('first_name',"%$request->search%")
-            ->orWhere('other_names',"%$request->search%")
-            ->orWhere('last_name',"%$request->search%")
+        $users = User::query()
+            ->whereSearch($request->search)
             ->oldest()
             ->paginate(10);
 
         return UserResource::collection($users);
     }
 
-    public function editUser(Request $request, User $user)
-    {
-        $input = [];
-
-        if ($user) {
-
-            $input['first_name'] = $user->first_name === $request->first_name ? 
-                $user->first_name: $request->first_name;
-            $input['last_name'] = $user->last_name === $request->last_name ? 
-                $user->last_name: $request->last_name;
-            $input['other_names'] = $user->other_names === $request->other_names ? 
-                $user->other_names: $request->other_names;
-            $input['gender'] = $user->gender === $request->gender || 
-                $request->gender != 'MALE' || $request->gender != 'FEMALE'? 
-                $user->gender: $request->gender;
-            $input['email'] = $user->email === $request->email ? 
-                $user->email: $request->email;
-
-            if ($request->has('dob')) {
-                $input['dob'] = Carbon::parse($user->dob)->toDateTimeString();
-            }
-            
-            $input['secret_question_id'] = null;
-            $input['secret_answer'] = null;
-            if ($request->has('question_id') && $request->has('answer')) {
-                $question = SecretQuestion::find($request->question_id);
-
-                if ($question) {
-                    $input['secret_question_id'] = $user->secret_question_id === $request->question_id ? 
-                        $user->secret_question_id: $request->question_id;
-                    $input['secret_answer'] = $user->secret_answer === $request->answer ? 
-                        $user->secret_answer: $request->answer;
-                }
-            }
-
-            try {
-                DB::beginTransaction();
-
-                $user->update([
-                    $input
-                ]);
-
-                DB::commit();
-                return response()->json([
-                    'message' => 'successful',
-                    'user' => $user,
-                ]);
-
-            } catch (\Throwable $th) {
-                DB::rollback();
-
-                // return response()->json([
-                //     'message' => 'update unsuccessful'
-                // ],422);
-                throw $th;
-            }
-        } else {
-            return response()->json([
-                'message' => 'user not found'
-            ],422);
-        }
-    }
-
-    public function getSecretQuestions()
+    public function editUser(Request $request)
     {
         try {
-            $secret = SecretQuestion::all();
+            DB::beginTransaction();
+
+            $user = (new AuthService)->editUser(
+                AuthDTO::createFromRequest($request)
+            );
+
+            DB::commit();
 
             return response()->json([
                 'message' => 'successful',
-                'questions' => SecretQuestionResource::collection($secret),
+                'user' => $user,
             ]);
         } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'unsuccessful',
-            ],422);
-            //throw $th;
+            DB::rollback();
+
+            throw $th;
         }
     }
 
-    public function postSecretQuestions(Request $request)
+    public function getQuestions(Request $request)
     {
-        if ($request->has('admin_id')) {
-            $admin = Admin::find($request->admin_id);
+        try {
+            $questions = (new AuthService)->getUserQuestions(
+                AuthDTO::createFromRequest($request)
+            );
 
-            try {
-                if ($admin && ($admin->role === 'SUPERADMIN' || $admin->role === 'SUPERVISOR')) {
-                
-                    DB::beginTransaction();
-                    $input = [];
-                    $input['question'] = $request->question;
-        
-                    if ($admin->role === 'SUPERADMIN') {
-                        $input['approved'] = true;
-                    } else {
-                        $input['approved'] = false;
-                    }
-                    // return $input;
-                    $questionCheck = SecretQuestion::where('question',$request->question)->get();
-                    
-                    if ($questionCheck->count() > 0) {
-                        return response()->json([
-                            'message' => 'unsuccessful',
-                            'questions' => 'question already exits',
-                        ]);
-                    }
-                    $question = $admin->secretQuestions()->create($input);
-    
-                    if ( $question) {
+            return response()->json([
+                'message' => 'successful',
+                'questions' => SecretQuestionResource::collection($questions),
+            ]);
 
-                        if ($request->has('possible_answers')) {
-                            
-                            $input = [];
-                            $input = $request->possible_answers;
-                            foreach ($input as $value) {
-                                $question->possibleAnswers()->create([
-                                    'option' => $value
-                                ]);
-                            }
-                        }
-    
-                        DB::commit();
-                        return response()->json([
-                            'message' => 'successful',
-                            'questions' => $question,
-                            'possible_answers' => $question->possibleAnswers,
-                        ]);
-                        
-                    } else {
-                        
-                        DB::rollback();
-                        return response()->json([
-                            'message' => 'unsuccessful',
-                        ],422);
-                    }
-                }
-            } catch (\Throwable $th) {
-                DB::rollback();
-                // return response()->json([
-                //     'message' => 'unsuccessful',
-                // ],422);
-                throw $th;
-            }
+        } catch (\Throwable $th) {
+            throw $th;
         }
-
-        return response()->json([
-            'message' => 'successful',
-            'questions' => 'successful',
-        ]);
     }
 
-    public function register (Request $request)
-    {        
-        $input = $request->all();
-        $input['dob'] = Carbon::parse($input['dob'])->toDateTimeString();
-        $validator = Validator::make($input, [
-            'username'=> 'required|alpha_dash|min:8|max:100|unique:users',
-            'email' => 'nullable|email|unique:users',
-            'password' => 'required|confirmed',
-            'password_confirmation'=>'required|string',
-            'first_name' => 'nullable|string',
-            'last_name' => 'nullable|string',
-            'other_names' => 'nullable|string',
-            'dob' => 'nullable|date',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 401);
-        }
-
+    public function createAccount(CreateAccountRequest $request)
+    {
         try {
-            $input['password'] = bcrypt($input['password']);
-            $user = User::create($input);
+            DB::beginTransaction();
 
-            if ($user) {
-                
-                $user->logins()->create();
-                $token = $user->createToken('YourEdu')->accessToken;
-                return response()->json([
-                    'status' => (bool) $user,
-                    'user'=> new UserResource($user),
-                    'token' => $token,
-                    ]);
-            } else {
-                return response()->json([
-                    'status' => (bool) $user,
-                    'error'=>'was unable to create the user',
-                ], 401);
-            }
+            $account = (new AuthService)->createAccount(
+                AuthDTO::createFromRequest($request)
+            );
+            
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+                'profile' => $account ? 
+                    new OwnedProfileResource($account->profile) : null,
+            ]);
         } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function updateAccount(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $account = (new AuthService)->updateAccount(
+                AuthDTO::new()
+                    ->addData(
+                        user: $request->user(),
+                        account: $request->account,
+                        accountId: $request->accountId,
+                    )
+                    ->addAccountData($request)
+            );
+            
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+                'profile' => $account ? 
+                    new OwnedProfileResource($account->profile) : null,
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            (new AuthService)->deleteAccount(
+                AuthDTO::new()
+                    ->addData(
+                        user: $request->user(),
+                        account: $request->account,
+                        accountId: $request->accountId,
+                    )
+            );
+            
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function createUserAnswer(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            
+            (new AuthService)->createUserAnswer(
+                AuthDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+
+            throw $th;
+        }
+    }
+
+    public function deleteUserAnswer(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            
+            (new AuthService)->deleteUserAnswer(
+                AuthDTO::new()->addData(
+                    answerId: $request->answerId,
+                    user: $request->user(),
+                )
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+
+            throw $th;
+        }
+    }
+
+    public function createUserQuestion(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            
+            (new AuthService)->createUserQuestion(
+                AuthDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+
+            throw $th;
+        }
+    }
+
+    public function deleteUserQuestion(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            
+            (new AuthService)->deleteUserQuestion(
+                AuthDTO::new()->addData(
+                    questionId: $request->questionId,
+                    user: $request->user(),
+                )
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+
+            throw $th;
+        }
+    }
+
+    public function getUserUsingSecretAnswerPair(Request $request)
+    {
+        try {
+            
+            $user = (new AuthService)->getUserUsingSecretAnswerPair(
+                AuthDTO::new()->addData(
+                    answer: $request->answer,
+                    questionId: $request->questionId,
+                )
+            );
+
+            return response()->json([
+                'status' => (bool) $user,
+                'user' => $user,
+                'token' => $user->token(),
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function register (RegisterUserRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = (new AuthService)->register(
+                UserDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'status' => (bool) $user,
+                'user'=> new UserResource($user),
+                'token' => $user->token(),
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+
+            throw $th;
+        }
+    }
+
+    public function unregister(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            (new AuthService)->unregister(
+                UserDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+
             throw $th;
         }
     }
@@ -243,49 +321,31 @@ class AuthController extends Controller
     public function login (LoginRequest $request)
     {
         try {
-            $userQuery = User::query();
-            if ($request->has('username')) {
-                $userQuery->where('username',$request->username);
-            } else if ($request->has('email')) {
-                $userQuery->where('email',$request->email);
-            }
             
-            $user = $userQuery->first();
+            $user = (new AuthService)->login(
+                UserDTO::createFromRequest($request)
+            );
 
-            if (is_null($user)) {
-                return response()->json([
-                    'error'=>'oops...not sure you are user. Please click register to register for a user account.'
-                ], 401);
-            }
-            if (!Hash::check($request->password, $user->password)) {
-                return response()->json([
-                    'error'=>'Please check username/email and/or password combinations.'
-                ], 401);
-            }
-
-            $user->logins()->create();
-            $token = $user->createToken('YourEdu')->accessToken;
-            // return $token;
             return response()->json([
-                'success'=> (bool) $user,
+                'status'=> (bool) $user,
                 'user'=> new UserResource($user),
-                'token'=>$token
+                'token'=>$user->token()
             ]);
 
-            // return response()->json([
-            //     'error'=>'Unauthorised'
-            // ], 401);
         } catch (\Throwable $th) {
             throw $th;
         }
             
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         try {
-            auth()->logout();
-    
+            
+            (new AuthService)->logout(
+                AuthDTO::new()->withUser($request->user())
+            );
+
             return response()->json([
                 'message' => 'successful'
             ]);
@@ -293,7 +353,5 @@ class AuthController extends Controller
             throw $th;
         }
     }
-    
-
     
 }

@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: 5px 10px;
+        font-size: 16px;
+        background-clip: padding-box;
+        line-height: 1.5rem;
+        box-shadow: none;
+        margin: 0 !important;
+        @apply outline-none focus:bg-gray-100 transition-all duration-100 ease-linear;
+    }
+
+    .btn{
+        display: inline-block;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 1.5;
+        @apply select-none;
+    }
+}

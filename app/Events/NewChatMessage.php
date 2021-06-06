@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\MessageResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,16 +16,12 @@ class NewChatMessage implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $message;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($message)
-    {
-        $this->message = $message;
-    }
+    public function __construct(private $messageDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -33,11 +30,18 @@ class NewChatMessage implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.message.{$this->message->to_user_id}");
+        return new PrivateChannel("youredu.conversation.{$this->messageDTO->message->messageable->id}");
     }
     
     public function broadcastAs()
     {
         return 'newChatMessage';
+    }
+    
+    public function broadcastWith()
+    {
+        return [
+            'message' => new MessageResource($this->messageDTO->message)
+        ];
     }
 }

@@ -11,26 +11,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DeleteChatMessage implements ShouldBroadcastNow
+class DeleteChatMessage implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $item;
-    public $itemId;
-    public $conversationId;
-    public $userId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($item, $itemId, $conversationId,$userId)
-    {
-        $this->item = $item;
-        $this->itemId = $itemId;
-        $this->conversationId = $conversationId;
-        $this->userId = $userId;
-    }
+    public function __construct(private $messageDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -39,7 +29,7 @@ class DeleteChatMessage implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.message.{$this->userId}");
+        return new PrivateChannel("youredu.message.{$this->messageDTO->messageId}");
     }
     
     public function broadcastAs()
@@ -50,9 +40,7 @@ class DeleteChatMessage implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'item' => $this->item,
-            'itemId' => $this->itemId,
-            'conversationId' => $this->conversationId,
+            'messageId' => $this->messageDTO->messageId,
         ];
     }
 }

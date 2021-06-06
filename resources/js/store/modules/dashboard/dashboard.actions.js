@@ -1,3 +1,4 @@
+import router from '../../../router';
 import DashboardService from '../../../services/dashboard.service';
 
 const actions = {
@@ -430,41 +431,62 @@ const actions = {
     async createAssessment({commit},data){
         let response = await DashboardService.createAssessment(data)
 
-        if (response.data.message === 'successful') {
-            commit('ADD_NEW_ASSESSMENT',response.data.assessment)
-            return {status: true}
+        if (response.data.message !== 'successful') {
+            return {status: false, response}
         }
 
-        return {status: false, response}
+        console.log(router)
+        if (router.history.current.name === 'dashboard') {       
+            commit('ADD_NEW_ASSESSMENT',response.data.assessment)
+        }
+
+        if (router.history.current.name === 'home') {       
+            commit('home/ASSESSMENT_CREATE_SUCCESS', response.data.assessment, {root: true})
+        }
+
+        if (router.history.current.name === 'profile') {       
+            commit('profile/ASSESSMENT_CREATE_SUCCESS', response.data.assessment, {root: true})
+        }
+
+        return {status: true, assessment: response.data.assessment}
     },
     async deleteAssessment({commit},data){
         let response = await DashboardService.deleteAssessment(data)
 
-        if (response.data.message === 'successful') {
-            if (response.data.assessment) {
-                commit('UPDATE_ASSESSMENT',response.data.assessment)
-                return {status: true, data: response.data.assessment, action: 'update'}
-            } 
-
-            commit('REMOVE_ASSESSMENT',data.assessmentId)
-            return {status: true, data: response.data.assessment, action: 'delete'}
+        if (response.data.message !== 'successful') {
+            return {status: false, response}
         }
 
-        return {status: false, response}
+        if (response.data.assessment) {
+            if (router.history.current.name === 'dashboard') {       
+                commit('UPDATE_ASSESSMENT',response.data.assessment)
+            }
+
+            return {status: true, data: response.data.assessment, action: 'update'}
+        } 
+
+        if (router.history.current.name === 'dashboard') {
+            commit('REMOVE_ASSESSMENT',data.assessmentId)
+        }
+
+        return {status: true, data: response.data.assessment, action: 'delete'}
     },
     async editAssessment({commit},data){
         let response = await DashboardService.updateAssessment(data)
 
-        if (response.data.message === 'successful') {
-            commit('UPDATE_ASSESSMENT',response.data.assessment)
-            return {
-                status: true,
-                assessment: response.data.assessment,
-                assessmentResource: response.data.assessmentResource
-            }
+        if (response.data.message !== 'successful') {
+            return {status: false, response}
         }
         
-        return {status: false, response}
+        if (router.history.current.name === 'dashboard') {
+            commit('UPDATE_ASSESSMENT',response.data.assessment)
+        }
+
+        return {
+            status: true,
+            assessment: response.data.assessment,
+            assessmentResource: response.data.assessmentResource
+        }
     },
     addAssessment({commit},data){
         commit('ADD_NEW_ASSESSMENT',data.assessment)

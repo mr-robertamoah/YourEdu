@@ -371,7 +371,7 @@
                                         it will be shown on your profile by default
                                     </div>
                                 </div>
-                                <input type="file" ref="inputfile" class="d-none"
+                                <input type="file" ref="inputfile" class="hidden"
                                     @change="inputFileChange">
                             </template>
                             <template slot="buttons" v-if="showMediaAdd">

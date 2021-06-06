@@ -2,13 +2,15 @@
 
 namespace App\YourEdu;
 
+use Database\Factories\AdmissionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Admission extends Model
 {
-    //
-    use SoftDeletes;
+    use SoftDeletes,
+        HasFactory;
 
     protected $fillable = [
         'learner_id', 'grade_id', 'school_id', 'state', 'type'
@@ -52,6 +54,11 @@ class Admission extends Model
     public function assessments()
     {
         return $this->morphByMany(Assessment::class,'assessmentable');
+    }
+
+    protected static function newFactory()
+    {
+        return AdmissionFactory::new();
     }
     
 }

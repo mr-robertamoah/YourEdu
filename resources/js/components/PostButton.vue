@@ -1,5 +1,5 @@
 <template>
-    <button class="btn btn-size" 
+    <button class="p-1 btn btn-size" 
         :class="{active:makeActive, danger:makeDanger, 
             success:makeSuccess, disabled: makeDisabled,colorRed:colorRed}" 
         :title="titleText"
@@ -89,6 +89,7 @@
         border: 1px solid $special-button-border;
         border-radius: 5px;
         background-color: $special-button-background;
+        min-width: 25px;
     }
 
     button:hover{

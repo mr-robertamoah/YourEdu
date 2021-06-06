@@ -7,24 +7,19 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class UpdateDisucssion implements ShouldBroadcastNow
+class DeleteFollow implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $discussion;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($discussion)
-    {
-        $this->discussion = $discussion;
-    }
+    public function __construct(private $followDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -33,23 +28,18 @@ class UpdateDisucssion implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = class_basename_lower($this->discussion->raisedby_type);
-        return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$this->discussion->raisedby_id}"),
-            new Channel("youredu.discussion.{$this->discussion->id}"),
-        ];
+        return new PrivateChannel("youredu.user.{$this->followDTO->follow->followable->user_id}");
     }
-    
+
     public function broadcastAs()
     {
-        return 'updateDiscussion';
+        return "deleteFollow";
     }
-    
+
     public function broadcastWith()
     {
         return [
-            'discussion' => $this->discussion
+            'followId' => $this->followDTO->follow->id
         ];
     }
 }

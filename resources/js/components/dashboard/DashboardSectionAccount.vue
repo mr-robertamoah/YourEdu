@@ -271,7 +271,7 @@ import { mapGetters } from 'vuex'
             },
             computedName(){
                 return this.type === 'admin' ? `${this.account.name}` :
-                    this.type === 'user' ? this.account.full_name : 
+                    this.type === 'user' ? this.account.fullName : 
                     this.type === 'subject' || this.type === 'grade' ||
                     this.type === 'course' || this.type === 'program' ? 
                     this.account.data.name : this.account.title ?

@@ -16,7 +16,7 @@ class FacilitatorResource extends JsonResource
     {
         return [
             // 'user_id' => $this->user_id,
-            'name' => $this->name ? $this->name : $this->user->full_name,
+            'name' => $this->name ? $this->name : $this->user->name,
             'created_at' => $this->created_at,
             'phoneNumbers' => $this->when(
                 $this->phoneNumbers()->exists()&& 

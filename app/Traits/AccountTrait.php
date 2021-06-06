@@ -14,12 +14,19 @@ use Illuminate\Database\Eloquent\Model;
  */
 trait AccountTrait
 {
+    use ModelTrait;
+
     public $accountType = '';
 
     public function __construct(array $attributes = []) {
         $this->setAccountType();
 
         parent::__construct($attributes);
+    }
+    
+    public function __toString()
+    {
+        return $this->accountType;
     }
 
     private function setAccountType()
@@ -71,20 +78,6 @@ trait AccountTrait
                 $q;
             });
         })->count();
-    }
-
-    public function scopeSearchAccounts($query,$search)
-    {
-        return $query
-            ->where(function($query) use ($search) {
-                if ($this->accountType === 'school') {
-                    $query
-                        ->where('company_name','like',"%$search%")
-                        ->orWhere('about','like',"%$search%");
-                } else {
-                    $query->where('name','like',"%$search%");
-                }
-            });
     }
 
     public function usesFacilitationDetails()
@@ -193,5 +186,127 @@ trait AccountTrait
             ->where('requestable_id',$requestable->id)
             ->where('state',Request::PENDING)
             ->count() === 0;
+    }
+
+    public function isAuthorizedUser($userId)
+    {
+        return in_array($userId, $this->getAuthorizedIds());
+    }
+
+    public function isNotAuthorizedUser($userId)
+    {
+        return ! $this->isAuthorizedUser($userId);
+    }
+
+    public function isUser($userId)
+    {
+        return $this->user_id == $userId;
+    }
+
+    public function isNotUser($userId)
+    {
+        return ! $this->isUser($userId);
+    }
+
+    public function isAccount($account)
+    {
+        return $this->id == $account->id &&
+            $this::class === $account::class;
+    }
+
+    public function isNotAccount($account)
+    {
+        return ! $this->isAccount($account);
+    }
+
+    public function followedbyUser($userId)
+    {
+        return $this->follows()
+            ->whereFollowedbyUser($userId)
+            ->exists();
+    }
+
+    public function notFollowedbyUser($userId)
+    {
+        return ! $this->followedbyUser($userId);
+    }
+
+    public function isNotAdult()
+    {
+        return ! $this->user->isAdult();
+    }
+
+    public function hasPendingFollowRequestsSentByUser($userId)
+    {
+        return Request::query()
+            ->whereFollowRequest()
+            ->whereSentToAccountByUser($userId, $this)
+            ->wherePending()
+            ->exists();
+    }
+
+    public function pendingFollowRequestsSentByAccount($account)
+    {
+        return Request::query()
+            ->whereFollowRequest()
+            ->whereSentToAccountByAccount($account, $this)
+            ->wherePending()
+            ->latest()
+            ->get();
+    }
+
+    public function doesntHavePendingFollowRequestsSentByUser($userId)
+    {
+        return ! $this->hasPendingFollowRequestsSentByUser($userId);                                               
+    }
+
+    public function scopeWhereUser($query, $userId)
+    {
+        return $query->where(function($query) use ($userId) {
+            $column = 'user_id';
+            if ($this->accountType === 'school') {
+                $column = 'owner_id';
+            }
+
+            $query->where($column, $userId);
+        });
+    }
+
+    public function scopeWhereUsers($query, $userIds)
+    {
+        return $query->where(function($query) use ($userIds) {
+            $column = 'user_id';
+            if ($this->accountType === 'school') {
+                $column = 'owner_id';
+            }
+
+            $query->whereIn($column, $userIds);
+        });
+    }
+
+    public function scopeWhereNotUser($query, $userId)
+    {
+        return $query->where(function($query) use ($userId) {
+            $column = 'user_id';
+            if ($this->accountType === 'school') {
+                $column = 'owner_id';
+            }
+
+            $query->where($column,'!=',$userId);
+        });
+    }
+
+    public function scopeSearchAccounts($query,$search)
+    {
+        return $query
+            ->where(function($query) use ($search) {
+                if ($this->accountType === 'school') {
+                    $query
+                        ->where('company_name','like',"%$search%")
+                        ->orWhere('about','like',"%$search%");
+                } else {
+                    $query->where('name','like',"%$search%");
+                }
+            });
     }
 }

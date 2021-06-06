@@ -105,7 +105,7 @@ class AttachmentService
     }
 
     /**
-     * attach an attachment to something(post) by an account
+     * detach an item from an attachable
      * 
     */
     public function detach($attachable, $attach = null)

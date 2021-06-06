@@ -48,10 +48,8 @@
                     </span>
                     <div :key="key" v-for="(profile,key) in computedProfiles">
                         <profile-bar
-                            :name="profile.name"
-                            :type="profile.params.account"
                             :smallType="true"
-                            :routeParams="profile.params"
+                            :profile="profile"
                             :navigate="false"
                             @clickedProfile="clickedProfile"
                         ></profile-bar>
@@ -199,14 +197,10 @@ import { mapActions, mapGetters } from 'vuex'
                 return false
             },
             computedAccountType(){
-                return this.account.hasOwnProperty('account_type') ? this.account.account_type :
-                    this.account.hasOwnProperty('params') ? this.account.params.account :
-                    this.account.hasOwnProperty('account') ? this.account.account : ''
+                return this.account.account ? this.account.account : ''
             },
             computedAccountId(){
-                return this.account.hasOwnProperty('account_id') ? this.account.account_id :
-                    this.account.hasOwnProperty('params') ? this.account.params.accountId :
-                    this.account.hasOwnProperty('account') ? this.account.accountId : ''
+                return this.account.accountId ? this.account.accountId : ''
             },
             computedActionFollow(){
                 return this.dashboard || this.alert ? false : this.computedProfiles.length && 
@@ -258,8 +252,8 @@ import { mapActions, mapGetters } from 'vuex'
                     return
                 }
                 this.$emit('clickedAction',{
-                    account: this.account.params.account, 
-                    accountId: this.account.params.accountId,
+                    account: this.account.account, 
+                    accountId: this.account.accountId,
                     requestId: this.account.id,
                     action: 'decline'
                 })
@@ -286,8 +280,8 @@ import { mapActions, mapGetters } from 'vuex'
                     data = {
                         account: who.account, //the account about to follow
                         accountId: who.accountId,
-                        follow: this.account.account_type, // account about to be followed
-                        followId: this.account.account_id,
+                        follow: this.account.account, // account about to be followed
+                        followId: this.account.accountId,
                     }
     
                     response =  await this['profile/follow'](data)
@@ -297,8 +291,8 @@ import { mapActions, mapGetters } from 'vuex'
                         this.followButtonText = 'unfollow'
                         this.$emit('addMyfollow',{
                             follow: response.follow,
-                            account: this.account.account_type,
-                            accountId: this.account.account_id,
+                            account: this.account.account,
+                            accountId: this.account.accountId,
                         })
                     } else {
     
@@ -319,8 +313,8 @@ import { mapActions, mapGetters } from 'vuex'
                     this.followButtonText = 'follow'
                     this.$emit('removeMyfollow',{
                         follow: this.myFollow,
-                        account: this.account.account_type,
-                        accountId: this.account.account_id,
+                        account: this.account.account,
+                        accountId: this.account.accountId,
                     })
                 } else {
                     

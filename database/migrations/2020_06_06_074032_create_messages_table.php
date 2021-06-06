@@ -15,15 +15,15 @@ class CreateMessagesTable extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('messageable'); //discussions
-            $table->unsignedBigInteger('conversation_id')->nullable();
+            $table->nullableMorphs('messageable'); //discussions conversation request
             $table->string('message')->nullable();
             $table->unsignedBigInteger('from_user_id')->nullable();
             $table->nullableMorphs('fromable');
             $table->unsignedBigInteger('to_user_id')->nullable();
             $table->nullableMorphs('toable');
-            $table->enum('state',['SEEN','SENT','RECEIVED'])->nullable();
+            $table->enum('state',['SEEN','SENT','RECEIVED', 'ACCEPTED', 'DECLINED', 'PENDING', 'DELETED'])->nullable();
             $table->json('user_deletes')->nullable();
+            $table->json('user_seens')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -31,4 +31,15 @@ class Commission extends Model
     {
         return $this->morphToMany(Request::class, 'requestable', 'requestables');
     }
+
+    public function scopeWhereCommissionable($query, $commissionable)
+    {
+        return $query->where(function($query) use ($commissionable) {
+            $query->whereHas('commissionables', function($query) use ($commissionable) {
+                $query
+                    ->where('commissionable_type', $commissionable::class)
+                    ->where('commissionable_id', $commissionable->id);
+            });
+        });
+    }
 }

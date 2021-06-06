@@ -24,12 +24,14 @@ class CommissionDTO
     public static function createFromData
     (
         $commissionId = null, 
+        $commission = null, 
         $ownedby = null, 
         $percentageOwned = 0
     )
     {
         $self = new static;
 
+        $self->commission = $commission;
         $self->commissionId = $commissionId;
         $self->ownedby = $ownedby;
         $self->percentageOwned = number_format((float) $percentageOwned, 4);

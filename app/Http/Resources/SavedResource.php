@@ -21,7 +21,7 @@ class SavedResource extends JsonResource
         $data['updated_at'] = $this->updated_at;
         if (!is_null($this->user)) {
             $data['username'] = $this->user->username;
-            $data['full_name'] = $this->user->full_name;
+            $data['fullName'] = $this->user->name;
         }
         if (!is_null($this->addedby)) {
             $data['addedby_type'] = class_basename_lower($this->addedby_type);

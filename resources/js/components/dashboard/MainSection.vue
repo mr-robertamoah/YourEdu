@@ -29,7 +29,7 @@
             :class="{full}"
         >
             <div class="heading">
-                {{`welcome ${getUser.full_name} to your dashboard.`}}
+                {{`welcome ${getUser.fullName} to your dashboard.`}}
             </div>
             <div class="title" v-if="type === 'user'">
                 user information
@@ -311,10 +311,10 @@
                     </div>
                     <account-info class="account-info"
                         v-for="account in getProfiles"
-                        :key="account.params.account + account.params.accountId"
+                        :key="account.account + account.accountId"
                         @click="clickedAccount(account)"
                         :name="account.name"
-                        :type="account.params.account"
+                        :type="account.account"
                     >
                     </account-info>
                 </div>
@@ -2154,13 +2154,13 @@ import {bus} from '../../app';
                 } else if (data.buttonData) {
                     if (data.buttonData.text === 'ban') {
                         let name = data.buttonData.data.username ? 
-                            data.buttonData.data.full_name : data.buttonData.data.name
+                            data.buttonData.data.fullName : data.buttonData.data.name
                         this.smallModalTitle = `are you sure you want to ban ${name}?`
                         this.smallModalData = {type: 'ban' , data: data.buttonData.data}
                         this.showSmallModal = true
                     } else if (data.buttonData.text === 'unban') {
                         let name = data.buttonData.data.username ? 
-                            data.buttonData.data.full_name : data.buttonData.data.name
+                            data.buttonData.data.fullName : data.buttonData.data.name
                         this.smallModalTitle = `are you sure you want to unban ${name}?`
                         this.smallModalData = {type: 'unban' , data: data.buttonData.data}
                         this.showSmallModal = true

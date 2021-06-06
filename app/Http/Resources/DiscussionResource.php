@@ -38,7 +38,7 @@ class DiscussionResource extends JsonResource
             'preamble' => $this->preamble,
             'restricted' => $this->restricted,
             'type' => $this->type,
-            'allowed' => $this->allowed,
+            'allowed' => strtolower($this->allowed),
             'isDiscussion' => true,
             'likes' => LikeResource::collection($this->likes),
             'messages' => DiscussionMessageResource::collection($this->messages()
@@ -46,11 +46,7 @@ class DiscussionResource extends JsonResource
                 ->orderby('updated_at','desc')->take(2)->get()),
             'comments' => CommentResource::collection($this->comments()
                 ->orderby('updated_at','desc')->take(1)->get()),
-            'raisedby' => $this->raisedby->name,
-            'raisedby_user_id' => $this->raisedby->user_id,
-            'raisedby_type' => $this->raisedby_type,
-            'raisedby_id' => $this->raisedby_id,
-            'profile_url' => $this->raisedby->profile->url,
+            'raisedby' => new UserAccountResource($this->raisedby),
             'flags' => FlagResource::collection($this->flags),
             'saves' => SaveResource::collection($this->beenSaved),
             'attachments' => PostAttachmentResource::collection($this->attachments),

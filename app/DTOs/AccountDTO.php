@@ -2,6 +2,8 @@
 
 namespace App\DTOs;
 
+use Illuminate\Http\Request;
+
 class AccountDTO
 {
     public ?string $account = null;
@@ -31,6 +33,16 @@ class AccountDTO
 
         $static->account = $account;
         $static->accountId = $accountId;
+
+        return $static;
+    }
+
+    public static function createFromRequest(Request $request)
+    {
+        $static = new static;
+
+        $static->account = $request->account;
+        $static->accountId = $request->accountId;
 
         return $static;
     }

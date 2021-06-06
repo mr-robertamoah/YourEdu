@@ -95,7 +95,7 @@
                 
                 <input type="file" ref="inputfile" 
                     @change="fileChange" multiple
-                    class="d-none">
+                    class="hidden">
             </div>
             <textarea
                 :placeholder="placeholder" 

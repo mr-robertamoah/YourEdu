@@ -16,27 +16,38 @@ class OwnedProfileResource extends JsonResource
     public function toArray($request)
     {
         $data = [];
-        $data['account_id'] = $this->profileable_id;
-        $data['account_type'] = class_basename_lower($this->profileable_type);
-        $data['profile_name'] = $this->name;
-        $data['profile_url'] = $this->url;
+        $data['accountId'] = $this->profileable_id;
+        $data['account'] = class_basename_lower($this->profileable_type);
+        $data['name'] = $this->name;
+        $data['url'] = $this->url;
         $data['profile'] = $this->profileable_type;
+        
         if ($this->profileable) {            
             $data['userId'] = $this->profileable->user_id ? $this->profileable->user_id :
                 $this->profileable->owner_id;
         }
-        if ($data['account_type'] === 'parent') {
+
+        // if ($data['account'] === 'parent') {
                 
-        } else if ($data['account_type'] === 'school' && $data['userId']) {
+        // }
+        
+        if ($data['account'] === 'school' && $data['userId']) {
             $data['admin'] = new AdminResource(
                 $this->profileable->admins()->where('user_id',auth()->id())->first());
-        } else if ($data['account_type'] === 'learner') {
-
-        } else if ($data['account_type'] === 'professional') {
-
-        }  else if ($data['account_type'] === 'school') {
-
         }
+        
+        // if ($data['account'] === 'learner') {
+
+        // }
+        
+        // if ($data['account'] === 'professional') {
+
+        // } 
+        
+        // if ($data['account'] === 'school') {
+
+        // }
+
         return $data;
     }
 }

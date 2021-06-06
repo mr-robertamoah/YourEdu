@@ -2,11 +2,16 @@
 
 namespace App;
 
+use App\Traits\AccountAnswersTrait;
+use App\Traits\AccountCommissionTrait;
 use App\Traits\AccountFilesTrait;
+use App\Traits\AccountQuestionsTrait;
 use App\Traits\AccountSalariesTrait;
+use App\Traits\ModelTrait;
 use App\YourEdu\Account;
 use App\YourEdu\Admin;
 use App\YourEdu\Ban;
+use App\YourEdu\Employment;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Follow;
 use App\YourEdu\Learner;
@@ -17,6 +22,7 @@ use App\YourEdu\PhoneNumber;
 use App\YourEdu\Point;
 use App\YourEdu\Professional;
 use App\YourEdu\Profile;
+use App\YourEdu\Question;
 use App\YourEdu\Request;
 use App\YourEdu\School;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,35 +38,28 @@ class User extends Authenticatable
         SoftDeletes, 
         HasFactory,
         AccountSalariesTrait,
-        AccountFilesTrait;
+        AccountCommissionTrait,
+        AccountFilesTrait,
+        AccountQuestionsTrait,
+        AccountAnswersTrait,
+        ModelTrait;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    const MINIMUM_ADULT_AGE = 18;
+    const MAX_PROFESSIONAL_SLOTS = 3;
+    const MAX_SCHOOL_SLOTS = 3;
+    
     protected $fillable = [
         'username', 'email', 'password', 'first_name', 'last_name', 
         'other_names', 'username', 'referrer_id', 'secret_question_id',
         'secret_answer', 'dob', 'gender'
     ];
-
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
-     */
+    
     protected $hidden = [
         'password', 'remember_token', 'secret_question_id', 
         'card_brand', 'card_last_four', 'deleted_at', 'referrer_id',
         'stripe_id', 'trial_ends_at', 'profiles'
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'dob' => 'datetime',
@@ -68,8 +67,8 @@ class User extends Authenticatable
 
     // protected $with = ['learner','admins','parent','professionals','schools'];
 
-    protected $appends = ['full_name','age','is_superadmin',
-        'is_supervisoradmin',
+    protected $appends = [
+        'name','age','is_superadmin','is_supervisoradmin',
     ];
 
     public $accountType = 'user';
@@ -79,7 +78,7 @@ class User extends Authenticatable
         return "youredu.user.{$this->id}";
     }
     
-    public function getFullNameAttribute()
+    public function getNameAttribute()
     {
         if (!$this->other_names || $this->other_names === "") {
             return "{$this->first_name} {$this->last_name}" ;
@@ -97,12 +96,12 @@ class User extends Authenticatable
 
     public function getIsSuperadminAttribute()
     {
-        return $this->admins()->where('role','SUPERADMIN')->count() > 0 ? true : false;
+        return $this->admins()->where('role','SUPERADMIN')->exists();
     }
 
     public function getIsSupervisoradminAttribute()
     {
-        return $this->admins()->where('role','SUPERVISOR')->count() > 0 ? true : false;
+        return $this->admins()->where('role','SUPERVISOR')->exists();
     }
 
     public function findForPassport($username)
@@ -195,11 +194,90 @@ class User extends Authenticatable
         return $this->morphMany(Request::class,'requestto');
     }
 
+    public function employed()
+    {
+        return $this->morphMany(Employment::class,'employee');
+    }
+
+    public function isLearner()
+    {
+        return $this->learner()->exists();
+    }
+
+    public function hasLearnerSlot()
+    {
+        return ! $this->learner()->exists();
+    }
+
+    public function hasParentSlot()
+    {
+        return ! $this->parent()->exists();
+    }
+
+    public function hasFacilitatorSlot()
+    {
+        return ! $this->facilitator()->exists();
+    }
+
+    public function hasProfessionalSlot()
+    {
+        return $this->professionals()->count() < self::MAX_PROFESSIONAL_SLOTS;
+    }
+
+    public function hasSchoolSlot()
+    {
+        return $this->schools()->count() < self::MAX_SCHOOL_SLOTS;
+    }
+
     public function getAuthorizedIds()
     {
         return [$this->id];
     }
+
+    public function revokeToken()
+    {
+        return $this->tokens()->latest()
+            ->first()?->revoke();
+    }
+
+    public function allAccounts()
+    {
+        $accounts = $this->schools;
+
+        $accounts = $accounts->push(...$this->professionals);
+        
+        if ($this->learner) {
+            $accounts = $accounts->push($this->learner);
+        }
+
+        if ($this->facilitator) {
+            $accounts = $accounts->push($this->facilitator);
+        }
+
+        return $accounts;
+    }
+
+    public function hasSchoolWithAdmin($admin)
+    {
+        return $this->schools()
+            ->whereAdmin($admin)
+            ->exists();
+    }
+
+    public function isAdult()
+    {
+        return $this->age >= self::MINIMUM_ADULT_AGE;
+    }
     
+    public function scope($query, $search)
+    {
+        return $query
+            ->where('username','like',"%$search%")
+            ->orWhere('first_name','like',"%$search%")
+            ->orWhere('other_names','like',"%$search%")
+            ->orWhere('last_name','like',"%$search%");
+    }
+
     public function pendingAndServedBans()
     {
         return $this->bans()->where(function($query){

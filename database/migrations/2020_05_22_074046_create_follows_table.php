@@ -17,15 +17,10 @@ class CreateFollowsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('conversation_id')->nullable();
             $table->enum('followedby_chat_status',['REQUEST','ACCEPT','PENDING','DECLINE','BLOCK'])->nullable();
-            $table->nullableMorphs('followedby'); //facilitator learner professional school parent
-            $table->unsignedBigInteger('user_id')->nullable();//user id of the one following 
+            $table->nullableMorphs('followedby');
             $table->enum('followable_chat_status',['REQUEST','ACCEPT','PENDING','DECLINE','BLOCK'])->nullable();
-            $table->nullableMorphs('followable'); //facilitator learner professional school parent
-            $table->unsignedBigInteger('followed_user_id')->nullable();//user id  of ther one being followed
+            $table->nullableMorphs('followable');
             $table->timestamps();
-
-
-            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

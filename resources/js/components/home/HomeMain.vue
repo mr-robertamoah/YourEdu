@@ -1,12 +1,19 @@
 <template>
     <div class="home-main-wrapper">
         <div class="extras-section">
-            <post-button buttonText="discussion" 
-                @click="clickedShowDiscussion"
-                titleText="have something to discuss?"></post-button>
+            <post-button 
+                buttonText="discussion" 
+                @click="clickedPostButton('discussion')"
+                titleText="have something to discuss?"
+            ></post-button>
+            <post-button 
+                buttonText="assessment" 
+                @click="clickedPostButton('assessment')"
+                titleText="want to create an assessment?"
+            ></post-button>
         </div>
-        <div class="loading" v-if="discussionLoading">
-            <pulse-loader :loading="discussionLoading" :size="'10px'"></pulse-loader>
+        <div class="loading" v-if="otherLoading">
+            <pulse-loader :loading="otherLoading" :size="'10px'"></pulse-loader>
         </div>
         <div class="alert" 
             v-if="alertMessage.length"
@@ -52,17 +59,30 @@
                         :discussion="post"
                         @askLoginRegister="askLoginRegister"
                     ></discussion-single>
+                    <assessment-single
+                        v-if="post.isAssessment"
+                        :key="`assessment.${post.id}`"
+                        :assessment="post"
+                        @askLoginRegister="askLoginRegister"
+                    ></assessment-single>
                 </template>
             </template>
         </template>
 
         <!-- create discussion -->
         <create-discussion
-            v-if="showCreateDiscussion"
-            :show="showCreateDiscussion"
-            @createDiscussionDisappear="clickedCloseDiscussion"
+            v-if="showCreateItem === 'discussion'"
+            :show="showCreateItem === 'discussion'"
+            @createDiscussionDisappear="clickedCloseCreateItem"
             @clickedCreate="clickedCreateDiscussion"
         ></create-discussion>
+        <!-- create assessment -->
+        <create-assessment
+            :show="showCreateItem === 'assessment'"
+            @closeCreateAssessment="clickedCloseCreateItem"
+            @clickedCreate="clickedCreateAssessment"
+        ></create-assessment>
+
     </div>
 </template>
 
@@ -71,19 +91,23 @@ import PostCreate from '../PostCreate'
 import PostCreateAlt from '../PostCreateAlt'
 import PostButton from '../PostButton'
 import CreateDiscussion from '../forms/CreateDiscussion'
+import CreateAssessment from '../forms/CreateAssessment'
 import PostShow from '../PostShow'
 import DiscussionSingle from '../DiscussionSingle'
+import AssessmentSingle from '../AssessmentSingle'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 import { mapGetters, mapActions } from 'vuex'
 import InfiniteLoading from 'vue-infinite-loading'
 
     export default {
         components: {
+            CreateAssessment,
             CreateDiscussion,
             PostButton,
             PostCreate,
             PostCreateAlt,
             PulseLoader,
+            AssessmentSingle,
             DiscussionSingle,
             PostShow,
             InfiniteLoading,
@@ -108,8 +132,8 @@ import InfiniteLoading from 'vue-infinite-loading'
             return {
                 showLoginRegister: false,
                 posts: [],
-                showCreateDiscussion: false,
-                discussionLoading: false,
+                showCreateItem: '',
+                otherLoading: false,
                 alertDanger: false,
                 alertSuccess: false,
                 alertMessage: ''
@@ -128,7 +152,8 @@ import InfiniteLoading from 'vue-infinite-loading'
                 'home/getHomeBooks','home/getHomeBooksMine','home/getHomeBooksFollowers',
                 'home/getHomeBooksFollowings','home/getHomeBooksAttachments',
                 'home/getHomeActivities','home/getHomeActivitiesMine','home/getHomeActivitiesFollowers',
-                'home/getHomeActivitiesFollowings','home/getHomeActivitiesAttachments',]),
+                'home/getHomeActivitiesFollowings','home/getHomeActivitiesAttachments',
+            ]),
             computedPosts() {
                 if (this.type === 'posts') {
                     if (this.params.hasOwnProperty('mine')) {
@@ -252,12 +277,15 @@ import InfiniteLoading from 'vue-infinite-loading'
             },
         },
         methods: {
-            ...mapActions(['profile/createDiscussion']),
-            clickedShowDiscussion(){
-                this.showCreateDiscussion = true
+            ...mapActions(['profile/createDiscussion',
+                'profile/createAssessment', 'dashboard/createAssessment'
+            ]),
+            clickedPostButton(text){
+
+                this.showCreateItem = text
             },
-            clickedCloseDiscussion(){
-                this.showCreateDiscussion = false
+            clickedCloseCreateItem(){
+                this.showCreateItem = ''
             },
             clearAlert(){
                 setTimeout(() => {
@@ -270,7 +298,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                 let response,
                     formData = new FormData
 
-                this.discussionLoading = true
+                this.otherLoading = true
 
                 formData.append('account', data.account)
                 formData.append('accountId', data.accountId)
@@ -293,16 +321,30 @@ import InfiniteLoading from 'vue-infinite-loading'
 
                 response = await this['profile/createDiscussion'](formData)
 
-                this.discussionLoading = false
+                this.otherLoading = false
+
+                this.handleResponse(response, 'discussion')
+            },
+            handleResponse(response, item) {
                 if (response.status) {
                     this.alertSuccess = true
-                    this.alertMessage = 'discussion created successfully'
+                    this.alertMessage = `${item} created successfully`
                 } else {
                     console.log('response :>> ', response);
                     this.alertDanger = true
-                    this.alertMessage = 'discussion creation failed'
+                    this.alertMessage = `${item} creation failed`
                 }
                 this.clearAlert()
+            },
+            async clickedCreateAssessment(formData) {
+
+                this.otherLoading = true
+
+                let response = await this['dashboard/createAssessment'](formData)
+
+                this.otherLoading = false
+                
+                this.handleResponse(response, 'assessment')
             },
             clickedShowPostComments(data){
                 this.$emit('clickedShowPostComments',data)
@@ -323,6 +365,7 @@ import InfiniteLoading from 'vue-infinite-loading'
 <style lang="scss" scoped>
 
     .home-main-wrapper{
+        background: inherit;
         
         .extras-section{
             width: 100%;

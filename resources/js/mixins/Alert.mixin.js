@@ -23,13 +23,19 @@ export default {
             this.alertLengthy = data.lengthy
             this.alertMessage = data.message
         },
-        responseErrorAlert(response) {
+        responseErrorAlert(response, message = null) {
             this.alertDanger = true
             if (response?.data?.message) {
-                this.alertMessage = response?.data?.message
-            }  else {
-                this.alertMessage = `${this.edit ? 'editing' : 'creation'} was unsuccessful 😞`
+                this.alertMessage = response.data.message
+                return
             }
+
+            if (different) {
+                this.alertSuccess = message
+                return
+            }
+
+            this.alertMessage = `${this.edit ? 'editing' : 'creation'} was unsuccessful 😞`
         },
     },
 }

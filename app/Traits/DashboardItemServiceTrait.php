@@ -277,7 +277,7 @@ trait DashboardItemServiceTrait
         }
 
         (new DiscussionService)->deleteDiscussion(
-            DiscussionDTO::createFromData(
+            DiscussionDTO::new()->addData(
                 discussionId: $item->discussion()->id,
                 userId: $dto->userId
             )

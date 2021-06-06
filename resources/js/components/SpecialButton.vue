@@ -1,5 +1,5 @@
 <template>
-    <button class="btn btn-size" :title="titleText"
+    <button class="btn btn-size min-w-content max-h-content" :title="titleText"
         @click="onClick"
     >
         {{buttonText}}

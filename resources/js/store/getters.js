@@ -1,3 +1,5 @@
+import settings from "../settings"
+
 const { default: profile } = require("./modules/profile")
 
 const getters = {
@@ -48,6 +50,10 @@ const getters = {
     getUserId(state){
         return state.user ? state.user.id : null
     },
+
+    isAdult(state) {
+        return state.user?.age >= settings.minimumAdultAge
+    },
     
     getLoading(state){
         return state.loading
@@ -57,40 +63,13 @@ const getters = {
         return state.userFollowRequest ? state.userFollowRequest : []
     },
     
-    getProfiles(state){ // this gives the available profiles of the user
-        // return state.user ? state.user.has_schools : false
-        let profilesArray = []
-        let computedArray = []
+    getProfiles(state){
 
         if (state.user) {
-            profilesArray = state.user.profiles
-        } else {
-            return null
+            return state.user.profiles
         }
-
-        if (profilesArray) {
-            computedArray = profilesArray.map(el=>{
-                let profile =  {
-                    name: el.profile_name ? el.profile_name : 'no name',
-                    url: el.profile_url ? el.profile_url: '',
-                    profile: el.profile ? el.profile : '',
-                    params: {
-                        account: el.account_type,
-                        accountId: el.account_id,
-                    }
-                }
-
-                if (profile.params.account === 'school') {
-                    profile.admin = el.admin
-                }
-
-                return profile
-            })
-
-            return computedArray
-        } else {
-            return null
-        }
+        
+        return null
     },
     
     getActiveProfile(state,getters){
@@ -102,31 +81,31 @@ const getters = {
     },
     isParent(state){
         return state.user.profiles.findIndex(profile=>{
-            return profile.account_type === 'parent'
+            return profile.account === 'parent'
         }) > -1 
     },
 
     isLearner(state){
         return state.user.profiles.findIndex(profile=>{
-            return profile.account_type === 'learner'
+            return profile.account === 'learner'
         }) > -1 
     },
 
     isFacilitator(state){
         return state.user.profiles.findIndex(profile=>{
-            return profile.account_type === 'facilitator'
+            return profile.account === 'facilitator'
         }) > -1 
     },
 
     professionalsCount(state){
         return state.user.profiles.filter(profile=>{
-            return profile.account_type === 'professional'
+            return profile.account === 'professional'
         }).length
     },
 
     schoolsCount(state){
         return state.user.profiles.filter(profile=>{
-            return profile.account_type === 'school' && profile.userId === state.user.id
+            return profile.account === 'school' && profile.userId === state.user.id
         }).length
     },
 }

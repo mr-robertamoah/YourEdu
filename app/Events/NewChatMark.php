@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\MarkResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -11,22 +12,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewChatMark implements ShouldBroadcastNow
+class NewChatMark implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $question;
-    public $userId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($question, $userId)
-    {
-        $this->question = $question;
-        $this->userId = $userId;
-    }
+    public function __construct(private $mark){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -35,7 +30,7 @@ class NewChatMark implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.message.{$this->userId}");
+        return new PrivateChannel("youredu.message.{$this->mark->markable->answerable->questionable->id}");
     }
     
     public function broadcastAs()
@@ -46,7 +41,7 @@ class NewChatMark implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'question' => $this->question
+            'mark' => new MarkResource($this->mark)
         ];
     }
 }

@@ -120,24 +120,41 @@
                     <div class="form-section" 
                         v-if="steps === 1"
                     >
-                        <div class="nothing" v-if="computedNothing">
-                            there is nothing more to do...just send the request
-                        </div>
-                        <text-textarea
-                            placeholder="job description" 
-                            v-if="action === 'administration'" 
-                            v-model="data.description"
-                            :bottomBorder="true"
-                            class="input"
-                        ></text-textarea>
-
+                        <template v-if="computedAdministration">
+                            <text-input
+                                :bottomBorder="true"
+                                placeholder="administrator name*"
+                                v-model="administrationData.name"
+                                class="other-input"
+                            ></text-input>
+                            <text-input
+                                :bottomBorder="true"
+                                placeholder="administrator title"
+                                v-model="administrationData.title"
+                                class="other-input"
+                            ></text-input>
+                            <text-textarea
+                                placeholder="job description" 
+                                v-model="administrationData.description"
+                                :bottomBorder="true"
+                                class="input"
+                            ></text-textarea>
+                            <main-select
+                                :items="['9','8','7','6','5','4','3','2','1']"
+                                :value="administrationData.level"
+                                backgroundColor="white"
+                                @selection="levelSelection"
+                                class="main-select"
+                            ></main-select>
+                        </template>
+                        
                         <main-select
-                            :items="['9','8','7','6','5','4','3','2','1']"
-                            :value="data.level"
+                            :items="['traditional', 'virtual']"
+                            :value="schoolType"
                             backgroundColor="white"
-                            v-if="action === 'administration'"
-                            @selection="levelSelection"
+                            @selection="schoolTypeSelection"
                             class="main-select"
+                            v-if="computedSchoolType"
                         ></main-select>
 
                         <div class="small-msg text-left">
@@ -285,10 +302,7 @@
                                 :item="item"
                             ></item-badge>
                         </div>
-                        <div 
-                            class="small-msg"
-                            v-if="selectedAccounts.length && selectedItems.length"
-                        >
+                        <div class="small-msg">
                             nothing more to do here 🙂. if you are ready, send the request...
                         </div>
                     </div>
@@ -299,7 +313,7 @@
                         class="action-button"
                     ></action-button>
 
-                    <input type="file" class="d-none" 
+                    <input type="file" class="hidden" 
                         @change="fileChange"
                         ref="inputfile"
                         v-if="computedFiles"
@@ -322,6 +336,7 @@ import MainCheckbox from './MainCheckbox';
 import RadioInput from './RadioInput';
 import AttachmentBadge from './AttachmentBadge';
 import TextTextarea from './TextTextarea';
+import TextInput from './TextInput';
 import MainSelect from './MainSelect';
 import PostAttachment from './PostAttachment';
 import PaymentTypes from './PaymentTypes';
@@ -341,6 +356,7 @@ import Alert from '../mixins/Alert.mixin';
             InfiniteLoader,
             MainList,
             MainSelect,
+            TextInput,
             TextTextarea,
             AttachmentBadge,
             RadioInput,
@@ -394,11 +410,14 @@ import Alert from '../mixins/Alert.mixin';
                 wardsNextPage: 1,
                 wardsLoading: false,
                 wardsSearchText: '',
-                data: {
+                administrationData: {
                     title: '', 
+                    name: '', 
                     level: '', 
                     description: '',
                 },
+                schoolType: null,
+                gradeId: null,
                 selectedAccounts: [],
                 attachments: [],
                 files: [],
@@ -480,15 +499,7 @@ import Alert from '../mixins/Alert.mixin';
         computed: {
             ...mapGetters(['dashboard/getAccountDetails', 'getUser']),
             computedAccounts() {
-                return this.accounts.map(account=>{
-                    return {
-                        account: account.account_type,
-                        accountId: account.account_id,
-                        name: account.profile_name ? account.profile_name : account.name,
-                        url: account.profile_url,
-                        username: account.username,
-                    }
-                }) 
+                return this.accounts
             },
             computedPostAttachment(){
                 return this.detailTypes.includes('attachments')
@@ -517,9 +528,6 @@ import Alert from '../mixins/Alert.mixin';
                 }
 
                 return buttons
-            },
-            computedNothing(){
-                return false
             },
             computedSalary(){
                 return this.detailTypes.includes('salary')
@@ -720,6 +728,28 @@ import Alert from '../mixins/Alert.mixin';
             computedShowReceiversSection() {
                 return this.receiverTypes.length || this.wards.length
             },
+            computedAdministration() {
+                return this.action.includes('administration')
+            },
+            computedAdmission() {
+                return this.action.includes('admission')
+            },
+            computedSchoolType() {
+                if (! this.detailTypes.includes('school type')) {
+                    return false
+                }
+
+                if (this.account.account !== 'school') {
+                    return false
+                }
+
+                if (this.account.role === 'virtual') {
+                    this.schoolType = 'virtual'
+                    return false
+                }
+
+                return true
+            },
         },
         methods: {
             ...mapActions(['dashboard/searchAccounts',
@@ -772,7 +802,10 @@ import Alert from '../mixins/Alert.mixin';
                 this.wardsSearchText = text
             }, 
             levelSelection(data){
-                this.data.level = data
+                this.administrationData.level = data
+            },
+            schoolTypeSelection(data){
+                this.schoolType = data
             },
             periodSelection(data){
                 this.data.salaryPeriod = data
@@ -866,7 +899,7 @@ import Alert from '../mixins/Alert.mixin';
             },
             setAdmissionRequestForm() {
                 this.action = 'admission'
-                this.detailTypes = ['attachments', 'attachment grades']
+                this.detailTypes = ['attachments', 'attachment grades', 'attachment single', 'school type']
 
                 if (this.account.account === 'school') {
                     this.actionDescription = `sending a request to a learner (and indirectly to parents) so they can be enrolled in the school (virtually/traditionally).`
@@ -949,13 +982,16 @@ import Alert from '../mixins/Alert.mixin';
             clearData(){
                 this.actionButttonText = ''
                 this.steps = 0
-                this.data = {
+                this.adminstrationData = {
                     title: '', 
+                    name: '', 
                     level: '', 
                     description: '',
                 }
                 this.paymentType = ''
                 this.paymentData = null
+                this.schoolType = null
+                this.gradeId = null
                 this.accounts = []
                 this.attachments = []
                 this.files = []
@@ -966,9 +1002,20 @@ import Alert from '../mixins/Alert.mixin';
             },
             attachmentSelected(data){
                 let index = this.findAttachmentIndex(data)
-                if (index === -1) {
-                    this.attachments.push(data)
+                if (index > -1) {
+                    return
                 }
+
+                if (this.detailTypes.includes('attachment grades')) {
+                    this.gradeId = data.data.id
+                }
+
+                if (this.detailTypes.includes('attachment single')) {
+                    this.attachments = [data]
+                    return
+                }
+
+                this.attachments.push(data)
             },
             findAttachmentIndex(data) {
                 return this.attachments.findIndex(attachment=>{
@@ -979,9 +1026,21 @@ import Alert from '../mixins/Alert.mixin';
             },
             removeAttachment(data){
                 let index = this.findAttachmentIndex(data)
-                if (index > -1) {
-                    this.attachments.splice(index,1)
+
+                if (index === -1) {
+                    return
                 }
+
+                if (! this.detailTypes.includes('attachment single')) {
+                    this.attachments.splice(index,1)
+                    return
+                }
+                
+                if (this.detailTypes.includes('attachment grades')) {
+                    this.gradeId = null
+                }
+
+                this.attachments = []
             },
             removeFile(data){
                 this.showPreview = false
@@ -1050,7 +1109,6 @@ import Alert from '../mixins/Alert.mixin';
                 let response,
                     formData = new FormData
 
-                formData.append('title',this.data.title)
                 formData.append('action', this.action)
 
                 formData.append('level',this.data.level)
@@ -1073,6 +1131,17 @@ import Alert from '../mixins/Alert.mixin';
                         accountId: account.accountId,
                     }
                 })))
+
+                if (this.computedAdmission) {
+                    formData.append('admissionData', JSON.stringify({
+                        type: this.schoolType,
+                        gradeId: this.gradeId
+                    }))
+                }
+
+                if (this.computedAdministration) {
+                    formData.append('administrationData', JSON.stringify(this.administrationData))
+                }
 
                 formData.append('wardId',this.wardId)
                 

@@ -19,7 +19,7 @@ class Course extends Model
     use SoftDeletes, NotOwnedbyTrait, DashboardItemTrait, AssessmentTrait, HasFactory;
 
     protected $fillable = [
-        'name','description', 'state', 'stand_alone'
+        'name','description', 'state', 'stand_alone', 'ownedby_type', 'ownedby_id'
     ];
 
     protected $casts = [

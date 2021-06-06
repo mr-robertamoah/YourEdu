@@ -78,7 +78,7 @@ class AccountService
         Debugbar::info($data);
         if ($data['create'] === 'learner' ||  $data['create'] === 'parent' || $data['create'] === 'facilitator') {
             if ($data['name'] ==='' && is_null($data['name'])) {
-                $data['name'] =  $data['user']->full_name;
+                $data['name'] =  $data['user']->name;
             }
 
             $create = $data['create'];

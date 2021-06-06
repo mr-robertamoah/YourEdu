@@ -16,8 +16,8 @@ class MarkResource extends JsonResource
     {
         $data = [
             'id' => $this->id,
-            'user_id' => $this->user_id,
-            // 'score' => $this->score,
+            'user_id' => $this->markedby->user_id,
+            'score' => $this->score,
             // 'remark' => $this->remark,
             //myt consider adding this later
             // 'markedby_id' => $this->markedby_id, 

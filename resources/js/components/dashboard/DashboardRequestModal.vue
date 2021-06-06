@@ -7,44 +7,66 @@
                 @clickedMain="showFollowProfiles = false"
                 :main="false"
                 :mainOther="false"
+                class="dashboard-request-wrapper"
             >
                 <template slot="requests">
-                    <div class="dashboard-request-wrapper">
-                        <div class="loading" v-if="requestLoading">
-                            <pulse-loader :loading="requestLoading"></pulse-loader>
+                    <auto-alert
+                        :message="alertMessage"
+                        :success="alertSuccess"
+                        :danger="alertDanger"
+                        :sticky="true"
+                        @hideAlert="clearAlert"
+                    ></auto-alert>
+                    <pulse-loader 
+                        class="loading" 
+                        v-if="requestLoading"
+                        :loading="requestLoading"
+                    ></pulse-loader>
+                    <div class="view-requests"
+                        v-if="actionType === 'view'"
+                    >
+                        <div class="no-requests" 
+                            v-if="!computedRequests && !requestLoading">
+                            {{`there are no requests`}}
                         </div>
-                        <div class="view-requests"
-                            v-if="actionType === 'view'"
-                        >
-                            <div class="no-requests" 
-                                v-if="!computedRequests && !requestLoading">
-                                {{`there are no requests`}}
-                            </div>
-                            <div class="has-requests" 
-                                v-if="computedRequests && !requestLoading">
-                                {{`these are your sent requests`}}
-                            </div>
-                            <other-request-badge
-                                v-for="request in requests"
-                                :key="request.id"
-                                :request="request"
-                                :dashboard="true"
-                                @updateRequest="updateRequest"
-                                @clickedAction="clickedRequestAction"
-                            ></other-request-badge>
+                        <div class="has-requests" 
+                            v-if="computedRequests && !requestLoading">
+                            {{`these are your sent requests`}}
                         </div>
-                        <div class="more-data"
-                            @click="infiniteHandler"
-                            v-if="requestsNextPage && requestsNextPage !== 1"
-                        >
-                            <font-awesome-icon :icon="['fa','ellipsis-h']"></font-awesome-icon>
-                        </div>
-                        
-                        <div class="no-data"
-                            @click="infiniteHandler"
-                            v-if="!requestsNextPage && requests.length && requestsNextPage !== 1"
-                        > no more requests</div>
+                        <request-badge
+                            v-for="request in requests"
+                            :key="request.id"
+                            :request="request"
+                            :dashboard="true"
+                            @clickedAction="clickedRequestAction"
+                            @showDetails="clickedShowDetails"
+                            @showMessages="clickedShowMessages"
+                            @newMessage="newRequestMessage"
+                        ></request-badge>
                     </div>
+                    <div class="more-data"
+                        @click="infiniteHandler"
+                        v-if="requestsNextPage && requestsNextPage !== 1"
+                    >
+                        <font-awesome-icon :icon="['fa','ellipsis-h']"></font-awesome-icon>
+                    </div>
+                    
+                    <div class="no-data"
+                        @click="infiniteHandler"
+                        v-if="!requestsNextPage && requests.length && requestsNextPage !== 1"
+                    > no more requests</div>
+
+                    <messages-modal
+                        :show="showMessageModal"
+                        :newMessage="newMessage"
+                        @closeMessageModal="closeMessageModal"
+                        :request="modalRequest"
+                    ></messages-modal>
+                    <details-modal
+                        :show="showDetailsModal"
+                        @closeDetailsModal="closeDetailsModal"
+                        :details="modalRequest"
+                    ></details-modal>
                 </template>
             </main-modal>
         </template>
@@ -52,13 +74,18 @@
 </template>
 
 <script>
-import OtherRequestBadge from '../OtherRequestBadge';
+import RequestBadge from '../RequestBadge';
+import MessagesModal from "../MessagesModal"
+import DetailsModal from "../DetailsModal"
 import PulseLoader from 'vue-spinner/src/PulseLoader';
 import { mapActions } from 'vuex'
+import Alert from '../../mixins/Alert.mixin';
     export default {
         components: {
             PulseLoader,
-            OtherRequestBadge,
+            RequestBadge,
+            DetailsModal,
+            MessagesModal,
         },
         props: {
             show: {
@@ -76,14 +103,19 @@ import { mapActions } from 'vuex'
                 }
             },
         },
+        mixins: [Alert],
         data() {
             return {
+                showMessageModal: false,
+                showDetailsModal: false,
                 requestLoading: false,
                 requests: [],
                 requestsNextPage: 1,
                 actionType: 'view',
                 steps: 0,
-                accountType: ''
+                accountType: '',
+                modalRequest: null,
+                newMessage: null,
             }
         },
         watch: {
@@ -110,7 +142,28 @@ import { mapActions } from 'vuex'
             }
         },
         methods: {
-            ...mapActions(['dashboard/getAccountRequests', 'schoolRequestResponse']),
+            ...mapActions(['dashboard/getAccountRequests', 
+                'schoolRequestResponse', 'dashboard/sendResponse'
+            ]),
+            newRequestMessage(data) {
+                this.newMessage = data.message
+            },
+            closeMessageModal(request) {
+                this.showMessageModal = false
+                this.modalRequest = null
+            },
+            clickedShowMessages(request) {
+                this.showMessageModal = true
+                this.modalRequest = request
+            },
+            clickedShowDetails(request) {
+                this.showDetailsModal = true
+                this.modalRequest = request
+            },
+            closeDetailsModal() {
+                this.showDetailsModal = false
+                this.modalRequest = null
+            },
             async getRequests() {
                 let response,
                     data = {
@@ -146,9 +199,30 @@ import { mapActions } from 'vuex'
                 this.$emit('requestsModalDisappear')
             },
             clickedRequestAction(data){
-                if (data.hasOwnProperty('schoolRequest')) {
-                    this.acceptOrDeclineSchoolRequest(data)
+                this.acceptOrDeclineRequest(data)
+            },
+            async acceptOrDeclineRequest(request){
+                let formData = new FormData,
+                    response
+
+                formData.append('requestId', request.id)
+                formData.append('response', request.response !== 'decline' ? 'accepted' : 'declined')
+
+                response = await this['dashboard/sendResponse'](formData)
+
+                if (response.status) {
+                    this.updateRequest({
+                        requestId: request.id,
+                        state: formData.get('response')
+                    })
+                    this.alertSuccess = true
+                    this.alertMessage = `response was successfully sent 😎`
+                    return
                 }
+
+                console.log('response :>> ', response);
+                this.alertDanger = true
+                this.alertMessage = `oops! it failed 😕. please try again later.`
             },
             async acceptOrDeclineSchoolRequest(requestData){
                 let response,
@@ -185,8 +259,8 @@ import { mapActions } from 'vuex'
     .dashboard-request-wrapper{
 
         .loading{
-            width: 100%;
-            text-align: center;
+            @include sticky-loader();
+            top: 49%;
         }
 
         .send-request{

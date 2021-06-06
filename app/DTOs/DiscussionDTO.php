@@ -8,29 +8,43 @@ use Illuminate\Http\Request;
 class DiscussionDTO
 {
     public ?string $discussionId = null;
-    public array $files;
-    public array $removedFiles;
-    public array $attachments;
-    public array $removedAttachments;
+    public ?string $participantId = null;
+    public array $files = [];
+    public array $removedFiles = [];
+    public array $attachments = [];
+    public array $removedAttachments = [];
+    public ?Model $participant = null;
+    public ?InvitationDTO $invitationDTO = null;
     public ?Model $discussion = null;
     public ?Model $raisedby = null;
     public ?int $userId = null;
-    public string | null $account;
-    public string | null $accountId;
+    public ?string $account = null;
+    public ?string $accountId = null;
+    public ?string $title = null;
+    public ?string $preamble = null;
+    public ?string $type = null;
+    public ?string $allowed = null;
+    public ?string $action = null;
+    public ?string $state = null;
+    public bool $restricted = false;
     public bool $main = false;
     public ?string $methodType = null;
+
+    public static function new()
+    {
+        return new static;
+    }
     
-    public static function createFromData
-    (
-        $discussionId = null,
-        $userId = null,
-    )
+    public static function createFromData($data)
     {
         $self = new static;
-
-        $self->discussionId = $discussionId;
-        $self->userId = $userId;
         
+        $self->title = $data->title ?? null;
+        $self->preamble = $data->preamble ?? null;
+        $self->restricted = $data->restricted ?? false;
+        $self->type = $data->type ?? 'PRIVATE';
+        $self->allowed = $data->allowed ?? 'ALL';
+
         return $self;
     }
 
@@ -41,6 +55,14 @@ class DiscussionDTO
     {
         $self = new static;
         
+        $self->restricted = $request->restricted ? json_decode($request->restricted) : false;
+        $self->action = $request->action;
+        $self->allowed = $request->allowed;
+        $self->discussionId = $request->discussionId;
+        $self->participantId = $request->participantId;
+        $self->type = $request->type;
+        $self->title = $request->title;
+        $self->preamble = $request->preamble;
         $self->account = $request->account;
         $self->accountId = $request->accountId;
         $self->userId = (int) $request->user()->id;
@@ -55,12 +77,64 @@ class DiscussionDTO
             ) : [];
         $self->files = $request->hasFile('files') ? 
             $request->file('files') : [];
-        $self->removedFiles = $request->removedTypeFiles ?
-            FileDTO::createFromArray(
-                json_decode($request->removedTypeFiles)
-            ) : [];
+        $self->removedFiles = static::getRemovedFiles($request);
 
         return $self;
+    }
+
+    public static function getRemovedFiles($request)
+    {
+        $files = [];
+        if ($request->removedTypeFiles) {
+            $files = $request->removedTypeFiles;
+        }
+           
+        if ($request->removedFiles) {
+            $files = $request->removedFiles;
+        }
+
+        if (is_string($files)) {
+            $files = json_decode($files);
+        }
+
+        return FileDTO::createFromArray($files);
+    }
+
+    public function withFiles($files)
+    {
+        if (is_null($files)) {
+            return $this;
+        }
+
+        if (is_array($files)) {
+            return $this;
+        }
+
+        $clone = clone $this;
+
+        $clone->files = $files;
+
+        return $clone;
+    }
+
+    public function addData
+    (
+        $userId = null,
+        $discussionId = null,
+        $methodType = null,
+        $main = false,
+        $state = null,
+        $action = null,
+    )
+    {
+        $this->action = $action;
+        $this->state = $state;
+        $this->main = $main;
+        $this->methodType = $methodType;
+        $this->discussionId = $discussionId;
+        $this->userId = $userId;
+
+        return $this;
     }
 
     public function withRaisedby(Model $raisedby)
@@ -68,6 +142,33 @@ class DiscussionDTO
         $clone = clone $this;
 
         $clone->raisedby = $raisedby;
+
+        return $clone;
+    }
+
+    public function withDiscussion(Model $discussion)
+    {
+        $clone = clone $this;
+
+        $clone->discussion = $discussion;
+
+        return $clone;
+    }
+
+    public function withInvitationDTO(InvitationDTO $invitationDTO)
+    {
+        $clone = clone $this;
+
+        $clone->invitationDTO = $invitationDTO;
+
+        return $clone;
+    }
+
+    public function withParticipant(Model $participant)
+    {
+        $clone = clone $this;
+
+        $clone->participant = $participant;
 
         return $clone;
     }

@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\ParticipantResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -14,18 +15,12 @@ class UpdatedDiscussionParticipant implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    private $discussionId;
-    private $participant;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($participant,$discussionId)
-    {
-        $this->participant = $participant;
-        $this->discussionId = $discussionId;
-    }
+    public function __construct(private $discussionDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -34,19 +29,18 @@ class UpdatedDiscussionParticipant implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel("youredu.discussion.{$this->discussionId}");
+        return new Channel("youredu.discussion.{$this->discussionDTO->participant->participation_id}");
     }
 
     public function broadcastAs()
     {
-        return 'updatedDiscussionParticipant';
+        return 'updatedParticipant';
     }
 
     public function broadcastWith()
     {
         return [
-            'discussionParticipant' => $this->participant,
-            'discussionId' => $this->discussionId,
+            'participant' => new ParticipantResource($this->discussionDTO->participant->refresh()),
         ];
     }
 }

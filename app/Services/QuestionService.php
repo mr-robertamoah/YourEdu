@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\QuestionDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\QuestionException;
+use App\Traits\ServiceTrait;
 use App\YourEdu\Question;
 use Carbon\Carbon;
 use \Debugbar;
@@ -12,6 +13,8 @@ use Illuminate\Support\Arr;
 
 class QuestionService
 {
+    use ServiceTrait;
+
     public function createQuestion
     (
         QuestionDTO $questionDTO
@@ -29,6 +32,8 @@ class QuestionService
         $question = $this->addPossibleAnswers($question, $questionDTO);
 
         $this->checkPossibleAnswers($question, $questionDTO);
+
+        $question = $this->setCorrectPossibleAnswers($question, $questionDTO);
 
         $question = $this->addQuestionFiles($question, $questionDTO);
 
@@ -87,16 +92,16 @@ class QuestionService
         QuestionDTO $questionDTO
     )
     {
-        if ($question->doesntRequireOptionalAnswers()) return;
+        if ($question->doesntRequirePossibleAnswers()) return;
 
-        if ($question->doesntHaveOptionalAnswers()) {
+        if ($question->doesntHavePossibleAnswers()) {
             $this->throwQuestionException(
                 message: 'The question requires options from which choices will be made. But no option was given',
                 data: $questionDTO
             );
         }
         
-        if ($question->doesntHaveRequiredNumberOfOptionalAnswers()) {
+        if ($question->doesntHaveRequiredNumberOfPossibleAnswers()) {
             $this->throwQuestionException(
                 message: 'The question with options requires at least two options. Add more options.',
                 data: $questionDTO
@@ -117,6 +122,8 @@ class QuestionService
         $question = $this->addPossibleAnswers($question, $questionDTO);
 
         $this->checkPossibleAnswers($question, $questionDTO);
+
+        $question = $this->setCorrectPossibleAnswers($question, $questionDTO);
 
         $question = $this->addQuestionFiles($question, $questionDTO);
 
@@ -191,8 +198,6 @@ class QuestionService
             ]);
         }
 
-        $question = $this->setCorrectPossibleAnswers($question, $questionDTO);
-
         return $question->refresh();
     }
 
@@ -200,18 +205,21 @@ class QuestionService
     (
         Question $question,
         QuestionDTO $questionDTO,
-        string $type = 'id'
     ) : Question
     {
-        if ($question->doesntHaveOptionalAnswers()) return $question;
-
-        if ($type === 'id') {
-            $correctAnswerIds = $this->getCorrectPossibleAnswerIdsById(
-                $question, $questionDTO
-            );
-        } 
+        if ($question->doesntHavePossibleAnswers()) {
+            return $question;
+        }
         
-        if ($question->isArrangeFlowAnswerType()) {
+        if (! count($questionDTO->correctPossibleAnswers)) {
+            return $question;
+        }
+
+        $correctAnswerIds = $this->getCorrectPossibleAnswerIdsById(
+            $question, $questionDTO
+        );
+        
+        if (! count($correctAnswerIds)) {
             $correctAnswerIds = $this->getCorrectPossibleAnswerIdsByOption(
                 $question, $questionDTO
             );
@@ -231,10 +239,16 @@ class QuestionService
     {
         $correctAnswerIds = [];
 
+        if (! property_exists($questionDTO->correctPossibleAnswers[0], 'id')) {
+            return $correctAnswerIds;
+        }
+
         foreach ($questionDTO->correctPossibleAnswers as $possibleAnswerDTO) {
             if ($question->isTrueOrFalseOptionAnswerType()) {
                 $correctAnswerIds = [$possibleAnswerDTO->id];
+                continue;
             } 
+
             if ($question->isArrangeFlowAnswerType()) {
                 $correctAnswerIds[] = $possibleAnswerDTO->id;
             }   
@@ -251,13 +265,20 @@ class QuestionService
     {
         $correctAnswerIds = [];
 
+        if (! property_exists($questionDTO->correctPossibleAnswers[0], 'option')) {
+            return $correctAnswerIds;
+        }
+
         foreach ($questionDTO->correctPossibleAnswers as $possibleAnswerDTO) {
             $id = $question->getPossibleAnswerId(
                 $possibleAnswerDTO->option
             );
+
             if ($question->isTrueOrFalseOptionAnswerType()) {
                 $correctAnswerIds = [$id];
+                continue;
             } 
+
             if ($question->isArrangeFlowAnswerType()) {
                 $correctAnswerIds[] = $id;
             }                
@@ -319,26 +340,14 @@ class QuestionService
         return $this->getModel('question', $questionDTO->questionId);
     }
 
-    private function getModel($account, $accountId)
-    {
-        $question = getYourEduModel($account,$accountId);
-
-        if (is_null($question)) {
-            throw new AccountNotFoundException("$account not found with id {$accountId}");
-        }
-
-        return $question;
-    }
-
     public function deleteQuestion
     (
-        QuestionDTO $questionDTO, 
-        $check = false
+        QuestionDTO $questionDTO,
     )
     {
         $question = $this->getQuestionModel($questionDTO);
 
-        if ($check) {
+        if ($questionDTO->checkAuthorization) {
             $this->checkAuthorization($question, $questionDTO);
         }
 
@@ -384,10 +393,9 @@ class QuestionService
         QuestionDTO $questionDTO
     ) : bool
     {
-        FileService::deleteYourEduItemFiles($question);
-        
         $successCheck = $question->delete();
-        if (!$successCheck) {
+
+        if (! $successCheck) {
             $this->throwQuestionException(
                 message: "failed to delete question",
                 data: $questionDTO
@@ -395,6 +403,11 @@ class QuestionService
         }
 
         return $successCheck;
+    }
+
+    public function answerQuestion(QuestionDTO $questionDTO)
+    {
+        
     }
 }
 

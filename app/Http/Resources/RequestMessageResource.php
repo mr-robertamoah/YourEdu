@@ -38,7 +38,7 @@ class RequestMessageResource extends JsonResource
             'message' => $this->message,
             'fromable_id' => $this->fromable_id,
             'fromable_type' => $this->fromable_type,
-            'fromable_name' => $this->fromable->profile ? $this->fromable->profile->name : $this->fromable->full_name,
+            'fromable_name' => $this->fromable->profile ? $this->fromable->profile->name : $this->fromable->name,
             'userId' => $this->fromable->user_id ? $this->fromable->user_id : $this->fromable->id,
             'fromable_url' => $this->fromable->profile ? $this->fromable->profile->url : '',
             'fromable_userId' => $this->from_user_id,

@@ -25,7 +25,7 @@
                     <div class="list-identifier" v-if="!removed">
                         {{computedPosition}}
                     </div>
-                    <div class="list-item">
+                    <div class="item">
                         {{possibleAnswer.option}}
                     </div>
                     <main-checkbox
@@ -39,7 +39,7 @@
                 </div>
                 <div class="true-false" v-if="computedTrueOrFalse">
                     <div class="list-identifier"></div>
-                    <div class="list-item">
+                    <div class="item">
                         {{possibleAnswer.option}}
                     </div>
                     <main-checkbox
@@ -53,12 +53,12 @@
                 </div>
                 <div class="arrange" v-if="computedArrange">
                     <div class="list-identifier" v-if="!removed"></div>
-                    <div class="list-item">
+                    <div class="item">
                         {{possibleAnswer.option}}
                     </div>
                 </div>
                 <div class="flow" v-if="computedFlow">
-                    <div class="list-item">
+                    <div class="item">
                         {{possibleAnswer.option}}
                     </div>
                     <div 
@@ -235,7 +235,7 @@ import { strings } from '../../services/helpers'
                 position: relative;
             }
 
-            .list-item{
+            .item{
                 min-width: fit-content;
             }
 

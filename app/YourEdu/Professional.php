@@ -2,9 +2,12 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountCommissionTrait;
 use App\Traits\AccountFilesTrait;
+use App\Traits\AccountQuestionsTrait;
 use App\Traits\AccountTrait;
 use App\Traits\FacilitatingAccountsTrait;
+use App\Traits\MarkerTrait;
 use App\User;
 use Database\Factories\ProfessionalFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,10 +22,15 @@ class Professional extends Model
         AccountTrait, 
         HasFactory, 
         FacilitatingAccountsTrait,
-        AccountFilesTrait;
+        AccountFilesTrait,
+        AccountCommissionTrait,
+        AccountQuestionsTrait,
+        MarkerTrait;
+
+    const ROLES = ['nanny','trainer','counselor','other'];
 
     protected $fillable = [
-        'user_id','name', 'description', 'role'
+        'user_id','name', 'description', 'role', 'other_name'
     ];
 
     protected static function booted()
@@ -31,7 +39,7 @@ class Professional extends Model
             $user = $professional->user;
             $professional->profile()->create([
                 'user_id' => $user->id,
-                'name' => $professional->name ? $professional->name : $user->full_name,
+                'name' => $professional->name ? $professional->name : $user->name,
             ]);
             $professional->verification()->create();
 
@@ -98,16 +106,6 @@ class Professional extends Model
     public function aliasesAdded()
     {
         return $this->morphMany(Alias::class,'addedby');
-    }
-
-    public function commissions()
-    {
-        return $this->morphMany(Commission::class,'ownedby');
-    }
-
-    public function addedCommissions()
-    {
-        return $this->morphMany(Commission::class,'addedby');
     }
 
     public function employed()
@@ -331,11 +329,6 @@ class Professional extends Model
     public function permissions()
     {
         return $this->morphMany(Permission::class,'permitting');
-    }
-
-    public function questionsAdded()
-    {
-        return $this->morphMany(Question::class,'addedby');
     }
 
     public function booksAuthored()

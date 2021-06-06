@@ -7,7 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class ConversationAccount extends Model
 {
-    //
+    const BLOCK = 'BLOCK';
+    const ACCEPT = 'ACCEPT';
+    const PENDING = 'PENDING';
+    const REQUEST = 'REQUEST';
 
     protected $fillable = ['conversation_id','user_id','state'];
 

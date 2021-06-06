@@ -10,26 +10,48 @@ use Illuminate\Http\Request;
 
 class QuestionDTO extends PostTypeDTOContract
 {
-    public string | null $questionId;
-    public string | null $body;
-    public string | null $state;
-    public string | null $hint;
-    public string | null $action;
+    public ?string $questionId = null;
+    public ?string $body = null;
+    public ?string $state = null;
+    public ?string $hint = null;
+    public ?string $account = null;
+    public ?string $accountId = null;
+    public ?string $userId = null;
+    public ?string $action = null;
     public bool $autoMark = false;
     public ?int $position = null;
-    public int | null $scoreOver;
+    public ?int $scoreOver = null;
+    public ?AnswerDTO $answerDTO = null;
     public ?Carbon $publishedAt = null;
     public ?Model $addedby = null;
     public ?Model $question = null;
     public ?Model $questionable = null;
     public ?Model $questionedby = null;
-    public string | null $answerType;
-    public array $files;
-    public array $removedFiles;
+    public ?string $answerType = null;
+    public bool $checkAuthorization = false;
+    public array $files = [];
+    public array $removedFiles = [];
     public ?array $possibleAnswers = [];
     public ?array $editedPossibleAnswers = [];
     public ?array $removedPossibleAnswers = [];
     public ?array $correctPossibleAnswers = [];
+
+    public static function new()
+    {
+        return new static;
+    }
+
+    public function addData
+    (
+        $body = null,
+        $hint = null,
+    )
+    {
+        $this->hint = $hint;
+        $this->body = $body;
+
+        return $this;
+    }
 
     public static function createFromArray
     (
@@ -74,6 +96,9 @@ class QuestionDTO extends PostTypeDTOContract
         $autoMark = false,
         $publishedAt = null,
         $hint = null,
+        $accountId = null,
+        $account = null,
+        $userId = null,
         $scoreOver = null,
         $answerType = null,
         array $files = [],
@@ -88,6 +113,9 @@ class QuestionDTO extends PostTypeDTOContract
         $static->position = (int)$position;
         $static->state = $state;
         $static->publishedAt = Carbon::parse($publishedAt);
+        $static->userId = $userId;
+        $static->account = $account;
+        $static->accountId = $accountId;
         $static->hint = $hint;
         $static->files = $files;
         $static->removedFiles = FileDTO::createFromArray($removedFiles);
@@ -169,5 +197,41 @@ class QuestionDTO extends PostTypeDTOContract
         $clone->files = [];
 
         return $clone;
+    }
+
+    public function addAnswerData($answerData)
+    {
+        $clone = clone $this;
+
+        if (is_null($answerData)) {
+            $clone->answerDTO = AnswerDTO::new();
+            return $clone;
+        }
+
+        if (is_string($answerData)) {
+            $answerData = json_decode($answerData);
+        }
+
+        $clone->answerDTO = AnswerDTO::createFromData(
+            answer: $answerData->answer ?? null,
+            possibleAnswerIds: $answerData->possibleAnswerIds ?? [],
+        );
+
+        return $clone;
+    }
+
+    public function addAnswerFiles($files)
+    {
+        if (is_null($files)) {
+            return $this;
+        }
+        
+        if (is_null($this->answerDTO)) {
+            $this->answerDTO = AnswerDTO::new();
+        }
+
+        $this->answerDTO->files = $files;
+
+        return $this;
     }
 }

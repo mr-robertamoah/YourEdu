@@ -131,10 +131,8 @@
                     </span>
                     <div :key="key" v-for="(profile,key) in computedProfiles">
                         <profile-bar
-                            :name="profile.name"
-                            :type="profile.params.account"
                             :smallType="true"
-                            :routeParams="profile.params"
+                            :profile="profile"
                             :navigate="false"
                             @clickedProfile="clickedProfile"
                         ></profile-bar>
@@ -190,7 +188,7 @@
             </div>
             <input type="file" ref="file" 
                 @change="fileChange"
-                class="d-none">
+                class="hidden">
             <div class="post-bottom">
                 <post-button buttonText="L" 
                     @click="formType = 'lesson'"
@@ -252,15 +250,11 @@
             </template>
         </just-fade>
         <!-- creating post lessons -->
-        <just-fade>
-            <template slot="transition" v-if="showLessonModal">
-                <create-lesson
-                    :show="showLessonModal"
-                    @createLessonDisappear="closeCreateLesson"
-                    @clickedCreate="clickedCreateLesson"
-                ></create-lesson>
-            </template>
-        </just-fade>
+        <create-lesson
+            :show="showLessonModal"
+            @createLessonDisappear="closeCreateLesson"
+            @clickedCreate="clickedCreateLesson"
+        ></create-lesson>
         <!-- capturing media -->
         <media-capture
             :show="showMediaCapture"
@@ -522,8 +516,8 @@ import {mapActions, mapGetters} from 'vuex'
                         this.showProfiles = false
                     }, 5000);
                 } else if (this.computedProfiles.length === 1 && this.$route.name === "home") {
-                    this.account = this.computedProfiles[0].params.account_type
-                    this.accountId = this.computedProfiles[0].params.accountId
+                    this.account = this.computedProfiles[0].account
+                    this.accountId = this.computedProfiles[0].accountId
                     this.createPost()
                 } else {
                     this.accountId = null
@@ -541,6 +535,7 @@ import {mapActions, mapGetters} from 'vuex'
             },
             closeCreateLesson(){
                 this.showLessonModal = false
+                this.formType = ''
             },
             async createPost(){
                 this.loading = true

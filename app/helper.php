@@ -37,6 +37,7 @@ use App\YourEdu\Like;
 use App\YourEdu\Link;
 use App\YourEdu\Mark;
 use App\YourEdu\Message;
+use App\YourEdu\Participant;
 use App\YourEdu\Poem;
 use App\YourEdu\Post;
 use App\YourEdu\PostAttachment;
@@ -91,39 +92,72 @@ function getAccountClass($string)
 {
     if (str_contains($string,'learner')) {
         return Learner::class;
-    } else if (str_contains($string,'parent')) {
-        return ParentModel::class;
-    } else if (str_contains($string,'facilitator')) {
-        return Facilitator::class;
-    } else if (str_contains($string,'professional')) {
-        return Professional::class;
-    } else if (str_contains($string,'school')) {
-        return School::class;
-    } else if (str_contains($string,'admin')) {
-        return Admin::class;
-    } else if (str_contains($string,'post')) {
-        return 'post';
-    } else if ($string === 'school') {
-        return 'school';
-    } else if ($string === 'question') {
-        return 'question';
-    } else if ($string === 'riddle') {
-        return 'riddle';
-    } else if ($string === 'poem') {
-        return 'poem';
-    } else if ($string === 'activity') {
-        return 'activity';
-    } else if ($string === 'Lesson') {
-        return 'lesson';
-    } else if ($string === 'book') {
-        return 'book';
-    } else if ($string === 'answer') {
-        return 'answer';
-    } else if ($string === 'comment') {
-        return 'comment';
-    } else if ($string === 'coursesection') {
-        return 'courseSection';
     }
+    
+    if (str_contains($string,'parent')) {
+        return ParentModel::class;
+    }
+    
+    if (str_contains($string,'facilitator')) {
+        return Facilitator::class;
+    }
+    
+    if (str_contains($string,'professional')) {
+        return Professional::class;
+    }
+    
+    if (str_contains($string,'school')) {
+        return School::class;
+    }
+    
+    if (str_contains($string,'admin')) {
+        return Admin::class;
+    }
+    
+    if (str_contains($string,'post')) {
+        return Post::class;
+    }
+    
+    if ($string === 'school') {
+        return School::class;
+    }
+    
+    if ($string === 'question') {
+        return Question::class;
+    }
+    
+    if ($string === 'riddle') {
+        return Riddle::class;
+    }
+    
+    if ($string === 'poem') {
+        return Poem::class;
+    }
+    
+    if ($string === 'activity') {
+        return Activity::class;
+    }
+    
+    if ($string === 'Lesson') {
+        return Lesson::class;
+    }
+    
+    if ($string === 'book') {
+        return Book::class;
+    }
+    
+    if ($string === 'answer') {
+        return Answer::class;
+    }
+    
+    if ($string === 'comment') {
+        return Comment::class;
+    }
+    
+    if ($string === 'courseSection') {
+        return CourseSection::class;
+    }
+
     return '';
 }
 
@@ -234,6 +268,10 @@ function getYourEduModel($accountText, $accountTextId): Model | null
         $account = Assessment::find($accountTextId);
     } else if ($accountText === 'assessmentSection') {
         $account = AssessmentSection::find($accountTextId);
+    } else if ($accountText === 'participant') {
+        $account = Participant::find($accountTextId);
+    } else if ($accountText === 'user') {
+        $account = User::find($accountTextId);
     }
 
     return $account;

@@ -14,6 +14,10 @@ class MessageService
 
 {
     use ServiceTrait;
+
+    const PAGINATION = 5;
+
+    const MAX_NUMBER_OF_FILES = 3;
     
     public function createMessage(MessageDTO $messageDTO)
     {
@@ -27,6 +31,8 @@ class MessageService
 
         $this->checkMessage($message);
 
+        $this->checkFiles($messageDTO);
+
         $message = $this->associateMessageToFromable($message, $messageDTO);
 
         $message = $this->associateMessageToToable($message, $messageDTO);
@@ -38,16 +44,46 @@ class MessageService
         return $this->getReturnedMessage($message);
     }
 
+    private function checkFiles($messageDTO)
+    {
+        $this->checkNumberOfFiles($messageDTO);
+
+        // $this->checkTypeOfFiles($messageDTO);
+
+        // $this->checkDurationOfFiles($messageDTO);
+
+        // $this->checkSizeOfFiles($messageDTO);
+    }
+
+    private function checkNumberOfFiles($messageDTO)
+    {
+        $itemFilesDTO = (new FileService)->countPossibleItemFiles(
+            $messageDTO->message,
+            $messageDTO
+        );
+        
+        if ($itemFilesDTO->totalFiles() <= self::MAX_NUMBER_OF_FILES) {
+            return;
+        }
+
+        $maxFiles = self::MAX_NUMBER_OF_FILES;
+        
+        $this->throwMessageException(
+            message: "sorry 😞, you cannot have more than {$maxFiles} files for a message.",
+            data: $messageDTO
+        );
+    }
+
     private function getReturnedMessage(Message $message)
     {
         if (class_basename_lower($message->messageable) === 'request') {
             return $message;
         }
 
-        return $this->getMessageWithLoadedData($message);
+        return $this->withLoadedMessageRelationships($message);
     }
 
-    private function getMessageWithLoadedData($message)
+    private function withLoadedMessageRelationships($message)
     {
         return $message->load('images','videos','audios','files','flags','fromable.profile');
     }
@@ -146,6 +182,8 @@ class MessageService
             'message' => $messageDTO->messageText,
             'to_user_id' => $messageDTO->toUserId,
             'from_user_id' => $messageDTO->fromUserId,
+            'user_deletes' => [],
+            'user_seens' => [],
             'state' => Str::upper($messageDTO->state ?: 'sent'),
         ]);
     }
@@ -186,11 +224,28 @@ class MessageService
         );
     }
 
+    private function setFromableFromMessage($messageDTO) : MessageDTO
+    {
+        if (! $messageDTO->requireAuthorization) {
+            return $messageDTO;
+        }
+
+        if ($messageDTO->fromable) {
+            return $messageDTO;
+        }
+        
+        if ($messageDTO->message->fromable->isUser($messageDTO->userId)) {
+            return $messageDTO->withFromable($messageDTO->message->fromable);
+        }
+
+        return $messageDTO->withFromable($messageDTO->message->toable);
+    }
+
     public function deleteMessage(MessageDTO $messageDTO)
     {
         $message = $this->getMessage($messageDTO);
 
-        $messageDTO = $messageDTO->withFromable($message->fromable);
+        $messageDTO = $this->setFromableFromMessage($messageDTO);
         
         $this->checkAuthorization($messageDTO);
         
@@ -198,6 +253,10 @@ class MessageService
 
         if ($messageDTO->action === 'self') {
             return $this->deleteMessageForSelf($messageDTO);
+        }
+
+        if ($messageDTO->action === 'all') {
+            return $this->deleteMessageForAll($messageDTO);
         }
 
         $this->deleteFiles($messageDTO);
@@ -219,10 +278,8 @@ class MessageService
 
     private function deleteMessageForSelf(MessageDTO $messageDTO)
     {
+        $messageDTO->message->setTouchedRelations([]);
         $messageDTO->message->timestamps = false;
-        if (is_null($messageDTO->message->user_deletes)) {
-            $messageDTO->message->user_deletes = [];
-        }
         
         $messageDTO->message->user_deletes = Arr::prepend(
             $messageDTO->message->user_deletes, 
@@ -231,11 +288,72 @@ class MessageService
 
         $messageDTO->message->save();
 
-        return $this->getMessageWithLoadedData($messageDTO->message);
+        return $this->withLoadedMessageRelationships($messageDTO->message);
+    }
+
+    private function deleteMessageForAll(MessageDTO $messageDTO)
+    {
+        $messageDTO->message->setTouchedRelations([]);
+        $messageDTO->message->timestamps = false;
+        
+        $messageDTO->message->state = "DELETED";
+
+        $messageDTO->message->save();
+
+        return $this->withLoadedMessageRelationships($messageDTO->message);
     }
 
     private function deleteFiles(MessageDTO $messageDTO)
     {
         (new FileService)->deleteYourEduItemFiles($messageDTO->message);
+    }
+
+    private function getMessageable($messageDTO)
+    {
+        if (is_not_null($messageDTO->messageable)) {
+            return $messageDTO->messageable;
+        }
+
+        return $this->getModel($messageDTO->item,$messageDTO->itemId);
+    }
+
+    public function getMessagesBasedOnItem(MessageDTO $messageDTO)
+    {
+        $messageable = $this->getMessageable($messageDTO);
+
+        return $messageable->messages()->orderBy($messageDTO->orderBy)->paginate(
+            self::PAGINATION
+        );
+    }
+
+    public function updateMessageState(MessageDTO $messageDTO)
+    {
+        $message = $this->getMessage($messageDTO);
+
+        $message->setTouchedRelations([]);
+        $message->timestamps = false;
+
+        if ($messageDTO->state === 'seen') {
+            $message = $this->updateMessageSeenState($messageDTO);
+        }
+
+        $message->state = strtoupper($messageDTO->state);
+        $message->save();
+        
+        return $message;
+    }
+
+    public function updateMessageSeenState($messageDTO)
+    {
+        $message = $this->getMessage($messageDTO);
+
+        if ($message->isSeenBy($messageDTO->fromUserId)) {
+            return;
+        }
+
+        $message->user_seens = Arr::prepend($message->user_seens, $messageDTO->fromUserId);
+        $message->save();
+        
+        return $message;
     }
 }

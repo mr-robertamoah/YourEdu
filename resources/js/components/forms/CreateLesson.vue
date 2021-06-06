@@ -238,7 +238,7 @@
                                         ></file-preview>
                                     </template>
                                 </fade-up>
-                                <input type="file" class="d-none" 
+                                <input type="file" class="hidden" 
                                     @change="fileChange" 
                                     ref="inputfile"
                                     :accept="fileAccept"
@@ -323,8 +323,9 @@
                                     class="search-input"
                                     placeholder="search for courses, extracurriculums and classes"
                                     @search="getSearchItemsText"
+                                    v-if="main"
                                 ></search-input>
-                                <div class="class-payment course-classes-section">
+                                <div class="class-payment course-classes-section" v-if="main">
                                     <div
                                         v-if="computedSpecificItems.length"
                                         class="class-wrapper"
@@ -352,16 +353,16 @@
                                 </div>
                                 <div class="get-more" 
                                     @click="getSpecificAccountItem"
-                                    v-if="computedShowGetMore"
+                                    v-if="computedShowGetMore && main"
                                 >
                                     get more
                                 </div>
                                 <!-- secondary selection of subjects or courses for classes -->
-                                <div class="no-data text-center" v-if="selectedClass">
+                                <div class="no-data text-center" v-if="selectedClass && main">
                                     {{`please select any of these ${selectedClass.structure ? selectedClass.structure : 'course sections'}`}}
                                 </div>
                                 <div
-                                    v-if="selectedClass"
+                                    v-if="selectedClass && main"
                                     class="class-wrapper"
                                 >
                                     <item-badge

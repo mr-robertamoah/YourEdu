@@ -100,7 +100,7 @@ import OptionalActions from '../OptionalActions';
                 return this.computedImages || this.computedVideos || this.computedAudios || this.computedFiles
             },
             computedOwner(){
-                return this.message.from_user_id === this.getUser.id ? true : false
+                return this.message.fromable.userId === this.getUser.id ? true : false
             },
             computedDeletedForMe(){
                 return this.message.userDeletes && this.message.userDeletes.includes(this.getUser.id)

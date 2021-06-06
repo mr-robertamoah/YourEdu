@@ -463,7 +463,7 @@ const ProfileService = {
     async flagCreate(data){
         try {
             
-            let response = await ApiService.post(`/api//flag`, data)
+            let response = await ApiService.post(`/api/flag`, data)
     
             return response
         } catch (error) {
@@ -765,7 +765,7 @@ const ProfileService = {
         let {discussionId, formData} = main
         try {
             let response = await ApiService
-                .post(`/api/discussion/${discussionId}/update`,formData)
+                .put(`/api/discussion/${discussionId}`,formData)
     
             return response
         } catch (error) {
@@ -810,7 +810,7 @@ const ProfileService = {
     },
     async deleteDiscussionMessage(data){
         try {
-            let response = await ApiService.post(`/api/discussion/message/delete`,data)
+            let response = await ApiService.deete(`/api/discussion/message/${data.messageId}`,data)
     
             return response
         } catch (error) {
@@ -819,7 +819,7 @@ const ProfileService = {
     },
     async updateParticpantState(data){
         try {
-            let response = await ApiService.post(`/api/discussion/participant/update`,data)
+            let response = await ApiService.put(`/api/discussion/participant/${data.participantId}`,data)
     
             return response
         } catch (error) {
@@ -828,7 +828,7 @@ const ProfileService = {
     },
     async deleteDiscussionParticipant(data){
         try {
-            let response = await ApiService.post(`/api/discussion/participant/delete`,data)
+            let response = await ApiService.delete(`/api/discussion/participant/${$data.participantId}`,data)
     
             return response
         } catch (error) {
@@ -878,22 +878,22 @@ const ProfileService = {
             return error.response
         }
     },
-    async discussionSearch(data){
+    async itemSearch(data){
         let response,
-            {nextPage, params} = data
+            {nextPage, params, item} = data
         try {
-            response = await ApiService.get(`/api/discussion/search?page=${nextPage}`,params)
+            response = await ApiService.get(`/api/${item}/search?page=${nextPage}`,params)
     
             return response
         } catch (error) {
             return error.response
         }
     },
-    async joinDiscussion(main){
+    async joinItem(main){
         let response,
-            {discussionId, data} = main
+            {computedItem: item, data} = main
         try {
-            response = await ApiService.post(`/api/discussion/${discussionId}/join`,data)
+            response = await ApiService.post(`/api/${item.item}/${item.itemId}/join`,data)
     
             return response
         } catch (error) {

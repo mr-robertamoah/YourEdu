@@ -2,17 +2,23 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountQuestionsTrait;
 use App\Traits\AccountTrait;
 use App\User;
 use Database\Factories\ParentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class ParentModel extends Model
 {
-    //
-    use SoftDeletes, AccountTrait, HasFactory;
+    use SoftDeletes, 
+        AccountTrait, 
+        HasFactory,
+        AccountQuestionsTrait;
+
+    const PARENTING_ROLE = ['father', 'mother', 'guardian'];
 
     protected $fillable = [
         'user_id','name',
@@ -24,7 +30,7 @@ class ParentModel extends Model
             $user = $parent->user;
             $parent->profile()->create([
                 'user_id' => $user->id,
-                'name' => $parent->name ? $parent->name : $user->full_name,
+                'name' => $parent->name ? $parent->name : $user->name,
             ]);
             $parent->verification()->create();
             $parent->posts()->create([
@@ -95,7 +101,7 @@ class ParentModel extends Model
     public function wards(){
         return $this->
             belongsToMany(Learner::class,'learner_parent','parent_id','learner_id')
-            ->withPivot(['level','role'])->withTimestamps();
+                ->withPivot(['level','role'])->withTimestamps();
     }
 
     public function schools()
@@ -264,11 +270,6 @@ class ParentModel extends Model
         return $this->morphMany(Riddle::class,'addedby');
     }
 
-    public function questionsAdded()
-    {
-        return $this->morphMany(Question::class,'addedby');
-    }
-
     public function riddlesAuthored()
     {
         return $this->morphMany(Riddle::class,'authoredby');
@@ -347,6 +348,32 @@ class ParentModel extends Model
     public function addedDiscounts()
     {
         return $this->morphMany(Discount::class, 'addedby');
+    }
+
+    public function underAgedWards()
+    {
+        return $this->wards()
+            ->where(function($query) {
+                $query->whereHasNoAge();
+            })
+            ->orWhere(function($query) {
+                $query->whereUnderAged();
+            })
+            ->wherePivot('parent_id', $this->id)
+            ->get();
+    }
+
+    public function parenting($ward, $role = 'guardian')
+    {
+        return $this->wards()
+            ->attach($ward, ['role' => Str::upper($role)]);
+    }
+
+    public function isParenting(Learner $ward)
+    {
+        return $this->wards()
+            ->where('id', $ward->id)
+            ->exists();
     }
     
     protected static function newFactory()

@@ -96,12 +96,9 @@
                                 <div v-for="(profile,key) in computedProfiles"
                                     :key="key">
                                     <profile-bar
-                                        v-if="profileAccount != profile.params.account ||
-                                            profileAccountId != profile.params.accountId"
-                                        :name="profile.name"
-                                        :type="profile.params.account"
-                                        :src="profile.url"
-                                        :routeParams="profile.params"
+                                        v-if="profileAccount != profile.account ||
+                                            profileAccountId != profile.accountId"
+                                        :profile="profile"
                                     ></profile-bar>
                                 </div>
                             </div>
@@ -196,8 +193,8 @@ import { dates, strings } from '../services/helpers';
                 return this.getLoggedin ? 
                     this.$route.name === 'dashboard' ? false : true : false
             },
-            computedProfiles(){ //replace with get profiles
-                return this.getProfiles
+            computedProfiles(){
+                return this.getProfiles ? this.getProfiles : []
             },
         },
         methods: {
@@ -304,7 +301,8 @@ import { dates, strings } from '../services/helpers';
                                 alert.id = Math.floor(Math.random() * 100)
                                 this.alerts.unshift(alert)
                                 this.clearAlert(alert.id)
-                            } else if (notification.type === 'App\\Notifications\\AccountRequestNotification') {
+                            } else if (notification.type === 'App\\Notifications\\AccountRequestNotification' ||
+                                notification.type === 'App\\Notifications\\AccountResponseNotification') {
                                 this.requestNotifications.push(notification)
 
                                 let alert = {

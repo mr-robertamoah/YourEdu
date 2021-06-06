@@ -16,8 +16,8 @@ class SecretQuestionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'question' => $this->question,
-            'possible_answers' => PossibleAnswerResource::collection($this->possibleAnswers),
+            'body' => $this->body,
+            'hint' => $this->hint,
         ];
     }
 }

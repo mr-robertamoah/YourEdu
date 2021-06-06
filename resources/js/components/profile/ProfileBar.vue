@@ -7,22 +7,22 @@
             v-if="!justName"
             @click="goToRoute">
             <profile-picture
-                v-if="src.length > 0"
+                v-if="profile.url.length > 0"
             >
                 <template slot="image">
-                    <img :src="src" alt="profile picture">
+                    <img :src="profile.url" alt="profile picture">
                 </template>
             </profile-picture>
         </div>
         <div class="name"
             @click="goToRoute">
-            {{name}}
+            {{profile.name}}
         </div>
         <div class="type"
             @click="goToRoute"
             v-if="!justName"
         >
-            {{type}}
+            {{profile.account}}
         </div>
         <div class="actions" v-if="actions || !justName">
             <div class="loading" v-if="loading">
@@ -38,10 +38,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
 
     export default {
         props: {
-            src: {
-                type: String,
-                default: ''
-            },
             greenActionTitle: {
                 type: String,
                 default: ''
@@ -49,10 +45,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             redActionTitle: {
                 type: String,
                 default: ''
-            },
-            name: {
-                type: String,
-                default: 'profile name'
             },
             id: {
                 type: Number,
@@ -74,15 +66,11 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                 type: Boolean,
                 default: false
             },
-            type: {
-                type: String,
-                default: 'account type'
-            },
             routeName: {
                 type: String,
                 default: 'profile'
             },
-            routeParams: {
+            profile: {
                 type: Object,
                 default(){
                     return {}
@@ -113,15 +101,15 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                     let routeObject = {
                             name: this.routeName,
                             params: {
-                                account: this.routeParams.account, 
-                                accountId: `${this.routeParams.accountId}`
+                                account: this.profile.account, 
+                                accountId: `${this.profile.accountId}`
                             },
                     }
                     this.$router.push(routeObject)
                 } else {
                     this.$emit('clickedProfile',{
-                        account: this.routeParams.account, 
-                        accountId: this.routeParams.accountId,
+                        account: this.profile.account, 
+                        accountId: this.profile.accountId,
                         extraData: this.extraData
                     })
                 }
@@ -129,12 +117,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             }
         },
         computed: {
-            computedRoute() {
-                return {
-                    name: this.routeName, 
-                    params: this.routeParams 
-                }
-            }
+            
         },
     }
 </script>

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\UserAccountResource;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,16 +12,12 @@ class DiscussionRequestNotification extends Notification
 {
     use Queueable;
 
-    public $requestInfo;
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($requestInfo)
-    {
-        $this->requestInfo = $requestInfo;
-    }
+    public function __construct(private $invitationDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -55,6 +52,16 @@ class DiscussionRequestNotification extends Notification
      */
     public function toArray($notifiable)
     {
-        return $this->requestInfo;
+        $message = $this->invitationDTO->methodType === 'joinRequest' ? 
+            "{$this->invitationDTO->joiner->name} wants to join your discussion with title: {$this->invitationDTO->request->requestable->title}" : 
+            "{$this->invitationDTO->inviter->name} wants to invite you to the discussion with title: {$this->invitationDTO->request->requestable->title}";
+        
+        $account = $this->invitationDTO->methodType === 'joinRequest' ?
+            new UserAccountResource($this->invitationDTO->joiner) : null;
+
+        return [
+            'message' => $message,
+            'account' => $account,
+        ];
     }
 }

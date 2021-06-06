@@ -22,7 +22,10 @@ class ConversationFactory extends Factory
     public function definition()
     {
         return [
-            //
+            'name' => $this->faker->name,
+            'description' => $this->faker->sentence,
+            'type' => 'PRIVATE',
+            'state' => 'CLOSED',
         ];
     }
 }

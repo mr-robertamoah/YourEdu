@@ -1,321 +1,283 @@
 <template>
-    <div class="discussion-single-wrapper">
-        <div class="top">
+    <div 
+        class="discussion-single-wrapper h-90vh flex flex-col relative"
+    >
+        <item-view-cover
+            v-if="steps === 0"
+            :data="computedCoverData"
+            :transparent="flagData.isFlagged"
+            :additionalText="discussion.type"
+        >
+            <template slot="buttons">
+                <special-button 
+                    buttonText="view discussion"
+                    class="p-1 ml-5"
+                    @click="steps = 1"
+                    v-if="discussion.type === 'PUBLIC'"
+                ></special-button>
+                <special-button 
+                    buttonText="join"
+                    class="p-1 ml-5"
+                    @click="clickedJoin"
+                    v-if="computedShowCoverJoin"
+                ></special-button>
+            </template>
+        </item-view-cover>
+        <div v-if="steps" class="top flex-shrink-0">
             <div class="discussion-type">{{discussion.type}}</div>
             <div class="restriction" v-if="computedRestriction.length">
                 {{computedRestriction}}
             </div>
         </div>
-        <div class="bottom">
-            <div class="edit"
-                @click="clickedEditIcon"
-                v-if="computedUserParticipant"
-            >
-                <font-awesome-icon
-                    :icon="['fa','chevron-down']"
-                ></font-awesome-icon>
-            </div>
-            <div class="options" v-if="showOptions">
-                <optional-actions
-                    :show="showOptions"
-                    :hasSave="!computedOwner"
-                    :isSaved="isSaved"
-                    :hasExtra="computedOwner && discussion.type === 'PRIVATE'"
-                    extraText="requests"
-                    :hasEdit="computedOwner"
-                    :hasAttachment="computedUserParticipant"
-                    :hasDelete="computedOwner"
-                    @clickedOption="clickedOption"
+        <div 
+            class="bottom flex flex-col h-full flex-1" 
+            :class="[steps === 0 ? 'border-0' : '']"
+            v-if="computedShowReaction"
+        >
+            <template v-if="steps">
+                <div class="edit"
+                    @click="clickedEditIcon"
+                    v-if="computedUserParticipant"
                 >
-                    <template slot="extraicon">
-                        <font-awesome-icon :icon="['fa','info-circle']"></font-awesome-icon>
-                    </template>
-                </optional-actions>
-            </div>
-            <div class="alert" 
-                :class="{success:alertSuccess,danger:alertDanger}"
-                v-if="alertMessage.length && !showDiscussionEdit && !showSmallModal"
-            >
-                {{alertMessage}}
-            </div>
-            <div class="loading" v-if="loading && !showDiscussionEdit">
-                <pulse-loader 
-                    :loading="loading" 
-                    :size="'10px'"
-                ></pulse-loader>
-            </div>
-            <div class="post-attachment" 
-                v-if="computedAttachments"
-                @click.self="showAttach = false"
-            >
-                <post-attachment
-                    :show="showAttach"
-                    :isAttached="isAttached"
-                    :attachmentsNumber="attachments"
-                    :attachments="myAttachments"
-                    @itemClicked="attachmentClicked"
-                    @clickedUnattach="clickedUnattach"
-                ></post-attachment>
-            </div>
-            <div class="first" v-if="messageSectionState !=='max'">
-                <div class="creator-info">
-                    <div class="started">started by</div>
-                    <profile-picture
-                        class="profile-picture"
+                    <font-awesome-icon
+                        :icon="['fa','chevron-down']"
+                    ></font-awesome-icon>
+                </div>
+                <div class="options" v-if="showOptions">
+                    <optional-actions
+                        :show="showOptions"
+                        :hasSave="!computedIsOwner"
+                        :isSaved="saveData.isSaved"
+                        :hasExtra="computedIsOwner && discussion.type === 'PRIVATE'"
+                        extraText="requests"
+                        :hasEdit="computedIsOwner"
+                        :hasAttachment="computedUserParticipant"
+                        :hasDelete="computedIsOwner"
+                        @clickedOption="clickedOption"
                     >
-                        <template slot="image">
-                            <img :src="discussion.profile_url" >
+                        <template slot="extraicon">
+                            <font-awesome-icon :icon="['fa','info-circle']"></font-awesome-icon>
                         </template>
-                    </profile-picture>
-                    <div class="name">{{computedOwnerName}}</div>
-                    <div class="buttons">
-                        <post-button
-                            buttonText="invite"
-                            v-if="computedOwner"
-                            @click="clickedPostButton"
-                        ></post-button>
-                        <post-button
-                            buttonText="join"
-                            v-if="computedJoin"
-                            @click="clickedPostButton"
-                        ></post-button>
-                        <post-button
-                            buttonText="leave"
-                            v-if="!computedOwner && computedUserParticipant && !computedBanned"
-                            @click="clickedPostButton"
-                        ></post-button>
-                        <div class="message" v-if="computedPendingParticipant">
-                            your request is pending
-                        </div>
-                    </div>
+                    </optional-actions>
                 </div>
-                <div class="discussion-info">
-                    <div class="title">{{computedTitle}}</div>
+                <div class="alert w-full">
+                    <auto-alert
+                        :message="alertMessage"
+                        :success="alertSuccess"
+                        :danger="alertDanger"
+                        :sticky="true"
+                        @hideAlert="clearAlert"
+                    ></auto-alert>
                 </div>
-            </div>
-            <div class="second" v-if="messageSectionState !=='max'">
-                <div class="attachments-section">
-                    <attachment-badge 
-                        v-for="(attachment,index) in postAttachments"
-                        :key="index"
-                        :hasClose="false"
-                        :attachment="attachment.data"
-                        :type="attachment.type"
-                    ></attachment-badge>
+                <div class="loading" v-if="loading && !showDiscussionEdit">
+                    <pulse-loader 
+                        :loading="loading" 
+                        :size="'10px'"
+                    ></pulse-loader>
                 </div>
-                <div class="resources-section">
-                    <template v-if="computedResources.length">
-                        <div class="resource"
-                            v-for="(resource, index) in computedResources"
-                            :key="index"
-                            @dblclick="clickedDiscussionMedia(resource)"
-                        >
-                            <img :src="resource.url" 
-                                v-if="resource.type === 'image'">
-                            <video :src="resource.url" controls 
-                                v-if="resource.type === 'video'"></video>
-                            <audio :src="resource.url" controls
-                                v-if="resource.type === 'audio'"></audio>
-                        </div>
-                    </template>
-                    <div class="no-resources" v-else>
-                        no discussion resources
-                    </div>
-                </div>
-            </div>
-            <div class="third">
-                <div class="admin-section" v-if="computedOwner && discussion.restricted">
-                    <div class="admin-button"
-                        @click="clickedAdminButton('all')"
-                        :class="{active:adminButtonText === 'all'}"
-                    >all</div>
-                    <div class="admin-button"
-                        @click="clickedAdminButton('accepted')"
-                        :class="{active:adminButtonText === 'accepted'}"
-                    >accepted</div>
-                    <div class="admin-button"
-                        @click="clickedAdminButton('rejected')"
-                        :class="{active:adminButtonText === 'rejected'}"
-                    >rejected</div>
-                    <div class="admin-button"
-                        @click="clickedAdminButton('pending')"
-                        :class="{active:adminButtonText === 'pending'}"
-                    >pending</div>
-                </div>
-                <div class="preamble" 
-                    v-if="computedPreamble.length"
-                    @click.self="clickedDiscussionInfo('view')"
+                <div class="post-attachment" 
+                    v-if="computedAttachments"
+                    @click.self="showAttach = false"
                 >
-                    {{computedPreamble}}
-                    <div class="toggle" 
-                        @click="clickedMessageSectionToggle"
-                        v-if="messages.length > 2"
-                    >
-                        <font-awesome-icon :icon="['fa','chevron-down']"
-                            v-if="messageSectionState === 'max'"
-                        ></font-awesome-icon>
-                        <font-awesome-icon :icon="['fa','chevron-up']"
-                            v-if="messageSectionState === 'min'"
-                        ></font-awesome-icon>
-                    </div>
+                    <post-attachment
+                        :show="showAttach"
+                        :isAttached="isAttached"
+                        :attachmentsNumber="attachments"
+                        :attachments="myAttachments"
+                        @itemClicked="attachmentClicked"
+                        @clickedUnattach="clickedUnattach"
+                    ></post-attachment>
                 </div>
-                <div class="discussion-section"
-                    :class="{'discussion-section-max':messageSectionState === 'max'}"
-                >
-                    <div class="main-area" ref="mainarea">
-                        <div class="unseen-messages"
-                            v-if="unseenMessagesNumber && showUnseenMessages"
-                            @click="clickedUnseenMessages"
-                            @scroll="scrollingMainArea"
+                <div class="first flex-grow-0 flex-shrink-0" v-if="messageSectionState !=='max'">
+                    <div class="creator-info">
+                        <div class="started">started by</div>
+                        <profile-picture
+                            class="profile-picture mr-1"
                         >
-                            0
-                        </div>
-                        <div class="no-discussions" 
-                            v-if="!messages.length && !messagesGetting && !messageSending"
-                        >
-                            no discussions yet
-                        </div>
-                        <discussion-badge
-                            v-for="message in messages"
-                            :key="message.id"
-                            :message="message"
-                            @clickedOption="clickedDiscussionOption"
-                            @clickedAction="clickedDiscussionAction"
-                            :admin="computedAdmin"
-                            :adminText="adminButtonText"
-                        ></discussion-badge>
-                        <div class="show-discussions"
-                            @click="getMessages"
-                            v-if="computedShowDiscussions"
-                        >
-                            show discussions
-                        </div>
-                        <infinite-loader
-                            @infinite="infiniteHandler"
-                            v-if="showInfiniteLoader"
-                        ></infinite-loader>
-                        <fade-up>
-                            <template slot="transition" v-if="messageSending">
-                                <div class="loading">
-                                    <pulse-loader 
-                                        :loading="messageSending" 
-                                        :size="'10px'"
-                                    ></pulse-loader>
-                                </div>
+                            <template slot="image">
+                                <img :src="discussion.raisedby.url" >
                             </template>
-                        </fade-up>
-                    </div>
-                    <div class="text-area" v-if="computedUserParticipant">
-                        <discussion-textarea
-                            v-model="discussionText"
-                            @sendMessage="sendDiscussionMessage"
-                            @fileChange="discussionFileChange"
-                            :blocked="computedBlocked"
-                        ></discussion-textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="forth">
-                <div class="main">
-                    <div class="reaction" 
-                        :class="{unsetPosition: computedUnset}"
-                    >
-                        <post-button 
-                            :titleText="flagTitle"
-                            v-if="computedFlags && !computedOwner"
-                            @click="clickedFlag"
-                            :postButtonClass="flagRed"
-                        >
-                            <template slot="icon">
-                                <font-awesome-icon
-                                    :icon="['fa','flag']"
-                                ></font-awesome-icon>
-                            </template>
-                        </post-button>
-                        <div class="reason">
-                            <flag-reason
-                                :show="showFlagReason"
-                                :hasBackground="true"
-                                @continueFlagProcess="continueFlagProcess"
-                                @reasonGiven="reasonGiven"
-                                @cancelFlagProcess="cancelFlagProcess"
-                            ></flag-reason>
-                        </div>
-                        <div class="like">
-                            <number-of>
-                                {{likes === 1 ? `${likes} like` : `${likes} likes`}}
-                            </number-of>
-                            <div class="others" 
-                                :class="{unsetPosition: computedUnset}"
-                            >
-                                <div class="like-post"
-                                    @click="clickedLike"
-                                    v-if="computedLikes"
-                                    :class="{liked:isLiked}"
-                                    :title="likeTitle"
-                                >
-                                    <font-awesome-icon
-                                        :icon="['fa','thumbs-up']"
-                                    ></font-awesome-icon>
-                                </div>
-                                <div class="profiles"
-                                    v-if="showProfiles"
-                                >
-                                    <span>
-                                        {{showProfilesText}}
-                                    </span>
-                                    <div :key="key" v-for="(profile,key) in computedProfiles">
-                                        <profile-bar
-                                            :name="profile.name"
-                                            :type="profile.params.account"
-                                            :smallType="true"
-                                            :routeParams="profile.params"
-                                            :navigate="false"
-                                            @clickedProfile="clickedProfile"
-                                        ></profile-bar>
-                                    </div>
-                                </div>
-                                <div class="comment"
-                                    title="add a comment"
-                                    @click="clickedAddComment"
-                                    v-if="!showAddComment"
-                                    :class="{success:commentSuccess,fail:commentFail}"
-                                >
-                                    <font-awesome-icon
-                                        :icon="['fa','comment']"
-                                    ></font-awesome-icon>
-                                </div>
+                        </profile-picture>
+                        <div class="name">{{discussion.raisedby.name}}</div>
+                        <div class="buttons">
+                            <post-button
+                                buttonText="invite"
+                                v-if="computedIsOwner"
+                                @click="clickedPostButton"
+                            ></post-button>
+                            <post-button
+                                buttonText="join"
+                                v-if="computedJoin"
+                                @click="clickedPostButton"
+                                class="z-10"
+                            ></post-button>
+                            <post-button
+                                buttonText="leave"
+                                v-if="!computedIsOwner && computedUserParticipant && !computedBanned"
+                                @click="clickedPostButton"
+                            ></post-button>
+                            <div class="message" v-if="computedPendingParticipant">
+                                your request is pending
                             </div>
                         </div>
                     </div>
-                    <div class="add-comment">
-                        <add-comment
-                            what="discussion"
-                            :id="computedId"
-                            :onPostModal="discussionFull"
-                            :showAddComment="showAddComment"
-                            @hideAddComment="showAddComment = false"
-                            @postAddComplete="postAddComplete"
-                            @postModalCommentCreated="postModalCommentCreated"
-                        ></add-comment>
-                    </div>
-                    <div class="comment-section"
-                        @dblclick.self="clickedShowPostComments">
-                        <template v-if="!discussionFull && computedComments">
-                            <comment-single
-                                :key="comment.id" v-for="comment in computedComments"
-                                :comment="comment"
-                                :simple="true"
-                                @askLoginRegister="askLoginRegister"
-                                @clickedMedia="clickedMedia"
-                                @clickedShowPostComments="clickedShowPostComments"
-                            ></comment-single>
-                        </template>
+                    <div class="discussion-info">
+                        <div class="title">{{discussion.title}}</div>
                     </div>
                 </div>
+                <div class="second flex-grow-0 flex-shrink-0" v-if="messageSectionState !=='max'">
+                    <div class="attachments-section">
+                        <attachment-badge 
+                            v-for="(attachment,index) in postAttachments"
+                            :key="index"
+                            :hasClose="false"
+                            :attachment="attachment.data"
+                            :type="attachment.type"
+                        ></attachment-badge>
+                    </div>
+                    <div class="resources-section">
+                        <template v-if="computedResources.length">
+                            <div class="resource"
+                                v-for="(resource, index) in computedResources"
+                                :key="index"
+                                @dblclick="clickedDiscussionMedia(resource)"
+                            >
+                                <img :src="resource.url" 
+                                    v-if="resource.type === 'image'">
+                                <video :src="resource.url" controls 
+                                    v-if="resource.type === 'video'"></video>
+                                <audio :src="resource.url" controls
+                                    v-if="resource.type === 'audio'"></audio>
+                            </div>
+                        </template>
+                        <div class="no-resources" v-else>
+                            no discussion resources
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col flex-grow third w-full"
+                    :class="[messageSectionState === 'max' ? 'z-50 h-full absolute top-0' : '']"
+                >
+                    <div class="admin-section flex-shrink-0" v-if="computedIsOwner && discussion.restricted">
+                        <div class="admin-button"
+                            @click="clickedAdminButton('all')"
+                            :class="{active:adminButtonText === 'all'}"
+                        >all</div>
+                        <div class="admin-button"
+                            @click="clickedAdminButton('accepted')"
+                            :class="{active:adminButtonText === 'accepted'}"
+                        >accepted</div>
+                        <div class="admin-button"
+                            @click="clickedAdminButton('declined')"
+                            :class="{active:adminButtonText === 'declined'}"
+                        >declined</div>
+                        <div class="admin-button"
+                            @click="clickedAdminButton('pending')"
+                            :class="{active:adminButtonText === 'pending'}"
+                        >pending</div>
+                    </div>
+                    <div class="preamble flex-shrink-0" 
+                        v-if="discussion.preamble.length"
+                        @click.self="clickedDiscussionInfo('view')"
+                    >
+                        {{discussion.preamble}}
+                        <div class="toggle" 
+                            @click="clickedMessageSectionToggle"
+                            v-if="messages.length > 2"
+                        >
+                            <font-awesome-icon :icon="['fa','chevron-down']"
+                                v-if="messageSectionState === 'max'"
+                            ></font-awesome-icon>
+                            <font-awesome-icon :icon="['fa','chevron-up']"
+                                v-if="messageSectionState === 'min'"
+                            ></font-awesome-icon>
+                        </div>
+                    </div>
+                    <div class="discussion-section h-full w-full">
+                        <div class="main-area h-full w-full" ref="mainarea">
+                            <div class="unseen-messages"
+                                v-if="unseenMessagesNumber && showUnseenMessages"
+                                @click="clickedUnseenMessages"
+                                @scroll="scrollingMainArea"
+                            >
+                                0
+                            </div>
+                            <div class="no-discussions" 
+                                v-if="!messages.length && !messagesGetting && !messageSending"
+                            >
+                                no discussions yet
+                            </div>
+                            <discussion-badge
+                                v-for="message in messages"
+                                :key="message.id"
+                                :message="message"
+                                @clickedOption="clickedDiscussionOption"
+                                @clickedAction="clickedDiscussionAction"
+                                :admin="computedAdmin"
+                                :adminText="adminButtonText"
+                            ></discussion-badge>
+                            <div class="show-discussions"
+                                @click="getMessages"
+                                v-if="computedShowDiscussions"
+                            >
+                                show discussions
+                            </div>
+                            <infinite-loader
+                                @infinite="infiniteHandler"
+                                v-if="showInfiniteLoader"
+                            ></infinite-loader>
+                            <fade-up>
+                                <template slot="transition" v-if="messageSending">
+                                    <div class="loading">
+                                        <pulse-loader 
+                                            :loading="messageSending" 
+                                            :size="'10px'"
+                                        ></pulse-loader>
+                                    </div>
+                                </template>
+                            </fade-up>
+                        </div>
+                        <div class="text-area" v-if="computedUserParticipant">
+                            <discussion-textarea
+                                v-model="discussionText"
+                                @sendMessage="sendDiscussionMessage"
+                                @fileChange="discussionFileChange"
+                                :blocked="computedBlocked"
+                            ></discussion-textarea>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <div class="forth flex-grow-0 flex-shrink-0">
+                <reaction-component
+                    :comments="computedComments"
+                    :item="computedItem"
+                    :isOwner="computedIsOwner"
+                    :full="discussionFull"
+                    :showAddComment="showAddComment"
+                    :showFlagReason="showFlagReason"
+                    :flagData="flagData"
+                    :likeData="likeData"
+                    :classes="computedClasses"
+                    :showProfilesText="showProfilesText"
+                    :showProfiles="showProfiles"
+                    :profiles="computedProfiles"
+                    @hideAddComment="showAddComment = false"
+                    @postAddComplete="postAddComplete"
+                    @askLoginRegister="askLoginRegister"
+                    @clickedMedia="clickedMedia"
+                    @clickedProfile="clickedProfile"
+                    @clickedLike="clickedLike"
+                    @clickedAddComment="clickedAddComment"
+                    @cancelFlagProcess="cancelFlagProcess"
+                    @reasonGiven="reasonGiven"
+                    @clickedFlag="clickedFlag"
+                    @continueFlagProcess="continueFlagProcess"
+                    @clickedShowPostComments="clickedShowPostComments"
+                    @updateParticpantState="updateParticpantState"
+                ></reaction-component>
             </div>
         </div>
-
        <!--  media modal -->
         <just-fade>
             <template slot="transition" v-if="showMediaModal">
@@ -329,400 +291,37 @@
             </template>
         </just-fade>
        <!--  info section -->
-        <just-fade>
-            <template slot="transition" v-if="showDiscussionInfo">
-                <div class="discusssion-info-section">
-                    <div class="close" @click="clickedDiscussionInfo('view')">
-                        <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
-                    </div>
-                    <div class="pencil" 
-                        @click="clickedDiscussionInfo('edit')"
-                        v-if="(computedOwner || computedAdmin) && !showDiscussionEdit"
-                    >
-                        <font-awesome-icon :icon="['fa','pencil-alt']"></font-awesome-icon>
-                    </div>
-                    <div class="title">
-                        {{showDiscussionEdit ? 'edit discussion information' : 'discussion information'}}
-                    </div>
-                    <div class="body" v-if="!showDiscussionEdit">
-                        <div class="section">Admin</div>
-                        <div class="owner-section">
-                            <div class="name">{{computedOwnerName}}</div>
-                            <div class="account">{{computedOwnerType}}</div>
-                        </div>
-                        <div class="section" v-if="showParticipantsButton !== 'hide'">Information</div>
-                        <div class="info-section" v-if="showParticipantsButton !== 'hide'">
-                            <div class="info-item">
-                                <div class="label">title</div>
-                                <div class="item">{{computedTitle}}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="label">type</div>
-                                <div class="item">{{computedType}}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="label">restriction</div>
-                                <div class="item">
-                                    {{discussion.restricted ? 'restricted mode' : 'unrestricted mode'}}
-                                </div>
-                            </div>
-                            <div class="info-item">
-                                <div class="label">participants</div>
-                                <div class="item">{{computedParticipantsInfo}}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="label">note</div>
-                                <div class="item">{{computedParticipationNote}}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="label">attachments</div>
-                                <div class="item">
-                                    <attachment-badge></attachment-badge>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="section">Participation</div>
-                        <div class="show-participants"
-                            @click="clickedShowParticipants"
-                        >{{showParticipantsButton}}</div>
-                        <div class="participants-section"
-                            v-if="showParticipants"
-                            infinite-wrapper>
-                            <other-user-account
-                                v-for="participant in participants"
-                                :key="participant.id"
-                                :account="participant"
-                                :loading="otherUserAccountLoading"
-                                :admin="computedAdmin"
-                                :owner="computedOwner"
-                                :participant="true"
-                                :participating="computedUserParticipant"
-                                @clickedParticipantAction="clickedParticipantAction"
-                            ></other-user-account>
-                            <div class="loading" v-if="participantsLoading">
-                                <pulse-loader :loading="participantsLoading" size="10px"></pulse-loader>
-                            </div>
-                        </div>
-                        <infinite-loader
-                            @infinite="infiniteHandlerParticipants"
-                            v-if="participantsNextPage && participantsNextPage > 1"
-                            force-use-infinite-wrapper
-                        ></infinite-loader>
-                    </div>
-                    <just-fade>
-                        <template slot="transition" v-if="showDiscussionEdit">
-                            <div class="edit-section">
-                                <div class="alert" 
-                                    :class="{success:alertSuccess,danger:alertDanger}"
-                                    v-if="alertMessage.length && showDiscussionEdit"
-                                >
-                                    {{alertMessage}}
-                                </div>
-                                <div class="loading" v-if="loading && showDiscussionEdit">
-                                    <pulse-loader 
-                                        :loading="loading" 
-                                        :size="'10px'"
-                                    ></pulse-loader>
-                                </div>
-                                <div class="section">Discussion Info</div>
-                                <div class="form-edit">
-                                    <text-input
-                                        placeholder="discussion title"  
-                                        :bottomBorder="true"
-                                        :error="errorTitle"
-                                        v-model="title"></text-input>
-                                </div>
-                                <div class="form-edit">
-                                    <text-textarea type="text" 
-                                        placeholder="discussion preamble (an introduction to the discussion)"
-                                        :bottomBorder="true"
-                                        v-model="preamble"></text-textarea>
-                                </div>
-                                <div class="form-edit">
-                                    <div class="main-section">
-                                        <div class="label">type:</div>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('public')"
-                                            :active="toLowercase(type) === 'public'"
-                                            text="public"
-                                        ></grey-button>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('private')"
-                                            :active="toLowercase(type) === 'private'"
-                                            text="private"
-                                        ></grey-button>
-                                    </div>
-                                </div>
-                                <div class="form-edit">
-                                    <div class="main-section">
-                                        <div class="label">restricted:</div>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('yes')"
-                                            :active="restricted"
-                                            text="yes"
-                                        ></grey-button>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('no')"
-                                            :active="!restricted"
-                                            text="no"
-                                        ></grey-button>
-                                    </div>
-                                </div>
-                                <div class="form-edit">
-                                    <div class="main-section">
-                                        <div class="label">allowed:</div>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('all')"
-                                            :active="toLowercase(allowed) === 'all'"
-                                            text="main"
-                                        ></grey-button>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('learners')"
-                                            :active="toLowercase(allowed) === 'learners'"
-                                            text="learners"
-                                        ></grey-button>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('parents')"
-                                            :active="toLowercase(allowed) === 'parents'"
-                                            text="parents"
-                                        ></grey-button>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('facilitators')"
-                                            :active="toLowercase(allowed) === 'facilitators'"
-                                            text="facilitators"
-                                        ></grey-button>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('professionals')"
-                                            :active="toLowercase(allowed) === 'professionals'"
-                                            text="professionals"
-                                        ></grey-button>
-                                        <grey-button
-                                            class="grey-button"
-                                            @clickedAction="clickedEditActionButton('schools')"
-                                            :active="toLowercase(allowed) === 'schools'"
-                                            text="schools"
-                                        ></grey-button>
-                                    </div>
-                                </div>
-                                <div class="section">Discussion Resources</div>
-                                <div class="info">you can up upload up to three files</div>
-                                <div class="files" v-if="computedEditFilesLength < 3">
-                                    <div class="file"
-                                        @click="clickedFileType('video')"
-                                        :class="{active: fileType === 'video'}"
-                                    >video</div>
-                                    <div class="file"
-                                        @click="clickedFileType('audio')"
-                                        :class="{active: fileType === 'audio'}"
-                                    >audio</div>
-                                    <div class="file"
-                                        @click="clickedFileType('picture')"
-                                        :class="{active: fileType === 'picture'}"
-                                    >picture</div>
-                                </div>
-                                <div class="actions" v-if="computedEditFilesLength < 3">
-                                    <div class="action"
-                                        @click="clickedEditAction('upload')"
-                                        v-if="fileType.length"
-                                        :title="`upload ${fileType}`"
-                                    >
-                                        <font-awesome-icon :icon="['fa','upload']"></font-awesome-icon>
-                                    </div>
-                                    <div class="action"
-                                        v-if="fileType === 'video'" 
-                                        @click="clickedEditAction('video')"
-                                        title="record a video"
-                                    >
-                                        <font-awesome-icon :icon="['fa','video']"></font-awesome-icon>
-                                    </div>
-                                    <div class="action"
-                                        v-if="fileType === 'picture'" 
-                                        @click="clickedEditAction('camera')"
-                                        title="snap a picture"
-                                    >
-                                        <font-awesome-icon :icon="['fa','camera']"></font-awesome-icon>
-                                    </div>
-                                    <div class="action"
-                                        v-if="fileType === 'audio'" 
-                                        @click="clickedEditAction('microphone')"
-                                        title="record an audio"
-                                    >
-                                        <font-awesome-icon :icon="['fa','microphone']"></font-awesome-icon>
-                                    </div>
-                                </div>
-                                <div class="media-section resources" v-if="computedEditFilesLength">
-                                    <div class="media-item"
-                                        v-for="(mediaItem,index) in files"
-                                        :key="index"
-                                    >
-                                        <div class="item-type" @click="clickedEditFile(mediaItem,'resource')">
-                                            <font-awesome-icon :icon="['fa','image']"></font-awesome-icon>
-                                        </div>
-                                        <div class="item-info" @click="clickedEditFile(mediaItem,'resource')">
-                                            {{mediaItem.name ? mediaItem.name : shortenUrl(mediaItem.url)}}
-                                        </div>
-                                        <div class="item-clear"
-                                            @click="clickedEditBan(mediaItem,'resource')"
-                                            :title="`remove ${getFileType(mediaItem.type)}`"
-                                        >
-                                            <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="media-section uploads" v-if="uploadFiles.length">
-                                    <div class="media-item"
-                                        v-for="(mediaItem,index) in uploadFiles"
-                                        :key="index"
-                                    >
-                                        <div class="item-type" @click="clickedEditFile(mediaItem,'upload')">
-                                            <font-awesome-icon :icon="['fa','image']"></font-awesome-icon>
-                                        </div>
-                                        <div class="item-info" @click="clickedEditFile(mediaItem,'upload')">
-                                            {{mediaItem.name ? mediaItem.name : shortenUrl(mediaItem.url)}}
-                                        </div>
-                                        <div class="item-clear"
-                                            @click="clickedEditBan(mediaItem,'upload')"
-                                            :title="`remove ${getFileType(mediaItem.type)}`"
-                                        >
-                                            <font-awesome-icon :icon="['fa','ban']"></font-awesome-icon>
-                                        </div>
-                                    </div>
-                                </div>
-                                <fade-up>
-                                    <template slot="transition" v-if="showFilePreview">
-                                        <file-preview
-                                            class="file-preview"
-                                            :file="activeFile"
-                                            :middle="true"
-                                            @removeFile="removeFile"
-                                        ></file-preview>
-                                    </template>
-                                </fade-up>
-                                <input type="file" class="d-none" 
-                                    @change="editFileChange" 
-                                    ref="inputfile"
-                                    :accept="fileAccept"
-                                    multiple
-                                >
-                        
-                                <div class="buttons">
-                                    <post-button 
-                                        :buttonText="'edit'" 
-                                        buttonStyle='success'
-                                        @click="clickedEdit"
-                                    ></post-button>
-                                    <post-button 
-                                        :buttonText="'cancel'" 
-                                        buttonStyle='danger'
-                                        @click="clickedEdit"
-                                    ></post-button>
-                                </div>
-                            </div>
-                        </template>
-                    </just-fade>
-                </div>
-            </template>
-        </just-fade>
+        <discussion-single-info
+            :discussion="discussion"
+            :participantsLoading="participantsLoading"
+            :otherUserAccountLoading="otherUserAccountLoading"
+            :participants="participants"
+            :activeFile="activeFile"
+            :loading="loading"
+            :owner="computedIsOwner"
+            :admin="computedAdmin"
+            :participant="computedUserParticipant"
+            :files="computedResources"
+            :showFilePreview="showFilePreview"
+            :note="computedParticipationNote"
+            :show="showDiscussionInfo"
+            :showEdit="showDiscussionEdit"
+            :nextPage="participantsNextPage"
+            @updateNextPage="updateNextPage"
+            @clickedEdit="clickedEdit"
+            @clickedEditFile="clickedEditFile"
+            @getDiscussionParticipants="getDiscussionParticipants"
+            @clickedLeaveRemoveParticipant="clickedLeaveRemoveParticipant"
+        ></discussion-single-info>
        <!--  request section -->
-        <just-fade>
-            <template slot="transition" v-if="showDiscussionRequest">
-                <div class="discusssion-request-section">
-                    <div class="close" @click="clickedCloseDiscussionRequest">
-                        <font-awesome-icon :icon="['fa','times']"></font-awesome-icon>
-                    </div>
-                    <div class="alert"
-                        :class="{success:alertSuccess,danger:alertDanger}"
-                        v-if="alertMessage.length"
-                    >
-                        {{alertMessage}}
-                    </div>
-                    <div class="title">invite accounts to join this discussion</div>
-                    <div class="body">
-                        <search-input
-                            class="search-section"
-                            placeholder="search whom to invite?"
-                            @search="receivedParticipantsSearchText"
-                        ></search-input>
-                        <div class="search-types">
-                            <grey-button
-                                class="grey-button"
-                                @clickedAction="clickedSearchType('profiles')"
-                                :active="searchType === 'profiles'"
-                                text="all"
-                                v-if="discussion.allowed === 'ALL'"
-                            ></grey-button>
-                            <grey-button
-                                class="grey-button"
-                                @clickedAction="clickedSearchType('learners')"
-                                :active="searchType === 'learners'"
-                                text="learners"
-                                v-if="discussion.allowed === 'ALL' || discussion.allowed === 'LEARNERS'"
-                            ></grey-button>
-                            <grey-button
-                                class="grey-button"
-                                @clickedAction="clickedSearchType('parents')"
-                                :active="searchType === 'parents'"
-                                text="parents"
-                                v-if="discussion.allowed === 'ALL' || discussion.allowed === 'PARENTS'"
-                            ></grey-button>
-                            <grey-button
-                                class="grey-button"
-                                @clickedAction="clickedSearchType('facilitators')"
-                                :active="searchType === 'facilitators'"
-                                text="facilitators"
-                                v-if="discussion.allowed === 'ALL' || discussion.allowed === 'FACILITATORS'"
-                            ></grey-button>
-                            <grey-button
-                                class="grey-button"
-                                @clickedAction="clickedSearchType('professionals')"
-                                :active="searchType === 'professionals'"
-                                text="professionals"
-                                v-if="discussion.allowed === 'ALL' || discussion.allowed === 'PROFESSIONALS'"
-                            ></grey-button>
-                            <grey-button
-                                class="grey-button"
-                                @clickedAction="clickedSearchType('schools')"
-                                :active="searchType === 'schools'"
-                                text="schools"
-                                v-if="discussion.allowed === 'ALL' || discussion.allowed === 'SCHOOLS'"
-                            ></grey-button>
-                        </div>
-                        <div class="accounts-section">
-                            <div class="no-participants" v-if="!searchLoading && noSearchParticipants">
-                                no search results
-                            </div>
-                            <participant-badge
-                                v-for="(participant,index) in searchParticipants"
-                                :key="index"
-                                :account="participant"
-                                class="participant-badge"
-                                :invite="true"
-                                :inviting="searchInvitationLoading"
-                                @clickedAction="clickedParticpantAction"
-                            ></participant-badge>
-                            <div class="loading" v-if="searchLoading">
-                                <pulse-loader :loading="searchLoading" size="10px"></pulse-loader>
-                            </div>
-                            <div class="show-more"
-                                v-if="!searchLoading && showMorerSearchParticipants"
-                                @click="search"
-                            >
-                                show more
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </just-fade>
+        <item-request-section
+            :show="showDiscussionRequest"
+            :computedItem="computedItem"
+            :allowed="discussion.allowed"
+            :loading="searchInvitationLoading"
+            @doneRemovingParticipant="doneRemovingParticipant"
+            @clickedCloseRequest="showDiscussionRequest = false"
+        ></item-request-section>
         
         <!-- media capture -->
         <media-capture
@@ -737,7 +336,7 @@
         <fade-up>
             <template slot="transition" v-if="showSmallModal">
                 <small-modal
-                    :title="smallModalTitle"
+                    :title="smallModalMessage"
                     :show="showSmallModal"
                     :message="alertMessage"
                     :success="alertSuccess"
@@ -768,6 +367,11 @@
                 </small-modal>
             </template>
         </fade-up>
+
+        <flag-cover 
+            v-if="flagData.myFlag"
+            :item="computedItem.item"
+        ></flag-cover>
     </div>
 </template>
 
@@ -776,50 +380,49 @@ import MediaModal from './MediaModal';
 import FadeUp from './transitions/FadeUp'
 import DiscussionBadge from './DiscussionBadge';
 import AttachmentBadge from './AttachmentBadge';
-import FlagReason from './FlagReason';
-import ProfileBar from './profile/ProfileBar';
-import AddComment from './AddComment';
 import PostButton from './PostButton';
-import NumberOf from './NumberOf';
 import DiscussionTextarea from './DiscussionTextarea';
 import PostAttachment from './PostAttachment';
 import OptionalActions from './OptionalActions';
 import MediaCapture from './MediaCapture';
 import TextTextarea from './TextTextarea';
 import TextInput from './TextInput';
-import GreyButton from './GreyButton';
-import OtherUserAccount from './chat/OtherUserAccount';
 import InfiniteLoader from 'vue-infinite-loading';
-import ProfilePicture from './profile/ProfilePicture';
-import ParticipantBadge from './discussion/ParticipantBadge';
-import SearchInput from './SearchInput';
 import PulseLoader from 'vue-spinner/src/PulseLoader';
+import ProfilePicture from './profile/ProfilePicture';
+import SpecialButton from './SpecialButton'
+import DiscussionSingleInfo from './DiscussionSingleInfo';
+import ItemRequestSection from './ItemRequestSection';
+import ItemViewCover from './ItemViewCover'
+import Like from '../mixins/Like.mixin';
+import Flag from '../mixins/Flag.mixin';
+import Save from '../mixins/Save.mixin';
+import Alert from '../mixins/Alert.mixin';
+import RemoveParticipant from '../mixins/RemoveParticipant.mixin';
+import SmallModal from '../mixins/SmallModal.mixin'
+import Comments from '../mixins/Comments.mixin'
 import { mapActions, mapGetters } from 'vuex';
 import { strings } from '../services/helpers';
     export default {
         components: {
             PulseLoader,
-            SearchInput,
-            ParticipantBadge,
             ProfilePicture,
             InfiniteLoader,
             FadeUp,
-            OtherUserAccount,
-            GreyButton,
             MediaCapture,
             OptionalActions,
             PostAttachment,
             DiscussionTextarea,
-            NumberOf,
             TextInput,
             TextTextarea,
             PostButton,
-            AddComment,
-            ProfileBar,
-            FlagReason,
             AttachmentBadge,
             DiscussionBadge,
             MediaModal,
+            SpecialButton,
+            ItemViewCover,
+            ItemRequestSection,
+            DiscussionSingleInfo,
         },
         props: {
             discussion: {
@@ -837,50 +440,27 @@ import { strings } from '../services/helpers';
                 default: false
             },
         },
+        mixins: [Like, Flag, Save, Alert, SmallModal, Comments, RemoveParticipant],
         data() {
             return {
+                steps: 0,
                 showMediaModal: false,
                 mediaModalUrl: {},
-                showProfilesAction: '',
-                showProfiles: false,
-                showFlagReason: false,
                 showDiscussionInfo: false,
                 showDiscussionRequest: false,
                 showOptions: false,
-                showParticipants: false,
                 loading: false,
                 participantsLoading: false,
                 otherUserAccountLoading: false,
-                showParticipantsButton: 'participants',
                 requestType: '',
                 messageSectionState: 'min',
                 adminButtonText: 'all',
                 participants: [],
-                fileType: '',
                 participantsNextPage: 1,
-                //likes
-                likeTitle: '',
-                isLiked: false,
-                myLike: null,
-                likes: 0,
-                //comment
-                showAddComment: false,
-                commentSuccess: false,
-                commentFail: false,
-                //flags
-                showFlagReason: false,//it also pushes reaction section down to show flag reason
-                flagReason: '',
-                isFlagged: false,
-                myFlag: null,
-                flagTitle: '',
-                flagRed: '',
                 //profiles
                 showProfilesAction: '',
                 showProfilesText: '',
-                //save
-                isSaved: false,
-                mySave: null,
-                saves: 0,
+                showProfiles: false,
                 //attach
                 isAttached: false, //means i have attached and it goes for likes, etc
                 myAttachments: null,
@@ -899,44 +479,15 @@ import { strings } from '../services/helpers';
                 showInfiniteLoader: false,
                 showUnseenMessages: false,
                 unseenMessagesNumber: 0,
-                //alert
-                alertMessage: '',
-                alertDanger: false,
-                alertSuccess: false,
                 //editing
                 showDiscussionEdit: false,
                 showMediaCapture: false,
                 mediaCaptureType: '',
-                fileType: '',
-                fileAccept: '',
-                title: '',
-                type: '',
-                preamble: '',
-                allowed: '',
-                restricted: false,
-                files: [],
-                uploadFiles: [],
-                deletedFiles: [],
-                errorTitle: false,
                 fileNumberError: false,
                 showFilePreview: false,
                 activeFile: null,
-                //small modal
-                smallModalDelete: false,
-                smallModalInfo: false,
-                smallModalAlerting: false,
-                showSmallModal: false,
-                smallModalTitle: '',
-                smallModalData: null,
                 //search
-                searchText: '',
-                searchType: 'profiles',
-                searchParticipants: [],
-                searchNextPage: 1,
-                searchLoading: false,
                 searchInvitationLoading: false,
-                noSearchParticipants: true,
-                showMorerSearchParticipants: false,
             }
         },
         watch: {
@@ -946,40 +497,15 @@ import { strings } from '../services/helpers';
                     if (newValue.messages) {
                         this.messages = newValue.messages
                     }
-                    if (oldValue && newValue.participants.length >
-                        oldValue.participants.length) {
-                        this.alertSuccess = true
-                        this.alertMessage = 'a new participant just joined'
-                        this.clearAlert()
-                    }
                 },
                 deep: true
             },
-            searchParticipants(newValue){
-                if (newValue.length) {
-                    this.noSearchParticipants = false
-                } else {
-                    this.noSearchParticipants = true
-                    this.showMorerSearchParticipants = false
-                }
-            },
-            showDiscussionRequest(newValue){
-                if (!newValue) {
-                   this.searchParticipants = []
-                } else {
-                    if (this.discusssion.allowed === 'ALL') {
-                        this.searchType = 'profiles'
-                    } else if (this.discusssion.allowed === 'LEARNERS') {
-                        this.searchType = 'learners'
-                    } else if (this.discusssion.allowed === 'PARENTS') {
-                        this.searchType = 'parents'
-                    } else if (this.discusssion.allowed === 'FACILITATORS') {
-                        this.searchType = 'facilitators'
-                    } else if (this.discusssion.allowed === 'PROFESSIONALS') {
-                        this.searchType = 'professionals'
-                    } else if (this.discusssion.allowed === 'SCHOOLS') {
-                        this.searchType = 'schools'
-                    }
+            "discussion.participants"(newValue, oldValue) {
+                if (oldValue && 
+                    newValue.participants.length >
+                    oldValue.participants.length) {
+                    this.alertSuccess = true
+                    this.alertMessage = 'a new participant just joined'
                 }
             },
             showUnseenMessages(newValue){
@@ -989,55 +515,11 @@ import { strings } from '../services/helpers';
                     }, 5000);
                 }
             },
-            searchNextPage(newValue){
-                if (newValue === 1) {
-                    this.noSearchParticipants = false
-                } else if (newValue > 1) {
-                    this.showMorerSearchParticipants = true
-                }
-            },
-            searchType(newValue){
-                this.searhInvitableParticipants()
-            },
-            searchText(newValue){
-                if (newValue.length) {
-                    this.searhInvitableParticipants()
-                } else {
-                    this.searchParticipants = []
-                }
-            },
             showProfiles(newValue){
                 if (newValue) {
                     setTimeout(() => {
                         this.showProfiles = false
                     }, 4000);
-                }
-            },
-            showDiscussionEdit(newValue){
-                if (newValue && !this.title.length) {
-                    this.title = this.discussion.title
-                    this.preamble = this.discussion.preamble
-                    this.type = this.discussion.type
-                    this.restricted = this.discussion.restricted
-                    this.allowed = this.discussion.allowed
-                    this.files = this.computedResources
-                    this.deletedFiles = []
-                    this.uploadFiles = []
-                } else if (!newValue) {
-                    this.title = ''
-                }
-            },
-            isLiked(newValue){
-                if (newValue) {
-                    this.likeTitle = 'unlike this discussion'
-                } else {
-                    this.likeTitle = 'like this discussion'
-                }
-            },
-            likes(newValue){
-                if (!newValue) {
-                    this.myLike = null
-                    this.isLiked = false
                 }
             },
             attachments(newValue){
@@ -1046,36 +528,11 @@ import { strings } from '../services/helpers';
                     this.isAttached = false
                 }
             },
-            isFlagged(newValue){
-                if (newValue) {
-                    this.flagTitle = 'unflag this discussion'
-                    this.flagRed = 'red'
-                } else {
-                    this.flagTitle = 'flag this discussion'
-                    this.flagRed = ''
-                }
-            },
-            saves(newValue){
-                if (!newValue) {
-                    this.mySave = null
-                    this.isSaved = false
-                }
-            },
-            title(newValue, oldValue) {
-                if (newValue.length && !oldValue.length) {
-                    this.errorTitle = false
-                }
-            },
             messageNextPage(newValue){
                 if (newValue && newValue > 2) {
                     this.showInfiniteLoader = true
                 } else {
                     this.showInfiniteLoader = false
-                }
-            },
-            showParticipants(newValue){
-                if (newValue) {
-                    this.getDiscussionParticipants()
                 }
             },
         },
@@ -1095,11 +552,6 @@ import { strings } from '../services/helpers';
             computedBanned() {
                 return !this.computedParticipant ? false : 
                     this.computedParticipant.state === 'BANNED'
-            },
-            computedEditFilesLength(){
-                return this.type.length ? 
-                    this.files.length + 
-                    this.uploadFiles.length : 0
             },
             computedResources(){
                 let resources = []
@@ -1136,13 +588,23 @@ import { strings } from '../services/helpers';
                 }
                 return resources
             },
-            computedUnset(){
-                return this.showProfilesAction === 'save' || 
+            computedClasses(){
+                let classes = ''
+
+                if (this.showProfilesAction === 'save' || 
                     this.showProfilesAction === 'attach' || 
-                    this.showProfilesAction === 'join'
+                    this.showProfilesAction === 'join') {
+                    classes += 'unset'
+                }
+                
+                if (this.steps === 0) {
+                    classes += ' profiles-down'
+                }
+
+                return classes
             },
             computedAdmin(){
-                return this.computedOwner || (this.computedUserParticipant && 
+                return this.computedIsOwner || (this.computedUserParticipant && 
                     this.discussion.participants.findIndex(participant=>{
                         return participant.userId === this.getUser.id && 
                             participant.state === 'ADMIN'
@@ -1153,13 +615,13 @@ import { strings } from '../services/helpers';
                     this.messages.length <= 2 && !this.messagesGetting
             },
             computedCanJoin(){
-                if (this.computedAllowed !== 'ALL') {
+                if (this.discussion.allowed !== 'ALL') {
                     return this.computedProfiles.filter(profile=>{
-                        return profile.params.account == this.computedProfiles
+                        return profile.account == this.discussion.allowed
                     }).map(profile=>{
                         return {
-                            account: profile.params.account,
-                            accountId: profile.params.accountId
+                            account: profile.account,
+                            accountId: profile.accountId
                         }
                     })
                 }
@@ -1171,79 +633,10 @@ import { strings } from '../services/helpers';
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
             },
-            computedLikes(){
-                if (this.getUser && this.discussion) {
-                    let likes = this.discussion.likes
-                    this.likes = this.discussion.likes.length
-                    let index = null
-                    index = likes.findIndex(like=>{
-                            return like.user_id === this.getUser.id
-                        })
-                    if (index > -1) {
-                        this.myLike = likes[index]
-                        this.isLiked = true
-                    }
-                }
-                return true
-            },
-            computedSaves(){
-                if (this.getUser && this.discussion) {
-                    let saves = this.discussion.saves
-                    this.saves = this.discussion.saves.length
-                    let index = null
-                    index = saves.findIndex(save=>{
-                            return save.user_id === this.getUser.id
-                        })
-                    if (index > -1) {
-                        this.mySave = saves[index]
-                        this.isSaved = true
-                    }
-                }
-                return true
-            },
-            computedFlags(){ //check flagging
-                if (this.getUser && this.discussion) {
-                    let flags = this.discussion.flags
-                    let index = null
-                    index = flags.findIndex(flag=>{
-                            return flag.user_id === this.getUser.id
-                        })
-                    if (index > -1) {
-                        this.myFlag = flags[index]
-                        this.isFlagged = true
-                    }
-                }
-                return true
-            },
-            computedComments(){
-                return this.discussion && this.discussion.comments.length > 0 ?
-                    _.take(this.discussion.comments,2) : null
-            },
-            computedId(){
-                return this.discussion.id
-            },
             computedBlocked(){
                 return this.getUser && this.computedRestricted ? true : false
             },
-            computedOwnerName(){
-                return this.discussion.raisedby
-            },
-            computedOwnerType(){
-                return strings.getAccount(this.discussion.raisedby_type)
-            },
-            computedAllowed(){
-                return this.discussion.allowed
-            },
-            computedType(){
-                return this.discussion.type.toLowerCase()
-            },
-            computedTitle(){
-                return this.discussion.title
-            },
-            computedPreamble(){
-                return this.discussion.preamble
-            },
-            computedAttachments(){ //check attachment .....
+            computedAttachments(){
                 if (this.getUser && this.discussion) {
                     let attachments = []
                     this.attachments = this.discussion.attachments.length
@@ -1272,26 +665,18 @@ import { strings } from '../services/helpers';
                 return this.showAttach
             }, //add ability to add other admins feature
             computedParticipationNote(){
-                return this.computedOwner ? 'you are the owner and admin of this discussion' :
+                return this.computedIsOwner ? 'you are the owner and admin of this discussion' :
                     this.computedUserParticipant ? 'you are a participant in this discussion' :
-                    this.computedAllowed === 'ALL' && this.computedProfiles ? 'you can join this discussion' :
+                    this.discussion.allowed === 'ALL' && this.computedProfiles ? 'you can join this discussion' :
                     this.computedCanJoin.account ? 'you can join this discussion' :
                     this.computedProfiles && !this.computedCanJoin.account ? 
                         'you cannot join this discussion because you do not have an allowable account': ''
             },
+            computedIsOwner(){
+                return this.getUser && this.discussion.raisedby.userId === this.getUser.id
+            },
             computedOwner(){
-                return this.getUser && this.discussion.raisedby_user_id === this.getUser.id
-            },
-            computedParticipantsInfo(){
-                return this.computedParticipantsNumber === 1 ? 
-                    `${this.computedParticipantsNumber} participant` :
-                    `${this.computedParticipantsNumber} participants`
-            },
-            computedParticipantsNumber(){
-                return this.discussion.participants.length + 1
-            },
-            computedParticipants(){
-                return this.discussion.participants
+                return this.discussion.raisedby
             },
             computedParticipant(){
                 if (!this.getUser) {
@@ -1312,16 +697,42 @@ import { strings } from '../services/helpers';
                     }) > -1
             },
             computedUserParticipant(){
-                return this.computedOwner || (this.computedParticipant && 
+                return this.computedIsOwner || (this.computedParticipant && 
                     this.computedParticipant.id) ? true : false
             },
             computedJoin(){
-                return !this.computedPendingParticipant && !this.computedOwner && 
-                    !this.computedUserParticipant
+                return !this.computedPendingParticipant && !this.computedIsOwner && 
+                    !this.computedUserParticipant && this.computedCanJoin && 
+                    this.discussion.type === 'PUBLIC'
+            },
+            computedItem(){
+                return {
+                    item: 'discussion',
+                    itemId: this.discussion.id
+                }
+            },
+            computedItemable() {
+                return this.discussion
+            },
+            computedCoverData() {
+                return {
+                    name: this.discussion.title,
+                    description: this.discussion.preamble ? this.discussion.preamble : '',
+                    type: 'discussion'
+                }
+            },
+            computedShowReaction() {
+                return this.flagData.isFlagged ? this.flagData.isFlagged :
+                    this.computedShowCoverJoin ? computedShowCoverJoin :
+                    this.steps
+            },
+            computedShowCoverJoin() {
+                return this.discussion.type !== 'PUBLIC' && this.computedJoin
             },
         },
         methods: {
-            ...mapActions(['profile/getDiscussionMessages','profile/sendDiscussionMessage',
+            ...mapActions([
+                'profile/getDiscussionMessages','profile/sendDiscussionMessage',
                 'profile/joinDiscussion','profile/updateDiscussion',
                 'profile/deleteDiscussion','profile/deleteDiscussionMessage',
                 'profile/newDiscussionParticipant','profile/removeDiscussionParticipant',
@@ -1329,24 +740,24 @@ import { strings } from '../services/helpers';
                 'profile/updateDiscussionParticipant','home/updateDiscussionParticipant',
                 'profile/newDiscussionPendingParticipant',
                 'home/newDiscussionPendingParticipant','profile/discusionContributionResponse',
-                'profile/removeDiscussionPendingParticipant','profile/discussionSearch',
+                'profile/removeDiscussionPendingParticipant',
                 'home/removeDiscussionPendingParticipant','profile/inviteParticipant',
                 'profile/createLike','profile/deleteLike','profile/deleteSave',
                 'profile/createSave','profile/createFlag','profile/deleteFlag',
                 'profile/createAttachment','profile/deleteAttachment',
                 'profile/getDiscussionParticipants','profile/updateParticpantState',
-                'profile/deleteDiscussionParticipant']),
+                'profile/deleteDiscussionParticipant'
+            ]),
             listen(){
                 Echo.channel(`youredu.discussion.${this.discussion.id}`)
                     .listen('.newDiscussionMessage', data=>{
                         console.log('data :>> ', data);
                         if (this.discussion.restricted) {
-                            if (this.computedOwner && this.adminButtonText === 'pending') {
+                            if (this.computedIsOwner && this.adminButtonText === 'pending') {
                                 this.messages.unshift(data.message)
                             } else {
                                 this.alertSuccess = true
                                 this.alertMessage = 'a new contribution has been sent'
-                                this.clearAlert()
                             }
                         } else  this.messages.unshift(data.message)
                     })
@@ -1365,13 +776,11 @@ import { strings } from '../services/helpers';
                                     this.alertDanger = true
                                 }
                                 this.alertMessage = `a new contribution has been ${data.message.state.toLowerCase()}`
-                                this.clearAlert()
                                 return
                             } else if (data.message.state === "ACCEPT") {
 
                                 this.alertSuccess = true
                                 this.alertMessage = 'a new contribution has been sent'
-                                this.clearAlert()
                                 this.messages.unshift(data.message)
                             }
                         }
@@ -1390,7 +799,6 @@ import { strings } from '../services/helpers';
                         
                         this.alertSuccess = true
                         this.alertMessage = 'a new participant just joined this discussion'
-                        this.clearAlert()
                     })
                     .listen('.updatedDiscussionParticipant', data=>{
                         console.log('data :>> ', data);
@@ -1406,7 +814,6 @@ import { strings } from '../services/helpers';
                                 this.showDiscussionEdit = false
                                 this.alertDanger = true
                                 this.alertMessage = `you have been ${data.discussionParticipant.state.toLowerCase()}`
-                                this.clearAlert()
                             }
                         }                        
                     })
@@ -1422,7 +829,6 @@ import { strings } from '../services/helpers';
                             this.showDiscussionEdit = false
                             this.alertDanger = true
                             this.alertMessage = `you have been removed`
-                            this.clearAlert()
                         }    
                     })
                     .listen('.newDiscussionPendingParticipant', data=>{
@@ -1430,7 +836,6 @@ import { strings } from '../services/helpers';
                         if (this.computedAdmin) {
                             this.alertSuccess = true
                             this.alertMessage = 'new join request received'
-                            this.clearAlert()
                         }
                         if (this.$route.name === 'home') {
                             this['home/newDiscussionPendingParticipant'](data)
@@ -1446,9 +851,6 @@ import { strings } from '../services/helpers';
                             this['profile/removeDiscussionPendingParticipant'](data)
                         }
                     })
-            },
-            clickedSearchType(data){
-                this.searchType = data
             },
             clickedMessageSectionToggle(){
                 this.messageSectionState = this.messageSectionState === 'max' ?
@@ -1474,63 +876,13 @@ import { strings } from '../services/helpers';
                 if (response.status) {
                     this.alertSuccess = true
                     this.alertMessage = 'invitation sent'
-                    this.removeSearchParticipant(invitationData.account.userId)
+
+                    this.removedParticipant = invitationData.account
                 } else {
                     console.log('response :>> ', response);
                     this.alertDanger = true
                     this.alertMessage = 'invitation failed'
                 }
-                this.clearAlert()
-            },
-            removeSearchParticipant(userId){
-                this.searchParticipants = this.searchParticipants.filter(participant=>{
-                    return participant.userId !== userId
-                })
-            },
-            receivedParticipantsSearchText(data){
-                this.searchText = data
-            },
-            searhInvitableParticipants: _.debounce(function() {
-                this.searchNextPage = 1
-                this.search()
-            }, 400),
-            async search(){
-                if (this.searchNextPage === null || !this.searchText.length) {
-                    return 
-                }
-                this.searchLoading = true
-                let response = null,
-                    params = {
-                        discussionId: this.discussion.id,
-                        search: this.searchText,
-                        searchType: this.searchType
-                    },
-                    data = {}
-
-                data.nextPage = this.searchNextPage
-                data.params = params
-
-                response = await this['profile/discussionSearch'](data)
-
-                if (response.status) {
-                    if (this.searchType !== 'messages') {
-                        this.searchParticipants.push(...response.data)
-                    } else {
-
-                    }
-                    if (this.searchNextPage === 1 && !this.searchParticipants.length) {
-                        this.noSearchParticipants = true
-                    }
-                    if (response.next) {
-                        this.searchNextPage += 1
-                    } else {
-                        this.showMorerSearchParticipants = false
-                        this.searchNextPage = null
-                    }
-                } else {
-                    console.log('response :>> ', response);
-                }
-                this.searchLoading = false
             },
             async clickedDiscussionAction(messageData){
                 let response,
@@ -1600,16 +952,6 @@ import { strings } from '../services/helpers';
                     this.messages.splice(index,1,discussionMessage)
                 }
             },
-            clickedFileType(data){
-                if (data === 'picture') {
-                    this.fileAccept = 'image/apng,image/bmp,image/gif,image/x-icon,image/jpeg,image/png,image/svg+xml,image/webp'
-                } else if (data === 'video') {
-                    this.fileAccept = 'video/webm,video/mp4,video/ogg'
-                } else if (data === 'audio') {
-                    this.fileAccept = 'audio/mpeg,audio/ogg,audio/wav'
-                }
-                this.fileType = data
-            },
             clickedSmallModalButton(data){
                 if (data === 'yes') {
                     if (this.showProfilesAction === 'flag') {
@@ -1626,53 +968,24 @@ import { strings } from '../services/helpers';
                     
                 }
             },
-            clickedEditBan(data, type){
-                if (type === 'upload') {
-                    let index = this.uploadFiles.findIndex(file=>{
-                        return file.name === data.name && file.size === data.size
-                    })
-                    if (index > -1) {
-                        this.uploadFiles.splice(index,1)
-                    }
-                } else if (type === 'resource') {
-                    let index = this.files.findIndex(file=>{
-                        return file.type === data.type && file.id === data.id
-                    })
-                    if (index > -1) {
-                        this.files.splice(index,1)
-                        this.deletedFiles.push(data)
-                    }
-                }
-                this.showFilePreview = false
-            },
-            removeFile(){
-                this.fileType = ''
-                this.showFilePreview = false
-                this.clickedEditBan(this.activeFile,'upload')
-            },
-            editFileChange(){
-                if (this.$refs.inputfile.files.length + this.computedEditFilesLength > 3) {
-                    this.$refs.inputfile.value = ''
-                    return
-                }
-                this.activeFile = this.$refs.inputfile.files[0]
-                for (let i = 0; i < this.$refs.inputfile.files.length; i++) {
-                    this.uploadFiles.push(this.$refs.inputfile.files[i])
-                }
-                this.showFilePreview = true
-            },
             clickedEdit(data){
-                if (data === 'edit') {
-                    if (!this.title.length) {
-                        this.errorTitle = true
-                        this.alertMessage = 'a title is needed'
-                        this.clearAlert()
-                    }
-                    this.updateDiscussion()
-                } else if (data === 'cancel') {
+                if (data.type === 'cancel') {
                     this.showDiscussionInfo = false
                     this.showDiscussionEdit = false
+                    return
                 }
+                
+                if (data.type !== 'edit') {
+                    return
+                }
+
+                if (! this.data.title.length) {
+                    this.alertDanger = true
+                    this.alertMessage = 'a title is needed'
+                    return
+                }
+
+                this.updateDiscussion(data.data)
             },
             async deleteDiscussion(){
                 this.loading = true
@@ -1691,7 +1004,6 @@ import { strings } from '../services/helpers';
                     this.alertMessage = response.response.data.message
                 }
                 this.smallModalAlerting = true
-                this.clearAlert()
             },
             async updateDiscussion(){
                 let response,
@@ -1700,19 +1012,19 @@ import { strings } from '../services/helpers';
 
                 this.loading = true
 
-                if (this.computedOwner) {
-                    formData.append('account', strings.getAccount(this.discussion.raisedby_type))
-                    formData.append('accountId', this.discussion.raisedby_id)
+                if (this.computedIsOwner) {
+                    formData.append('account', strings.getAccount(this.discussion.raisedby.account))
+                    formData.append('accountId', this.discussion.raisedby.accountId)
                 }
-                formData.append('title', this.title)
-                formData.append('type', this.type)
-                formData.append('restricted', JSON.stringify(this.restricted))
-                formData.append('allowed', this.allowed)
-                formData.append('preamble', this.preamble)
+                formData.append('title', data.title)
+                formData.append('type', data.type)
+                formData.append('restricted', JSON.stringify(data.restricted))
+                formData.append('allowed', data.allowed)
+                formData.append('preamble', data.preamble)
                 this.files.forEach(file=>{
                     formData.append('files[]', file)
                 })
-                formData.append('deletedFiles', JSON.stringify(this.deletedFiles))
+                formData.append('deletedFiles', JSON.stringify(data.deletedFiles))
                 data.discussionId = this.discussion.id
                 data.formData = formData
                 data.where = this.$route.name
@@ -1728,23 +1040,13 @@ import { strings } from '../services/helpers';
                     this.alertDanger = true
                     this.alertMessage = 'update was unsuccessful'
                 }
-                this.clearAlert()
                 setTimeout(() => {
                     this.showDiscussionEdit = false
                     this.showDiscussionInfo = false
                 }, 3000);
             },
-            shortenUrl(data){
-                return strings.trim(data,20)
-            },
-            getFileType(data){
-                if (data.includes('image')) {
-                    return 'image'
-                } else if (data.includes('video')) {
-                    return 'video'
-                } else if (data.includes('audio')) {
-                    return 'audio'
-                }
+            updateNextPage(page) {
+                this.participantsNextPage = page
             },
             clickedEditAction(data){
                 if (data === 'video') {
@@ -1763,16 +1065,6 @@ import { strings } from '../services/helpers';
             },
             toLowercase(data){
                 return data.toLowerCase()
-            },
-            clickedFileType(data){
-                if (data === 'picture') {
-                    this.fileAccept = 'image/apng,image/bmp,image/gif,image/x-icon,image/jpeg,image/png,image/svg+xml,image/webp'
-                } else if (data === 'video') {
-                    this.fileAccept = 'video/webm,video/mp4,video/ogg'
-                } else if (data === 'audio') {
-                    this.fileAccept = 'audio/mpeg,audio/ogg,audio/wav'
-                }
-                this.fileType = data
             },
             closeMediaCapture(){
                 this.showMediaCapture = false
@@ -1799,18 +1091,7 @@ import { strings } from '../services/helpers';
                         lastModified: new Date()
                     })
                 }
-                this.uploadFiles.push(this.activeFile)
                 this.showFilePreview = true
-            },
-            clickedEditFile(data,type){
-                if (type === 'resource') {
-                    this.mediaModalUrl = data
-                    this.showMediaModal = true
-                } else if (type === 'upload') {
-                    this.showFilePreview = this.activeFile === data ?
-                        false : true
-                    this.activeFile = data
-                }
             },
             scrollingMainArea(){
                 console.log('mainarea :>> ', this.$refs.mainarea.scrollTop);
@@ -1832,39 +1113,6 @@ import { strings } from '../services/helpers';
                 }
                 this.showAttach = false
             },
-            clickedShowParticipants(){
-                this.showParticipants = !this.showParticipants
-                if (this.showParticipants) {
-                    this.showParticipantsButton = 'hide'
-                } else {
-                    this.showParticipantsButton = 'participants'
-                    this.participantsNextPage = 1
-                    this.participants = []
-                }
-            },
-            clickedEditActionButton(data){
-                if (data === 'all') {
-                    this.allowed = data
-                } else if (data === 'learners') {
-                    this.allowed = data
-                } else if (data === 'parents') {
-                    this.allowed = data
-                } else if (data === 'facilitators') {
-                    this.allowed = data
-                } else if (data === 'professionals') {
-                    this.allowed = data
-                } else if (data === 'schools') {
-                    this.allowed = data
-                } else if (data === 'private') {
-                    this.type = data
-                } else if (data === 'public') {
-                    this.type = data
-                } else if (data === 'yes') {
-                    this.restricted = true
-                } else if (data === 'no') {
-                    this.restricted = false
-                }
-            },
             clickedOption(data){
                 this.showOptions = false
                 if (data === 'edit') {
@@ -1881,10 +1129,8 @@ import { strings } from '../services/helpers';
                 } else if (data === 'attach') {
                     this.showAttach = true
                 } else if (data === 'delete') {
-                    this.smallModalTitle = 'are you sure you want to delete this discussion?'
                     this.showProfilesAction = 'delete'
-                    this.smallModalDelete = true
-                    this.showSmallModal = true
+                    this.issueSmallModalDeletionMessage()
                 } else if (data === 'requests') {
                     this.requestType = data
                     this.showDiscussionRequest = true
@@ -1939,16 +1185,6 @@ import { strings } from '../services/helpers';
                     this.alertDanger = true
                     this.alertMessage = `${state} unsuccessful`
                 }
-                setTimeout(() => {
-                    this.clearAlert()
-                }, 3000);
-            },
-            clearSmallModal(){
-                this.showSmallModal = false,
-                this.smallModalInfo = false
-                this.smallModalDelete = false
-                this.smallModalAlerting = false
-                this.smallModalTitle = ''
             },
             clickedAdminButton(data){
                 if (this.adminButtonText !== data) {
@@ -1964,34 +1200,48 @@ import { strings } from '../services/helpers';
                 if (data === 'invite') {
                     this.requestType = data
                     this.showDiscussionRequest = true
-                } else if (data === 'join') {
-                    if (this.computedAllowed === 'ALL') {
-                        this.showProfilesAction = 'join'
-                        this.showProfiles = true
-                    } else if (this.computedCanJoin.account) {
-                        this.joinDiscussion(this.computedCanJoin)
-                    } else if (!this.getUser) {
-                        this.askLoginRegister('discussion')
-                    }
-                } else if (data === 'leave') {
+                    return
+                }
+                
+                if (data === 'join') {
+                    this.clickedJoin()
+                    return 
+                }
+                
+                if (data === 'leave') {
                     this.showProfilesAction = 'participant'
                     this.clickedLeaveRemoveParticipant({action: data})
                 }
             },
+            clickedJoin() {
+                if (this.discussion.allowed === 'ALL') {
+                    this.showProfilesAction = 'join'
+                    this.showProfiles = true
+                    return
+                }
+                
+                if (! this.getUser) {
+                    this.askLoginRegister('discussion')
+                    return
+                }
+                
+                if (this.computedCanJoin.account) {
+                    this.joinDiscussion(this.computedCanJoin)
+                }
+            },
             clickedLeaveRemoveParticipant(data){
                 this.otherUserAccountLoading = true
-                this.smallModalInfo= false
-                this.smallModalDelete = true
-                this.smallModalData = data
-                if (data.action === 'leave') {                    
-                    this.smallModalTitle = 'are you sure you want to leave this discussion?'
-                } else {
-                    this.smallModalTitle = 'are you sure you want to remove this participant from the discussion?'
+
+                if (data.action === 'remove' || data.action === 'leave') {
+                    this.showProfilesAction = 'participant'
                 }
-                this.showSmallModal = true
-                setTimeout(() => {
-                    this.clearSmallModal()
-                }, 4000);
+                
+                let msg = 'are you sure you want to remove this participant from the discussion?'
+                if (data.action === 'leave') {                    
+                    msg = 'are you sure you want to leave this discussion?'
+                }
+
+                this.issueCustomMessageWithDeletion(msg)
             },
             async joinDiscussion(account){
                 this.loading = true
@@ -2000,10 +1250,9 @@ import { strings } from '../services/helpers';
                     data = {
                         account: account.account,
                         accountId: account.accountId,
-                        type: this.discussion.type
                     }
 
-                response = await this['profile/joinDiscussion']({data, discussionId})
+                response = await this['profile/joinDiscussion']({item: this.discussion, data, discussionId})
 
                 this.loading = false
                 if (response.status) {
@@ -2018,23 +1267,9 @@ import { strings } from '../services/helpers';
                     this.alertDanger = true
                     this.alertMessage = 'you could not join'
                 }
-                this.clearAlert()
-            },
-            clearAlert(){
-                setTimeout(() => {
-                    if (this.showSmallModal) {
-                        this.clearSmallModal()
-                    }
-                    this.alertSuccess = false
-                    this.alertDanger = false
-                    this.alertMessage = ''
-                }, 4000);
             },
             askLoginRegister(data){
                 this.$emit('askLoginRegister',data)
-            },
-            clickedCloseDiscussionRequest(){
-                this.showDiscussionRequest = false
             },
             clickedDiscussionInfo(data){
                 if(this.computedBanned) return
@@ -2057,9 +1292,9 @@ import { strings } from '../services/helpers';
                     formData = new FormData,
                     discussionId = this.discussion.id
 
-                if (this.computedOwner) {
-                    formData.append('account', this.computedOwnerType)
-                    formData.append('accountId', this.discussion.raisedby_id)
+                if (this.computedIsOwner) {
+                    formData.append('account', this.discussion.raisedby.account)
+                    formData.append('accountId', this.discussion.raisedby.accountId)
                 } else {
                     formData.append('userId', this.getUser.id)
                 }
@@ -2096,55 +1331,10 @@ import { strings } from '../services/helpers';
                     this.alertDanger = true
                     this.alertMessage = 'message sending failed'
                 }
-                this.clearAlert()
             },
             discussionFileChange(data){
                 this.discussionText = data.caption.length ? data.caption.length : this.discussionText
                 this.discussionFiles = data.files
-            },
-            async save(who){
-                this.showProfiles = false
-                this.loading = true
-                let data = {
-                    item: 'discussion',
-                    itemId: this.discussion.id,
-                    owner: 'discussion',
-                    ownerId: this.discussion.id,
-                },
-                    response = null,
-                    state = ''
-
-                data.where = this.$route.name
-                if (who) {
-                    data.account = who.account
-                    data.accountId = who.accountId
-                    state = 'saving'
-                    response = await this['profile/createSave'](data)
-                } else {
-                    data.saveId = this.mySave.id
-                    state = 'unsaving'
-                    response = await this['profile/deleteSave'](data)
-                }
-
-                this.loading = false
-                if (response.status) {
-                    if (who) {
-                        this.saves += 1
-                    } else {
-                        this.saves -= 1
-                    }
-                    this.isSaved = !this.isSaved
-                    this.alertSuccess = true
-                    this.alertMessage = `${state} successful`
-                } else {
-                    this.alertDanger = true
-                    this.alertMessage = `${state} unsuccessful`
-                }
-                setTimeout(() => {
-                    this.alertSuccess = false
-                    this.alertDanger = false
-                    this.alertMessage = ''
-                }, 3000);
             },
             async getMessages(data = null){
                 let response,
@@ -2239,7 +1429,7 @@ import { strings } from '../services/helpers';
 
                 this.participantsLoading = false
                 if (response.status) {
-                    this.participants = response.data
+                    this.participants.push(...response.data)
                     if (response.next) {
                         this.participantsNextPage +=1
                         $state.loaded()
@@ -2249,15 +1439,6 @@ import { strings } from '../services/helpers';
                     }
                 } else {
                     console.log('response :>> ', response);
-                }
-            },
-            clickedParticipantAction(data){
-                if (data.action === 'remove' || data.action === 'leave') {
-                    this.showProfilesAction = 'participant'
-                    this.clickedLeaveRemoveParticipant(data)
-                } else {
-                    this.otherUserAccountLoading = true
-                    this.updateParticpantState(data)
                 }
             },
             async deleteDiscussionParticipant(deleteData){
@@ -2293,9 +1474,10 @@ import { strings } from '../services/helpers';
                     this.alertMessage = response.response.data.message
                 }
                 this.smallModalAlerting = true
-                this.clearAlert()
             },
             async updateParticpantState(updateData){
+                this.otherUserAccountLoading = true
+
                 let response,
                     data = {
                         discussionId: this.discussion.id,
@@ -2329,219 +1511,83 @@ import { strings } from '../services/helpers';
                     this.participants.splice(index,1,participant)
                 }
             },
-            postModalCommentCreated(data){
-                if (this.postMediaFull) {
-                    this.$emit('postModalCommentCreated',data)
-                }
-            },
             clickedShowPostComments(){
-                this.$emit('clickedShowPostComments',{post: this.post,type:'post'})
+                this.$emit('clickedShowPostComments',{item: this.post, type:'discussion'})
             },
             postAddComplete(data){
                 if (data === 'successful') {
                     this.showAddComment = false
-                    this.commentSuccess = true
-                    setTimeout(() => {
-                        this.commentSuccess = false
-                    }, 2000);
-                } else {
-                    this.commentFail = true
-                    setTimeout(() => {
-                        this.commentFail = false
-                    }, 2000);
+                    this.alertSuccess = true
+                    this.alertMessage = 'comment created successfully 😎'
+                    return
                 }
+
+                this.alertDanger = true
+                this.alertMessage = 'comment creation failed 😞'
             },
             clickedAddComment(){
                 if (this.disabled) {
                     return
                 }
+
                 if(this.computedBanned) return
+
                 if (!this.getUser) {
                     this.$emit('askLoginRegister','discussionsingle')
-                } else if (!this.getProfiles || !this.getProfiles.length) {
-                    this.smallModalInfo= true
-                    this.smallModalDelete = false
-                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can comment.'
-                    this.showSmallModal = true
-                    setTimeout(() => {
-                        this.clearSmallModal()
-                    }, 4000);
-                } else {
-                    this.showAddComment = true
+                    return
                 }
+                
+                if (!this.getProfiles || !this.getProfiles.length) {
+                    this.issueSmallModalInfoMessage({
+                        message: 'you must have an account (eg. learner, parent, etc) before you can comment.'
+                    })
+                    
+                    return
+                }
+                
+                this.showAddComment = true
             },
-            clickedProfile(data){
+            clickedProfile(data) {
                 this.showProfiles = false
                 if (this.showProfilesAction === 'join') {
                     this.joinDiscussion(data)
-                } else if (this.showProfilesAction === 'like') {
+                    return
+                }
+                
+                if (this.showProfilesAction === 'like') {
                     this.like(data)
-                } else if (this.showProfilesAction === 'save') {
+                    return
+                }
+                
+                if (this.showProfilesAction === 'save') {
                     this.save(data)
-                } else if (this.showProfilesAction === 'flag') {
-                    this.smallModalTitle = 'are you sure you want to flag this?'
-                    this.smallModalDelete = true
-                    this.showSmallModal = true
-                    this.smallModalData = data
-                    // setTimeout(() => {
-                    //     this.clearSmallModal()
-                    // }, 4000);
-                } else if (this.showProfilesAction === 'attach'){
+                    return
+                }
+                
+                if (this.showProfilesAction === 'flag') {
+                    this.issueCustomMessage({
+                        message:'are you sure you want to flag this?',
+                        data,
+                        type: 'delete'
+                    })
+                    return
+                }
+                
+                if (this.showProfilesAction === 'attach') {
                     this.attach(data)
+                }
+            },
+            clickedEditFile(data){
+                if (data.type === 'resource') {
+                    this.mediaModalUrl = data.data
+                    this.showMediaModal = true
+                } else if (data.type === 'upload') {
+                    this.showFilePreview = this.activeFile === data.data ? false : true
+                    this.activeFile = data.data
                 }
             },
             clickedMedia(data){
 
-            },
-            reasonGiven(data){
-                this.showFlagReason = false
-                this.flagReason = data
-                this.profilesAppear()
-            },
-            continueFlagProcess(){
-                this.flagReason = null
-                this.showFlagReason = false
-                this.profilesAppear()
-            },
-            cancelFlagProcess(){
-                this.flagReason = ''
-                this.showFlagReason = false
-            },
-            clickedFlag(){
-                if (this.disabled) {
-                    return
-                }
-                if(this.computedBanned) return
-                if (this.isFlagged) {
-                    this.flag(null)
-                    return
-                }
-                this.showProfilesText = 'flag as'
-                this.showProfilesAction = 'flag'
-                if (!this.getUser) {
-                    this.$emit('askLoginRegister','discussionsingle')
-                } else if (!this.getProfiles.length) { // to ensure that people with no profiles dont like/comment/flag
-                    this.smallModalInfo= true
-                    this.smallModalDelete = false
-                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can flag.'
-                    this.showSmallModal = true
-                    setTimeout(() => {
-                        this.clearSmallModal()
-                    }, 4000);
-                } else {
-                    this.showFlagReason = true
-                }
-            },
-            async flag(who){
-                this.loading = true
-                let data = {}
-                data.where = this.$route.name
-                data.discussion = true
-                data.itemId = this.discussion.id
-                let response = null
-                if (who) {
-                    data.account = who.account
-                    data.accountId = who.accountId
-                    data.item = 'discussion'
-                    data.reason = this.flagReason
-
-                    response = await this['profile/createFlag'](data)
-                } else {
-                    data.flagId = this.myFlag.id
-
-                    response = await this['profile/deleteFlag'](data)
-                }
-
-                this.loading =false
-                if (response.status) {
-                    this.alertSuccess = true
-                    if (this.isFlagged) {
-                        this.isFlagged = false
-                        this.$emit('postUnflaggedSuccess', {
-                            flag: response.flag,
-                            answerId: this.discussion.id
-                        })
-                    } else {
-                        this.alertModalMessage = 'successfully flagged'
-                        this.$emit('postDeleteSuccess',{postId: data.itemId,type:'discussion'})
-                    }
-                    this.smallModalAlerting = true
-                } else {
-                    this.alertDanger = true
-                    this.alertModalMessage = 'flagging successful'
-                }
-                this.flagReason = ''
-                this.smallModalData = null
-                setTimeout(() => {
-                    this.clearSmallModal()
-                }, 3000);
-            },
-            async clickedLike(data){
-                if (this.disabled) {
-                    return
-                }
-                if(this.computedBanned) return
-                if (!this.getUser) {
-                    this.$emit('askLoginRegister','discussionsingle')
-                } else if (!this.getProfiles.length) {
-                    this.smallModalInfo= true
-                    this.smallModalDelete = false
-                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can like.'
-                    this.showSmallModal = true
-                    setTimeout(() => {
-                        this.clearSmallModal()
-                    }, 4000);
-                } else {
-                    this.showProfilesText = 'like as'
-                    this.showProfilesAction = 'like'
-                    if (this.isLiked) {
-                        this.likes -= 1
-                        this.isLiked = false
-                        
-                        if (this.myLike && this.myLike.hasOwnProperty('id')) {
-                            let newData = {
-                                likeId: this.myLike.id,
-                                item: 'discussion',
-                                itemId: this.discussion.id,
-                                owner: this.discussion.raisedby_type,
-                                ownerId: this.discussion.raisedby_id,
-                            }
-
-                            newData.where = this.$route.name
-                            let response = await this['profile/deleteLike'](newData)
-                            if (response === 'unsuccessful') {
-                                this.isLiked = true
-                                this.likes += 1
-                            }
-                        } else {
-                            this.likes += 1
-                            this.isLiked = true
-                        }
-                    } else {
-                        this.profilesAppear()
-                    }
-                }
-            },
-            async like(who){
-                this.showProfiles = false
-                this.isLiked = true
-                this.likes += 1
-                let data = {
-                    item: 'discussion',
-                    itemId: this.discussion.id,
-                    account: who.account,
-                    accountId: who.accountId,
-                    owner: this.discussion.raisedby_type,
-                    ownerId: this.discussion.raisedby_id,
-                }
-
-                data.where = this.$route.name
-                let response = await this['profile/createLike'](data)
-
-                if (response === 'unsuccessful') {
-                    this.isLiked = false
-                    this.likes -= 1
-                }
             },
             profilesAppear(){
                 this.showProfiles = true
@@ -2588,21 +1634,6 @@ import { strings } from '../services/helpers';
     font-weight: 600;
 }
 
-@mixin close(){
-    color: gray;
-    position: absolute;
-    right: 3px;
-    top: 3px;
-    padding: 5px;
-    font-size: 14px;
-    cursor: pointer;
-
-    &:hover{
-        color: red;
-        transition: all 1s ease-in-out;
-    }
-}
-
 @mixin button(){
     padding: 5px;
     width: fit-content;
@@ -2620,6 +1651,7 @@ import { strings } from '../services/helpers';
         position: relative;
         width: 100%;
         margin: 10px 0;
+        background: inherit;
 
         .top{
             display: table;
@@ -2645,23 +1677,14 @@ import { strings } from '../services/helpers';
             border: 1px solid dimgrey;
             border-right: 2px solid dimgray;
             position: relative;
+            background: inherit;
 
-            .loading,
-            .alert{
+            .loading{
                 @include loading();
             }
 
             .alert{
-                font-size: 12px;
-                color: white;
-            }
-
-            .success{
-                background-color: green;
-            }
-
-            .danger{
-                background-color: red;
+                position: relative;
             }
 
             .edit{
@@ -2785,6 +1808,7 @@ import { strings } from '../services/helpers';
             }
 
             .third{
+                background: inherit;
                 
                 .admin-section{
                     padding: 5px;
@@ -2826,8 +1850,6 @@ import { strings } from '../services/helpers';
                     border-bottom: 1px solid gray;
 
                     .main-area{
-                        height: 200px;
-                        border-bottom: 1px solid gray;
                         padding: 10px;
                         overflow-y: auto;
                         position: relative;
@@ -2863,13 +1885,6 @@ import { strings } from '../services/helpers';
 
                     .text-area{
                         min-height: 75px;
-                    }
-                }
-
-                .discussion-section-max{
-
-                    .main-area{
-                        height: 650px;
                     }
                 }
             }
@@ -2961,334 +1976,5 @@ import { strings } from '../services/helpers';
             }
         }
 
-        .discusssion-info-section,
-        .discusssion-request-section{
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: mintcream;
-            border-radius: 10px;
-            box-shadow: 0 0 2px grey;
-
-            .close, 
-            .pencil{
-                color: gray;
-                position: absolute;
-                right: 10px;
-                top: 10px;
-                padding: 5px;
-                font-size: 14px;
-                cursor: pointer;
-
-                &:hover{
-                    color: red;
-                    transition: all 1s ease-in-out;
-                }
-            }
-
-            .pencil{
-                right: 40px;
-                top: 5px;
-
-                &:hover{
-                    color: green;
-                }
-            }
-            
-            .title{
-                width: 100%;
-                text-align: center;
-                margin: 20px 0 0;
-                color: gray;
-                text-transform: capitalize;
-            }
-
-            .body{
-                padding: 10px;
-                height: 88%;
-            }
-        }
-
-        .discusssion-info-section{
-
-            .body{
-
-                .section{
-                    @include section();
-                }
-
-                .owner-section{
-                    display: inline-flex;
-                    width: 100%;
-                    justify-content: space-between;
-                    align-items: center;
-
-                    .name{
-                        font-size: 14px;
-                        text-transform: capitalize;
-                    }
-
-                    .account{
-                        font-size: 12px;
-                        color: gray;
-                    }
-                }
-
-                .info-section{
-
-                    .info-item{
-                        display: table;
-                        width: 100%;
-                        font-size: 14px;
-                        padding: 5px;
-
-                        .label{
-                            display: table-cell;
-                            width: 80px;
-                            max-width: 30%;
-                            color: gray;
-                            padding-right: 5px;
-                        }
-
-                        .item{
-                            font-weight: 500;
-                            width: 100%;
-                            font-variant: small-caps;
-                        }
-                    }
-                }
-
-                .show-participants{
-                    @include button();
-                    margin: 10px auto;
-                }
-
-                .participants-section{
-                    height: 75%;
-                    overflow-y: auto;
-                    padding: 10px;
-                    width: 100%;
-
-                    .loading{
-                        @include loading();
-                    }
-                }
-            }
-
-            .edit-section{
-                width: 100%;
-                height: 88%;
-                overflow-y: auto;
-                padding: 10px;
-
-                .loading,
-                .alert{
-                    width: 100%;
-                    text-align: center;
-                    padding: 5px;
-                }
-
-                .alert{
-                    font-size: 12px;
-                    color: white;
-                }
-
-                .success{
-                    background-color: green;
-                }
-
-                .danger{
-                    background-color: red;
-                }
-
-                .section{
-                    @include section();
-                }
-
-                .info{
-                    @include info();
-                    margin-bottom: 10px;
-                }
-
-                .form-edit{
-                    margin: 10px auto;
-
-                    input,
-                    textarea{
-                        width: 90%;
-                        margin: 10px auto;
-                    }
-
-                    .main-section{
-                        display: flex;
-                        justify-content: flex-start;
-                        align-items: flex-start;
-                        flex-wrap: wrap;
-                        width: 100%;
-
-                        .label{
-                            margin-right: 10px;
-                            font-size: 14px;
-                            color: gray;
-                        }
-                        
-                        .grey-button{
-                            margin: 0 10px 10px 0;
-                        }
-                    }
-                }
-
-                .files{
-                    display: inline-flex;
-                    justify-content: space-around;
-                    width: 100%;
-                    font-size: 14px;
-                    margin: 20px 0 10px;
-
-                    .file{
-                        padding: 5px;
-                        border-radius: 10px;
-                        background: gray;
-                        color: mintcream;
-                        cursor: pointer;
-
-                        &:hover{
-                            background: green;
-                            transition: all .5s ease;
-                        }
-                    }
-
-                    .active{
-                        background: green;
-                        transition: all .5s ease;
-                    }
-                }
-
-                .actions{
-                    display: inline-flex;
-                    margin-bottom: 10px;
-
-                    .action{
-                        color: gray;
-                        cursor: pointer;
-                        padding: 5px;
-                        margin: 0 10px 0 0;
-                    }
-                }
-
-                .media-section{
-                    width: 100%;
-                    padding: 5px;
-                    margin: 5px 0;
-                    overflow-x: auto;
-                    overflow-y: hidden;
-                    display: inline-flex;
-
-                    .media-item{
-                        display: inline-flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        color: gray;
-                        background-color: white;
-                        width: 150px;
-                        font-size: 10px;
-                        padding: 5px;
-                        cursor: pointer;
-                        position: relative;
-                        margin: 0 10px 0 0;
-
-                        .item-info{
-                            font-size: 11px;
-                            max-width: 70%;
-                            text-overflow: ellipsis;
-                            overflow: hidden;
-                            white-space: nowrap;
-                        }
-                        
-                        .item-type{
-                            font-size: 10px;
-                        }
-
-                        .item-clear{
-                            @include close();
-                            z-index: 1;
-                        }
-                    }
-                }
-
-                .file-preview{
-                    width: 100%;
-                    position: relative;
-
-                    .edit{
-                        position: absolute;
-                        font-size: 14px;
-                        top: 0;
-                    }
-                }
-
-                .buttons{
-                    margin-top: 10px;
-                    width: 100%;
-                    display: inline-flex;
-                    justify-content: space-around;
-                }
-            }
-        }
-
-        .discusssion-request-section{
-
-            .body{
-
-                .search-section{
-                    margin-bottom: 10px;
-                }
-
-                .search-types{
-                    width: 100%;
-                    display: inline-flex;
-                    justify-content: space-around;
-                    align-items: center;
-                    flex-wrap: wrap;
-
-                    .grey-button{
-                        margin-bottom: 10px;
-                    }
-                }
-
-                .accounts-section{
-                    padding: 10px;
-                    overflow-y: auto;
-                    max-height: 400px;
-                    width: 100%;
-                    margin-top: 20px;
-
-                    .no-participants{
-                        width: 100%;
-                        height: 100px;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        color: gray;
-                        font-size: 14px;
-                    }
-
-                    .participant-badge{
-                        margin-bottom: 10px;
-                    }
-
-                    .loading{
-                        width: 100%;
-                        text-align: center;
-                    }
-
-                    .show-more{
-                        @include show-more();
-                    }
-                }
-            }
-        }
     }
 </style>

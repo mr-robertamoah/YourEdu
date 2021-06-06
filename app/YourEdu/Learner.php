@@ -2,24 +2,29 @@
 
 namespace App\YourEdu;
 
+use App\Traits\AccountAnswersTrait;
+use App\Traits\AccountQuestionsTrait;
 use App\Traits\AccountTrait;
 use App\Traits\AdmissionTrait;
 use App\User;
 use Database\Factories\LearnerFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Learner extends Model
 {
-    const VALIDACCOUNTTYPE = [
-        'learner', 'parent', 'professional', 'facilitator', 'school'
-    ];
-
     use SoftDeletes, 
         AccountTrait, 
         AdmissionTrait,
-        HasFactory;
+        HasFactory,
+        AccountQuestionsTrait,
+        AccountAnswersTrait;
+
+    const VALIDACCOUNTTYPE = [
+        'learner', 'parent', 'professional', 'facilitator', 'school'
+    ];    
 
     protected $fillable = [
         'user_id','name'
@@ -31,7 +36,7 @@ class Learner extends Model
             $user = $learner->user;
             $learner->profile()->create([
                 'user_id' => $user->id,
-                'name' => $learner->name ? $learner->name : $user->full_name,
+                'name' => $learner->name ? $learner->name : $user->name,
             ]);
             $learner->posts()->create([
                 'content' => 'this is my first post.'
@@ -111,11 +116,6 @@ class Learner extends Model
     public function works()
     {
         return $this->morphMany(Work::class,'workable');
-    }
-    
-    public function answers()
-    {
-        return $this->morphMany(Answer::class,'answeredby');
     }
 
     public function grades(){
@@ -278,11 +278,6 @@ class Learner extends Model
         return $this->morphMany(Flag::class,'flaggable');
     }
 
-    public function questionsAdded()
-    {
-        return $this->morphMany(Question::class,'addedby');
-    }
-
     public function booksAuthored()
     {
         return $this->morphMany(Book::class,'authoredby');
@@ -396,6 +391,32 @@ class Learner extends Model
     public function addedDiscounts()
     {
         return $this->morphMany(Discount::class, 'addedby');
+    }
+
+    public function hasParents()
+    {
+        return $this->parents()->count() > 0;
+    }
+
+    public function getParentUserIds()
+    {
+        return $this->parents->pluck('user_id');
+    }
+
+    public function scopeWhereUnderAged(Builder $query)
+    {
+        return $query->whereHas('user', function($query) {
+                $query
+                    ->whereDate('dob','>', now()->subYears(User::MINIMUM_ADULT_AGE));
+            });
+    }
+
+    public function scopeWhereHasNoAge($query)
+    {
+        return $query->whereHas('user', function($query) {
+                $query
+                    ->whereNull('dob');
+            });
     }
     
     protected static function newFactory()

@@ -58,9 +58,8 @@ class PostResource extends JsonResource
             'typeName' => $typeName,
             'isPost' => true,
             'likes' => LikeResource::collection($this->likes),
-            'comments_number' => $this->comments()->count(),
-            'comments' => CommentResource::collection($this->comments()
-                ->orderby('updated_at','desc')->take(1)->get()),
+            'commentsCount' => $this->commentsCount(),
+            'comments' => CommentResource::collection($this->latestComments()),
             'addedby' => new UserAccountResource($this->addedby),
             'flags' => FlagResource::collection($this->flags),
             'saves' => SaveResource::collection($this->beenSaved),

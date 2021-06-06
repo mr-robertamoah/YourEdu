@@ -3,10 +3,22 @@
 namespace App\Traits;
 
 use App\Exceptions\AccountNotFoundException;
+use App\Services\AuthService;
 use App\User;
 
 trait ServiceTrait
 {
+    private function checkAccountOwnership($account, $userId)
+    {
+        if ($account->isUser($userId)) {
+            return;
+        }
+        
+        $this->throwAccountNotFoundException(
+            message: "sorry 😞, you do not own the account {$account->accountType} with id {$account->id}",
+        );
+    }
+
     private function getModel($type, $id)
     {
         $item = getYourEduModel($type, $id);
@@ -44,5 +56,29 @@ trait ServiceTrait
         }
         
         return User::where('id', $dto->userId)->exists();
+    }
+
+    private function increasePointsOfAccount($account)
+    {
+        if (! in_array($account->accountType, AuthService::VALID_ACCOUNT_TYPES)) {
+            return;
+        }
+
+        $account->point->value = $account->point->value + 1;
+        $account->point->save();
+    }
+
+    private function getUserAndParenstUserIds($dto)
+    {
+        $user = $this->getModel('user', $dto->userId);
+
+        $userIds = [];
+        if ($user->learner?->hasParents()) {
+            $userIds = $user->learner->getParentsUserIds();
+        }
+
+        $userIds[] = $user->id;
+
+        return $userIds;
     }
 }

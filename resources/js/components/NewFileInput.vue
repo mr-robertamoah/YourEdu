@@ -22,7 +22,7 @@
             </div>
         </div>
         <input type="file" ref="fileInput" :multiple='inputMultiple' 
-            @change="inputFiles" class="d-none">
+            @change="inputFiles" class="hidden">
 
         <div class="file-number-wrapper">
             <div class="file-number">{{fileNumber}}</div>

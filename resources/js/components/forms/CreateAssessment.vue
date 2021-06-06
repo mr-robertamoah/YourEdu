@@ -40,13 +40,6 @@
                                 class="other-input"
                             ></text-textarea>
                             <main-checkbox
-                                v-if="!main"
-                                v-model="data.restricted"
-                                label="restricted assessment"
-                                class="other-input"
-                                title="check if assessment will be taken by only invited accounts"
-                            ></main-checkbox>
-                            <main-checkbox
                                 v-model="data.random"
                                 label="has randomized questions"
                                 title="check if you want all assessment sections to have randomized questions"
@@ -112,6 +105,9 @@
                                     label="private"
                                 ></radio-input>
                             </div>
+                            <div class="small-msg">
+                                choose public if you want assessment to be taken or marked by only accounts invited or whose requests you have accepted."
+                            </div>
                             <main-select
                                 v-if="edit"
                                 :items="['pending','accepted','declined','suspended']"
@@ -130,7 +126,7 @@
                                 class="class-input"
                             ></main-checkbox>
 
-                            <div class="section">Assessment Attachments</div>
+                            <div class="section" v-if="main">Assessment Attachments</div>
                             <div class="no-data" v-if="data.attachedItems.length">
                                 this assessment is attached to these
                             </div>
@@ -149,11 +145,12 @@
                                 ></item-badge>
                             </div>
                             <search-input
+                                v-if="main"
                                 class="search-input"
                                 placeholder="search for courses/extracurriculums/classes/programs/lessons"
                                 @search="getSearchItemsText"
                             ></search-input>
-                            <div class="items-section">
+                            <div class="items-section" v-if="main">
                                 <pulse-loader 
                                     :loading="specificItemsLoading"
                                     size="12px"
@@ -225,6 +222,21 @@
                             </div>
                         </template>
                         <template slot="buttons">
+                            <div class="profiles"
+                                v-if="showProfiles"
+                            >
+                                <span>
+                                    create as
+                                </span>
+                                <div :key="key" v-for="(profile,key) in computedProfiles">
+                                    <profile-bar
+                                        :smallType="true"
+                                        :profile="profile"
+                                        :navigate="false"
+                                        @clickedProfile="clickedProfile"
+                                    ></profile-bar>
+                                </div>
+                            </div>
                             <post-button
                                 v-if="computedShowPostButton"
                                 :buttonText="buttonText"
@@ -276,6 +288,7 @@ import { mapActions, mapGetters } from 'vuex';
 import {bus} from '../../app';
 import { strings } from '../../services/helpers';
 import CreateDiscussion from './CreateDiscussion';
+import ProfileBar from '../profile/ProfileBar';
     export default {
         components: {
             CreateDiscussion,
@@ -294,6 +307,7 @@ import CreateDiscussion from './CreateDiscussion';
             TextInput,
             TextTextarea,
             PulseLoader,
+            ProfileBar
         },
         props: {
             show: {
@@ -336,7 +350,6 @@ import CreateDiscussion from './CreateDiscussion';
                     dueAt: '',
                     duration: '',
                     hasDuration: false,
-                    restricted: false,
                     random: false,
                     discussion: false,
                     hasDiscussion: false,
@@ -352,6 +365,7 @@ import CreateDiscussion from './CreateDiscussion';
                     paymentData: [],
                     removedPaymentData: [],
                 },
+                showProfiles: false,
                 title: 'create assessment',
                 validationStatus: false,
                 loading: false,
@@ -368,6 +382,7 @@ import CreateDiscussion from './CreateDiscussion';
                 arrangingModalData: [],
                 arrangingModalShow: false,
                 validationItemLength: 15,
+                formData: null,
             }
         },
         watch: {
@@ -398,7 +413,10 @@ import CreateDiscussion from './CreateDiscussion';
             })
         },
         computed: {
-            ...mapGetters(['dashboard/getAccountDetails','getUser']),
+            ...mapGetters(['dashboard/getAccountDetails','getUser','getProfiles']),
+            computedProfiles(){
+                return this.getProfiles ? this.getProfiles : []
+            },
             computedTotalMark() {
                 return Number.parseInt(this.data.totalMark) > 5 ?
                     Number.parseInt(this.data.totalMark) : 100
@@ -512,8 +530,8 @@ import CreateDiscussion from './CreateDiscussion';
                 this.data.discussionData.title = data.title
                 this.data.discussionData.preamble = data.preamble
                 this.data.discussionData.type = data.type
-                this.data.discussionData.restricted = data.restricted
-                this.data.discussionData.allowed = data.allowed
+                this.data.discussionData.restricted = true
+                this.data.discussionData.allowed = 'all'
                 this.data.discussionFiles = data.files
             },
             closeDiscussionModal() {
@@ -541,7 +559,6 @@ import CreateDiscussion from './CreateDiscussion';
                     this.data.hasDuration = true
                     this.data.duration = `${data.duration}`
                 }
-                this.data.restricted = data.restricted
                 this.data.random = data.random
                 if (data.totalMark) {
                     this.data.totalMark = `${data.totalMark}`
@@ -742,7 +759,6 @@ import CreateDiscussion from './CreateDiscussion';
                 this.data.dueAt = ''
                 this.data.duration = ''
                 this.data.hasDuration = false
-                this.data.restricted = false
                 this.data.random = false
                 this.data.totalMark = ''
                 this.data.attachedItems = []
@@ -982,7 +998,7 @@ import CreateDiscussion from './CreateDiscussion';
                 }
 
                 question.files.forEach(file=>{
-                    window.formData.append(`question${question.id}[]`, file)
+                    this.formData.append(`question${question.id}[]`, file)
                 })
                     
                 return question
@@ -992,37 +1008,66 @@ import CreateDiscussion from './CreateDiscussion';
                 
                 return possibleAnswer
             },
-            async clickedCreate() {
-                this.validateAssessmentData(this.data)
+            clickedProfile(data) {
+                
+                this.formData.append('account', data.account)
+                this.formData.append('accountId', data.accountId)
 
-                if (!this.validationStatus) {
-                    return
-                }
-
+                this.$emit('clickedCreate', this.formData)
+                this.closeModal()
+            },
+            async createOrEditAssessment() {
                 this.loading = true
                 let response
 
-                window.formData = new FormData
+                this.setAssessmentFormData()
 
-                formData.append('name', this.data.name)
-                formData.append('description', this.data.description)
-                if (this.schoolAdmin) {
-                    formData.append('adminId', this.schoolAdmin.id)
+                if (this.edit) {
+                    response = await this['dashboard/editAssessment'](this.formData)
+                } else {
+                    response = await this['dashboard/createAssessment'](this.formData)
                 }
-                formData.append('paymentData', JSON.stringify(this.data.paymentData)) 
-                formData.append('main', JSON.stringify(this.main)) 
-                formData.append('dueAt', this.data.dueAt)
-                formData.append('publishedAt', this.data.publishedAt)
-                formData.append('restricted', JSON.stringify(this.data.restricted)) 
-                formData.append('totalMark', JSON.stringify(this.data.totalMark)) 
-                formData.append('duration', JSON.stringify(this.data.duration))
-                formData.append('type', this.data.type)
-                formData.append('account', this.computedAccount.account)
-                formData.append('accountId', this.computedAccount.accountId)
+
+                this.loading = false
+                
+                if (! response.status) {
+                    this.responseErrorAlert(response.response)
+                    console.log('response :>> ', response);
+                    return
+                }
+
+                let action = this.edit ? 'edited' : 'created'
+                this.alertSuccess = true
+                this.alertMessage = `${this.data.name} was successfully ${action} 😊`
+                if (!this.edit) {
+                    this.clearData()
+                }
+            },
+            setAssessmentFormData() {
+                this.formData = new FormData
+
+                if (this.main) {
+                    this.formData.append('account', this.computedAccount.account)
+                    this.formData.append('accountId', this.computedAccount.accountId)
+                }
+
+                this.formData.append('name', this.data.name)
+                this.formData.append('description', this.data.description)
+                if (this.schoolAdmin) {
+                    this.formData.append('adminId', this.schoolAdmin.id)
+                }
+                this.formData.append('paymentData', JSON.stringify(this.data.paymentData)) 
+                this.formData.append('main', JSON.stringify(this.main)) 
+                this.formData.append('social', JSON.stringify(this.main ? false : true)) 
+                this.formData.append('dueAt', this.data.dueAt)
+                this.formData.append('publishedAt', this.data.publishedAt)
+                this.formData.append('totalMark', JSON.stringify(this.data.totalMark)) 
+                this.formData.append('duration', JSON.stringify(this.data.duration))
+                this.formData.append('type', this.data.type)
                 let assessmentSections = _.cloneDeep(this.data.assessmentSections)
 
                 if (this.edit) {
-                    formData.append('assessmentId', this.data.assessmentId)
+                    this.formData.append('assessmentId', this.data.assessmentId)
                     this.data.editedAssessmentSections = []
                     this.data.mainAssessmentSections.forEach(mainSection=>{
                         assessmentSections.forEach((section, sectionIndex)=>{
@@ -1037,11 +1082,11 @@ import CreateDiscussion from './CreateDiscussion';
                             }
                         })
                     })
-                    formData.append('editedAssessmentSections', JSON.stringify(this.data.editedAssessmentSections))
-                    formData.append('assessmentSections', JSON.stringify(assessmentSections.map(assessmentSection=>{
+                    this.formData.append('editedAssessmentSections', JSON.stringify(this.data.editedAssessmentSections))
+                    this.formData.append('assessmentSections', JSON.stringify(assessmentSections.map(assessmentSection=>{
                         return this.mapFinalAssessmentSection(assessmentSection, false)
                     })))
-                    formData.append('removedAssessmentSections', JSON.stringify(
+                    this.formData.append('removedAssessmentSections', JSON.stringify(
                         this.data.removedAssessmentSections.map(assessmentSection=>{
                             return {
                                 assessmentSectionId: assessmentSection.id
@@ -1061,19 +1106,19 @@ import CreateDiscussion from './CreateDiscussion';
                         }
                     })
                     
-                    formData.append('attachedItems', JSON.stringify(attachedItems.map(item=>{
+                    this.formData.append('attachedItems', JSON.stringify(attachedItems.map(item=>{
                         return {
                             itemId: item.id,
                             item: item.type
                         }
                     })))
-                    formData.append('unattachedItems', JSON.stringify(this.data.unattachedItems.map(attachment=>{
+                    this.formData.append('unattachedItems', JSON.stringify(this.data.unattachedItems.map(attachment=>{
                         return {
                             type: attachment.type,
                             id: attachment.id
                         }
                     })))
-                    formData.append('removedPaymentData', JSON.stringify(
+                    this.formData.append('removedPaymentData', JSON.stringify(
                         this.data.removedPaymentData.map(payment=>{
                             return {
                                 type: payment.type,
@@ -1081,36 +1126,38 @@ import CreateDiscussion from './CreateDiscussion';
                             }
                         }
                     )))
-                    response = await this['dashboard/editAssessment'](formData)
-                } else {
+
+                    return
+                }
                     
-                    formData.append('assessmentSections', JSON.stringify(
-                        assessmentSections.map(assessmentSection=>{
-                            return this.mapFinalAssessmentSection(assessmentSection, false)
-                        })
-                    ))
-                    formData.append('attachedItems', JSON.stringify(this.data.attachedItems.map(item=>{
-                        return {
-                            itemId: item.id,
-                            item: item.type
-                        }
-                    })))
-
-                    response = await this['dashboard/createAssessment'](formData)
-                }
-
-                this.loading = false
-                if (response.status) {
-                    let action = this.edit ? 'edited' : 'created'
-                    this.alertSuccess = true
-                    this.alertMessage = `${this.data.name} was successfully ${action} 😊`
-                    if (!this.edit) {
-                        this.clearData()
+                this.formData.append('assessmentSections', JSON.stringify(
+                    assessmentSections.map(assessmentSection=>{
+                        return this.mapFinalAssessmentSection(assessmentSection, false)
+                    })
+                ))
+                this.formData.append('attachedItems', JSON.stringify(this.data.attachedItems.map(item=>{
+                    return {
+                        itemId: item.id,
+                        item: item.type
                     }
-                } else {
-                    this.responseErrorAlert(response.response)
-                    console.log('response :>> ', response);
+                })))
+            },
+            clickedCreate() {
+                this.validateAssessmentData(this.data)
+
+                if (! this.validationStatus) {
+                    this.formData = null
+                    return
                 }
+
+                
+                if (this.main) {
+                    this.createOrEditAssessment()
+                    return
+                }
+                
+                this.setAssessmentFormData()
+                this.showProfiles = true
             },
         },
     }
@@ -1123,6 +1170,17 @@ import CreateDiscussion from './CreateDiscussion';
 
         .welcome-form{            
             position: relative;
+
+            .profiles{
+                position: absolute;
+                width: 200px;
+                left: 0;
+                bottom: 30px;
+                text-align: justify;
+                font-size: 14px;
+                color: black;
+                z-index: 5;
+            }
 
             .loading{
                 @include sticky-loader();

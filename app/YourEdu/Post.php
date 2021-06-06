@@ -2,6 +2,9 @@
 
 namespace App\YourEdu;
 
+use App\Traits\FlaggableTrait;
+use App\Traits\HasCommentsTrait;
+use App\Traits\HasSocialMediaTrait;
 use App\User;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,8 +14,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Post extends Model
 {
-    //
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, 
+        HasFactory,
+        FlaggableTrait,
+        HasSocialMediaTrait,
+        HasCommentsTrait;
 
     protected $fillable = [
         'content'
@@ -50,11 +56,6 @@ class Post extends Model
         ->withPivot(['state'])->withTimestamps();
     }
 
-    public function comments()
-    {
-        return $this->morphMany(Comment::class,'commentable');
-    }
-
     public function lessons()
     {
         return $this->morphMany(Lesson::class,'lessonable');
@@ -78,11 +79,6 @@ class Post extends Model
     public function activityTrack()
     {
        return $this->morphOne(ActivityTrack::class,'what');
-    }
-
-    public function flags()
-    {
-        return $this->morphMany(Flag::class,'flaggable');
     }
 
     public function beenSaved()
@@ -142,7 +138,7 @@ class Post extends Model
             ->doesntHave('books');
     }
 
-    public function scopeHasPublished($query)
+    public function scopeWherePublished($query)
     {
         return $query->whereDoesntHave('activities',function(Builder $query){
             $query->where('published_at','>',now());
@@ -157,19 +153,26 @@ class Post extends Model
         });
     }
 
-    public function scopeHasNoFlags($query, $parentsLearnerUserIds)
+    public function scopeWithRelations($query)
     {
-        return $query->whereDoesntHave('flags',function(Builder $query) use ($parentsLearnerUserIds){
-            $query->whereIn('user_id',$parentsLearnerUserIds)
-                ->orWhere('status',"APPROVED");
-        });
-    }
-
-    public function scopeHasNoApprovedFlags($query)
-    {
-        return $query->whereDoesntHave('flags',function(Builder $query){
-            $query->where('status',"APPROVED");
-            });
+        return $query->with([
+            'books'=>function($query){
+                $query->with(['images','videos','audios','files','comments']);
+            },
+            'poems'=>function($query){
+                $query->with(['images','videos','audios','files','comments']);
+            },
+            'activities'=>function($query){
+                $query->with(['images','videos','audios','files','comments']);
+            },
+            'riddles'=>function($query){
+                $query->with(['images','videos','audios','files','answers']);
+            },
+            'questions'=>function($query){
+                $query->with(['images','videos','audios','files','answers']);
+            },
+            'comments', 'images', 'videos', 'audios', 'files'
+        ]);
     }
 
     public function scopeWithTypes($query)
@@ -182,68 +185,19 @@ class Post extends Model
         'books.audios','addedby.profile']);
     }
 
-    public function scopeHasPostTypes($query)
+    public function scopeWherePostTypes($query, $postType)
     {
-        return $query->when(request()->has('postType') && request()->postType === 'questions',
-                function(Builder $query){
+        return $query->when($postType === 'questions', function(Builder $query){
                 $query->has('questions');
-            })->when(request()->has('postType') && request()->postType === 'poems',
-                function(Builder $query){
+            })->when($postType === 'poems', function(Builder $query){
                 $query->has('poems');
-            })->when(request()->has('postType') && request()->postType === 'activities',
-                function(Builder $query){
+            })->when($postType === 'activities', function(Builder $query){
                 $query->has('activities');
-            })->when(request()->has('postType') && request()->postType === 'books',
-                function(Builder $query){
+            })->when($postType === 'books', function(Builder $query){
                 $query->has('books');
-            })->when(request()->has('postType') && request()->postType === 'riddles',
-                function(Builder $query){
+            })->when($postType === 'riddles', function(Builder $query){
                 $query->has('riddles');
             });
-    }
-
-    public function scopeWithFilter($query)
-    {
-        $user = User::find((int)request()->user);
-        if (!$user) {
-            return $query;
-        }
-
-        $type = null;
-        $id = null;
-        if (request()->has('attachments')) {
-            if (request()->attach === 'subjects') {
-                $type = 'App\YourEdu\Subject';
-            } else if (request()->attach === 'grades') {
-                $type = 'App\YourEdu\Grade';
-            } else if (request()->attach === 'curriculum') {
-                $type = 'App\YourEdu\Curriculum';
-            }
-            $id = request()->id;
-        }
-
-        return $query->when(request()->has('mine'), function(Builder $query){
-            $query->whereHasMorph('addedby','*',function(Builder $query){
-                $query->where('user_id', (int)request()->user);
-            });
-        })->when(request()->has('followings'), function(Builder $query){
-            $query->whereHasMorph('addedby','*',function(Builder $query){
-                $query->whereHas('follows',function(Builder $query){
-                    $query->where('user_id',(int)request()->user);
-                });
-            });
-        })->when(request()->has('followers'), function(Builder $query){
-            $query->whereHasMorph('addedby','*',function(Builder $query){
-                $query->whereHas('followings',function(Builder $query){
-                    $query->where('followed_user_id',(int)request()->user);
-                });
-            });
-        })->when(request()->has('attachments'), function(Builder $query) use ($type,$id) {
-            $query->whereHas('attachments',function(Builder $query) use ($type, $id) {
-                $query->where('attachedwith_type', $type)
-                    ->where('attachedwith_id', $id);
-            });
-        });
     }
 
     protected static function newFactory()

@@ -3,9 +3,20 @@
 namespace App\Exceptions;
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 
-class ConversationAccountNotFoundException extends Exception
+class ConversationException extends Exception
 {
+    public function __construct
+    (
+        $message,
+        $code = 0, 
+        private $data = null,
+    ) 
+    {
+        parent::__construct($message,$code);
+    }
+    
     /**
      * Report the exception.
      *
@@ -13,7 +24,7 @@ class ConversationAccountNotFoundException extends Exception
      */
     public function report()
     {
-        //
+        Log::alert($this->getMessage(), ['data' => $this->data]);
     }
 
     /**
@@ -25,7 +36,7 @@ class ConversationAccountNotFoundException extends Exception
     public function render($request)
     {
         return response()->json([
-                'message' => $this->getMessage()
-            ], 422);
+            'message' => $this->getMessage()
+        ], 422);
     }
 }

@@ -3,13 +3,16 @@
 namespace App\YourEdu;
 
 use App\User;
+use Database\Factories\ProfileFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Profile extends Model
 {
-    //
+    use HasFactory;
+
     protected $fillable = [
         'user_id', 'name', 'about', 'interests', 'occupation', 'website', 
         'company', 'location', 'address',
@@ -65,14 +68,110 @@ class Profile extends Model
         ->withPivot(['state','thumbnail'])->withTimestamps();
     }
 
-    public function scopeHasNoFlags($query, $parentsLearnerUserIds)
+    public function scopeWhereDoesntHaveFlagsFrom($query, $userIds)
     {
-        return $query->whereDoesntHaveMorph('profileable','*',function(Builder $query) use ($parentsLearnerUserIds){
-            $query->whereHas('flags',function(Builder $query) use ($parentsLearnerUserIds){
-                $query->whereIn('user_id', $parentsLearnerUserIds)
-                    ->orWhere('status',"APPROVED");
+        return $query
+            ->when(is_array($userIds) && count($userIds), function($query) use($userIds) {
+                $query->whereDoesntHaveMorph('profileable','*',function(Builder $query) use ($userIds){
+                    $query->whereHas('flags',function(Builder $query) use ($userIds){
+                        $query->whereIn('user_id', $userIds)
+                            ->orWhere('status',"APPROVED");
+                    });
+                });
             });
-        });
+    }
+
+    public function scopeWherePartOf($query, $item, $itemId, $state)
+    {
+        if (is_null($state)) {
+            $state = 'active';
+        }
+
+        $item = capitalize($item);
+
+        $scopeMethod = "whereSpecific{$item}ParticipationById";
+        
+        return $query
+            ->with(['profileable' => function($query) use ($scopeMethod, $itemId) {
+                $query->when(
+                    $query->getModel()->accountType !== 'school',
+                    function($query) use ($scopeMethod, $itemId) {
+                        $query->with(['participants' => function($query) use ($scopeMethod, $itemId) {
+                                $query->$scopeMethod($itemId);
+                            }
+                        ]);
+                    }
+                );
+            }])
+            ->whereHasMorph('profileable', '*', function($query) use ($scopeMethod, $state, $itemId) {
+                $query->when(
+                    $query->getModel()->accountType !== 'school',
+                    function($query) use ($scopeMethod, $state, $itemId) {
+                        $query->whereHas('participants', function($query) use ($scopeMethod, $state, $itemId) {
+                            $query
+                                ->$scopeMethod($itemId)
+                                ->where('state', Str::upper($state));
+                        });
+                    }
+                );
+            })
+            ->orWhereHasMorph('profileable', '*', function($query) use ($item, $itemId) {
+                $query
+                    ->when(
+                        $item === 'discussion',
+                        function($query) use ($itemId) {
+                            $query->whereHas('discussions', function($query) use ($itemId) {
+                                $query->where('id', $itemId);
+                            });
+                        }
+                    )
+                    ->when(
+                        $item === 'assessment',
+                        function($query) use ($itemId) {
+                            $query->whereHas('addedAssessments', function($query) use ($itemId) {
+                                $query->where('id', $itemId);
+                            });
+                        }
+                    );
+            });
+    }
+
+    public function scopeWherePartOfDiscussion($query, $itemId, $state)
+    {
+        if (is_null($state)) {
+            $state = 'active';
+        }
+        
+        return $query
+            ->with(['profileable' => function($query) use ($itemId) {
+                $query->when(
+                    $query->getModel()->accountType !== 'school',
+                    function($query) use ($itemId) {
+                        $query->with(['participants' => function($query) use ($itemId) {
+                                $query->whereSpecificDiscussionParticipationById($itemId);
+                            }
+                        ]);
+                    }
+                );
+            }])
+            ->whereHasMorph('profileable', '*', function($query) use ($state, $itemId) {
+                $query->when(
+                    $query->getModel()->accountType !== 'school',
+                    function($query) use ($state, $itemId) {
+                        $query->whereHas('participants', function($query) use ($state, $itemId) {
+                            $query
+                                ->whereSpecificDiscussionParticipationById($itemId)
+                                ->where('state', Str::upper($state));
+                        });
+                    }
+                );
+            })
+            ->orWhereHasMorph('profileable', '*', function($query) use ($itemId) {
+                $query
+                    ->whereHas('discussions', function($query) use ($itemId) {
+                        $query->where('id', $itemId);
+                    });
+            });
     }
 
     public function scopeSearch
@@ -117,22 +216,37 @@ class Profile extends Model
                     );
                 }
             )
-            ->when(strlen($searchAccount),
-                function($query) use ($searchAccount) {
-                    $query
-                        ->where('profileable_type',$searchAccount);
-                }
-            )
-            ->where(
-                function($query) use ($search) {
-                    $query->orWhereHasMorph('profileable','*',
-                        function($query) use ($search) {
-                            $query->searchAccounts($search);
-                        }
-                    )
-                    ->orWhere('name','like',$search)
-                    ->orWhere('about','like',$search);
-                }
-            )->with('profileable');
+            ->whereAccountType($searchAccount)
+            ->whereSearchName($search)
+            ->with('profileable');
+    }
+
+    public function scopeWhereAccountType($query, $accountType)
+    {
+        return $query->when(strlen($accountType),
+            function($query) use ($accountType) {
+                $query->where('profileable_type',$accountType);
+            }
+        );
+    }
+
+    public function scopeWhereSearchName($query, $search)
+    {
+        return $query->where(
+            function($query) use ($search) {
+                $query->orWhereHasMorph('profileable','*',
+                    function($query) use ($search) {
+                        $query->searchAccounts($search);
+                    }
+                )
+                ->orWhere('name','like',$search)
+                ->orWhere('about','like',$search);
+            }
+        );
+    }
+
+    protected static function newFactory()
+    {
+        return ProfileFactory::new();
     }
 }

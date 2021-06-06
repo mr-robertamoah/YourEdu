@@ -21,7 +21,7 @@ class CreateDiscussionsTable extends Migration
             $table->string('preamble');
             $table->boolean('restricted');
             $table->enum('type',['PUBLIC','PRIVATE']);
-            $table->enum('allowed',['ALL','LEARNERS','PARENTS','FACILITATORS','PROFESSIONALS','SCHOOLS']);
+            $table->enum('allowed',['ALL','LEARNERS','PARENTS','FACILITATORS','PROFESSIONALS','SCHOOLS'])->default('ALL');
             $table->softDeletes();
             $table->timestamps();
         });

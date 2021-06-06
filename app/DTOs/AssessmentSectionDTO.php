@@ -37,7 +37,7 @@ class AssessmentSectionDTO
                 maxQuestions: $data->maxQuestions ?? null,
                 random: $data->random ?? false,
                 answerType: $data->answerType ?? '',
-                questions: $data->questions && $request ? 
+                questions: property_exists($data, 'questions') ? 
                     array_map(
                         function ($question) use ($request) {
                             return static::mapQuestions($question, $request);
@@ -45,7 +45,7 @@ class AssessmentSectionDTO
                         $data->questions
                     ) : [],
                 removedQuestions: $data->removedQuestions ?? [],
-                editedQuestions: $data->editedQuestions && $request ? 
+                editedQuestions: property_exists($data, 'editedQuestions') ? 
                     array_map(
                         function ($question) use ($request) {
                             return static::mapQuestions($question, $request);
@@ -111,6 +111,15 @@ class AssessmentSectionDTO
 
     private static function mapQuestions($question, $request)
     {
+        if (is_null($request)) {
+            return $question;
+        }
+        
+        if (! property_exists($question, 'id')) {
+            $question->files = null;
+            return $question;
+        }
+
         $questionFileId = "question{$question->id}";
         $question->files = $request->$questionFileId;
 

@@ -8,6 +8,7 @@ use App\DTOs\BookDTO;
 use App\DTOs\LessonDTO;
 use App\DTOs\PoemDTO;
 use App\DTOs\PostDTO;
+use App\DTOs\PostsDTO;
 use App\DTOs\QuestionDTO;
 use App\DTOs\RiddleDTO;
 use App\Events\DeletePost;
@@ -18,13 +19,19 @@ use App\Exceptions\PostException;
 use App\Jobs\DeletePostJob;
 use App\Jobs\NewPostJob;
 use App\Jobs\UpdatePostJob;
+use App\Traits\ServiceTrait;
+use App\YourEdu\Assessment;
+use App\YourEdu\Discussion;
 use App\YourEdu\Post;
 
 class PostService
 {
+    use ServiceTrait;
+
+    const PAGINATION = 10;
+
     public function createPost(PostDTO $postDTO)
     {
-        ray($postDTO)->green();
         try {
             
             $postDTO = $this->getAddedby($postDTO);
@@ -222,13 +229,8 @@ class PostService
 
     private function getAddedby($postDTO)
     {
-        $account = getYourEduModel($postDTO->account,$postDTO->accountId);
-        if (is_null($account)) {
-            throw new AccountNotFoundException(
-                "{$postDTO->account} with id {$postDTO->accountId} was not found."
-            );
-        }
-
+        $account = $this->getModel($postDTO->account,$postDTO->accountId);
+        
         if (!in_array($postDTO->userId, $account->getAuthorizedIds())) {
             $this->throwPostException(
                 message: "The {$postDTO->account} account with id {$postDTO->account_id} doesn't belong to you.",
@@ -670,25 +672,71 @@ class PostService
 
     public function getPost(PostDTO $postDTO) : Post
     {
-        $post = getYourEduModel('post', $postDTO->postId);
+        return $this->getModel('post', $postDTO->postId);
+    }
 
-        if (is_null($post)) {
-            $this->throwPostException(
-                message: "oops! post was not found.",
-                data: $postDTO
-            );
+    public function getPosts(PostsDTO $postsDTO)
+    {
+        return $this->getItems($postsDTO);
+    }
+
+    public function getUserPosts(PostsDTO $postsDTO)
+    {
+        $this->checkUser($postsDTO);
+
+        return $this->getItems($postsDTO);
+    }
+
+    private function checkUser($postsDTO)
+    {
+        if (is_not_null($postsDTO->user)) {
+            return;
         }
 
-        return $post;
+        $this->throwPostException(
+            message: "sorry 😞, you are not a user.",
+            data: $postsDTO
+        );
     }
 
-    public function getPosts()
+    public function getItems(PostsDTO $postsDTO)
     {
-        
-    }
+        $flagUserIds = $postsDTO->user ? [$postsDTO->user?->id] : null;
 
-    public function getUserPosts()
-    {
-        
+        if ($postsDTO->user?->isLearner()) {
+            $flagUserIds = $postsDTO->user->learner->getAuthorizedIds();
+        }
+
+        $items = Post::query()
+        ->wherePostTypes($postsDTO->postType)
+        ->whereFiltered($postsDTO)
+        ->wherePublished()
+        ->whereDoesntHaveApprovedFlags()
+        ->whereDoesntHaveFlagsFrom($flagUserIds)
+        ->withRelations()
+        ->get();
+
+        $items = $items->merge(
+            Discussion::query()
+            ->whereSocial()
+            ->whereFiltered($postsDTO)
+            ->whereDoesntHaveApprovedFlags()
+            ->whereDoesntHaveFlagsFrom($flagUserIds)
+            ->withRelations()
+            ->get()
+        );
+
+        $items = $items->merge(
+            Assessment::query()
+            ->whereSocial()
+            ->wherePublished()
+            ->whereFiltered($postsDTO)
+            ->whereDoesntHaveApprovedFlags()
+            ->whereDoesntHaveFlagsFrom($flagUserIds)
+            ->withRelations()
+            ->get()
+        );
+
+        return paginate($items->sortByDesc('updated_at'), self::PAGINATION);
     }
 }

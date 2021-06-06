@@ -45,10 +45,8 @@
                         </span>
                         <div :key="key" v-for="(profile,key) in computedProfiles">
                             <profile-bar
-                                :name="profile.name"
-                                :type="profile.params.account"
                                 :smallType="true"
-                                :routeParams="profile.params"
+                                :profile="profile"
                                 :navigate="false"
                                 @clickedProfile="clickedProfile"
                             ></profile-bar>

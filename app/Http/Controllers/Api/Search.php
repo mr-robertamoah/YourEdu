@@ -80,7 +80,7 @@ class Search extends Controller
                             ->orWhere('email','like',"%{$search}%")
                             ->orWhere('last_name','like',"%{$search}%")
                             ->orWhere('other_names','like',"%{$search}%");
-                })->hasNoFlags($parentsLearnerUserIds)->get();
+                })->whereDoesntHaveFlagsFrom($parentsLearnerUserIds)->get();
         }
 
         return Profile::with(['user','profileable','profileable.follows','images'])
@@ -117,6 +117,6 @@ class Search extends Controller
                 $query->where('title','like',"%{$search}%")
                     ->orWhere('author','like',"%{$search}%")
                     ->orWhere('about','like',"%{$search}%");
-            })->hasNoFlags($parentsLearnerUserIds)->hasPublished()->latest()->get();
+            })->hasNoFlags($parentsLearnerUserIds)->wherePublished()->latest()->get();
     }
 }

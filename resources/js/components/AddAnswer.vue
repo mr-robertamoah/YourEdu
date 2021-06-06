@@ -71,7 +71,7 @@
                 </div>
                     <input type="file" ref="file" 
                         @change="fileChange"
-                        class="d-none">
+                        class="hidden">
             </div>
         </template>
     </fade-left-fast>

@@ -20,7 +20,7 @@ class FlaggedResource extends JsonResource
         $data['updated_at'] = $this->updated_at;
         if (!is_null($this->user)) {
             $data['username'] = $this->user->username;
-            $data['full_name'] = $this->user->full_name;
+            $data['fullName'] = $this->user->name;
         }
         if ($this->profileable) {
             $data['account'] = class_basename_lower($this->profileable_type);

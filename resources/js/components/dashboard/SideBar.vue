@@ -31,11 +31,9 @@
                     </div>
                     <profile-bar
                         v-else
-                        :name="computedLearner.name"
-                        :type="computedLearner.params.account"
                         :smallType="true"
                         :justName="true"
-                        :routeParams="computedLearner.params"
+                        :profile="computedLearner.params"
                         :navigate="false"
                         @clickedProfile="clickedProfile"
                     ></profile-bar>
@@ -57,11 +55,9 @@
                     </div>
                     <profile-bar
                         v-else
-                        :name="computedFacilitator.name"
-                        :type="computedFacilitator.params.account"
                         :smallType="true"
                         :justName="true"
-                        :routeParams="computedFacilitator.params"
+                        :profile="computedFacilitator"
                         :navigate="false"
                         @clickedProfile="clickedProfile"
                     ></profile-bar>
@@ -83,11 +79,9 @@
                     </div>
                     <profile-bar
                         v-else
-                        :name="computedParent.name"
-                        :type="computedParent.params.account"
                         :smallType="true"
                         :justName="true"
-                        :routeParams="computedParent.params"
+                        :profile="computedParent"
                         :navigate="false"
                         @clickedProfile="clickedProfile"
                     ></profile-bar>
@@ -112,12 +106,10 @@
                     <template v-if="computedProfessionals.length">
                         <profile-bar
                             v-for="professional in computedProfessionals"                            
-                            :key="professional.params.accountId"
-                            :name="professional.name"
-                            :type="professional.params.account"
+                            :key="professional.accountId"
                             :smallType="true"
                             :justName="true"
-                            :routeParams="professional.params"
+                            :profile="professional"
                             :navigate="false"
                             @clickedProfile="clickedProfile"
                         ></profile-bar>
@@ -143,12 +135,10 @@
                     <template v-if="computedSchools.length">
                         <profile-bar
                             v-for="school in computedSchools"                            
-                            :key="school.params.accountId"
-                            :name="school.name"
-                            :type="school.params.account"
+                            :key="school.accountId"
                             :smallType="true"
                             :justName="true"
-                            :routeParams="school.params"
+                            :profile="school"
                             :navigate="false"
                             @clickedProfile="clickedProfile"
                         ></profile-bar>
@@ -217,7 +207,7 @@ import { mapGetters } from 'vuex'
             computedLearner(){
                 if (this.getProfiles) {
                     return this.getProfiles.filter(profile=>{
-                        return profile.params.account === 'learner'
+                        return profile.account === 'learner'
                     })[0]
                 }
                 return null
@@ -225,7 +215,7 @@ import { mapGetters } from 'vuex'
             computedParent(){
                 if (this.getProfiles) {
                     return this.getProfiles.filter(profile=>{
-                        return profile.params.account === 'parent'
+                        return profile.account === 'parent'
                     })[0]
                 }
                 return null
@@ -233,7 +223,7 @@ import { mapGetters } from 'vuex'
             computedFacilitator(){
                 if (this.getProfiles) {
                     return this.getProfiles.filter(profile=>{
-                        return profile.params.account === 'facilitator'
+                        return profile.account === 'facilitator'
                     })[0]
                 }
                 return null
@@ -241,7 +231,7 @@ import { mapGetters } from 'vuex'
             computedProfessionals(){
                 if (this.getProfiles) {
                     return this.getProfiles.filter(profile=>{
-                        return profile.params.account === 'professional'
+                        return profile.account === 'professional'
                     })
                 }
                 return null
@@ -249,7 +239,7 @@ import { mapGetters } from 'vuex'
             computedSchools(){
                 if (this.getProfiles) {
                     return this.getProfiles.filter(profile=>{
-                        return profile.params.account === 'school'
+                        return profile.account === 'school'
                     })
                 }
                 return null

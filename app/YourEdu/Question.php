@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\ItemFilesTrait;
 use Database\Factories\QuestionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Question extends Model
 {
     //
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, 
+        HasFactory,
+        ItemFilesTrait;
     
     const IMAGE = 'IMAGE';
     const VIDEO = 'VIDEO';
@@ -27,7 +30,7 @@ class Question extends Model
     const MIN_NUMBER_OF_OPTIONS = 0;
 
     protected $fillable = [
-        'body', 'state','published_at','user_deletes','updated_at',
+        'body', 'state','published_at', 'updated_at',
         'hint','position', 'score_over', 'correct_possible_answers',
         'answer_type'
     ];
@@ -37,7 +40,6 @@ class Question extends Model
     ];
 
     protected $casts = [
-        'user_deletes' => 'json',
         'published_at' => 'datetime',
         'correct_possible_answers' => 'array',
     ];
@@ -90,12 +92,20 @@ class Question extends Model
         return $this->morphMany(Comment::class,'commentable');
     }
 
-    public function doesntRequireOptionalAnswers()
+    public function doesntRequirePossibleAnswers()
     {
         return $this->answer_type !== self::OPTION &&
             $this->answer_type !== self::FLOW && 
             $this->answer_type !== self::ARRANGE &&
             $this->answer_type !== self::TRUE_FALSE;
+    }
+
+    public function doesntRequireFiles()
+    {
+        return $this->answer_type !== self::IMAGE &&
+            $this->answer_type !== self::AUDIO && 
+            $this->answer_type !== self::VIDEO &&
+            $this->answer_type !== self::FILE;
     }
 
     public function isTrueOrFalseOptionAnswerType()
@@ -104,10 +114,22 @@ class Question extends Model
             $this->answer_type === self::TRUE_FALSE;
     }
 
+    public function isNormalAnswerType()
+    {
+        return $this->answer_type === self::NUMBER ||
+            $this->answer_type === self::SHORT_ANSWER ||
+            $this->answer_type === self::LONG_ANSWER;
+    }
+
+    public function isNotNormalAnswerType()
+    {
+        return ! $this->isNormalAnswerType();
+    }
+
     public function isArrangeFlowAnswerType()
     {
         return $this->answer_type === self::FLOW ||
-            $this->answer_type !== self::ARRANGE;
+            $this->answer_type === self::ARRANGE;
     }
 
     public function getPossibleAnswerId($option = '') : int
@@ -117,24 +139,54 @@ class Question extends Model
             ->first()?->id;
     }
 
-    public function doesntHaveOptionalAnswers()
+    public function doesntHavePossibleAnswers()
     {
         return $this->possibleAnswers->count() < 1;
     }
 
-    public function doesntHaveRequiredNumberOfOptionalAnswers()
+    public function doesntHaveCorrectPossibleAnswers()
+    {
+        if (is_null($this->correct_possible_answer)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function doesntHaveRequiredNumberOfPossibleAnswers()
     {
         return $this->possibleAnswers->count() < self::MIN_NUMBER_OF_OPTIONS;
     }
-    
-    public function allFiles()
-    {
-        $files = $this->images;
-        $files = $files->merge($this->videos);
-        $files = $files->merge($this->audios);
-        $files = $files->merge($this->files);
 
-        return $files;
+    public function hasAnswerFrom($account)
+    {
+        return $this->answers()
+            ->whereAnsweredby($account)
+            ->exists();
+    }
+
+    public function doesntHaveAnswerFrom($account)
+    {
+        return ! $this->hasAnswerFrom($account);
+    }
+
+    public function answerLike($answer)
+    {
+        return $this->answers()
+            ->where('answer', 'LIKE', "%$answer%")
+            ->first();
+    }
+
+    public function hasAnswerLike($answer)
+    {
+        return $this->answers()
+            ->where('answer', 'LIKE', "%$answer%")
+            ->exists();
+    }
+
+    public function doesntHaveAnswerLike($answer)
+    {
+        return ! $this->hasAnswerLike($answer);
     }
 
     public function scopeOrderedByPosition($query)

@@ -104,7 +104,7 @@
             
             <input type="file" ref="inputfile" 
                 @change="fileChange"
-                class="d-none">
+                class="hidden">
         </div>
         <textarea
             v-if="!blocked"

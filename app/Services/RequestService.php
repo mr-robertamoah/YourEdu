@@ -3,35 +3,36 @@
 namespace App\Services;
 
 use App\Contracts\DashboardItemContract;
+use App\DTOs\AccountDTO;
+use App\DTOs\AccountToJoinItemDTO;
 use App\DTOs\ActivityTrackDTO;
-use App\DTOs\AdmissionDTO;
 use App\DTOs\CommissionDTO;
 use App\DTOs\DiscountDTO;
+use App\DTOs\EmploymentDTO;
 use App\DTOs\FeeDTO;
 use App\DTOs\MessageDTO;
-use App\DTOs\PaymentDTO;
 use App\DTOs\RequestDTO;
 use App\DTOs\RequestSearchDTO;
 use App\DTOs\ResponseDTO;
 use App\DTOs\SalaryDTO;
 use App\Events\DeleteRequestMessage;
+use App\Events\NewAccountToJoinItem;
 use App\Events\NewRequestMessage;
 use App\Events\NewSchoolable;
-use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\RequestException;
 use App\Http\Resources\AdminResource;
 use App\Http\Resources\OwnedProfileResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\AccountRequestNotification;
 use App\Notifications\AccountResponseNotification;
-use App\Notifications\AccountsResponseNotification;
 use App\Notifications\AdminResponseNotification;
 use App\Notifications\FacilitatorResponseNotification;
+use App\Notifications\FollowRequest;
 use App\Notifications\RequestMessageNotification;
 use App\Notifications\SchoolResponseNotification;
 use App\Traits\ServiceTrait;
 use App\User;
-use App\YourEdu\ClassModel;
+use App\YourEdu\Collabo;
 use App\YourEdu\Discussion;
 use App\YourEdu\Facilitator;
 use App\YourEdu\Learner;
@@ -40,8 +41,8 @@ use App\YourEdu\ParentModel;
 use App\YourEdu\Professional;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
+use App\YourEdu\Salariable;
 use App\YourEdu\School;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -262,6 +263,33 @@ class RequestService
         return $request->requestfrom;
     }
 
+    public function createFollowRequest(RequestDTO $requestDTO)
+    {
+        $request = $this->makeRequest(
+            sender: $requestDTO->requestfrom,
+            sendee: $requestDTO->requestto,
+            requestable: $requestDTO->requestable,
+        );
+
+        $this->sendFollowNotification($requestDTO);
+
+        return $request;
+    }
+
+    private function sendFollowNotification($requestDTO)
+    {
+        $users = User::whereIn('id', $requestDTO->requestto->getAuthorizedIds())->get();
+
+        if (! $users->count()) {
+            return;
+        }
+
+        Notification::send(
+            $users,
+            new FollowRequest($requestDTO)
+        );
+    }
+
     public function createAccountResponse(ResponseDTO $responseDTO)
     {
         $request = $this->getRequest($responseDTO);
@@ -269,6 +297,8 @@ class RequestService
         $this->checkResponder($request);
 
         $this->validateResponderUsingUserId($request, $responseDTO);
+
+        // $this->checkPaymentMade($request, $requestDTO);
 
         $request = $this->setResponse($request, $responseDTO);
 
@@ -282,11 +312,15 @@ class RequestService
 
         $this->sendResponse($requestDTO);
 
-        // $this->broadcastResponse($requestDTO);
+        $this->broadcastResponse($requestDTO);
     }
 
     private function broadcastResponse(RequestDTO $requestDTO)
     {
+        if ($requestDTO->responseDTO->response === 'declined') {
+            return;
+        }
+
         $events = $this->getResponseEvents($requestDTO);
 
         foreach ($events as $event) {
@@ -297,14 +331,90 @@ class RequestService
     private function getResponseEvents(RequestDTO $requestDTO)
     {
         if ($requestDTO->action === 'learning') {
-            return;
+            return $this->getLearningResponseEvents($requestDTO);
+        }
+
+        if ($requestDTO->action === 'facilitation') {
+            return $this->getFacilitationResponseEvents($requestDTO);
+        }
+        if ($requestDTO->action === 'collaboration') {
+            return $this->getCollaborationResponseEvents($requestDTO);
         }
         
+        if ($requestDTO->action === 'admission') {
+            return $this->getAdmissionResponseEvents($requestDTO);
+        }
+        
+        return $this->getAdministrationResponseEvents($requestDTO);
+    }
+
+    private function getLearningResponseEvents($requestDTO)
+    {
+        return [
+            new NewAccountToJoinItem(
+                AccountToJoinItemDTO::createFromData(
+                    dashboardItem: $requestDTO->request->requestable,
+                    action: $requestDTO->action,
+                    message: "this learner has just joined.",
+                    account: $this->getNonOwnedbyAccountFromRequest($requestDTO->request)
+                )
+            ),
+        ];
+    }
+
+    private function getFacilitationResponseEvents($requestDTO)
+    {
+        return [
+            new NewAccountToJoinItem(
+                AccountToJoinItemDTO::createFromData(
+                    dashboardItem: $requestDTO->request->requestable,
+                    action: $requestDTO->action,
+                    message: "this facilitator has just joined.",
+                    account: $this->getNonOwnedbyAccountFromRequest($requestDTO->request)
+                )
+            ),
+        ];
+    }
+
+    private function getCollaborationResponseEvents($requestDTO)
+    {
+        $account = $this->getNonOwnedbyAccountFromRequest($requestDTO->request);
+        return [
+            new NewAccountToJoinItem(
+                AccountToJoinItemDTO::createFromData(
+                    dashboardItem: $requestDTO->request->requestable,
+                    action: $requestDTO->action,
+                    message: "this {$account} has just joined.",
+                    account: $account
+                )
+            ),
+        ];
+    }
+
+    private function getAdmissionResponseEvents($requestDTO)
+    {
+        return [
+            new NewAccountToJoinItem(
+                AccountToJoinItemDTO::createFromData(
+                    dashboardItem: $requestDTO->request->requestable,
+                    action: $requestDTO->action,
+                    message: "this learner has just joined.",
+                    account: $this->getNonOwnedbyAccountFromRequest($requestDTO->request)
+                )
+            ),
+        ];
+    }
+
+    private function getAdministrationResponseEvents($requestDTO)
+    {
+        return [
+
+        ];
     }
 
     private function completeRequestProcess($requestDTO)
     {
-        if ($requestDTO->state === 'DECLINED') {
+        if ($requestDTO->responseDTO->response === 'declined') {
             return;
         }
 
@@ -337,7 +447,7 @@ class RequestService
             $requestDTO->request, $requestDTO->responseDTO->userId
         );
 
-        if ($account->accountType === 'learner') {
+        if ($account->accountType !== 'learner') {
             $account = $this->getOtherAccountFromRequestUsingUserId(
                 $requestDTO->request, $requestDTO->responseDTO->userId
             );
@@ -354,9 +464,37 @@ class RequestService
             return;
         }
 
-        //get facilitator
-        //add facilitator to requestable
-        //if requestable owner is school, create employment
+        $requestableOwnedby = $requestDTO->request->requestable->ownedby;
+        $facilitatorAccount = $this->getMyAccountFromRequestUsingUserId(
+            $requestDTO->request, $requestDTO->responseDTO->userId
+        );
+
+        if ($facilitatorAccount->is($requestableOwnedby)) {
+            $facilitatorAccount = $this->getOtherAccountFromRequestUsingUserId(
+                $requestDTO->request, $requestDTO->responseDTO->userId
+            );
+        }
+
+        $requestDTO->request->requestable->facilitators()->attach($facilitatorAccount);
+        $requestDTO->request->requestable->save();
+
+        if ($requestableOwnedby->accountType !== 'school') {
+            return;
+        }
+        
+        $requestableOwnedby->facilitators()->attach($facilitatorAccount);
+        $requestableOwnedby->save();
+
+        (new EmploymentService)->createEmployment(
+            EmploymentDTO::new()
+                ->withEmployee($facilitatorAccount)
+                ->withEmployer($requestableOwnedby)
+                ->withSalariable(
+                    Salariable::where('salary_id', $requestDTO->request->salaries()->first()?->id)
+                        ->whereSpecificSalariable($requestableOwnedby)
+                        ->first()
+                )
+        );
     }
 
     private function completeCollaborationRequest(RequestDTO $requestDTO)
@@ -365,10 +503,21 @@ class RequestService
             return;
         }
 
-        //get my account
-        //if am owner of collaboration then i will add other account
-        //else my account will be added
+        $account = $this->getMyAccountFromRequestUsingUserId(
+            $requestDTO->request, 
+            $requestDTO->responseDTO->userId
+        );
+
+        if ($account->is($requestDTO->request->requestable->addedby)) {
+            $account = $this->getOtherAccountFromRequestUsingUserId(
+                $requestDTO->request, 
+                $requestDTO->responseDTO->userId
+            );
+        }
         
+        (new CollaborationService)->addCollaborator(
+            $requestDTO->request->requestable, $account, Collabo::ACCEPTED
+        );
     }
 
     private function completeAdmissionRequest(RequestDTO $requestDTO)
@@ -377,9 +526,71 @@ class RequestService
             return;
         }
         
-        //get learner
-        //add learner to school
-        //attach learner to grade if theres one
+        $learnerAccount = $this->getMyAccountFromRequestUsingUserId(
+            $requestDTO->request,
+            $requestDTO->responseDTO->userId
+        );
+
+        if ($learnerAccount->accountType === 'learner') {
+            $schoolAccount = $this->getOtherAccountFromRequestUsingUserId(
+                $requestDTO->request,
+                $requestDTO->responseDTO->userId
+            );
+        }
+
+        if ($learnerAccount->accountType !== 'learner') {
+            $schoolAccount = $learnerAccount;
+            $learnerAccount = $this->getOtherAccountFromRequestUsingUserId(
+                $requestDTO->request,
+                $requestDTO->responseDTO->userId
+            );
+        }
+
+        $this->completeAdmission(
+            $schoolAccount, 
+            $learnerAccount, 
+            $requestDTO
+        );
+        
+        $this->attachLearnerAndParentsToSchool(
+            $schoolAccount, 
+            $learnerAccount,
+            $requestDTO->admissionDTO->type
+        );
+        
+        if (is_null($requestDTO->admissionDTO->gradeId)) {
+            return;
+        }
+
+        (new GradeService)->gradeAttachItem(
+            $requestDTO->admissionDTO->gradeId, 
+            $learnerAccount
+        );
+    }
+
+    private function completeAdmission($school, $learner, $requestDTO)
+    {
+        if (class_basename_lower($requestDTO->request->requestable) !== 'admission') {
+            return;
+        }
+
+        $requestDTO->request->requestable->state = 'ACCEPTED';
+        $requestDTO->request->requestable->save();
+
+        (new AdmissionService)->addRelationshipsToAdmission(
+            $requestDTO->admissionDTO
+                ->withAdmission($requestDTO->request->requestable)
+                ->withSchool($school)
+                ->withLearner($learner)
+                ->withGrade(null)
+        );
+    }
+
+    private function attachLearnerAndParentsToSchool($school, $learner, $type = null)
+    {
+        $school->learners()->attach($learner, ['type' => $type]);
+
+        $school->parents()->attach($learner->parents);
     }
 
     private function completeAdministrationRequest(RequestDTO $requestDTO)
@@ -387,11 +598,43 @@ class RequestService
         if ($requestDTO->action !== 'administration') {
             return;
         }
-        
-        //get user
-        //create admin using admin data
-        //add admin to school
-        //create employment
+
+        $userAccount = $this->getMyAccountFromRequestUsingUserId(
+            $requestDTO->request,
+            $requestDTO->responseDTO->userId
+        );
+
+        if ($userAccount->accountType === 'user') {
+            $schoolAccount = $this->getOtherAccountFromRequestUsingUserId(
+                $requestDTO->request,
+                $requestDTO->responseDTO->userId
+            );
+        }
+
+        if ($userAccount->accountType !== 'user') {
+            $schoolAccount = $userAccount;
+            $userAccount = $this->getOtherAccountFromRequestUsingUserId(
+                $requestDTO->request,
+                $requestDTO->responseDTO->userId
+            );
+        }
+
+        (new AdministrationService)->createAdmin(
+            $requestDTO->administrationDTO
+                ->withSchool($schoolAccount)
+                ->withCreator($userAccount)
+        );
+
+        (new EmploymentService)->createEmployment(
+            EmploymentDTO::new()
+                ->withEmployee($userAccount)
+                ->withEmployer($schoolAccount)
+                ->withSalariable(
+                    Salariable::where('salary_id', $requestDTO->request->salaries()->first()?->id)
+                        ->whereSpecificSalariable($schoolAccount)
+                        ->first()
+                )
+        );
     }
 
     private function completeRequestSalaries($request)
@@ -404,7 +647,7 @@ class RequestService
             $salaryDTO = SalaryDTO::createFromData()
                 ->withsalary($salary)
                 ->withOwnedby(
-                    $this->getPaymentBeneficiaryFromRequest($request)
+                    $this->getNonOwnedbyAccountFromRequest($request)
                 )
                 ->withDashboardItem($request->requestable);
 
@@ -418,17 +661,49 @@ class RequestService
             return;
         }
 
-        if (class_basename_lower($request->requestable) !== 'class') {
+        if (! in_array(class_basename_lower($request->requestable), ['admission', 'class'])) {
             return;
         }
 
         foreach ($request->fees as $fee) {
+
+            $fee = $this->attachOwnedbyToFee($request, $fee);
             $feeDTO = FeeDTO::createFromData()
                 ->withFee($fee)
-                ->withClass($request->requestable);
+                ->withFeeable($request->requestable);
 
-            (new FeeService)->attachClassToFee($feeDTO);
+            (new FeeService)->attachFeeableToFee($feeDTO);
         }
+    }
+
+    private function attachOwnedbyToFee($request, $fee)
+    {
+        $ownedby = null;
+        if ($request->requestable === 'class') {
+            $ownedby = $request->requestable->ownedby;
+        }
+
+        if (is_null($ownedby)) {
+            $ownedby = $this->getAccountFromRequest($request, 'school');
+        }
+
+        $fee->ownedby()->associate($ownedby);
+        $fee->save();
+
+        return $fee;
+    }
+
+    private function getAccountFromRequest($request, $accountType)
+    {
+        if ($request->requestfrom->accountType === $accountType) {
+            return $request->requestfrom;
+        }
+        
+        if ($request->requestto->accountType === $accountType) {
+            return $request->requestto;
+        }
+
+        return null;
     }
 
     private function completeRequestCommissions($request)
@@ -441,7 +716,7 @@ class RequestService
             $commissionDTO = CommissionDTO::createFromData()
                 ->withCommission($commission)
                 ->withOwnedby(
-                    $this->getPaymentBeneficiaryFromRequest($request)
+                    $this->getNonOwnedbyAccountFromRequest($request)
                 )
                 ->withDashboardItem($request->requestable);
 
@@ -459,7 +734,7 @@ class RequestService
             $discountDTO = DiscountDTO::createFromData()
                 ->withDiscountable($request->requestable)
                 ->withOwnedby(
-                    $this->getPaymentBeneficiaryFromRequest($request)
+                    $this->getNonOwnedbyAccountFromRequest($request)
                 )
                 ->withDiscount($discount);
 
@@ -574,10 +849,10 @@ class RequestService
     )
     {
         if ($request->requestto->accountType !== "school") {
-            return "has {} your request to have him/her become an administrator for your school with name: {$request->requestfrom->profile->name}";
+            return "has {$requestDTO->responseDTO->response} your request to have him/her become an administrator for your school with name: {$request->requestfrom->profile->name}";
         }
 
-        return "has {} your request to become an administrator for the school with name: {$request->requestto->profile->name}";
+        return "has {$requestDTO->responseDTO->response} your request to become an administrator for the school with name: {$request->requestto->profile->name}";
     }
 
     private function getRequestDTO($request)
@@ -955,7 +1230,7 @@ class RequestService
         return $requests;
     }
 
-    private function getPaymentBeneficiaryFromRequest
+    private function getNonOwnedbyAccountFromRequest
     (
         Request $request,
     )
@@ -972,7 +1247,8 @@ class RequestService
             return $request->requestto;
         }
 
-        if (! $request->requestto->is($request->requestable->ownedby)) {
+        if (! $request->requestto->is($request->requestable->ownedby) &&
+            is_not_null($request->requestable->ownedby)) {
             return $request->requestto;
         }
 
@@ -1169,7 +1445,23 @@ class RequestService
     {
         $this->checkRequestReceivers($requestDTO);
 
-        return $this->makeRequestBasedOnSendeesOnly($requestDTO);
+        $requests = $this->makeRequestBasedOnSendeesOnly($requestDTO);
+
+        $school = $this->getMyAccountFromRequestUsingUserId(
+            $requests[0], 
+            $requestDTO->userId
+        );
+
+        if ($school->accountType !== 'school') {
+            $school = $this->getOtherAccountFromRequestUsingUserId(
+                $requests[0], 
+                $requestDTO->userId
+            );
+        }
+
+        $requests = $this->attachItemToRequestsRequestable($requests, $school);
+
+        return $requests;
     }
 
     private function makeRequestsBasedOnItemsOnly($requestDTO)
@@ -1262,10 +1554,26 @@ class RequestService
 
         $this->checkRequest($request);
 
-        $request->requestto()->associate($sendee);
+        $request = $this->associateRequesttoToRequest($request, $sendee);
+        
+        $request = $this->associateRequesttoToRequest($request, $requestable);
+
+        return $request;
+    }
+
+    private function associateRequestableToRequest($request, $requestable)
+    {
         $request->requestable()->associate($requestable);
         $request->save();
+        
+        return $request;
+    }
 
+    private function associateRequesttoToRequest($request, $requestto)
+    {
+        $request->requestto()->associate($requestto);
+        $request->save();
+        
         return $request;
     }
 
@@ -1453,11 +1761,14 @@ class RequestService
 
     private function getRequestNotificationMessage($messageDTO)
     {
-        if ($messageDTO->toable->accountType === 'school') {
-            return "please check requests from your Nav. a request has a new message";
+        $extra =  "please check requests in school's dashboard.";
+        if ($messageDTO->toable->accountType !== 'school') {
+            $extra = "please check requests from your Nav.";
         }
 
-        return "please check requests in school's dashboard. a request has a new message";
+        $message = unserialize($messageDTO->message->messageable->data)->message;
+
+        return "new message from {$messageDTO->message->fromable->name} for request with message {$message}. {$extra}";
     }
 
     public function searchAccounts
@@ -1512,27 +1823,15 @@ class RequestService
 
     public function getMessages($requestId)
     {
-        $request = $this->getModel('request',$requestId);
-
-        return $request->messages()->latest()->paginate(5);
+        return (new MessageService)->getMessagesBasedOnItem(
+            MessageDTO::new()->addData(item: 'request', itemId: $requestId)
+        );
     }
 
     private function attachToSchool($school,$account)
     {
         $account->schools()->attach($school);
         $account->save();
-    }
-
-    private function createEmployment($employee,$employer,array $salary)
-    {
-        $employment = $employee->employed()->create([
-            'start_date' => now()
-        ]);
-        $employment->employer()->associate($employer);
-        $employment->salaries()->create([
-            'amount' => $salary['amount'],
-            'period' => $salary['period'],
-        ]);
     }
 
     public function getUserRequests($id)
@@ -1567,17 +1866,18 @@ class RequestService
         return $request->sortByDesc('updated_at');
     }
     
-    public function getAccountRequests($account,$accountId)
+    public function getAccountRequests(AccountDTO $accountDTO)
     {
-        $mainAccount = $this->getModel($account,$accountId);
+        $account = $this->getModel($accountDTO->account,$accountDTO->accountId);
 
-        $requests = new Collection();
-        $requests = $requests->merge($mainAccount->requestsSent()
-            ->where('requestable_type',null)->get());
-        $requests = $requests->merge($mainAccount->requestsReceived()
-            ->where('requestable_type',null)->get());
-
-        return $requests->sortByDesc('updated_at');
+        return Request::whereRequestableTypeNotIn([
+            "App\\YourEdu\\Follow",
+            "App\\YourEdu\\Discussion",
+            "App\\YourEdu\\Message",
+        ])
+        ->whereSentByOrSentTo($account)
+        ->orderByDesc('updated_at')
+        ->get();
     }
 
     public function declineRequest($requestId,$id)

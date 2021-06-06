@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Resources\Json\JsonResource;
 use \Debugbar;
 
-class DiscussionPostResource extends JsonResource
+class HomeItemResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -15,6 +15,12 @@ class DiscussionPostResource extends JsonResource
      */
     public function toArray($request)
     {
+        $itemType = class_basename_lower($this->resource);
+
+        if ($itemType === 'assessment') {
+            return new AssessmentResource($this->resource);
+        }
+
         $images = null;
         $videos = null;
         $audios = null;
@@ -45,10 +51,10 @@ class DiscussionPostResource extends JsonResource
         $data['flags'] = FlagResource::collection($this->flags);
         $data['saves'] = SaveResource::collection($this->beenSaved);
         $data['attachments'] = PostAttachmentResource::collection($this->attachments);
-        $data['comments'] = CommentResource::collection($this->comments()
-            ->orderby('updated_at','desc')->take(1)->get());
+        $data['comments'] = CommentResource::collection($this->latestComments());
+        $data['commentsCount'] = $this->commentsCount();
 
-        if ($this->addedby) {
+        if ($itemType === 'post') {
             $type = null;
             $typeName = null;
             if ($this->books()->exists()) {
@@ -75,27 +81,24 @@ class DiscussionPostResource extends JsonResource
             $data['type'] = $type;
             $data['typeName'] = $typeName;
             $data['addedby'] = new UserAccountResource($this->addedby);
-            $data['comments_number'] = $this->comments()->count();
-        } else {
-            $data['title'] = $this->title;
-            $data['restricted'] = $this->restricted;
-            $data['type'] = $this->type;
-            $data['allowed'] = $this->allowed;
-            $data['preamble'] = $this->preamble;
-            $data['isDiscussion'] = true;
-            $data['raisedby_user_id'] = $this->raisedby->user_id;
-            $data['raisedby_id'] = $this->raisedby_id;
-            $data['pendingJoinParticipants'] = DiscussionPendingParticipantsResource::collection(
-                $this->pendingJoinParticipants->pluck('requestfrom'));
-            $data['raisedby_type'] = $this->raisedby_type;
-            $data['raisedby'] = $this->raisedby->name;
-            $data['profile_url'] = $this->raisedby->profile->url;
-            $data['participants'] = DiscussionParticipantResource::collection($this->participants);
-            $data['messages_count'] = $this->messages()->count();
-            $data['messages'] = DiscussionMessageResource::collection($this->messages()
-                ->where('state','ACCEPTED')
-                ->orderby('updated_at','desc')->take(2)->get());
+
+            return $data;
         }
+
+        $data['title'] = $this->title;
+        $data['restricted'] = $this->restricted;
+        $data['type'] = $this->type;
+        $data['allowed'] = $this->allowed;
+        $data['preamble'] = $this->preamble;
+        $data['isDiscussion'] = true;
+        $data['pendingJoinParticipants'] = DiscussionPendingParticipantsResource::collection(
+            $this->pendingJoinParticipants->pluck('requestfrom'));
+        $data['raisedby'] = new UserAccountResource($this->raisedby);
+        $data['participants'] = DiscussionParticipantResource::collection($this->participants);
+        $data['messages_count'] = $this->messages()->count();
+        $data['messages'] = DiscussionMessageResource::collection($this->messages()
+            ->where('state','ACCEPTED')
+            ->orderby('updated_at','desc')->take(2)->get());
 
         return $data;
     }

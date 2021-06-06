@@ -52,7 +52,7 @@
                                     ></grey-button>
                                 </div>
                                 <div class="info-section">
-                                    {{type === 'public' ? 
+                                    {{discussionData.type === 'public' ? 
                                         'this is the default value. it means any account of the right type can join this discussion' : 
                                         'this means you will have to send out requests to accounts'}}
                                 </div>
@@ -225,7 +225,7 @@
                                     ></file-preview>
                                 </template>
                             </fade-up>
-                            <input type="file" class="d-none" 
+                            <input type="file" class="hidden" 
                                 @change="fileChange" 
                                 ref="inputfile"
                                 :accept="fileAccept"
@@ -242,10 +242,8 @@
                                 </span>
                                 <div :key="key" v-for="(profile,key) in computedProfiles">
                                     <profile-bar
-                                        :name="profile.name"
-                                        :type="profile.params.account"
                                         :smallType="true"
-                                        :routeParams="profile.params"
+                                        :profile="profile"
                                         :navigate="false"
                                         @clickedProfile="clickedProfile"
                                     ></profile-bar>
@@ -349,12 +347,6 @@ import { mapGetters } from 'vuex';
                 buttonText: 'create',
             }
         },
-        computed: {
-            ...mapGetters(['getProfiles']),
-            computedProfiles(){
-                return this.getProfiles ? this.getProfiles : []
-            },
-        },
         watch: {
             showFilePreview(newValue) {
                 if (!newValue) {
@@ -388,6 +380,12 @@ import { mapGetters } from 'vuex';
                     this.discussionData.type = 'private'
                 }
             }
+        },
+        computed: {
+            ...mapGetters(['getProfiles']),
+            computedProfiles(){
+                return this.getProfiles ? this.getProfiles : []
+            },
         },
         methods: {
             clickedRemoveAttachment(data){
@@ -486,11 +484,11 @@ import { mapGetters } from 'vuex';
                 this.showMediaCapture = false
             },
             clickedCreate(){
-                if (!this.title.length) {
+                if (!this.discussionData.title.length) {
                     this.errorTitle = true
                     this.scrollUp = true
                     this.alertDanger = true
-                    this.alertMessage = 'the title of the discussion is needed'
+                    this.alertMessage = 'the title of the discussion is required'
                     return 
                 }
                 if (this.auto) {
@@ -554,9 +552,11 @@ import { mapGetters } from 'vuex';
             fileChange(){
                 if (this.$refs.inputfile.files.length + this.discussionData.mediaFiles.length > 3) {
                     this.fileNumberError = true
+
                     setTimeout(() => {
                         this.fileNumberError = false
                     }, 4000);
+                    
                     this.$refs.inputfile.value = ''
                     return
                 }

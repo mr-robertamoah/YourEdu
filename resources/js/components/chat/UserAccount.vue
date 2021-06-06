@@ -12,7 +12,7 @@
         <div class="other-section">
             <div class="top">
                 <div class="name">{{account.name}}</div>
-                <div class="account">{{account.params.account}}</div>
+                <div class="account">{{account.account}}</div>
             </div>
             <div class="bottom">
                 <action-button

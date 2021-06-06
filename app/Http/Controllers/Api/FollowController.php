@@ -2,32 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\NewFollow;
+use App\DTOs\FollowDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\FollowerResource;
 use App\Http\Resources\FollowingResource;
 use App\Http\Resources\FollowRequestResource;
 use App\Http\Resources\FollowResource;
-use App\Http\Resources\NotificationResource;
-use App\Http\Resources\UserAccountResource;
-use App\Notifications\FollowRequest;
 use App\Services\FollowService;
-use App\User;
-use App\YourEdu\Facilitator;
-use App\YourEdu\Follow;
-use App\YourEdu\Learner;
-use App\YourEdu\ParentModel;
-use App\YourEdu\Professional;
-use App\YourEdu\Request as YourEduRequest;
-use App\YourEdu\School;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use \Debugbar;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Facades\Notification;
 
 class FollowController extends Controller
 {
@@ -38,23 +22,21 @@ class FollowController extends Controller
         return FollowRequestResource::collection($requests);
     }
 
-    public function follow(Request $request, $account, $accountId)
+    public function follow(Request $request)
     {
         try {
             DB::beginTransaction();
-            $followArray = (new FollowService())->follow($account,$accountId,
-                $request->account,$request->accountId,auth()->id());
+
+            $follow = (new FollowService())->follow(
+                FollowDTO::createFromRequest($request)
+            );
             
             DB::commit();
-            Notification::send($followArray['users'],
-                new FollowRequest($followArray['followRequestInfo']));
-            broadcast(new NewFollow(new FollowerResource($followArray['follow']),
-                $followArray['userId'],'followed'))
-                ->toOthers();
+            
             return response()->json([
                 'message' => 'successful',
-                'follow' => new FollowResource($followArray['follow']),
-                'following' => new FollowingResource($followArray['follow']),
+                'follow' => new FollowResource($follow),
+                'following' => new FollowingResource($follow),
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -66,11 +48,15 @@ class FollowController extends Controller
     {
         try {
             DB::beginTransaction();
-            $message = (new FollowService())->declineFollowRequest($request->account,
-                $request->accountId, $request->myAccount, $request->myAccountId);
+
+            (new FollowService())->declineFollowRequest(
+                FollowDTO::createFromRequest($request)
+            );
+            
             DB::commit();
+
             return response()->json([
-                'message' => $message,
+                'message' => 'successful',
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -82,19 +68,17 @@ class FollowController extends Controller
     {
         try {
             DB::beginTransaction();
-            $followArray = (new FollowService())->followBack($request->account,
-                $request->accountId,$request->myAccount,$request->myAccountId,
-                auth()->id());
+
+            $follow = (new FollowService())->followBack(
+                FollowDTO::createFromRequest($request)
+            );
+
             DB::commit();
-            // Notification::send($followArray['users'],
-            //     new FollowRequest($followArray['follow']->id));
-            broadcast(new NewFollow(new FollowerResource($followArray['follow']),
-                $request->userId,'followed back'))
-                ->toOthers();
+            
             return response()->json([
                 'message' => 'successful',
-                'follow' => new FollowResource($followArray['follow']),
-                'following' => new FollowingResource($followArray['follow']),
+                'follow' => new FollowResource($follow),
+                'following' => new FollowingResource($follow),
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -102,16 +86,18 @@ class FollowController extends Controller
         }       
     }
 
-    public function unfollow($follow)
+    public function unfollow(Request $request)
     {
         try {
 
             DB::beginTransaction();
-            $followInfo = (new FollowService())->unfollow($follow,auth()->id());
+            
+            (new FollowService)->unfollow(
+                FollowDTO::createFromRequest($request)
+            );
 
-            Notification::send($followInfo['users'],
-                new FollowRequest($followInfo['unfollowRequestInfo']));
             DB::commit();
+
             return response()->json([
                 'message' => "successful"
             ]);

@@ -41,7 +41,7 @@
                             :middle="true"
                             @removeFile="clickedRemoveFile"
                         ></file-preview>
-                        <canvas ref="mediacanvas" class="d-none"></canvas>
+                        <canvas ref="mediacanvas" class="hidden"></canvas>
                         <div class="switch"
                             @click="clickedSwitch"
                             v-if="devices.length > 1 && !file"

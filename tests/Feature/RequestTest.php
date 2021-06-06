@@ -2,18 +2,26 @@
 
 namespace Tests\Feature;
 
+use App\DTOs\AdministrationDTO;
+use App\DTOs\AdmissionDTO;
+use App\DTOs\CommissionDTO;
 use App\DTOs\DiscountDTO;
+use App\DTOs\FeeDTO;
 use App\DTOs\RequestDTO;
 use App\DTOs\SalaryDTO;
 use App\Events\DeleteRequestMessage;
+use App\Events\NewAccountToJoinItem;
 use App\Events\NewRequestMessage;
 use App\Notifications\AccountRequestNotification;
 use App\Notifications\AccountResponseNotification;
 use App\Notifications\RequestMessageNotification;
+use App\Services\CommissionService;
 use App\Services\DiscountService;
+use App\Services\FeeService;
 use App\Services\SalaryService;
 use App\User;
 use App\YourEdu\Admin;
+use App\YourEdu\Admission;
 use App\YourEdu\ClassModel;
 use App\YourEdu\Collaboration;
 use App\YourEdu\Commission;
@@ -26,6 +34,7 @@ use App\YourEdu\Learner;
 use App\YourEdu\Message;
 use App\YourEdu\ParentModel;
 use App\YourEdu\Professional;
+use App\YourEdu\Profile;
 use App\YourEdu\Request;
 use App\YourEdu\Salariable;
 use App\YourEdu\Salary;
@@ -992,12 +1001,12 @@ class RequestTest extends TestCase
                     'amount' => 200
                 ]
             ]),
-            'admissionData' => json_encode([
+            'admissionData' => json_encode(
                 (object) [
                     'gradeId' => $grade->id,
                     'type' => 'virtual'
                 ]
-            ]),
+            ),
             'receivers' => json_encode([
                 (object) [
                     'account' => $school->accountType,
@@ -1040,7 +1049,6 @@ class RequestTest extends TestCase
             ->create();
         $school->admins()->attach($admin);
         $school->save();
-
 
         $file = UploadedFile::fake()->image('new_image.jpg');
         $data = [
@@ -1362,6 +1370,7 @@ class RequestTest extends TestCase
     public function test_can_accept_to_learning_request_as_learner()
     {
         Notification::fake();
+        Event::fake();
         $school = School::factory()
             ->state([
                 'company_name' => $this->faker->name,
@@ -1424,7 +1433,9 @@ class RequestTest extends TestCase
 
         $this->assertTrue('accepted' === strtolower(Request::find($request->id)->state));
         $this->assertEquals(1, $learner->refresh()->ownedDiscounts()->count());
+        $this->assertEquals(1, $course->refresh()->learners()->count());
         Notification::assertTimesSent(2, AccountResponseNotification::class);
+        Event::assertDispatched(NewAccountToJoinItem::class);
     }
 
     public function test_can_decline_to_facilitation_request_as_facilitator()
@@ -1496,6 +1507,7 @@ class RequestTest extends TestCase
     public function test_can_accept_to_facilitation_request_as_facilitator()
     {
         Notification::fake();
+        Event::fake();
         $school = School::factory()
             ->state([
                 'company_name' => $this->faker->name,
@@ -1525,6 +1537,7 @@ class RequestTest extends TestCase
             ])
             ->create();
         $course->ownedby()->associate($school);
+        $course->save();
 
         $request = Request::factory()->create();
         $request->requestfrom()->associate($school);
@@ -1557,8 +1570,437 @@ class RequestTest extends TestCase
         $this->assertTrue('accepted' === strtolower(Request::find($request->id)->state));
 
         $this->assertEquals(1,$facilitator->refresh()->ownedSalaries()->count());
+        $this->assertEquals(1,$facilitator->refresh()->employed()->count());
+        $this->assertEquals(1, $course->refresh()->facilitators()->count());
+        Notification::assertTimesSent(2, AccountResponseNotification::class);
+        Event::assertDispatched(NewAccountToJoinItem::class);
+    }
+
+    public function test_can_decline_to_collaboration_request_as_facilitator()
+    {
+        Notification::fake();
+        Event::fake();
+        $addedby = Facilitator::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->forUser()
+            ->create();
+        
+        $facilitator = Facilitator::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
+            ->create();
+
+        $collaboration = Collaboration::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'addedby_type' => $addedby::class,
+                'addedby_id' => $addedby->id,
+            ])
+            ->create();
+
+        $request = Request::factory()->create();
+        $request->requestfrom()->associate($addedby);
+        $request->requestto()->associate($facilitator);
+        $request->requestable()->associate($collaboration);
+        
+        $commission = (new CommissionService)->createCommission(
+            CommissionDTO::createFromData(
+                percentageOwned: 20,
+            )->withAddedby($addedby)
+        );
+
+        $request->commissions()->attach($commission);
+        $request->data = RequestDTO::createFromData(action: 'collaboration');
+        $request->save();
+
+        $data = [
+            'requestId' => $request->id,
+            'response' => 'declined',
+        ];
+
+        $response = $this->postJson('api/request/account/respond', $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful();
+
+        $this->assertTrue('declined' === strtolower(Request::find($request->id)->state));
+
+        Notification::assertTimesSent(1, AccountResponseNotification::class);
+    }
+
+    public function test_can_accept_to_collaboration_request_as_professional()
+    {
+        Notification::fake();
+        Event::fake();
+        $addedby = Facilitator::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->forUser()
+            ->create();
+        
+        $professional = Professional::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
+            ->create();
+
+        $collaboration = Collaboration::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'addedby_type' => $addedby::class,
+                'addedby_id' => $addedby->id,
+            ])
+            ->create();
+
+        $request = Request::factory()->create();
+        $request->requestfrom()->associate($addedby);
+        $request->requestto()->associate($professional);
+        $request->requestable()->associate($collaboration);
+        
+        $commission = (new CommissionService)->createCommission(
+            CommissionDTO::createFromData(
+                percentageOwned: 20,
+            )->withAddedby($addedby)
+        );
+
+        $request->commissions()->attach($commission);
+        $request->data = RequestDTO::createFromData(action: 'collaboration');
+        $request->save();
+
+        $data = [
+            'requestId' => $request->id,
+            'response' => 'accepted',
+        ];
+
+        $response = $this->postJson('api/request/account/respond', $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful();
+
+        $this->assertTrue('accepted' === strtolower(Request::find($request->id)->state));
+        
+        $this->assertEquals(1,$professional->refresh()->ownedCommissions()->count());
+        $this->assertEquals(1,$professional->refresh()->ownedCommissions()->whereCommissionable($collaboration)->count());
+        $this->assertEquals(1, Collaboration::whereCollaborationable($professional)->count());
+        Notification::assertTimesSent(1, AccountResponseNotification::class);
+        Event::assertDispatched(NewAccountToJoinItem::class);
+    }
+
+    public function test_can_decline_to_admission_request_as_parent()
+    {
+        Notification::fake();
+        $school = School::factory()
+            ->state([
+                'company_name' => $this->faker->name,
+                'type' => 'VIRTUAL'
+            ])
+            ->for(User::factory(), 'owner')
+            ->create();
+        $admin = Admin::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->forUser()
+            ->create();
+        $school->admins()->attach($admin);
+        $school->save();
+        
+        $learner = learner::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->forUser()
+            ->create();
+        
+        $parent = ParentModel::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $parent->wards()->attach($learner);
+        $parent->save();
+        
+        $grade = Grade::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->create();
+        
+        $admission = Admission::factory()
+            ->state([
+                'type' => 'VIRTUAL',
+                'state' => 'PENDING',
+                'grade_id' => $grade->id,
+            ])
+            ->create();
+
+        $request = Request::factory()->create();
+        $request->requestfrom()->associate($school);
+        $request->requestto()->associate($learner);
+        $request->requestable()->associate($admission);
+        $request->data = RequestDTO::createFromData(action: 'admission')
+            ->withAdmissionDTO(AdmissionDTO::createFromData(
+                type: 'virtual',
+                gradeId: $grade->id,
+            ));
+        $request->save();
+
+        $data = [
+            'requestId' => $request->id,
+            'response' => 'declined',
+        ];
+
+        $response = $this->postJson('api/request/account/respond', $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful();
+
+        $this->assertTrue('declined' === strtolower(Request::find($request->id)->state));
 
         Notification::assertTimesSent(2, AccountResponseNotification::class);
+    }
+
+    public function test_can_accept_to_admission_request_as_parent()
+    {
+        Notification::fake();
+        Event::fake();
+        $school = School::factory()
+            ->state([
+                'company_name' => $this->faker->name,
+                'type' => 'VIRTUAL'
+            ])
+            ->for(User::factory(), 'owner')
+            ->create();
+        Profile::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $school->user_id,
+                'profileable_type' => $school::class,
+                'profileable_id' => $school->id,
+            ])->create();
+
+        $admin = Admin::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->forUser()
+            ->create();
+        $school->admins()->attach($admin);
+        $school->save();
+        
+        $learner = learner::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->forUser()
+            ->create();
+        
+        $parent = ParentModel::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $parent->wards()->attach($learner);
+        $parent->save();
+        
+        $grade = Grade::factory()
+            ->state([
+                'name' => $this->faker->name,
+            ])
+            ->create();
+        
+        $admission = Admission::factory()
+            ->state([
+                'type' => 'VIRTUAL',
+                'state' => 'PENDING',
+                'grade_id' => $grade->id,
+            ])
+            ->create();
+
+        $request = Request::factory()->create();
+        $request->requestfrom()->associate($school);
+        $request->requestto()->associate($learner);
+        $request->requestable()->associate($admission);
+        $request->data = RequestDTO::createFromData(action: 'admission')
+            ->withAdmissionDTO(AdmissionDTO::createFromData(
+                type: 'virtual',
+                gradeId: $grade->id,
+            ));
+        
+        $fee = (new FeeService)->set(
+            FeeDTO::createFromData(
+                amount: 200,
+                attachFeeables: false,
+            )->withAddedby($school)
+        );
+
+        $request->fees()->attach($fee);
+        $request->save();
+
+        $data = [
+            'requestId' => $request->id,
+            'response' => 'accepted',
+        ];
+
+        $response = $this->postJson('api/request/account/respond', $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful();
+
+        $this->assertTrue('accepted' === strtolower(Request::find($request->id)->state));
+
+        $this->assertEquals(1, Admission::where('learner_id', $learner->id)
+            ->where('grade_id', $grade->id)
+            ->where('school_id', $school->id)
+            ->where('state', 'ACCEPTED')
+            ->count()
+        );
+        $this->assertEquals(1, $school->refresh()->learners()->count());
+        $this->assertEquals(1, $school->refresh()->parents()->count());
+        $this->assertEquals(1, $school->refresh()->fees()->count());
+        Notification::assertTimesSent(2, AccountResponseNotification::class);
+        Event::assertDispatched(NewAccountToJoinItem::class);
+    }
+
+    public function test_can_decline_to_administration_request_as_school()
+    {
+        Notification::fake();
+        $school = School::factory()
+            ->state([
+                'company_name' => $this->faker->name,
+                'type' => 'VIRTUAL'
+            ])
+            ->for(User::factory(), 'owner')
+            ->create();
+        $admin = Admin::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $school->admins()->attach($admin);
+        $school->save();
+        
+        $user = User::factory()->create();
+
+        $request = Request::factory()->create();
+        $request->requestfrom()->associate($user);
+        $request->requestto()->associate($school);
+        $request->requestable()->associate($school);
+        $request->data = RequestDTO::createFromData(action: 'administration')
+            ->withAdministrationDTO(AdministrationDTO::createFromData(
+                title: 'marketer',
+                role: 'schooladmin',
+                name: $this->faker->name
+            ));
+        $request->save();
+
+        $data = [
+            'requestId' => $request->id,
+            'response' => 'declined',
+        ];
+
+        $response = $this->postJson('api/request/account/respond', $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful();
+
+        $this->assertTrue('declined' === strtolower(Request::find($request->id)->state));
+
+        Notification::assertTimesSent(1, AccountResponseNotification::class);
+    }
+
+    public function test_can_accept_to_administration_request_as_school()
+    {
+        Notification::fake();
+        Event::fake();
+        $school = School::factory()
+            ->state([
+                'company_name' => $this->faker->name,
+                'type' => 'VIRTUAL'
+            ])
+            ->for(User::factory(), 'owner')
+            ->create();
+        Profile::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $school->user_id,
+                'profileable_type' => $school::class,
+                'profileable_id' => $school->id,
+            ])->create();
+        $admin = Admin::factory()
+            ->state([
+                'name' => $this->faker->name,
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $school->admins()->attach($admin);
+        $school->save();
+        
+        $user = User::factory()->create();
+
+        $request = Request::factory()->create();
+        $request->requestfrom()->associate($user);
+        $request->requestto()->associate($school);
+        $request->requestable()->associate($school);
+        $request->data = RequestDTO::createFromData(action: 'administration')
+            ->withAdministrationDTO(AdministrationDTO::createFromData(
+                title: 'marketer',
+                role: 'schooladmin',
+                name: $this->faker->name
+            ));
+        
+        $commission = (new CommissionService)->createCommission(
+            CommissionDTO::createFromData(
+                percentageOwned: 20,
+            )->withAddedby($user)
+        );
+
+        $request->commissions()->attach($commission);
+        
+        $salary = (new SalaryService)->set(
+            SalaryDTO::createFromData(
+                amount: 200,
+                period: 'month',
+            )->withAddedby($user)
+        );
+
+        $request->salaries()->attach($salary);
+        $request->save();
+
+        $data = [
+            'requestId' => $request->id,
+            'response' => 'accepted',
+        ];
+
+        $response = $this->postJson('api/request/account/respond', $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful();
+
+        $this->assertTrue('accepted' === strtolower(Request::find($request->id)->state));
+
+        $this->assertEquals(1, $user->refresh()->ownedCommissions()->count());
+        $this->assertEquals(1, $user->refresh()->ownedSalaries()->count());
+        $this->assertEquals(1, $user->refresh()->employed()->count());
+        $this->assertEquals(1, $user->refresh()->admins()->where('role', 'SCHOOLADMIN')->count());
+        $this->assertEquals(1, Salariable::whereSpecificSalariable($school)->count());
+        Notification::assertTimesSent(1, AccountResponseNotification::class);
+        
     }
 
 }

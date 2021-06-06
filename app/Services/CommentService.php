@@ -261,7 +261,7 @@ class CommentService
     
     public function getComments(CommentDTO $commentDTO)
     {
-        $commentable = $this->getModel($commentDTO->item,$$commentDTO->itemId);
+        $commentable = $this->getModel($commentDTO->item,$commentDTO->itemId);
         
         return $commentable->comments()->latest()->get();
     }

@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\ConversationResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,20 +16,12 @@ class ConversationResponse implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $conversation;
-    public $userId;
-    public $response;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($conversation, $userId, $response)
-    {
-        $this->conversation = $conversation;
-        $this->userId = $userId;
-        $this->response = $response;
-    }
+    public function __construct(private $conversationDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -37,7 +30,7 @@ class ConversationResponse implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.message.{$this->userId}");
+        return new PrivateChannel("youredu.message.{$this->conversationDTO->otherChattingAccount->user_id}");
     }
     
     public function broadcastAs()
@@ -48,8 +41,8 @@ class ConversationResponse implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'conversation' => $this->conversation,
-            'response' => $this->response,
+            'conversation' => new ConversationResource($this->conversationDTO->conversation),
+            'response' => $this->conversationDTO->methodType,
         ];
     }
 }

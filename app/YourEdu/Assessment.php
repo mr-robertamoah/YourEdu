@@ -2,6 +2,10 @@
 
 namespace App\YourEdu;
 
+use App\Traits\FlaggableTrait;
+use App\Traits\HasCommentsTrait;
+use App\Traits\HasParticipantsTrait;
+use App\Traits\HasSocialMediaTrait;
 use Database\Factories\AssessmentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,17 +13,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Assessment extends Model
 {
-    //
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, 
+        HasFactory,
+        FlaggableTrait,
+        HasSocialMediaTrait,
+        HasParticipantsTrait,
+        HasCommentsTrait;
+
+    const MARKERS_ACCOUNT_TYPES = ['professional', 'facilitator'];
 
     protected $fillable = [
         'name', 'description', 'total_mark','duration',
-        'published_at','due_at', 'type', 'restricted'
+        'published_at','due_at', 'type', 'social'
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
-        'restricted' => 'bool',
         'due_at' => 'datetime',
     ];
 
@@ -140,6 +149,11 @@ class Assessment extends Model
         return $this->morphMany(Discussion::class,'discussionfor');
     }
 
+    public function attachments()
+    {
+        return $this->morphMany(PostAttachment::class,'attachable');
+    }
+
     public function discussion()
     {
         return $this->discussions->first();
@@ -170,19 +184,30 @@ class Assessment extends Model
 
     public function items()
     {
-        return Assessmentable::where('assessment_id', $this->id)
-            ->has('assessmentable')->get()
+        return Assessmentable::query()
+            ->where('assessment_id', $this->id)
+            ->whereNotMarker()
+            ->get()
+            ->pluck('assessmentable');
+    }
+
+    public function markers()
+    {
+        return Assessmentable::query()
+            ->where('assessment_id', $this->id)
+            ->whereMarker()
+            ->get()
             ->pluck('assessmentable');
     }
 
     public function doesntHaveSpecificAssessmentable($assessmentable, $itemable)
     {
         return is_null(
-            $this->specificAssesmentable($assessmentable, $itemable)
+            $this->specificAssessmentable($assessmentable, $itemable)
         );
     }
 
-    public function specificAssesmentable($assessmentable, $itemable)
+    public function specificAssessmentable($assessmentable, $itemable)
     {
         return $this->assessmentables()
             ->where('assessmentable_type', $assessmentable::class)
@@ -248,6 +273,38 @@ class Assessment extends Model
         ) < $this->assessmentSections->count();
     }
 
+    public function isSocial()
+    {
+        return $this->social;
+    }
+
+    public function isNotSocial()
+    {
+        return ! $this->isSocial();
+    }
+
+    public function isMarker($userId)
+    {
+        return $this->assessmentables()
+            ->whereMarker()
+            ->whereAssessmentableUser($userId)
+            ->exists();
+    }
+
+    public function isNotMarker($userId)
+    {
+        return ! $this->isMarker($userId);
+    }
+
+    public function scopeWherePublished($query)
+    {
+        return $query->where(function($query) {
+            $query
+                ->whereNull('published_at')
+                ->orWhereDate('published_at', '<=' , now());
+        });
+    }
+
     public function scopeSearchItems($query, $search)
     {
         return $query->where(function($q) use ($search){
@@ -260,14 +317,35 @@ class Assessment extends Model
     {
         return $query->where(function($query) use ($userId) {
             $query->whereHasMorph('addedby', '*', function($query, $type) use ($userId) {
-                $column = 'user_id';
-                if ($type === 'App\\YourEdu\\School') {
-                    $column = 'owner_id';
-                }
-
-                $query->where($column,'!=',$userId);
+                $query->whereNotUser($userId);
             });
         });
+    }
+
+    public function scopeWithRelations($query)
+    {
+        return $query->with([
+            'addedby', 'attachments', 
+            'assessmentSections' => function($query) {
+                $query->with([
+                    'questions' => function($query) {
+                        $query->with([
+                            'images', 'videos', 'audios', 'files', 'possibleAnswers'
+                        ]);
+                    }
+                ]);
+            }
+        ]);
+    }
+
+    public function scopeWhereNotSocial($query)
+    {
+        return $query->wherehas('assessmentables');
+    }
+
+    public function scopeWhereSocial($query)
+    {
+        return $query->whereDoesntHave('assessmentables');
     }
 
     protected static function newFactory()

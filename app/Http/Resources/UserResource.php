@@ -24,27 +24,27 @@ class UserResource extends JsonResource
 
         $profiles = $this->profiles;
         $profiles = $profiles->merge(Profile::whereHasMorph('profileable','App\YourEdu\School',function($query){
-                $query->hasMyAdmin($this->id);
+                $query->whereAdminByUserId($this->id);
             })->get());
 
         return [
-            'full_name' => $this->full_name,
+            'fullName' => $this->name,
             'username' => $this->username,
             'secret_answer' => $this->secret_answer,
             'dob' => $this->dob,
             'age' => $this->age,
             'bans' => BanResource::collection($this->pendingAndServedBans()),
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
-            'other_names' => $this->other_names,
+            'firstName' => $this->first_name,
+            'lastName' => $this->last_name,
+            'otherNames' => $this->other_names,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'is_superadmin' => $this->is_superadmin,
-            'is_supervisoradmin' => $this->is_supervisoradmin,
+            'isSuperadmin' => $this->is_superadmin,
+            'isSupervisoradmin' => $this->is_supervisoradmin,
             'id' => $this->id,
             'gender' => $this->gender,
             'email' => $this->email,
-            'email_verified_at' => $this->email_verified_at,
+            'emailVerifiedAt' => $this->email_verified_at,
             'profiles' => OwnedProfileResource::collection($profiles),
             'admin' => $admin ? new AdminResource($admin) : null
         ];

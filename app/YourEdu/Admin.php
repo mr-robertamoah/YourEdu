@@ -3,6 +3,7 @@
 namespace App\YourEdu;
 
 use App\Traits\AccountSalariesTrait;
+use App\Traits\ModelTrait;
 use App\User;
 use Database\Factories\AdminFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,13 +15,17 @@ class Admin extends Model
     //
     use SoftDeletes, 
         HasFactory,
-        AccountSalariesTrait;
+        AccountSalariesTrait,
+        ModelTrait;
     
     const SUPERADMIN = 'SUPERADMIN';
     const SUPERVISOR = 'SUPERVISOR';
     const CLASSADMIN = 'CLASSADMIN';
     const SCHOOLADMIN = 'SCHOOLADMIN';
     const GROUPADMIN = 'GROUPADMIN';
+    const STATES = ['ACTIVE','SUSPENDED'];
+
+    public $accountType = 'admin';
 
     protected $fillable = [
         'user_id','name','role','level','title','description'
@@ -183,6 +188,26 @@ class Admin extends Model
     public function addedAudio()
     {
         return $this->morphMany(Audio::class,'addedby');
+    }
+
+    public function isSuperadmin()
+    {
+        return $this->role === 'SUPERADMIN';
+    }
+
+    public function isSupervisoradmin()
+    {
+        return $this->role === 'SUPERVISOR';
+    }
+
+    public function isSchooladmin()
+    {
+        return $this->role === 'SCHOOLADMIN';
+    }
+
+    public function isNotAdult()
+    {
+        return $this->user->age < User::MINIMUM_ADULT_AGE;
     }
 
     public function scopewhereYourEduAdminByUserId($query, $userId)

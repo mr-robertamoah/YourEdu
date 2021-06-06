@@ -170,20 +170,7 @@ const mutations = {
     ///////////////////////////////////////////////////////// accounts
 
     ACCOUNT_CREATE_SUCCESS(state,data){
-        // if (data.profile.account_type === 'learner') {
-        //     state.user.is_learner = true
-        // } else if (data.profile.account_type === 'parent') {
-        //     state.user.is_parent = true
-        // } else if (data.profile.account_type === 'facilitator') {
-        //     state.user.is_facilitator = true
-        // } else if (data.profile.account_type === 'professional') {
-        //     state.user.is_professional = true
-        // } else if (data.profile.account_type === 'school') {
-        //     state.user.schools.push(data.school)
-        // }
-        //  else if (data.profile.account_type === ' ') {
-        //     state.user.groups.push(data.group)
-        // }
+        
         state.user.profiles.push(data.profile)
     },
     ADD_PROFILE(state,profile){

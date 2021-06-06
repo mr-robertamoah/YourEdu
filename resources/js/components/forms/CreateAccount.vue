@@ -331,7 +331,7 @@
                                 >{{accountActionText}}</div>
                             </div>
 
-                            <input type="file" class="d-none" 
+                            <input type="file" class="hidden" 
                                 @change="fileChange"
                                 ref="inputfile"
                                 v-if="creating === 'admin' || creating === 'facilitator'"

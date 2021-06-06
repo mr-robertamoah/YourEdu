@@ -95,7 +95,7 @@ class CommissionService
             $account = class_basename_lower($commissionDTO->ownedby);
 
             static::throwCommissionError(
-                $commissionDTO->for,
+                $commissionDTO->dashboardItem,
                 "commission percent update failed for {$account} with id {$commissionDTO->ownedby?->id}."
             );
         }
@@ -112,7 +112,7 @@ class CommissionService
     private function getCommission(CommissionDTO $commissionDTO)
     {
         return $commissionDTO->ownedby?->getCommission(
-            $commissionDTO->for
+            $commissionDTO->dashboardItem
         );
     }
 
@@ -128,14 +128,14 @@ class CommissionService
 
     public static function checkCommissionAllowance(CommissionDTO $commissionDTO)
     {
-        if (is_null($commissionDTO->for)) {
+        if (is_null($commissionDTO->dashboardItem)) {
             return;
         }
 
-        if ($commissionDTO->for->doesntHaveCommissionAllowance(
+        if ($commissionDTO->dashboardItem->doesntHaveCommissionAllowance(
                 $commissionDTO->percentageOwned
             )) {
-            static::throwCommissionError($commissionDTO->for);
+            static::throwCommissionError($commissionDTO->dashboardItem);
         }
     }
 
@@ -145,15 +145,15 @@ class CommissionService
         $currentPercent
     )
     {
-        if (is_null($commissionDTO->for)) {
+        if (is_null($commissionDTO->dashboardItem)) {
             return;
         }
         
-        if ($commissionDTO->for->doesntHaveCommissionAllowanceForUpdate(
+        if ($commissionDTO->dashboardItem->doesntHaveCommissionAllowanceForUpdate(
                 $commissionDTO->percentageOwned, $currentPercent
             )) {
             static::throwCommissionError(
-                $commissionDTO->for,
+                $commissionDTO->dashboardItem,
                 "changing the percentage share from {$currentPercent} to {$commissionDTO->percentageOwned} will make total commsions exceed 100%."
             );
         }

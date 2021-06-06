@@ -49,6 +49,10 @@ const home = {
         booksFollowers: [],
         booksFollowings: [],
         booksAttachments: [],
+        assessments: [],
+        assessmentsMine: [],
+        assessmentsFollowers: [],
+        assessmentsFollowings: [],
         loading: false,
     }),
 

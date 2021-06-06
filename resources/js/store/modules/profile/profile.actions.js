@@ -1,3 +1,4 @@
+import router from "../../../router/index"
 import { ProfileService } from "../../../services/profile.service"
 
 const actions = {
@@ -51,31 +52,26 @@ const actions = {
         }
     },
     setActiveProfile({commit,rootGetters},data){
-        let profilesArray = [],
-            computedArray = []
+        let computedArray = []
 
-        if (data) {
-            let {account, account_id} = data
+        if (! rootGetters.getProfiles || ! rootGetters.getProfiles.length) {
             
-            if (rootGetters.getProfiles && rootGetters.getProfiles.length) {
-                profilesArray = rootGetters.getProfiles
-
-                computedArray = profilesArray.filter(profile => {
-                    return profile.params.accountId === account_id && 
-                        profile.params.account === account
-                })
-                if (computedArray.length) {
-                    commit('SET_ACTIVE_PROFILE',computedArray[0])
-                    return
-                }
-            }
-        } else {
-            if (rootGetters.getProfiles && rootGetters.getProfiles.length) {
-                commit('SET_ACTIVE_PROFILE',rootGetters.getProfiles[0])
-                return
-            }
+            commit('SET_ACTIVE_PROFILE', null)
+            return
         }
-        commit('SET_ACTIVE_PROFILE', null)
+
+        computedArray = rootGetters.getProfiles.filter(profile => {
+            return profile.accountId === data?.accountId && 
+                profile.account === data?.account
+        })
+
+        if (computedArray.length) {
+            commit('SET_ACTIVE_PROFILE',computedArray[0])
+            return
+        }
+        
+        commit('SET_ACTIVE_PROFILE',rootGetters.getProfiles[0])
+
     },
     async updateProfile({commit},data){
 
@@ -473,7 +469,7 @@ const actions = {
             if (data.where === 'profile') {
                 commit('FLAG_CREATE_SUCCESS', {data,flag: response.data.flag})
             } else if (data.where === 'home') {
-                commit('home/FLAG_CREATE_SUCCESS', {data,flag: response.data.flag}, {root: true})
+                commit('home/FLAG_CREATE_SUCCESS', data, {root: true})
             } else if (data.where === 'dashboard') {
                 commit('dashboard/FLAG_CREATE_SUCCESS', {data,flag: response.data.flag}, {root: true})
             }
@@ -1077,7 +1073,7 @@ const actions = {
         if (response.data.message === 'successful') {
             return {
                 status: true, 
-                discussionParticipant: response.data.discussionParticipant,
+                participant: response.data.participant,
             }
         } else {
             return {status: false, response: response}
@@ -1145,8 +1141,8 @@ const actions = {
         }
 
     },
-    async discussionSearch({commit},data){
-        let response = await ProfileService.discussionSearch(data)
+    async itemSearch({commit},data){
+        let response = await ProfileService.itemSearch(data)
 
         if (response.data.data) {
             return {
@@ -1158,33 +1154,42 @@ const actions = {
             return {status: false, response: response}
         }
     },
-    async joinDiscussion({commit},data){
-        let response = await ProfileService.joinDiscussion(data)
+    async joinItem({commit}, data){
+        let response = await ProfileService.joinItem(data)
 
-        if (response.data.message === 'successful') {
-            if (data.data.type === 'PRIVATE') {
-                commit('CREATE_PENDING_DISCUSSION_PARTICIPANT',{
-                    pendingParticipant: response.data.pendingParticipant,
-                    discussionId: data.discussionId
-                })
-                commit('home/CREATE_PENDING_DISCUSSION_PARTICIPANT',{
-                    pendingParticipant: response.data.pendingParticipant,
-                    discussionId: data.discussionId
-                }, {root: true})
-            } else {
-                commit('CREATE_DISCUSSION_PARTICIPANT',{
-                    discussionParticipant: response.data.discussionParticipant,
-                    discussionId: data.discussionId
-                })
-                commit('home/CREATE_DISCUSSION_PARTICIPANT',{
-                    discussionParticipant: response.data.discussionParticipant,
-                    discussionId: data.discussionId
-                }, {root: true})
-            }
-            return {status: true}
-        } else {
+        if (response.data.message !== 'successful') {
             return {status: false, response: response}
         }
+
+        if (data.item.type === 'PRIVATE'  && router.currentRoute.name === 'home') {
+            commit('home/CREATE_PENDING_ITEM_PARTICIPANT',{
+                pendingParticipant: response.data.pendingParticipant,
+                computedItem: data.computedItem
+            }, {root: true})
+        } 
+
+        if (data.item.type === 'PRIVATE'  && router.currentRoute.name === 'profile') {
+            commit('CREATE_PENDING_ITEM_PARTICIPANT',{
+                pendingParticipant: response.data.pendingParticipant,
+                computedItem: data.computedItem
+            })
+        } 
+        
+        if (data.item.type === 'PUBLIC'  && router.currentRoute.name === 'home') {
+            commit('home/CREATE_ITEM_PARTICIPANT',{
+                participant: response.data.participant,
+                computedItem: data.computedItem
+            }, {root: true})
+        }
+        
+        if (data.item.type === 'PUBLIC'  && router.currentRoute.name === 'profile') {
+            commit('CREATE_ITEM_PARTICIPANT',{
+                participant: response.data.participant,
+                computedItem: data.computedItem
+            })
+        }
+
+        return {status: true}
     },
     newDiscussion({commit}, discussion){
         commit('NEW_DISCUSSION', discussion)

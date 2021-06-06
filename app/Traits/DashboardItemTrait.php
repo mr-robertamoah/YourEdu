@@ -30,11 +30,11 @@ trait DashboardItemTrait
         }
 
         if ($this->ownedby) {
-            $userIds[] = $this->ownedby->user_id ? $this->ownedby->user_id : $this->ownedby->owner_id;
+            $userIds[] = $this->ownedby->user_id;
         }
 
-        if (!$authority) {            
-            if ($this->learners && !$onlyMain) {
+        if (! $authority) {            
+            if ($this->learners && ! $onlyMain) {
                 $this->getAuthorizedLearnerUserIds();
             }
 
@@ -53,38 +53,40 @@ trait DashboardItemTrait
                 );
             }
         }
-        if ($deep) {
-            
-            if ($this->schools) {
-                foreach ($this->schools as $school) {                
-                    array_push($userIds,...$school->getAuthorizedUserIds());
-                }
+
+        if (! $deep) {
+            return array_unique($userIds);
+        }
+
+        if ($this->schools) {
+            foreach ($this->schools as $school) {                
+                array_push($userIds,...$school->getAuthorizedUserIds());
             }
-            if ($this->courses) {
-                $this->courses->each(function ($course) use ($userIds) {
-                    array_push($userIds,...$course->getAuthorizedUserIds());
-                });
-            }
-            if ($this->courseSections) {
-                $this->courseSections->each(function ($section) use ($userIds) {
-                    array_push($userIds,...$section->course->getAuthorizedUserIds());
-                });
-            }
-            if ($this->extracurriculums) {
-                $this->extracurriculums->each(function ($extracurriculum) use ($userIds) {
-                    array_push($userIds,...$extracurriculum->getAuthorizedUserIds());
-                });
-            }
-            if ($this->classes) {
-                $this->classes->each(function ($class) use ($userIds) {
-                    array_push($userIds,...$class->getAuthorizedUserIds());
-                });
-            }
-            if ($this->programs) {
-                $this->programs->each(function ($program) use ($userIds) {
-                    array_push($userIds,...$program->getAuthorizedUserIds());
-                });
-            }
+        }
+        if ($this->courses) {
+            $this->courses->each(function ($course) use ($userIds) {
+                array_push($userIds,...$course->getAuthorizedUserIds());
+            });
+        }
+        if ($this->courseSections) {
+            $this->courseSections->each(function ($section) use ($userIds) {
+                array_push($userIds,...$section->course->getAuthorizedUserIds());
+            });
+        }
+        if ($this->extracurriculums) {
+            $this->extracurriculums->each(function ($extracurriculum) use ($userIds) {
+                array_push($userIds,...$extracurriculum->getAuthorizedUserIds());
+            });
+        }
+        if ($this->classes) {
+            $this->classes->each(function ($class) use ($userIds) {
+                array_push($userIds,...$class->getAuthorizedUserIds());
+            });
+        }
+        if ($this->programs) {
+            $this->programs->each(function ($program) use ($userIds) {
+                array_push($userIds,...$program->getAuthorizedUserIds());
+            });
         }
         
         return array_unique($userIds);
@@ -202,12 +204,7 @@ trait DashboardItemTrait
     {
         return $query->where(function($query) use ($userId) {
             $query->whereHasMorph('ownedby', '*', function($query, $type) use ($userId) {
-                $column = 'user_id';
-                if ($type === 'App\\YourEdu\\School') {
-                    $column = 'owner_id';
-                }
-
-                $query->where($column,'!=',$userId);
+                $query->whereNotUser($userId);
             });
         });
     }

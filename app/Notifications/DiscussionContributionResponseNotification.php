@@ -2,27 +2,22 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\DiscussionMessageResource;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class UpdateParticipantStateNotification extends Notification
+class DiscussionContributionResponseNotification extends Notification
 {
     use Queueable;
 
-    private $account;
-    private $message;
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($account,$message)
-    {
-        $this->account = $account;
-        $this->message = $message;
-    }
+    public function __construct(private $messageDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -32,7 +27,7 @@ class UpdateParticipantStateNotification extends Notification
      */
     public function via($notifiable)
     {
-        return ['database','broadcast'];
+        return ['database', 'broadcast'];
     }
 
     /**
@@ -58,8 +53,7 @@ class UpdateParticipantStateNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            'account' => $this->account,
-            'message' => $this->message,
+            'message' => new DiscussionMessageResource($this->messageDTO->message)
         ];
     }
 }

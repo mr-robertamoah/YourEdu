@@ -21,6 +21,7 @@ class SchoolResource extends JsonResource
             'admins' => $this->admins()->count(),
             'verification' => $this->verification,
             'types' => $this->types,
+            'type' => $this->type,
             'about' => $this->about,
             'phoneNumbers' => $this->when(
                 $this->phoneNumbers()->exists()&& 

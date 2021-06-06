@@ -56,7 +56,7 @@ const UserService = {
     async accountCreate(data){
         
         try {
-            let response = await ApiService.post(`/api/create`,data)
+            let response = await ApiService.post(`/api/user/account`,data)
 
             return response
         } catch (error) {
@@ -67,7 +67,7 @@ const UserService = {
 ////////////////////////////////////////////////////// requests
     async declineFollowRequest(data){
         try {
-            let response = await ApiService.post(`/api/request/decline`, data)
+            let response = await ApiService.post(`/api/follow/request/decline`, data)
             
             return response
         } catch (error) {
@@ -76,7 +76,7 @@ const UserService = {
     },
     async acceptFollowRequest(data){
         try {
-            let response = await ApiService.post(`/api/request/accept`, data)
+            let response = await ApiService.post(`/api/follow/request/accept`, data)
             
             return response
         } catch (error) {
@@ -85,7 +85,7 @@ const UserService = {
     },
     async followingsGet(){
         try {
-            let response = await ApiService.get(`/api/user/followings`)
+            let response = await ApiService.get(`/api/follow/user/followings`)
             
             return response
         } catch (error) {
@@ -94,7 +94,7 @@ const UserService = {
     },
     async followersGet(){
         try {
-            let response = await ApiService.get(`/api/user/followers`)
+            let response = await ApiService.get(`/api/follow/user/followers`)
             
             return response
         } catch (error) {
@@ -191,7 +191,7 @@ const UserService = {
         let {user_id, data} = mainData
         
         try {
-            let response = await ApiService.post(`/api/user/${user_id}/edit`,data)
+            let response = await ApiService.put(`/api/user`,data)
 
             console.log('response',response)
 
@@ -203,7 +203,16 @@ const UserService = {
     
     async getSecretQuestions(){
         try {
-            let response = await ApiService.get('/api/secret')
+            let response = await ApiService.get('/api/user/secrets')
+
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async createSecretQuestion(data){
+        try {
+            let response = await ApiService.post('/api/user/secret', data)
 
             return response
         } catch (error) {

@@ -161,11 +161,6 @@ $buttonColor : rgba(2, 104, 90, .6);
                 }
             }
 
-            .form-control{
-                box-shadow: none;
-                margin: 0 !important;
-            }
-
             .form-control.prepend{
                 width: 90%;
             }

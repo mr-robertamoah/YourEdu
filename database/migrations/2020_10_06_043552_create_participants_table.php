@@ -18,7 +18,7 @@ class CreateParticipantsTable extends Migration
             $table->unsignedBigInteger('user_id');
             $table->nullableMorphs('accountable'); //learner parent facilitator ...
             $table->nullableMorphs('participation'); // discussion challenge
-            $table->enum('state',['ADMIN','ACTIVE','RESTRICTED','BANNED'])->default('ACTIVE');
+            $table->enum('state',['ADMIN','ACTIVE','RESTRICTED','BANNED', 'PENDING'])->default('ACTIVE');
             $table->softDeletes();
             $table->timestamps();
 

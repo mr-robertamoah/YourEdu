@@ -11,18 +11,12 @@ class DiscussionJoinResponseNotification extends Notification
 {
     use Queueable;
 
-    public $title;
-    public $action;
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($title,$action)
-    {
-        $this->title = $title;
-        $this->action = $action;
-    }
+    public function __construct(private $invitationDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -58,8 +52,7 @@ class DiscussionJoinResponseNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            'title' => $this->title,
-            'action' => $this->action,
+            'message' => "an admin has {$this->invitationDTO->action} your request to join the discussion with title: {$this->invitationDTO->request->requestable->title}",
         ];
     }
 }

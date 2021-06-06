@@ -2,16 +2,22 @@
 
 namespace App\YourEdu;
 
+use App\Traits\ItemFilesTrait;
+use Database\Factories\AnswerFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Answer extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes,
+        ItemFilesTrait,
+        HasFactory;
 
     protected $fillable = [
-        'answer','work_id','possible_answer_id','possible_answer_ids'
+        'answer','work_id','possible_answer_ids', 'answeredby_type',
+        'answeredby_id'
     ];
 
     protected $casts = [
@@ -83,8 +89,58 @@ class Answer extends Model
         return $this->morphMany(Comment::class,'commentable');
     }
 
-    public function possibleAnswer()
+    public function possibleAnswers()
     {
-        return $this->belongsTo(PossibleAnswer::class);
+        return PossibleAnswer::query()
+            ->whereIn('id', $this->possible_answer_ids)
+            ->get();
+    }
+
+    public function isMarkedbyUser($userId)
+    {
+        return $this->marks()
+            ->whereHasMorph('markedby', '*', function($query) use ($userId) {
+                $query->whereUser($userId);
+            })
+            ->exists();
+    }
+
+    public function isNotMarkedbyUser($userId)
+    {
+        return ! $this->isMarkedbyUser($userId);
+    }
+
+    public function isNotAutoMarkable()
+    {
+        if ($this->answerable->doesntHavePossibleAnswers()) {
+            return true;
+        }
+
+        if ($this->answerable->doesntHaveCorrectPossibleAnswers()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function scopeWhereAnsweredby($query, $account)
+    {
+        return $query->where(function($query) use ($account) {
+            $query->where('answeredby_type', $account::class)
+                ->where('answeredby_id', $account->id);
+        });
+    }
+
+    public function scopeWhereAnswerable($query, $item)
+    {
+        return $query->where(function($query) use ($item) {
+            $query->where('answerable_type', $item::class)
+                ->where('answerable_id', $item->id);
+        });
+    }
+
+    protected static function newFactory()
+    {
+        return AnswerFactory::new();
     }
 }

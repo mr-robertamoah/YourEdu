@@ -21,7 +21,7 @@ class SearchResource extends JsonResource
         $data['url'] = $this->when($this->profileable,$this->url);
         if (!is_null($this->user)) {
             $data['username'] = $this->user->username;
-            $data['full_name'] = $this->user->full_name;
+            $data['fullName'] = $this->user->name;
         }
         if ($this->profileable) {
             $data['account_type'] = class_basename_lower($this->profileable_type);

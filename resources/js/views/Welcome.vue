@@ -27,7 +27,7 @@
                             </template>
                         </fade-left>
                         <div class="name">
-                            {{ getUser ? getUser.full_name : 'new user'}}
+                            {{ getUser ? getUser.fullName : 'new user'}}
                         </div>
                         we hope you do enjoy this new experience of social education
                         <div class="special">
@@ -120,15 +120,13 @@
                                         ></post-button>
                                         <div class="profiles" v-if="showProfiles">
                                             <div class="no-profile"
-                                                v-if="!computedOwnedProfiles.length"
+                                                v-if="!computedProfiles.length"
                                             >no profiles</div>
                                             <profile-bar
-                                                v-for="(profile,index) in computedOwnedProfiles"
+                                                v-for="(profile,index) in computedProfiles"
                                                 :key="index"
-                                                :name="profile.name"
-                                                :type="profile.params.account"
                                                 :smallType="true"
-                                                :routeParams="profile.params"
+                                                :profile="profile"
                                                 :navigate="false"
                                                 @clickedProfile="clickedProfile"
                                             ></profile-bar>
@@ -312,7 +310,7 @@ import { dates } from "../services/helpers";
                 'professionalsCount','schoolsCount', 'getProfiles',
                 'isFacilitator','isLearner','isParent','authenticatingUser'
             ]),
-            computedOwnedProfiles(){
+            computedProfiles(){
                 if (this.getProfiles) {
                     return this.getProfiles.filter(profile=>{
                         return profile.userId === this.getUser.id

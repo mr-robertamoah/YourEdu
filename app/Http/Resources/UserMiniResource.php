@@ -15,7 +15,7 @@ class UserMiniResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'fullName' => $this->full_name,
+            'fullName' => $this->name,
             'username' => $this->username,
             'bans' => BanResource::collection($this->pendingAndServedBans()),
             'createdAt' => $this->created_at,

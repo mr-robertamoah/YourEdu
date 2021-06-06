@@ -14,6 +14,9 @@ class RequestDTO
     use PaymentDTOTrait;
 
     public ?Model $requester = null;
+    public ?Model $requestable = null;
+    public ?Model $requestto = null;
+    public ?Model $requestfrom = null;
     public ?Model $sender = null;
     public array $requests = [];
     public array $sendees = [];
@@ -30,14 +33,22 @@ class RequestDTO
     public ?string $accountId = null;
     public ?string $wardId = null;
     public ?string $requestId = null;
+    public ?string $gradeId = null;
+    public ?string $schoolType = null;
     public ?string $message = null;
     public ?string $userId = null;
     public ?AdmissionDTO $admissionDTO = null;
+    public ?AdministrationDTO $administrationDTO = null;
     public ?string $adminId = null;
     public ?string $action = null;
     public ?PaymentDTO $paymentDTO = null;
     public ?PaymentDTO $removedPaymentDTO = null;
     public ?string $method = null;
+
+    public static function new()
+    {
+        return new static;
+    }
 
     public function __toString() {
         return serialize($this);
@@ -53,8 +64,14 @@ class RequestDTO
             static::getAdmissionDTO(
                 $request->admissionData
             ) : null;
+        $self->administrationDTO = $request->administrationData ? 
+            static::getadministrationDTO(
+                $request->administrationData
+            ) : null;
         $self->userId = $request->user()?->id;
         $self->requestId = $request->requestId;
+        $self->gradeId = $request->gradeId;
+        $self->schoolType = $request->schoolType;
         $self->wardId = $request->wardId;
         $self->adminId = $request->adminId;
         $self->action = $request->action;
@@ -132,11 +149,58 @@ class RequestDTO
         );
     }
 
+    private static function getAdministrationDTO($encodedAdministrationData)
+    {
+        if (is_null($encodedAdministrationData)) {
+            return null;
+        }
+
+        if (is_string($encodedAdministrationData)) {
+            $encodedAdministrationData = json_decode($encodedAdministrationData);
+        }
+
+        return AdministrationDTO::createFromData(
+            name: $encodedAdministrationData->name ?? null,
+            title: $encodedAdministrationData->title ?? null,
+            description: $encodedAdministrationData->description ?? null,
+            level: $encodedAdministrationData->level ?? null,
+            state: "active",
+            role: "schooladmin",
+        );
+    }
+
     public function withRequester(Model $requester)
     {
         $clone = clone $this;
 
         $clone->requester = $requester;
+
+        return $clone;
+    }
+
+    public function withRequestfrom(Model $requestfrom)
+    {
+        $clone = clone $this;
+
+        $clone->requestfrom = $requestfrom;
+
+        return $clone;
+    }
+
+    public function withRequestto(Model $requestto)
+    {
+        $clone = clone $this;
+
+        $clone->requestto = $requestto;
+
+        return $clone;
+    }
+
+    public function withRequestable(Model $requestable)
+    {
+        $clone = clone $this;
+
+        $clone->requestable = $requestable;
 
         return $clone;
     }
@@ -173,6 +237,24 @@ class RequestDTO
         $clone = clone $this;
 
         $clone->responseDTO = $responseDTO;
+
+        return $clone;
+    }
+
+    public function withAdmissionDTO(AdmissionDTO $admissionDTO)
+    {
+        $clone = clone $this;
+
+        $clone->admissionDTO = $admissionDTO;
+
+        return $clone;
+    }
+
+    public function withAdministrationDTO(AdministrationDTO $administrationDTO)
+    {
+        $clone = clone $this;
+
+        $clone->administrationDTO = $administrationDTO;
 
         return $clone;
     }

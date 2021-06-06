@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\AccountDTO;
 use App\DTOs\MessageDTO;
 use App\DTOs\RequestDTO;
 use App\DTOs\RequestSearchDTO;
 use App\DTOs\ResponseDTO;
-use App\Events\DeleteRequestMessage;
-use App\Events\NewRequestMessage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MessageRequest;
 use App\Http\Resources\DashboardItemMiniResource;
@@ -16,12 +15,10 @@ use App\Http\Resources\OwnedProfileResource;
 use App\Http\Resources\RequestMessageResource;
 use App\Http\Resources\RequestResource;
 use App\Http\Resources\UserAndProfileResource;
-use App\Services\MessageService;
 use App\Services\RequestService;
 use Illuminate\Http\Request;
 use \Debugbar;
 use Illuminate\Support\Facades\DB;
-use phpseclib\Crypt\RC2;
 
 class RequestController extends Controller
 {
@@ -126,8 +123,9 @@ class RequestController extends Controller
     public function getAccountRequests(Request $request)
     {
         try {
-            $accountRequests = (new RequestService())->getAccountRequests($request->account,
-                $request->accountId);
+            $accountRequests = (new RequestService())->getAccountRequests(
+                AccountDTO::createFromRequest($request)
+            );
 
             return DashboardSchoolRequestResource::collection(paginate($accountRequests,2));
         } catch (\Throwable $th) {

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\FollowRequestResource;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,18 +12,12 @@ class FollowRequest extends Notification
 {
     use Queueable;
 
-    private $requestInfo;
-
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($requestInfo)
-    {
-        //
-        $this->requestInfo = $requestInfo;
-    }
+    public function __construct(private $requestDTO){}
 
     /**
      * Get the notification's delivery channels.
@@ -58,7 +53,7 @@ class FollowRequest extends Notification
     public function toArray($notifiable)
     {
         return [
-            $this->requestInfo
+            'followRequest' => new FollowRequestResource($this->requestDTO->request)
         ];
     }
 }

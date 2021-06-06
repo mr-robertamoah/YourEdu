@@ -3,11 +3,13 @@
 namespace App\YourEdu;
 
 use App\User;
+use Database\Factories\PointFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Point extends Model
 {
-    // issue points to some account on the performance of social duties
+    use HasFactory;
 
     protected $touches = ['pointable'];
 
@@ -21,5 +23,10 @@ class Point extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    protected static function newFactory()
+    {
+        return PointFactory::new();
     }
 }

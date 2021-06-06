@@ -176,10 +176,8 @@
                                 </span>
                                 <div :key="key" v-for="(profile,key) in computedProfiles">
                                     <profile-bar
-                                        :name="profile.name"
-                                        :type="profile.params.account"
                                         :smallType="true"
-                                        :routeParams="profile.params"
+                                        :profile="profile"
                                         :navigate="false"
                                         @clickedProfile="clickedProfile"
                                     ></profile-bar>
@@ -200,8 +198,7 @@
                 </div>
                 <div class="add-comment">
                     <add-comment
-                        what="post"
-                        :id="computedId"
+                        :what="computedItem"
                         :onPostModal="postMediaFull"
                         :showAddComment="showAddComment"
                         @hideAddComment="showAddComment = false"
@@ -480,8 +477,8 @@ import { mapGetters, mapActions } from 'vuex'
                 if (profiles) {
                     
                     profile =  profiles.findIndex(profile=>{
-                        return this.post.addedby.accountId === profile.params.accountId && 
-                            this.post.addedby.account === profile.params.account
+                        return this.post.addedby.accountId === profile.accountId && 
+                            this.post.addedby.account === profile.account
                     })
 
                     if (profile > -1) {
@@ -537,9 +534,11 @@ import { mapGetters, mapActions } from 'vuex'
                 return this.post && this.post.hasOwnProperty('content') &&
                     this.post.content && this.post.content.length > 200 ? true : false
             },
-            computedId(){
-                return this.post && this.post.hasOwnProperty('id') ?
-                    this.post.id : null
+            computedItem(){
+                return {
+                    item: 'post',
+                    itemId: this.post.id
+                }
             },
             computedAttachments(){ //check attachment .....
                 if (this.getUser) {
@@ -1016,8 +1015,8 @@ import { mapGetters, mapActions } from 'vuex'
                     }
                 }
                 formData.append('content', data.content)
-                formData.append('account',this.profile.params.account)
-                formData.append('accountId',this.profile.params.accountId)
+                formData.append('account',this.profile.account)
+                formData.append('accountId',this.profile.accountId)
                 formData.append('postId',this.post.id)
                 
                 otherData['postId'] = this.post.id
@@ -1044,8 +1043,8 @@ import { mapGetters, mapActions } from 'vuex'
                 this.smallModalLoading = true
                 let data = {
                     postId: this.post.id,
-                    account: this.profile.params.account,
-                    accountId: this.profile.params.accountId,
+                    account: this.profile.account,
+                    accountId: this.profile.accountId,
                 }
                 data.where = this.$route.name
                 let response = await this['profile/deletePost'](data)

@@ -27,20 +27,20 @@
         </optional-actions>
         <div class="top" v-if="!computedDeletedForMe">
             <div class="name">
-                {{computedAccountName}}
+                {{message.fromable.name}}
             </div>
             <div class="type">
-                {{computedAccount}}
+                {{computedAccountType}}
             </div>
         </div>
         <div class="message-section" v-if="message.message && 
             message.message.length && !computedDeletedForMe">
             <profile-picture
                 class="profile-picture"
-                v-if="computedAccountUrl.length"
+                v-if="message.fromable.url.length"
             >
                 <template slot="image">
-                    <img :src="computedAccountUrl">
+                    <img :src="message.fromable.url">
                 </template>
             </profile-picture>
             <div class="message">
@@ -143,19 +143,21 @@ import { dates, strings } from '../services/helpers'
                 rejectLoading: false,
             }
         },
+        watch: {
+            message: {
+                immediate: true,
+                handler(newValue) {
+                    this.listenToMessageChannels()
+                }
+            }
+        },
         computed: {
             ...mapGetters(['getUser']),
             computedOwnerId() {
-                return this.message.fromable_userId 
+                return this.message.fromable.userId 
             },
             computedOwner() {
-                return this.getUser && this.getUser.id === this.message.fromable_userId 
-            },
-            computedAccountUrl() {
-                return this.message.fromable_url
-            },
-            computedAccountName() {
-                return this.message.fromable_name
+                return this.getUser && this.getUser.id === this.message.fromable.userId 
             },
             computedFlags() {
                 return this.message.flags 
@@ -211,8 +213,8 @@ import { dates, strings } from '../services/helpers'
                 }
                 return resources
             },
-            computedAccount() {
-                return this.simple ? '' : strings.getAccount(this.message.fromable_type) 
+            computedAccountType() {
+                return this.simple ? '' : this.message.fromable.account 
             },
             computedCreatedAt() {
                 return dates.createdAt(this.message.created_at)
@@ -224,6 +226,16 @@ import { dates, strings } from '../services/helpers'
             },
         },
         methods: {
+            listenToMessageChannels() {
+                Echo
+                    .channel(`youredu.message.${this.message.id}`)
+                    .listen(`.deleteMessage`, data=>{
+                        this.deleteMessage(data)
+                    })
+            },
+            deleteMessage(data) {
+                this.$emit('deleteMessage', data)
+            },
             clickedShowMedia() {
                 
             },

@@ -74,10 +74,14 @@ class AdmissionDTO
         return $clone;
     }
 
-    public function withGrade(Model $grade)
+    public function withGrade(Model | null $grade)
     {
         $clone = clone $this;
 
+        if (is_null($grade)) {
+            $clone->gradeId = null;
+        }
+        
         $clone->grade = $grade;
 
         return $clone;

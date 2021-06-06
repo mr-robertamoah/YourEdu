@@ -11,20 +11,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DeleteDiscussion implements ShouldBroadcastNow
+class DeleteDiscussion implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $discussionInfo;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($discussionInfo)
-    {
-        $this->discussionInfo = $discussionInfo;
-    }
+    public function __construct(private $discussionDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -34,8 +30,7 @@ class DeleteDiscussion implements ShouldBroadcastNow
     public function broadcastOn()
     {
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$this->discussionInfo['account']}.{$this->discussionInfo['accountId']}")
+            new Channel("youredu.discussion.{$this->discussionDTO->discussionId}")
         ];
     }
     
@@ -46,6 +41,8 @@ class DeleteDiscussion implements ShouldBroadcastNow
     
     public function broadcastWith()
     {
-        return $this->discussionInfo;
+        return [
+            'discussionId' => $this->discussionDTO->discussionId
+        ];
     }
 }

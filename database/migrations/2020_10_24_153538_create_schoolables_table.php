@@ -17,6 +17,7 @@ class CreateSchoolablesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('school_id');
             $table->nullableMorphs('schoolable');
+            $table->enum('type',['TRADITIONAL','VIRTUAL'])->nullable();
             $table->timestamps();
 
 

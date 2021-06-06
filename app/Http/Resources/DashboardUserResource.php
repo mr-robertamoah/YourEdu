@@ -15,7 +15,7 @@ class DashboardUserResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'full_name' => $this->full_name,
+            'fullName' => $this->name,
             'username' => $this->username,
             'secret_answer' => $this->secret_answer,
             'dob' => $this->dob,

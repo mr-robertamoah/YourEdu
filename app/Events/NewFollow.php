@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\FollowerResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,20 +16,12 @@ class NewFollow implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $action;
-    public $follower;
-    public $userId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($follower, $userId, $action)
-    {
-        $this->action =  $action;
-        $this->follower =  $follower;
-        $this->userId = $userId;
-    }
+    public function __construct(private $followDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -37,7 +30,7 @@ class NewFollow implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.user.{$this->userId}");
+        return new PrivateChannel("youredu.user.{$this->followDTO->followable->userId}");
     }
     
     public function broadcastAs()
@@ -48,8 +41,7 @@ class NewFollow implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'action' => $this->action,
-            'follower' => $this->follower,
+            'follower' => new FollowerResource($this->followDTO->followedby),
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\YourEdu;
 
 use App\Traits\AccountFilesTrait;
+use App\Traits\AccountQuestionsTrait;
 use App\Traits\AccountTrait;
 use App\Traits\AdmissionTrait;
 use App\Traits\DashboardItemTrait;
@@ -21,10 +22,13 @@ class School extends Model
         HasFactory, 
         AdmissionTrait,
         FacilitatingAccountsTrait,
-        AccountFilesTrait;
+        AccountFilesTrait,
+        AccountQuestionsTrait;
+
+    const TYPES = ['traditional','virtual'];
 
     protected $fillable = [
-        'owner_id','company_name', 'role', 'class_structure', 'types', 'about'
+        'owner_id','company_name', 'type', 'class_structure', 'types', 'about'
     ];
 
     protected $casts = [
@@ -32,7 +36,7 @@ class School extends Model
     ];
 
     protected $appends = [
-        'user_id', 'user'
+        'user_id', 'user', 'name'
     ];
 
     protected static function booted()
@@ -53,6 +57,11 @@ class School extends Model
     public function getUserIdAttribute()
     {
         return $this->owner_id;
+    }
+
+    public function getNameAttribute()
+    {
+        return $this->company_name;
     }
 
     public function getUserAttribute()
@@ -186,22 +195,26 @@ class School extends Model
 
     public function learners()
     {
-        return $this->morphedByMany(Learner::class,'schoolable','schoolables');
+        return $this->morphedByMany(Learner::class,'schoolable','schoolables')
+            ->withPivot(['type'])->withTimestamps();
     }
 
     public function parents()
     {
-        return $this->morphedByMany(ParentModel::class,'schoolable','schoolables');
+        return $this->morphedByMany(ParentModel::class,'schoolable','schoolables')
+            ->withTimestamps();
     }
 
     public function facilitators()
     {
-        return $this->morphedByMany(Facilitator::class,'schoolable','schoolables');
+        return $this->morphedByMany(Facilitator::class,'schoolable','schoolables')
+            ->withTimestamps();
     }
 
     public function professionals()
     {
-        return $this->morphedByMany(Professional::class,'schoolable','schoolables');
+        return $this->morphedByMany(Professional::class,'schoolable','schoolables')
+            ->withTimestamps();
     }
 
     public function addedCurricula()
@@ -447,16 +460,6 @@ class School extends Model
         return $this->morphMany(Character::class,'characterable');
     }
 
-    public function questionsOwned()
-    {
-        return $this->morphMany(Question::class,'owned');
-    }
-
-    public function questionsAdded()
-    {
-        return $this->morphMany(Question::class,'addedby');
-    }
-
     public function activitiesOwned()
     {
         return $this->morphMany(Activity::class,'owned');
@@ -514,13 +517,20 @@ class School extends Model
             ->whereDate('end_date','>',now());
     }
 
-    public function scopeHasMyAdmin($query,$id)
+    public function scopeWhereAdminByUserId($query,$id)
     {
         return $query->whereHas('admins',function($query) use ($id){
             $query->where('user_id',$id);
         })->with(['admins'=> function($query) use ($id){
             $query->where('user_id',$id);
         }]);
+    }
+
+    public function scopeWhereAdmin($query,$admin)
+    {
+        return $query->whereHas('admins',function($query) use ($admin){
+            $query->where('id',$admin->id);
+        });
     }
     
     protected static function newFactory()

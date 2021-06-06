@@ -8,6 +8,7 @@ use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\CollaborationException;
 use App\Http\Resources\DashboardCollaborationResource;
 use App\Notifications\CollaborationNotification;
+use App\Traits\ServiceTrait;
 use App\YourEdu\Collabo;
 use App\YourEdu\Collaboration;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +16,8 @@ use Illuminate\Support\Collection;
 
 class CollaborationService
 {
+    use ServiceTrait;
+
     public function createCollaboration(CollaborationDTO $collaborationDTO)
     {
         $collaborationDTO->addedby = $this->getModel(
@@ -89,10 +92,7 @@ class CollaborationService
     {
         foreach ($collaborationDTO->collaborators as $collaboratorDetails) {
 
-            $collaborator = getYourEduModel($collaboratorDetails->account,$collaboratorDetails->accountId);
-            if (is_null($collaborator)) {
-                throw new AccountNotFoundException("{$collaboratorDetails->account} with id {$collaboratorDetails->accountId} not found");
-            }
+            $collaborator = $this->getModel($collaboratorDetails->account,$collaboratorDetails->accountId);
 
             $this->addCollaborator(
                 $collaboration,
@@ -104,7 +104,20 @@ class CollaborationService
             $this->addCommission(
                 $collaboration, $collaborator, $collaboratorDetails->share
             );
+
+            $this->createCollaborationRequest($collaboration, $collaborator);
         }
+
+        return $collaboration->refresh();
+    }
+
+    private function createCollaborationRequest($collaboration, $collaborator)
+    {
+        (new RequestService)->createRequest(
+            from: $collaboration->addedby,
+            to: $collaborator,
+            data: $collaboration
+        );
 
         return $collaboration->refresh();
     }
@@ -118,39 +131,40 @@ class CollaborationService
     {
         (new CommissionService)->createCommission(
             CommissionDTO::createFromData(
-                for: $collaboration,
+                commission: $collaboration,
                 ownedby: $collaborator,
                 percentageOwned: $share
             )
         );
     }
 
-    private function addCollaborator
+    public function addCollaborator
     (
         Collaboration $collaboration,
         $collaborator,
         $state
     ) : Collaboration
     {
-        if ($collaborator->accountType !== 'facilitator' &&
-            $collaborator->accountType !== 'professional') {
-            $this->throwCollaborationException(
-                message: "{$collaborator->accountType} cannot be a collaborator.",
-                data: $collaborator
-            );
-        }
+        $this->checkCollaboratorAccountType($collaborator);
 
         $collaborator->collaborations()->attach(
             $collaboration->id,['state' => $state]
         );
 
-        (new RequestService)->createRequest(
-            from: $collaboration->addedby,
-            to: $collaborator,
-            data: $collaboration
-        );
-
         return $collaboration;
+    }
+
+    private function checkCollaboratorAccountType($collaborator)
+    {
+        if ($collaborator->accountType === 'facilitator' ||
+            $collaborator->accountType === 'professional') {
+            return;
+        }
+        
+            $this->throwCollaborationException(
+            message: "{$collaborator->accountType} cannot be a collaborator.",
+            data: $collaborator
+        );
     }
 
     private function addCollaboration
@@ -323,17 +337,6 @@ class CollaborationService
     private function getCollaborationWithId(CollaborationDTO $collaborationDTO)
     {
         return $this->getModel('collaboration', $collaborationDTO->collaborationId);
-    }
-
-    private function getModel($account, $accountId)
-    {
-        if (is_null($account =
-            getYourEduModel($account,$accountId)
-        )) {
-            throw new AccountNotFoundException("{$account} with id {$accountId} not found");
-        }
-        
-        return $account;
     }
 
     public function deleteCollaboration(CollaborationDTO $collaborationDTO)

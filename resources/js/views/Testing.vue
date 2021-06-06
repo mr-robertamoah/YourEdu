@@ -1,11 +1,15 @@
 <template>
-    <work-answering-form
+    <!-- <work-answering-form
         :show="true"
-    ></work-answering-form>
+    ></work-answering-form> -->
+    <assessment-single>
+        
+    </assessment-single>
 </template>
 
 <script>
 import WorkAnsweringForm from '../components/forms/WorkAnsweringForm'
+import AssessmentSingle from '../components/AssessmentSingle'
 
     export default {
         data() {
@@ -16,6 +20,7 @@ import WorkAnsweringForm from '../components/forms/WorkAnsweringForm'
         },
         components: {
             WorkAnsweringForm,
+            AssessmentSingle,
         },
         methods: {
             clickedTesting(){

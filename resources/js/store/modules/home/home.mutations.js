@@ -1,3 +1,158 @@
+
+function addDataToItemProperty({state, property, itemType, itemId, data, hasMine}, methodType = 'push'){
+    let type = 'is' + _.capitalize(itemType)
+
+    let index = state.posts.findIndex(item=>{
+        return item.id == itemId && item[type]
+    })
+    if (index > -1) {
+        state.posts[index][property][methodType](data)
+    }
+
+    index = state[`${itemType}s`].findIndex(item=>{
+        return item.id == itemId && item[type]
+    })
+    if (index > -1) {
+        state[`${itemType}s`][index][property][methodType](data)
+    }
+    
+    if (hasMine) {
+        index = state[`${itemType}sMine`].findIndex(item=>{
+            return item.id == itemId && item[type]
+        })
+        if (index > -1) {
+            state[`${itemType}sMine`][index][property][methodType](data)
+        }
+    }
+
+    index = state[`${itemType}sFollowers`].findIndex(item=>{
+        return item.id == itemId && item[type]
+    })
+    if (index > -1) {
+        state[`${itemType}sFollowers`][index][property][methodType](data)
+    }
+
+    index = state[`${itemType}sFollowings`].findIndex(item=>{
+        return item.id == itemId && item[type]
+    })
+    if (index > -1) {
+        state[`${itemType}sFollowings`][index][property][methodType](data)
+    }
+
+    if (! state[`${itemType}sAttachments`]) {
+        return
+    }
+
+    index = state[`${itemType}sAttachments`].findIndex(item=>{
+        return item.id == itemId && item[type]
+    })
+    if (index > -1) {
+        state[`${itemType}sAttachments`][index][property][methodType](data)
+    }
+}
+
+function findAndAddDiscussionItem(state, data) {
+
+    addDataToItemProperty({
+        state, 
+        property: data.addable, 
+        itemType: 'discussion', 
+        itemId: data.itemId, 
+        data: data.addedItem,
+        hasMine: true
+    }, 'unshift')
+}
+
+function findAndDeleteDiscussionItem(state, data) {
+    let deletableIndex,
+        postIndex = state.posts.findIndex(post => {
+        return post.id === data.itemId && post.isDiscussion
+    })
+    if (postIndex > -1) {
+        deletableIndex = state.posts[postIndex][data.deletable]
+            .findIndex(item=>{
+            return item.id === data.deletableId
+        })
+        if (deletableIndex > -1) {
+            state.posts[postIndex][data.deletable]
+                .splice(deletableIndex,1)
+        }
+    }
+    postIndex = state.discussions.findIndex(post => {
+        return post.id === data.itemId && post.isDiscussion
+    })
+    if (postIndex > -1) {
+        deletableIndex = state.discussions[postIndex][data.deletable]
+            .findIndex(item=>{
+            return item.id === data.deletableId
+        })
+        if (deletableIndex > -1) {
+            state.discussions[postIndex][data.deletable]
+                .splice(deletableIndex,1)
+        }
+    }
+    postIndex = state.discussionsMine.findIndex(post => {
+        return post.id === data.itemId && post.isDiscussion
+    })
+    if (postIndex > -1) {
+        deletableIndex = state.discussionsMine[postIndex][data.deletable]
+            .findIndex(item=>{
+            return item.id === data.deletableId
+        })
+        if (deletableIndex > -1) {
+            state.discussionsMine[postIndex][data.deletable]
+                .splice(deletableIndex,1)
+        }
+    }
+    postIndex = state.discussionsFollowers.findIndex(post => {
+        return post.id === data.itemId && post.isDiscussion
+    })
+    if (postIndex > -1) {
+        deletableIndex = state.discussionsFollowers[postIndex][data.deletable]
+            .findIndex(item=>{
+            return item.id === data.deletableId
+        })
+        if (deletableIndex > -1) {
+            state.discussionsFollowers[postIndex][data.deletable]
+                .splice(deletableIndex,1)
+        }
+    }
+    postIndex = state.discussionsFollowings.findIndex(post => {
+        return post.id === data.itemId && post.isDiscussion
+    })
+    if (postIndex > -1) {
+        deletableIndex = state.discussionsFollowings[postIndex][data.deletable]
+            .findIndex(item=>{
+            return item.id === data.deletableId
+        })
+        if (deletableIndex > -1) {
+            state.discussionsFollowings[postIndex][data.deletable]
+                .splice(deletableIndex,1)
+        }
+    }
+    postIndex = state.discussionsAttachments.findIndex(post => {
+        return post.id === data.itemId && post.isDiscussion
+    })
+    if (postIndex > -1) {
+        deletableIndex = state.discussionsAttachments[postIndex][data.deletable]
+            .findIndex(item=>{
+            return item.id === data.deletableId
+        })
+        if (deletableIndex > -1) {
+            state.discussionsAttachments[postIndex][data.deletable]
+                .splice(deletableIndex,1)
+        }
+    }
+}
+
+function isAccountFollowerUsingRoot(root, account) {
+
+}
+
+function isAccountFollowingUsingRoot(root, account) {
+
+}
+
 const mutations = {
         
     //////////////////////////////////////////////////////////
@@ -8,6 +163,22 @@ const mutations = {
         state.loading = false
     },
 
+    ///////////////////////////
+    ASSESSMENT_CREATE_SUCCESS(state, assessment){ 
+        state.posts.unshift(assessment)
+        if (state.assessments.length) {
+            state.assessments.unshift(assessment)
+        }
+        if (state.assessmentsMine.length) {
+            state.assessmentsMine.unshift(assessment)
+        }
+        if (state.assessmentsFollowers.length) {
+            state.assessmentsFollowers.unshift(assessment)
+        }
+        if (state.assessmentsFollowings.length) {
+            state.assessmentsFollowings.unshift(assessment)
+        }
+    },
     ////////////////////////////////////////////////////discussions
     DISCUSSION_CREATE_SUCCESS(state, data){ //for now, discussions will be shown in main posts
         state.posts.unshift(data.discussion)
@@ -110,37 +281,15 @@ const mutations = {
             state.discussionsAttachments[index].participants.push(data.discussionParticipant)
         }
     },
-    CREATE_PENDING_DISCUSSION_PARTICIPANT(state,data){
-        let index = state.posts.findIndex(item=>{
-            return item.id === data.discussionId && item.isDiscussion
+    CREATE_PENDING_ITEM_PARTICIPANT(state,data){
+
+        addDataToItemProperty({
+            state, 
+            property: 'pendingParticipants', 
+            itemType: data.computedItem.item, 
+            itemId: data.computedItem.itemId, 
+            data: data.pendingParticipant
         })
-        if (index > -1) {
-            state.posts[index].pendingJoinParticipants.push(data.pendingParticipant)
-        }
-        index = state.discussions.findIndex(item=>{
-            return item.id === data.discussionId && item.isDiscussion
-        })
-        if (index > -1) {
-            state.discussions[index].pendingJoinParticipants.push(data.pendingParticipant)
-        }
-        index = state.discussionsFollowers.findIndex(item=>{
-            return item.id === data.discussionId && item.isDiscussion
-        })
-        if (index > -1) {
-            state.discussionsFollowers[index].pendingJoinParticipants.push(data.pendingParticipant)
-        }
-        index = state.discussionsFollowings.findIndex(item=>{
-            return item.id === data.discussionId && item.isDiscussion
-        })
-        if (index > -1) {
-            state.discussionsFollowings[index].pendingJoinParticipants.push(data.pendingParticipant)
-        }
-        index = state.discussionsAttachments.findIndex(item=>{
-            return item.id === data.discussionId && item.isDiscussion
-        })
-        if (index > -1) {
-            state.discussionsAttachments[index].pendingJoinParticipants.push(data.pendingParticipant)
-        }
     },
     //for socket updates
     NEW_DISCUSSION(state, data){
@@ -5172,66 +5321,15 @@ const mutations = {
                 }
             }
         } else if (data.item === 'discussion') {
-            postIndex = state.posts.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.posts[postIndex].saves
-                    .findIndex(save=>{
-                        return save.id === data.save.id
-                    })
-                if(saveIndex === -1){
-                    state.posts[postIndex].saves.unshift(data.save)
+
+            findAndAddDiscussionItem(
+                state, 
+                {
+                    addable: 'saves',
+                    addedItem: data.save,
+                    itemId: data.itemId
                 }
-            }
-            postIndex = state.discussions.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussions[postIndex].saves
-                    .findIndex(save=>{
-                        return save.id === data.save.id
-                    })
-                if(saveIndex === -1){
-                    state.discussions[postIndex].saves.unshift(data.save)
-                }
-            }
-            postIndex = state.discussionsFollowers.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussionsFollowers[postIndex].saves
-                    .findIndex(save=>{
-                        return save.id === data.save.id
-                    })
-                if(saveIndex === -1){
-                    state.discussionsFollowers[postIndex].saves.unshift(data.save)
-                }
-            }
-            postIndex = state.discussionsFollowings.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussionsFollowings[postIndex].saves
-                    .findIndex(save=>{
-                        return save.id === data.save.id
-                    })
-                if(saveIndex === -1){
-                    state.discussionsFollowings[postIndex].saves.unshift(data.save)
-                }
-            }
-            postIndex = state.discussionsAttachments.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussionsAttachments[postIndex].saves
-                    .findIndex(save=>{
-                        return save.id === data.save.id
-                    })
-                if(saveIndex === -1){
-                    state.discussionsAttachments[postIndex].saves.unshift(data.save)
-                }
-            }
+            )
         }
     },
     SAVE_DELETE_SUCCESS(state, data){
@@ -6077,62 +6175,15 @@ const mutations = {
                 }
             }
         } else if (data.item === 'discussion') {
-            //discussions
-            postIndex = state.posts.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.posts[postIndex].saves.findIndex(save=>{
-                    return save.id === data.saveId
-                })
-                if (saveIndex > -1) {
-                    state.posts[postIndex].saves.splice(saveIndex,1)
+            
+            findAndDeleteDiscussionItem(
+                state, 
+                {
+                    deletable: 'likes',
+                    deletableId: data.saveId,
+                    itemId: data.itemId
                 }
-            }
-            postIndex = state.discussions.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussions[postIndex].saves.findIndex(save=>{
-                    return save.id === data.saveId
-                })
-                if (saveIndex > -1) {
-                    state.discussions[postIndex].saves.splice(saveIndex,1)
-                }
-            }
-            postIndex = state.discussionsFollowers.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussionsFollowers[postIndex].saves.findIndex(save=>{
-                    return save.id === data.saveId
-                })
-                if (saveIndex > -1) {
-                    state.discussionsFollowers[postIndex].saves.splice(saveIndex,1)
-                }
-            }
-            postIndex = state.discussionsFollowings.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussionsFollowings[postIndex].saves.findIndex(save=>{
-                    return save.id === data.saveId
-                })
-                if (saveIndex > -1) {
-                    state.discussionsFollowings[postIndex].saves.splice(saveIndex,1)
-                }
-            }
-            postIndex = state.discussionsAttachments.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                saveIndex = state.discussionsAttachments[postIndex].saves.findIndex(save=>{
-                    return save.id === data.saveId
-                })
-                if (saveIndex > -1) {
-                    state.discussionsAttachments[postIndex].saves.splice(saveIndex,1)
-                }
-            }
+            )
         }
     },
 
@@ -6687,43 +6738,10 @@ const mutations = {
                 state.activitiesAttachments[activityIndex].flags.unshift(data.flag)
             }
         } else if (data.item === 'discussion') {
-            //discussions
-            postIndex = state.posts.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                state.posts[postIndex].flags.unshift(data.flag)
-            }
-            postIndex = state.discussions.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                state.discussions[postIndex].flags.unshift(data.flag)
-            }
-            postIndex = state.discussionsMine.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                state.discussionsMine[postIndex].flags.unshift(data.flag)
-            }
-            postIndex = state.discussionsFollowers.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                state.discussionsFollowers[postIndex].flags.unshift(data.flag)
-            }
-            postIndex = state.discussionsFollowings.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                state.discussionsFollowings[postIndex].flags.unshift(data.flag)
-            }
-            postIndex = state.discussionsAttachments.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                state.discussionsAttachments[postIndex].flags.unshift(data.flag)
-            }
+            data.addable = 'flags'
+            data.addedItem = data.flag
+
+            findAndAddDiscussionItem(state, data)
         }
     },
     FLAG_DELETE_SUCCESS(state, data){
@@ -7582,73 +7600,10 @@ const mutations = {
                 }
             }
         } else if (data.item === 'discussion') {
-            //discussions
-            postIndex = state.posts.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                flagIndex = state.posts[postIndex].flags.findIndex(flag=>{
-                    return flag.id === data.flagId
-                })
-                if (flagIndex > -1) {
-                    state.posts[postIndex].flags.splice(flagIndex,1)
-                }
-            }
-            postIndex = state.discussions.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                flagIndex = state.discussions[postIndex].flags.findIndex(flag=>{
-                    return flag.id === data.flagId
-                })
-                if (flagIndex > -1) {
-                    state.discussions[postIndex].flags.splice(flagIndex,1)
-                }
-            }
-            postIndex = state.discussionsMine.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                flagIndex = state.discussionsMine[postIndex].flags.findIndex(flag=>{
-                    return flag.id === data.flagId
-                })
-                if (flagIndex > -1) {
-                    state.discussionsMine[postIndex].flags.splice(flagIndex,1)
-                }
-            }
-            postIndex = state.discussionsFollowers.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                flagIndex = state.discussionsFollowers[postIndex].flags.findIndex(flag=>{
-                    return flag.id === data.flagId
-                })
-                if (flagIndex > -1) {
-                    state.discussionsFollowers[postIndex].flags.splice(flagIndex,1)
-                }
-            }
-            postIndex = state.discussionsFollowings.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                flagIndex = state.discussionsFollowings[postIndex].flags.findIndex(flag=>{
-                    return flag.id === data.flagId
-                })
-                if (flagIndex > -1) {
-                    state.discussionsFollowings[postIndex].flags.splice(flagIndex,1)
-                }
-            }
-            postIndex = state.discussionsAttachments.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                flagIndex = state.discussionsAttachments[postIndex].flags.findIndex(flag=>{
-                    return flag.id === data.flagId
-                })
-                if (flagIndex > -1) {
-                    state.discussionsAttachments[postIndex].flags.splice(flagIndex,1)
-                }
-            }
+            data.deletable = 'flags'
+            data.deletableId = data.flagId
+
+            findAndDeleteDiscussionItem(state, data)
         }
     },
     NEW_FLAG(state,data){
@@ -8559,74 +8514,10 @@ const mutations = {
                 }
             }
         } else if (data.item === 'discussion') {
-            let index,
-                likeIndex
-            index = state.posts.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.posts[index].likes.findIndex(like=>{
-                    return like.id === data.like.id
-                })
-                if (likeIndex === -1) {
-                    state.posts[index].likes.push(data.like)
-                }
-            }
-            index = state.discussions.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussions[index].likes.findIndex(like=>{
-                    return like.id === data.like.id
-                })
-                if (likeIndex === -1) {
-                    state.discussions[index].likes.push(data.like)
-                }
-            }
-            index = state.discussionsMine.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsMine[index].likes.findIndex(like=>{
-                    return like.id === data.like.id
-                })
-                if (likeIndex === -1) {
-                    state.discussionsMine[index].likes.push(data.like)
-                }
-            }
-            index = state.discussionsFollowers.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsFollowers[index].likes.findIndex(like=>{
-                    return like.id === data.like.id
-                })
-                if (likeIndex === -1) {
-                    state.discussionsFollowers[index].likes.push(data.like)
-                }
-            }
-            index = state.discussionsFollowings.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsFollowings[index].likes.findIndex(like=>{
-                    return like.id === data.like.id
-                })
-                if (likeIndex === -1) {
-                    state.discussionsFollowings[index].likes.push(data.like)
-                }
-            }
-            index = state.discussionsAttachments.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsAttachments[index].likes.findIndex(like=>{
-                    return like.id === data.like.id
-                })
-                if (likeIndex === -1) {
-                    state.discussionsAttachments[index].likes.push(data.like)
-                }
-            }
+            data.addable = 'likes'
+            data.addedItem = data.like
+
+            findAndAddDiscussionItem(state, data)
         }        
     },
     LIKE_DELETE_SUCCESS(state, data){
@@ -9562,74 +9453,10 @@ const mutations = {
                 }
             }
         } else if (data.item === 'discussion') {
-            let index,
-                likeIndex
-            index = state.posts.findIndex(post => {
-                return post.id === data.itemId && post.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.posts[index].likes.findIndex(like=>{
-                    return like.id === data.likeId
-                })
-                if (likeIndex > -1) {
-                    state.posts[index].likes.splice(likeIndex,1)
-                }
-            }
-            index = state.discussions.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussions[index].likes.findIndex(like=>{
-                    return like.id === data.likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussions[index].likes.splice(likeIndex,1)
-                }
-            }
-            index = state.discussionsMine.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsMine[index].likes.findIndex(like=>{
-                    return like.id === data.likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsMine[index].likes.splice(likeIndex,1)
-                }
-            }
-            index = state.discussionsFollowers.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsFollowers[index].likes.findIndex(like=>{
-                    return like.id === data.likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsFollowers[index].likes.splice(likeIndex,1)
-                }
-            }
-            index = state.discussionsFollowings.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsFollowings[index].likes.findIndex(like=>{
-                    return like.id === data.likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsFollowings[index].likes.splice(likeIndex,1)
-                }
-            }
-            index = state.discussionsAttachments.findIndex(discussion => {
-                return discussion.id === data.itemId && discussion.isDiscussion
-            })
-            if (index > -1) {
-                likeIndex = state.discussionsAttachments[index].likes.findIndex(like=>{
-                    return like.id === data.likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsAttachments[index].likes.splice(likeIndex,1)
-                }
-            }
+            data.deletable = 'likes'
+            data.deletableId = data.likeId
+
+            findAndDeleteDiscussionItem(state, data)
         }
     },
     NEW_LIKE(state,data){
@@ -10554,73 +10381,15 @@ const mutations = {
                 }
             }
         } else if (data.likeData.item === 'discussion') {
-            //discussions
-            postIndex = state.posts.findIndex(post=>{
-                return post.id === itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.posts[postIndex].likes.findIndex(like=>{
-                    return like.id === data.likeData.like.id
-                })
-                if(likeIndex === -1){
-                    state.posts[postIndex].likes.push(data.likeData.like)
+            
+            findAndAddDiscussionItem(
+                state, 
+                {
+                    addable: 'likes',
+                    addedItem: data.likeData.like,
+                    itemId
                 }
-            }
-            postIndex = state.discussions.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussions[postIndex].likes.findIndex(like=>{
-                    return like.id === data.likeData.like.id
-                })
-                if(likeIndex === -1){
-                    state.discussions[postIndex].likes.push(data.likeData.like)
-                }
-            }
-            postIndex = state.discussionsMine.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsMine[postIndex].likes.findIndex(like=>{
-                    return like.id === data.likeData.like.id
-                })
-                if(likeIndex === -1){
-                    state.discussionsMine[postIndex].likes.push(data.likeData.like)
-                }
-            }
-            postIndex = state.discussionsFollowers.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsFollowers[postIndex].likes.findIndex(like=>{
-                    return like.id === data.likeData.like.id
-                })
-                if(likeIndex === -1){
-                    state.discussionsFollowers[postIndex].likes.push(data.likeData.like)
-                }
-            }
-            postIndex = state.discussionsFollowings.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsFollowings[postIndex].likes.findIndex(like=>{
-                    return like.id === data.likeData.like.id
-                })
-                if(likeIndex === -1){
-                    state.discussionsFollowings[postIndex].likes.push(data.likeData.like)
-                }
-            }
-            postIndex = state.discussionsAttachments.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsAttachments[postIndex].likes.findIndex(like=>{
-                    return like.id === data.likeData.like.id
-                })
-                if(likeIndex === -1){
-                    state.discussionsAttachments[postIndex].likes.push(data.likeData.like)
-                }
-            }
+            )
         }
     },
     REMOVE_LIKE(state,data){
@@ -11576,73 +11345,15 @@ const mutations = {
                 }
             }
         } else if (data.item === 'discussion') {
-            //discussions
-            postIndex = state.posts.findIndex(post=>{
-                return post.id === itemId && post.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.posts[postIndex].likes.findIndex(like=>{
-                    return like.id === likeId
-                })
-                if (likeIndex > -1) {
-                    state.posts[postIndex].likes.splice(likeIndex,1)
+            
+            findAndDeleteDiscussionItem(
+                state,
+                {
+                    deletable: 'likes',
+                    deletableId: likeId,
+                    itemId
                 }
-            }
-            postIndex = state.discussions.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussions[postIndex].likes.findIndex(like=>{
-                    return like.id === likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussions[postIndex].likes.splice(likeIndex,1)
-                }
-            }
-            postIndex = state.discussionsMine.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsMine[postIndex].likes.findIndex(like=>{
-                    return like.id === likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsMine[postIndex].likes.splice(likeIndex,1)
-                }
-            }
-            postIndex = state.discussionsFollowers.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsFollowers[postIndex].likes.findIndex(like=>{
-                    return like.id === likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsFollowers[postIndex].likes.splice(likeIndex,1)
-                }
-            }
-            postIndex = state.discussionsFollowings.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsFollowings[postIndex].likes.findIndex(like=>{
-                    return like.id === likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsFollowings[postIndex].likes.splice(likeIndex,1)
-                }
-            }
-            postIndex = state.discussionsAttachments.findIndex(discussion=>{
-                return discussion.id === itemId && discussion.isDiscussion
-            })
-            if (postIndex > -1) {
-                likeIndex = state.discussionsAttachments[postIndex].likes.findIndex(like=>{
-                    return like.id === likeId
-                })
-                if (likeIndex > -1) {
-                    state.discussionsAttachments[postIndex].likes.splice(likeIndex,1)
-                }
-            }
+            )
         }
     },
 

@@ -200,8 +200,8 @@
                                         select='edit your answer'
                                         :selectedItem='answer.answer.trim()'
                                         :itemId='answer.id'
-                                        :ownerId='profile.params.accountId'
-                                        :ownerType='profile.params.account'
+                                        :ownerId='profile.accountId'
+                                        :ownerType='profile.account'
                                         @clickedListButton="clickedEditListButton"
                                         @listItemSelected="editListItemSelected"
                                     ></main-list>
@@ -248,10 +248,8 @@
             </span>
             <div :key="key" v-for="(profile,key) in computedProfiles">
                 <profile-bar
-                    :name="profile.name"
-                    :type="profile.params.account"
                     :smallType="true"
-                    :routeParams="profile.params"
+                    :profile="profile"
                     :navigate="false"
                     @clickedProfile="clickedProfile"
                 ></profile-bar>
@@ -616,7 +614,7 @@ import { dates, strings } from '../services/helpers'
                 if (profiles) {
                     
                     profile =  profiles.findIndex(el=>{
-                        return this.answer.answeredby_id === el.params.accountId && 
+                        return this.answer.answeredby_id === el.accountId && 
                             this.answer.answeredby_type === el.profile
                     })
 

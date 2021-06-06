@@ -2,7 +2,7 @@
     <div class="request-badge-wrapper" v-if="request">
         <div class="section">
             <div class="name">
-                {{request.name}}
+                {{request.account.name}}
             </div>
             <div class="created-at">
                 {{request.createdAt}}
@@ -21,10 +21,11 @@
                 {{request.message}}
             </div>
         </div>
-        <div class="section buttons">
+        <div class="section-buttons">
             <pulse-loader 
                 v-if="loading"
-                class="loading" 
+                class="loading"
+                size="10px"
                 :loading="loading"
             ></pulse-loader>
 
@@ -34,24 +35,35 @@
                     text="details"
                     class="action-button"
                 ></action-button>
-                <action-button
-                    @click="clickedAction"
-                    text="messages"
-                    class="action-button"
-                ></action-button>
-                <action-button
-                    @click="clickedSendResponse"
-                    text="accept"
-                    v-if="computedHasPending"
-                    class="action-button"
-                ></action-button>
-                <action-button
-                    @click="clickedSendResponse"
-                    text="decline"
-                    v-if="computedHasPending"
-                    class="action-button"
-                ></action-button>
+                <div class="messages-button">
+                    <action-button
+                        @click="clickedAction"
+                        text="messages"
+                        class="action-button"
+                    ></action-button>
+                    <div class="counter" v-if="newMessagesCounter">
+                        {{newMessagesCounter}}
+                    </div>
+                </div>
+                <template v-if="computedIsTo">
+                    <action-button
+                        @click="clickedSendResponse"
+                        text="accept"
+                        v-if="computedHasPending"
+                        class="action-button"
+                    ></action-button>
+                    <action-button
+                        @click="clickedSendResponse"
+                        text="decline"
+                        v-if="computedHasPending"
+                        class="action-button"
+                    ></action-button>
+                </template>
             </template>
+        </div>
+
+        <div class="small-msg" v-if="dashboard">
+            {{computedExtraMessage}}
         </div>
 
         <create-response
@@ -66,11 +78,13 @@ import CreateResponse from "./forms/CreateResponse"
 import ProfilePicture from "./profile/ProfilePicture"
 import ActionButton from "./ActionButton"
 import { mapActions } from 'vuex'
+import PulseLoader from "vue-spinner/src/PulseLoader";
     export default {
         components: {
             ActionButton,
             ProfilePicture,
             CreateResponse,
+            PulseLoader,
         },
         props: {
             request: {
@@ -79,20 +93,63 @@ import { mapActions } from 'vuex'
                     return null
                 }
             },
+            dashboard: {
+                type: Boolean,
+                default: false
+            },
         },
         data() {
             return {
+                loading: false,
                 showCreateModal: false,
-                response: '',
+                newMessagesCounter: 0,
+            }
+        },
+        watch: {
+            request: {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        this.listenToRequestChannels()
+                    }
+                }
             }
         },
         computed: {
             computedHasPending() {
                 return this.request.state === 'pending'
             },
+            computedExtraMessage() {
+                let type = 'to'
+
+                if (this.request.isFrom) {
+                    type = 'from'
+                }
+
+                return `${this.request.action} request sent ${type} ${this.request.myAccount.name}`
+            },
+            computedIsTo() {
+                if (!this.dashboard) {
+                    return true
+                }
+
+                return this.isTo
+            }
         },
         methods: {
-            ...mapActions(['dashboard/sendResponse']),
+            ...mapActions([]),
+            listenToRequestChannels() {
+                Echo
+                    .channel(`youredu.request.${this.request.id}`)
+                    .listen(`.newMessage`, this.newRequestMessage)
+            },
+            newRequestMessage(data) {
+                this.newMessagesCounter++
+                this.$emit('newMessage', data)
+            },
+            deleteRequestMessage(data) {
+                this.$emit('deleteMessage', data)
+            },
             clickedAction(text) {
                 if (text === 'messages') {
                     this.$emit('showMessages', this.request)
@@ -101,8 +158,9 @@ import { mapActions } from 'vuex'
 
                 this.$emit('showDetails', this.request)
             },
-            async clickedSendResponse() {
-                this.request.response = this.response
+            async clickedSendResponse(text) {
+                this.loading = true
+                this.request.response = text
                 this.$emit('clickedAction', this.request)
             }
         },
@@ -130,6 +188,11 @@ import { mapActions } from 'vuex'
                 overflow-x: auto;
             }
 
+            .loading{
+                text-align: center;
+                width: 100%;
+            }
+
             .profile-picture{
                 min-width: 40px;
                 width: 40px;
@@ -154,6 +217,28 @@ import { mapActions } from 'vuex'
             .message{
                 @include small-msg;
                 text-align: justify;
+            }
+        }
+
+        .section-buttons{
+            position: relative;
+            display: flex;
+            justify-content: space-around;
+
+            .messages-button{
+                position: relative;
+
+                .action-button{
+                    margin: 0;
+                }
+
+                .counter{
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    color: $color-secondary;
+                    font-size: 14px;
+                }
             }
         }
     }

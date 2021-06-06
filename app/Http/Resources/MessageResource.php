@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class MessageResource extends JsonResource
@@ -35,16 +36,13 @@ class MessageResource extends JsonResource
             'id' => $this->id,
             'conversationId' => $this->conversation_id,
             'message' => $this->message,
-            'toable_id' => $this->toable_id,
-            'toable_type' => $this->toable_type,
-            'to_user_id' => $this->to_user_id,
-            'fromable_id' => $this->fromable_id,
-            'fromable_type' => $this->fromable_type,
-            'from_user_id' => $this->from_user_id,
+            'questions' => ChatQuestionResource::collection($this->questions),
+            'toAccount' => new UserAccountResource($this->toable),
+            'fromAccount' => new UserAccountResource($this->fromable),
             'state' => $this->state,
-            'updated_at' => $this->updated_at,
-            'created_at' => $this->created_at,
+            'created_at' => Carbon::parse($this->created_at)->diffForHumans(),
             'userDeletes' => $this->user_deletes,
+            'userSeens' => $this->user_seens,
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,

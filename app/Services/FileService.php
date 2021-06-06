@@ -200,6 +200,7 @@ class FileService
             return true;
         }
 
+        ray($files, $searchFile)->green();
         $incidence = count(
             array_filter($files, function($file) use ($searchFile) {
                 return $file->type === $searchFile->type && 
@@ -214,7 +215,16 @@ class FileService
         return false;
     }
 
-    public static function updatetItemFilesCountUsingMimeType
+    private static function existInFiles
+    (
+        $searchFile,
+        $files
+    ) : bool
+    {
+        return ! self::doesntExistInFiles($searchFile, $files);
+    }
+
+    public static function increaseFilesCountUsingMimeType
     (
         $fileMime, 
         $itemFileDTO
@@ -238,7 +248,7 @@ class FileService
         $itemFileDTO->filesCount++;
     }
 
-    public static function updatetItemFilesCountUsingFileType
+    public static function decreaseFilesCountUsingFileType
     (
         $fileType, 
         $itemFileDTO
@@ -272,22 +282,10 @@ class FileService
     {
         $itemFileDTO = new ItemFilesDTO;
 
-        if ($item) {
-            foreach ($item->allFiles() as $file) {
-    
-                if (self::doesntExistInFiles($file, $dto->removedFiles ?? [])) {
-                    self::updatetItemFilesCountUsingMimeType(
-                        $file->mime,
-                        $itemFileDTO
-                    );
-                }
-            }
-        }
-
         if (property_exists($dto,'files')) {
             foreach ($dto->files as $file) {
 
-                self::updatetItemFilesCountUsingMimeType(
+                self::increaseFilesCountUsingMimeType(
                     $file->getClientMimeType(),
                     $itemFileDTO
                 );
@@ -297,11 +295,26 @@ class FileService
         if (property_exists($dto,'removedFiles')) {
             foreach ($dto->removedFiles as $file) {
                 
-                self::updatetItemFilesCountUsingFileType(
+                self::decreaseFilesCountUsingFileType(
                     $file->type,
                     $itemFileDTO
                 );
             }
+        }
+
+        if (! $item) {
+            return $itemFileDTO;
+        }
+        
+        foreach ($item->allFiles() as $file) {
+            if (self::existInFiles($file, $dto->removedFiles ?? [])) {
+                continue;
+            }
+
+            self::increaseFilesCountUsingMimeType(
+                $file->mime,
+                $itemFileDTO
+            );
         }
 
         return $itemFileDTO;
@@ -417,5 +430,10 @@ class FileService
             Storage::delete($file->path);
             $file->delete();
         }
+    }
+
+    public static function uploadedFileHasType($file, $fileType)
+    {
+        return Str::contains($file->getClientMimeType(), $fileType);
     }
 }

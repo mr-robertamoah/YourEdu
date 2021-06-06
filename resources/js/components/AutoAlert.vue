@@ -2,7 +2,7 @@
     <fade-right>
         <template slot="transition" 
                 v-if="show">
-            <div class="alert-wrapper" 
+            <div class="alert-wrapper z-50" 
                 :class="{success, danger, sticky}"
             >
                 {{message}}

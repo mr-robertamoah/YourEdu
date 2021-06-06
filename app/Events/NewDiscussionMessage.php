@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\DiscussionMessageResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -12,22 +13,16 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use \Debugbar;
 
-class NewDiscussionMessage implements ShouldBroadcastNow
+class NewDiscussionMessage implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $message;
-    public $discussionId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($message, $discussionId)
-    {
-        $this->message = $message;
-        $this->discussionId = $discussionId;
-    }
+    public function __construct(private $messageDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -36,7 +31,7 @@ class NewDiscussionMessage implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new Channel("youredu.discussion.{$this->discussionId}");
+        return new Channel("youredu.discussion.{$this->messageDTO->message->messageable->id}");
     }
     
     public function broadcastAs()
@@ -47,7 +42,7 @@ class NewDiscussionMessage implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'message' => $this->message
+            'message' => new DiscussionMessageResource($this->messageDTO->message)
         ];
     }
 }

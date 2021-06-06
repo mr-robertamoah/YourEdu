@@ -20,7 +20,6 @@ class CreateConversationsTable extends Migration
             $table->enum('account_type',['ALL','LEARNERS','FACILITATORS','PARENTS','PROFESSIONALS','ADMIN'])->nullable();
             $table->string('description')->nullable();
             $table->string('name')->nullable();
-            $table->string('profile_url')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -254,7 +254,7 @@
                                 v-for="(profile, index) in computedProfiles"
                                 :key="index"
                                 :account="profile"
-                                :isActive="makeActiveProfile(profile.params)"
+                                :isActive="makeActiveProfile(profile)"
                                 @clickedActivate="clickedActivate"
                                 class="user-account-item"
                             ></user-account>
@@ -458,7 +458,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                 return this.messagesLoading ? false : this.computedChatStatusRequest ? false : 
                     this.computedChatStatus ? false : this.computedChatStatusPending && 
                     !this.chatMessages.length ? true : this.computedChatStatusPending &&  
-                    this.chatMessages.filter(message=>message.from_user_id === this.getUser.id).length < 1
+                    this.chatMessages.filter(message=>message.fromable.userId === this.getUser.id).length < 1
                     ? true : false
             },
             computedChatStatus(){ 
@@ -728,8 +728,8 @@ import InfiniteLoading from 'vue-infinite-loading'
                     userId = this.chattingAccount.hasOwnProperty('account_user_id') ? 
                         this.chattingAccount.account_user_id : this.chattingAccount.user_id
                 
-                data.account = this.getActiveProfile.params.account
-                data.accountId = this.getActiveProfile.params.accountId
+                data.account = this.getActiveProfile.account
+                data.accountId = this.getActiveProfile.accountId
                 data.chattingUserId = userId
                 data.answerId = markDetails.answerId
                 data.questionId = markDetails.questionId
@@ -869,8 +869,8 @@ import InfiniteLoading from 'vue-infinite-loading'
                 let response,
                     data = {}
                 
-                data.account = this.getActiveProfile.params.account
-                data.accountId = this.getActiveProfile.params.accountId
+                data.account = this.getActiveProfile.account
+                data.accountId = this.getActiveProfile.accountId
                 data.chattingAccount = this.chattingAccount.account
                 data.chattingAccountId = this.chattingAccount.accountId
                 
@@ -922,12 +922,11 @@ import InfiniteLoading from 'vue-infinite-loading'
             },
             markMessagesQuestionsSeen(conversationId){
                 if (this.conversationId != conversationId) {
-                    console.log('returned');
                     return
                 }
                 this.chatMessages.forEach(chatItem=>{
-                    if (chatItem.from_user_id === this.getUser.id ||
-                        chatItem.user_id === this.getUser.id) {
+                    if (chatItem.fromable?.userId === this.getUser.id ||
+                        chatItem.addedby?.userId === this.getUser.id) {
                         chatItem.state = 'SEEN'
                     }
                 })
@@ -948,7 +947,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                                 itemId: message.message.id,
                                 conversationId: message.message.conversationId,
                                 state: 'SEEN',
-                                userId: message.message.from_user_id
+                                userId: message.message.fromable.userId
                             })
                         } else {
                             this.sendChatItemStatus({
@@ -956,7 +955,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                                 itemId: message.message.id,
                                 conversationId: message.message.conversationId,
                                 state: 'RECEIVED',
-                                userId: message.message.from_user_id
+                                userId: message.message.fromable.userId
                             })
                         }
                     })
@@ -970,7 +969,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                                 itemId: question.question.id,
                                 conversationId: question.question.questionableId,
                                 state: 'SEEN',
-                                userId: question.question.user_id
+                                userId: question.question.addedby.userId
                             })
                         } else {
                             this.sendChatItemStatus({
@@ -978,7 +977,7 @@ import InfiniteLoading from 'vue-infinite-loading'
                                 itemId: question.question.id,
                                 conversationId: question.question.questionableId,
                                 state: 'RECEIVED',
-                                userId: question.question.user_id
+                                userId: question.question.addedby.userId
                             })
                         }
                     })
@@ -1139,21 +1138,21 @@ import InfiniteLoading from 'vue-infinite-loading'
                     }
                 }
             },
-            makeActiveProfile(params){
-                return params.account === this.computedActiveProfile.params.account &&
-                    params.accountId === this.computedActiveProfile.params.accountId ?
+            makeActiveProfile(profile){
+                return profile.account === this.computedActiveProfile.account &&
+                    profile.accountId === this.computedActiveProfile.accountId ?
                     true : false
             },
             clickedActivate(data){
                 this['profile/setActiveProfile']({
-                    account: data.params.account,
-                    account_id: data.params.accountId,
+                    account: data.account,
+                    accountId: data.accountId,
                 })
             },
             setActiveProfile(data){
                 this['profile/setActiveProfile']({
                     account: data.account,
-                    account_id: data.accountId,
+                    accountId: data.accountId,
                 })
             },
             async clickedMessageResponse(messageResponse){
@@ -1161,8 +1160,8 @@ import InfiniteLoading from 'vue-infinite-loading'
                 let response = null,
                     data = {}
                 
-                data.account = this.getActiveProfile.params.account
-                data.accountId = this.getActiveProfile.params.accountId
+                data.account = this.getActiveProfile.account
+                data.accountId = this.getActiveProfile.accountId
                 data.chattingAccount = this.chattingAccount.account
                 data.chattingAccountId = this.chattingAccount.accountId
 
@@ -1424,8 +1423,8 @@ import InfiniteLoading from 'vue-infinite-loading'
                     userId = this.chattingAccount.hasOwnProperty('account_user_id') ? 
                         this.chattingAccount.account_user_id : this.chattingAccount.user_id
 
-                formData.append('account', this.getActiveProfile.params.account)
-                formData.append('accountId', this.getActiveProfile.params.accountId)
+                formData.append('account', this.getActiveProfile.account)
+                formData.append('accountId', this.getActiveProfile.accountId)
                 formData.append('chattingUserId',userId)
                 formData.append('body', data.question)
                 formData.append('published', new Date().toDateString())
@@ -1466,8 +1465,8 @@ import InfiniteLoading from 'vue-infinite-loading'
                     userId = this.chattingAccount.hasOwnProperty('account_user_id') ? 
                         this.chattingAccount.account_user_id : this.chattingAccount.user_id
 
-                formData.append('account',this['getActiveProfile'].params.account)
-                formData.append('accountId',this['getActiveProfile'].params.accountId)
+                formData.append('account',this['getActiveProfile'].account)
+                formData.append('accountId',this['getActiveProfile'].accountId)
                 formData.append('chattingUserId',userId)
                 
                 data.conversationId = this.conversationId

@@ -7,6 +7,7 @@ use Database\Factories\RequestFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\Builder;
 
 class Request extends Model
 {
@@ -17,7 +18,9 @@ class Request extends Model
     const ACCEPTED = 'ACCEPTED';
     const DECLINED = 'DECLINED';
 
-    protected $fillable = ['state','data'];
+    protected $fillable = [
+        'state','data',
+    ];
 
     public function price()
     {
@@ -108,6 +111,209 @@ class Request extends Model
     public function discounts()
     {
         return $this->morphedByMany(Discount::class, 'requestable', 'requestables');
+    }
+
+    public function isMessageRequest()
+    {
+        return $this->requestable_type === 'App\YourEdu\Message';
+    }
+
+    public function isDiscussionRequest()
+    {
+        return $this->requestable_type === 'App\YourEdu\Discussion';
+    }
+
+    public function isNotDiscussionRequest()
+    {
+        return ! $this->isDiscussionRequest();
+    }
+
+    public function isAssessmentRequest()
+    {
+        return $this->requestable_type === 'App\YourEdu\Assessment';
+    }
+
+    public function isNotAssessmentRequest()
+    {
+        return ! $this->isAssessmentRequest();
+    }
+
+    public function isMarkerRequest()
+    {
+        return $this->data && str_contains($this->data, 'marker');
+    }
+
+    public function isNotMarkerRequest()
+    {
+        return ! $this->isMarkerRequest();
+    }
+
+    public function scopeWhereSentBy
+    (
+        $query,
+        $account
+    )
+    {
+        return $query->where(function($query) use ($account) {
+                $query->where('requestfrom_type', $account::class)
+                    ->where('requestfrom_id', $account->id);
+            });
+    }
+
+    public function scopeWhereRequestFromUsers($query, $userIds)
+    {
+        if (! is_array($userIds)) {
+            return $query;
+        }
+
+        return $query->where(function($query) use ($userIds) {
+            $query->whereHasMorph('requestfrom','*',function($query) use ($userIds){
+                $query->whereUsers($userIds);
+            });
+        });
+    }
+
+    public function scopeWhereRequestFromUser($query, $userIds)
+    {
+        return $query->where(function($query) use ($userIds) {
+            $query->whereHasMorph('requestfrom','*',function($query) use ($userIds){
+                $query->whereUser($userIds);
+            });
+        });
+    }
+
+    public function scopeWhereSentTo
+    (
+        $query,
+        $account
+    )
+    {
+        return $query->where(function($query) use ($account) {
+                $query->where('requestto_type', $account::class)
+                    ->where('requestto_id', $account->id);
+            });
+    }
+
+    public function scopeWhereSentByOrSentTo
+    (
+        $query,
+        $account
+    )
+    {
+        return $query->where(function($query) use ($account) {
+                $query->whereSentby($account);
+            })->orWhere(function($query) use ($account) {
+                $query->whereSentTo($account);
+            });
+    }
+
+    public function scopeWhereRequestableTypeNotIn
+    (
+        $query,
+        $requestableTypes = []
+    )
+    {
+        return $query->when(
+            count($requestableTypes),
+            function($query) use ($requestableTypes) {
+                $query->where(function($query) use ($requestableTypes) {
+                    $query->whereNotIn('requestable_type', $requestableTypes);
+                });
+            },
+            function($query) {
+                return $query;
+            }
+        );
+    }
+
+    public function scopeWhereRequestableTypeIn
+    (
+        Builder $query,
+        $requestableTypes = []
+    )
+    {
+        return $query->when(
+            count($requestableTypes),
+            function($query) use ($requestableTypes) {
+                $query->where(function($query) use ($requestableTypes) {
+                    $query->whereIn('requestable_type', $requestableTypes);
+                });
+            },
+            function($query) {
+                return $query;
+            }
+        );
+    }
+
+    public function scopeWhereSentToAccountByUser
+    (
+        $query,
+        $userId,
+        $requestto
+    )
+    {
+        return $query->where(function($query) use ($userId, $requestto) {
+            $query->where('requestto_type', $requestto::class)
+                ->where('requestto_id', $requestto->id)
+                ->whereHasMorph('requestfrom','*',function($query,) use ($userId){
+                    $query->whereUser($userId);
+                });
+        });
+    }
+
+    public function scopeWhereMarkerRequest($query)
+    {
+        return $query->where('data', 'like', '%marker%');
+    }
+
+    public function scopeWhereSentToAccountByAccount
+    (
+        $query,
+        $requestfrom,
+        $requestto,
+    )
+    {
+        return $query->where(function($query) use ($requestfrom, $requestto) {
+            $query->where('requestto_type', $requestto::class)
+                ->where('requestto_id', $requestto->id)
+                ->where('requestfrom_type', $requestfrom::class)
+                ->where('requestfrom_id', $requestfrom->id);
+        });
+    }
+
+    public function scopeWherePending($query)
+    {
+        return $query->where(function($query) {
+            $query->where('state', 'PENDING');
+        });
+    }
+
+    public function scopeWhereFollowRequest($query)
+    {
+        return $query->where(function($query) {
+            $query->where('requestable_type','App\YourEdu\Follow');
+        });
+    }
+
+    public function scopeWhereDiscussionRequest($query)
+    {
+        return $query->where(function($query) {
+            $query->where('requestable_type','App\YourEdu\Discussion');
+        });
+    }
+
+    public function scopeWhereMessageRequest($query)
+    {
+        return $query->where(function($query) {
+            $query->where('requestable_type','App\YourEdu\Message');
+        });
+    }
+
+    public function scopeWhereAssessmentRequest($query)
+    {
+        return $query->where(function($query) {
+            $query->where('requestable_type','App\YourEdu\Assessment');
+        });
     }
 
     protected static function newFactory()

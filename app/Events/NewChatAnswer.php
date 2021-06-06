@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\AnswerResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,18 +16,12 @@ class NewChatAnswer implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $question;
-    public $userId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($question, $userId)
-    {
-        $this->question = $question;
-        $this->userId = $userId;
-    }
+    public function __construct(private $answer){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -35,7 +30,7 @@ class NewChatAnswer implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.message.{$this->userId}");
+        return new PrivateChannel("youredu.message.{$this->answer->answerable->questionable->id}");
     }
     
     public function broadcastAs()
@@ -46,7 +41,7 @@ class NewChatAnswer implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'question' => $this->question
+            'answer' => new AnswerResource($this->answer)
         ];
     }
 }

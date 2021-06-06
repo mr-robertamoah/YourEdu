@@ -1,3 +1,11 @@
+function addDataToPostProperty({state, property, fn, data}, methodType = 'push'){
+    
+    let index = state.posts.findIndex(fn(item))
+
+    if (index > -1) {
+        state.posts[index][property][methodType](data)
+    }
+}
 const mutations = {
     CLEAR_MEDIA(state){
         state.media = []
@@ -166,20 +174,24 @@ const mutations = {
         }
     },
     CREATE_DISCUSSION_PARTICIPANT(state,data){
-        let index = state.posts.findIndex(item=>{
-            return item.id === data.discussionId && item.isDiscussion
+        let type = 'is' + _.capitalize(data.computedItem.item)
+
+        addDataToPostProperty({
+            state,
+            property: 'participants',
+            fn: (item) => item.id == data.computedItem.itemId && item[type],
+            data: data.participant
         })
-        if (index > -1) {
-            state.posts[index].participants.push(data.discussionParticipant)
-        }
     },
-    CREATE_PENDING_DISCUSSION_PARTICIPANT(state,data){
-        let index = state.posts.findIndex(item=>{
-            return item.id === data.discussionId && item.isDiscussion
+    CREATE_PENDING_ITEM_PARTICIPANT(state,data){
+        let type = 'is' + _.capitalize(data.computedItem.item)
+
+        addDataToPostProperty({
+            state,
+            property: 'pendingParticipants',
+            fn: (item) => item.id == data.computedItem.itemId && item[type],
+            data: data.pendingParticipant
         })
-        if (index > -1) {
-            state.posts[index].pendingJoinParticipants.push(data.pendingParticipant)
-        }
     },
     NEW_DISCUSSION(state,discussion){ //from websocket to profile
         state.posts.unshift(discussion)
@@ -1246,6 +1258,10 @@ const mutations = {
                 }
             }
         }
+    },
+    ///////////////////////////
+    ASSESSMENT_CREATE_SUCCESS(state, assessment){ 
+        state.posts.unshift(assessment)
     },
 
     ////////////////////////////////////////

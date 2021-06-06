@@ -18,12 +18,7 @@ class Conversation extends Model
 
     public function messages()
     {
-        return $this->hasMany(Message::class);
-    }
-
-    public function questions()
-    {
-        return $this->morphMany(Question::class,'questionable');
+        return $this->morphMany(Message::class, 'messageable');
     }
 
     public function learners()
@@ -54,6 +49,55 @@ class Conversation extends Model
     public function conversationAccounts()
     {
         return $this->hasMany(ConversationAccount::class);
+    }
+
+    public function accountableHavingUserId($userId)
+    {
+        return $this->conversationAccounts()
+            ->whereHasMorph('accountable', '*', function($query, $type) use ($userId) {
+                $query->whereUser($userId);
+            })
+            ->first()?->accountable;
+    }
+
+    public function accountableNotHavingUserId($userId)
+    {
+        return $this->conversationAccounts()
+            ->whereHasMorph('accountable', '*', function($query, $type) use ($userId) {
+                $query->whereNotUser($userId);
+            })
+            ->first()?->accountable;
+    }
+
+    public function hasSpecificConversationAccount($account)
+    {
+        return $this->conversationAccounts()
+            ->where('accountable_type',$account::class)
+            ->where('accountable_id', $account->id)
+            ->exists();
+    }
+
+    public static function involvingBothAccounts($accountOne, $accountTwo)
+    {
+        return self::query()
+            ->whereInvolvesBothAccounts($accountOne, $accountTwo)
+            ->first();
+    }
+
+    public function scopeWhereInvolvesBothAccounts($query, $accountOne, $accountTwo)
+    {
+        return $query
+            ->whereHas('conversationAccounts',function($query) use ($accountOne){
+                $query->where([
+                    'accountable_type' => get_class($accountOne),
+                    'accountable_id' => $accountOne->id,
+                ]);
+            })->whereHas('conversationAccounts',function($query) use ($accountTwo){
+                $query->where([
+                    'accountable_type' => get_class($accountTwo),
+                    'accountable_id' => $accountTwo->id,
+                ]);
+            });
     }
 
     protected static function newFactory()

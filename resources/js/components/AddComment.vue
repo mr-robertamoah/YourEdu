@@ -69,10 +69,8 @@
                             </span>
                             <div :key="key" v-for="(profile,key) in computedProfiles">
                                 <profile-bar
-                                    :name="profile.name"
-                                    :type="profile.params.account"
                                     :smallType="true"
-                                    :routeParams="profile.params"
+                                    :profile="profile"
                                     :navigate="false"
                                     @clickedProfile="clickedProfile"
                                 ></profile-bar>
@@ -93,7 +91,7 @@
                 </div>
                     <input type="file" ref="file" 
                         @change="fileChange"
-                        class="d-none">
+                        class="hidden">
             </div>
         </template>
     </fade-left-fast>
@@ -125,9 +123,11 @@ import { strings } from '../services/helpers'
             MainTextarea,
         },
         props: {
-            what: { //what the comment or answer goes to
-                type: String,
-                default: ''
+            what: {
+                type: Object,
+                default() {
+                    return {}
+                }
             },
             edit: {
                 type: Boolean,
@@ -231,9 +231,6 @@ import { strings } from '../services/helpers'
             },
             computedShowIcons(){
                 return this.commentText && this.commentText.length && !this.file ? true : false
-            },
-            computedShowComponent(){
-                return what.length && id > 0 ? true : false
             },
             computedPost(){
                 return (this.file || (this.commentText && this.commentText.length)) && 
@@ -353,8 +350,8 @@ import { strings } from '../services/helpers'
                         onPostModal: this.onPostModal,
                         where: this.$route.name,
                     }
-                    formData.append('item', this.what),
-                    formData.append('itemId', this.id),
+                    formData.append('item', this.what.item),
+                    formData.append('itemId', this.what.itemId),
 
                     response = await this['profile/createComment']({data,formData})
                 }

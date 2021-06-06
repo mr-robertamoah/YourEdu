@@ -11,7 +11,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DeleteRequestMessage implements ShouldBroadcastNow
+class DeleteRequestMessage implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -29,18 +29,18 @@ class DeleteRequestMessage implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PrivateChannel("youredu.request.{$this->messageDTO->messageable->id}");
+        return new Channel("youredu.message.{$this->messageDTO->messageId}");
     }
     
     public function broadcastAs()
     {
-        return 'deleteRequestMessage';
+        return 'deleteMessage';
     }
     
     public function broadcastWith()
     {
         return [
-            'messageId' => $this->messageDTO->message->id,
+            'messageId' => $this->messageDTO->messageId,
         ];
     }
 }

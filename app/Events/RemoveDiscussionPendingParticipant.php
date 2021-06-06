@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\DiscussionPendingParticipantsResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -11,22 +12,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class RemoveDiscussionPendingParticipant implements ShouldBroadcastNow
+class RemoveDiscussionPendingParticipant implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $pendingParticipant;
-    public $discussionId;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($pendingParticipant, $discussionId)
-    {
-        $this->pendingParticipant = $pendingParticipant;
-        $this->discussionId = $discussionId;
-    }
+    public function __construct(private $invitationDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -35,19 +30,18 @@ class RemoveDiscussionPendingParticipant implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new Channel("youredu.discussion.{$this->discussionId}");
+        return new Channel("youredu.discussion.{$this->invitationDTO->request->requestable_id}");
     }
 
     public function broadcastAs()
     {
-        return 'removeDiscussionPendingParticipant';
+        return 'removePendingParticipant';
     }
 
     public function broadcastWith()
     {
         return [
-            'pendingParticipant' => $this->pendingParticipant,
-            'discussionId' => $this->discussionId,
+            'pendingParticipantId' => $this->invitationDTO->participantId
         ];
     }
 }

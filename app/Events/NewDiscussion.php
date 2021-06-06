@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\DiscussionResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -11,20 +12,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewDiscussion implements ShouldBroadcastNow
+class NewDiscussion implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $discussion;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($discussion)
-    {
-        $this->discussion = $discussion;
-    }
+    public function __construct(private $discussionDTO){}
 
     /**
      * Get the channels the event should broadcast on.
@@ -33,10 +30,8 @@ class NewDiscussion implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = class_basename_lower($this->discussion->raisedby_type);
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$this->discussion->raisedby_id}")
+            new Channel("youredu.{$this->discussionDTO->discussion->raisedby->accountType}.{$this->discussionDTO->discussion->raisedby_id}")
         ];
     }
     
@@ -48,7 +43,7 @@ class NewDiscussion implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'discussion' => $this->discussion
+            'discussion' => new DiscussionResource($this->discussionDTO->discussion)
         ];
     }
 }

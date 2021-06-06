@@ -7,7 +7,6 @@
                 @clickedMain="showFollowProfiles = false"
                 :main="false"
                 :mainOther="false"
-                :loading="requestLoading"
                 class="request-modal-wrapper"
             >
                 <template slot="requests">
@@ -61,13 +60,6 @@
                                     @clickedAction="clickedRequestAction"
                                     class="request-badge"
                                 ></discussion-badge>
-                                <other-request-badge
-                                    v-if="request.isAdminRequest"
-                                    :key="`request.${request.id}`"
-                                    :request="request"
-                                    @clickedAction="clickedRequestAction"
-                                    @updateRequest="updateRequest"
-                                ></other-request-badge>
                                 <request-badge
                                     v-if="request.action"
                                     :key="`request.${request.id}`"
@@ -75,6 +67,7 @@
                                     @clickedAction="clickedRequestAction"
                                     @showDetails="clickedShowDetails"
                                     @showMessages="clickedShowMessages"
+                                    @newMessage="newRequestMessage"
                                 ></request-badge>
                             </template>
                         </template>
@@ -103,6 +96,7 @@
 
                 <messages-modal
                     :show="showMessageModal"
+                    :newMessage="newMessage"
                     @closeMessageModal="closeMessageModal"
                     :request="modalRequest"
                 ></messages-modal>
@@ -124,7 +118,6 @@ import MainModal from './MainModal';
 import AccountBadge from "./dashboard/AccountBadge";
 import ParticipantBadge from "./discussion/ParticipantBadge";
 import DiscussionBadge from "./DiscussionBadge";
-import OtherRequestBadge from "./OtherRequestBadge";
 import RequestBadge from "./RequestBadge";
 import PulseLoader from "vue-spinner/src/PulseLoader";
 import MessagesModal from "./MessagesModal"
@@ -140,7 +133,6 @@ import Alert from './../mixins/Alert.mixin';
             JustFade,
             PulseLoader,
             RequestBadge,
-            OtherRequestBadge,
             DiscussionBadge,
             ParticipantBadge,
             AccountBadge,
@@ -160,14 +152,14 @@ import Alert from './../mixins/Alert.mixin';
             return {
                 showMoreRequests: false,
                 showMessageModal: false,
+                showDetailsModal: false,
                 modalRequest: null,
                 requestNextPage: 1,
                 notifications: [],
                 requests: [],
-                showMoreRequests: false,
                 requestLoading: false,
-                showDetailsModal: false,
-                requestId : null,
+                requestId: null,
+                newMessage: null,
             }
         },
         watch: {
@@ -196,7 +188,11 @@ import Alert from './../mixins/Alert.mixin';
             ...mapActions(['acceptFollowRequest','declineFollowRequest','userRequests',
                 'profile/discusionContributionResponse','profile/joinDiscussionResponse',
                 'userNotifications','profile/invitationDiscussionResponse',
-                'dashboard/sendResponse']),
+                'dashboard/sendResponse'
+            ]),
+            newRequestMessage(data) {
+                this.newMessage = data.message
+            },
             closeMessageModal(request) {
                 this.showMessageModal = false
                 this.modalRequest = null
@@ -205,17 +201,28 @@ import Alert from './../mixins/Alert.mixin';
                 this.showMessageModal = true
                 this.modalRequest = request
             },
-            removeRequest(id, type ="message"){ //remove request on success
+            removeRequest(id, type ="message"){
                 let requestIndex = this.requests.findIndex(request=>{
-                    return request.id === id && 
-                        (type === 'message' && request.isMessage || 
-                        type === 'account' && request.isAccount || 
-                        type === 'participant' && request.isParticipant ||
-                        request.action)
+                    if (type === 'message') {
+                        return request.id === id && request.isMessage
+                    }
+                    
+                    if (type === 'account') {
+                        return request.id === id && request.isAccount
+                    }
+                    
+                    if (type === 'participant') {
+                        return request.id === id && request.isParticipant
+                    }
+
+                    return request.id === id
                 })
-                if (requestIndex > -1) {
-                    this.requests.splice(requestIndex,1)
+
+                if (requestIndex === -1) {
+                    return
                 }
+
+                this.requests.splice(requestIndex,1)
             },
             updateRequest(data){
                 let index = this.requests.findIndex(request=>{
@@ -241,17 +248,17 @@ import Alert from './../mixins/Alert.mixin';
                 this.$emit('requestsModalDisappear')
             },
             clickedRequestAction(data){
+                if (data.hasOwnProperty('action')) {
+                    this.acceptOrDeclineRequest(data)
+                    return
+                }
+
                 if (data.hasOwnProperty('message')) {
                     this.acceptOrRejectMessage(data)
                     return
                 }
-                
-                if (data.hasOwnProperty('account')) {
-                    this.acceptOrDeclineAccount(data)
-                    return
-                }
 
-                this.acceptOrDeclineRequest(data)
+                this.acceptOrDeclineAccount(data)
             },
             clickedParticipantAction(participantData){
                 if (participantData.type === 'invitation') {
@@ -270,14 +277,14 @@ import Alert from './../mixins/Alert.mixin';
                 response = await this['dashboard/sendResponse'](formData)
 
                 if (response.status) {
-                    this.removeRequest(request)
+                    this.removeRequest(request.id, 'action')
                     this.alertSuccess = true
                     this.alertMessage = `response was successfully sent 😎`
-                } else {
-                    console.log('response :>> ', response);
-                    this.alertDanger = true
-                    this.alertMessage = `oops! it failed 😕. please try again later.`
+                    return
                 }
+
+                this.alertDanger = true
+                this.alertMessage = `oops! it failed 😕. please try again later.`
             },
             async invitationDiscussionResponse(participantData){
                 let response,
@@ -318,9 +325,9 @@ import Alert from './../mixins/Alert.mixin';
             async acceptOrDeclineAccount(accountData){
                 let response,
                     data = {
-                        account: accountData.account.account_type,
+                        account: accountData.account.account,
                         userId: accountData.account.userId,
-                        accountId: accountData.account.account_id,
+                        accountId: accountData.account.accountId,
                         myAccount: accountData.account.myAccount,
                         myAccountId: accountData.account.myAccountId
                     }

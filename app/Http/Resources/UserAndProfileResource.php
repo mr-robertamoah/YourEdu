@@ -25,7 +25,7 @@ class UserAndProfileResource extends JsonResource
                 $this->user_id;
         } else {
             $data['username'] = $this->username;
-            $data['name'] = $this->full_name;
+            $data['name'] = $this->name;
         }
         
         return $data;

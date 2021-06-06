@@ -24,6 +24,15 @@ class Salariable extends Model
         return $this->morphTo();
     }
 
+    public function scopeWhereSpecificSalariable($query, $account)
+    {
+        return $query->where(function ($query) use ($account) {
+            $query
+                ->where('salariable_type', $account::class)
+                ->where('salariable_id', $account->id);
+        });
+    }
+
     protected static function newFactory()
     {
         //

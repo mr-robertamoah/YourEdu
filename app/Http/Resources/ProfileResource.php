@@ -17,11 +17,9 @@ class ProfileResource extends JsonResource
         $array = [
             'id' => $this->id,
             'user_id' => $this->user_id ? $this->user_id : $this->owner_id,
-            'user_full_name' => $this->profileable->user ? $this->profileable->user->full_name :
-                $this->profileable->owner->full_name,
+            'userFullName' => $this->profileable->user->name,
             'owner_name' => $this->profileable->name,
-            'username' => $this->profileable->user ? $this->profileable->user->username :
-                $this->profileable->owner->full_name,
+            'username' => $this->profileable->user->username,
             'followings' => $this->profileable->followings()->whereNotNull('user_id')->count(),
             'socials' => $this->socials,
             'videos' => $this->when(

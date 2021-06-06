@@ -17,43 +17,36 @@ class DashboardSchoolRequestResource extends JsonResource
     public function toArray($request)
     {
         $data = [];
-        $data['state'] = $this->state;
         $data['id'] = $this->id;
+        $data['state'] = strtolower($this->state);
+
         if (Str::contains(Str::lower($this->requestfrom_type), 'school')) {
-            $data['schoolId'] = $this->requestfrom_id;
-            if ($this->requestto->username) {
-                $data['username'] = $this->requestto->username;
-            } else {
-                $data['account'] = new UserAccountResource($this->requestto);
-                $data['username'] = $this->requestto->user->username;
-            }
             $data['isFrom'] = true;
-        } else if (Str::contains(Str::lower($this->requestto_type), 'school')) {
+
+            $data['account'] = new UserAccountResource($this->requestto);
+            $data['myAccount'] = new UserAccountResource($this->requestfrom);
+        } 
+        
+        if (Str::contains(Str::lower($this->requestto_type), 'school')) {
             $data['isTo'] = true;  
-            $data['schoolId'] = $this->requestto_id;
-            if ($this->requestfrom->username) {
-                $data['username'] = $this->requestfrom->username;
-            } else {
-                $data['account'] = new UserAccountResource($this->requestfrom);
-                $data['username'] = $this->requestfrom->user->username;
-            }        
+
+            $data['account'] = new UserAccountResource($this->requestfrom);
+            $data['myAccount'] = new UserAccountResource($this->requestto);
         }
 
-        if (!is_null($this->data)) {
-            $unserializedData = unserialize($this->data);
-            if (Arr::has($unserializedData,'adminDetails')) {
-                $data['data'] = $unserializedData['adminDetails'];
-            }
-            if (Arr::has($unserializedData,'file')) {             
-                foreach ($unserializedData['file'] as $file) {
-                    $files[] = getYourEduModel($file['type'],$file['id']);
-                }
-                $data['file'] = ImageResource::collection($files);
-            }
-            if (Arr::has($unserializedData,'salary')) {
-                $data['salary'] = $unserializedData['salary'];
-            }
-        }
+        $data['images'] = ImageResource::collection($this->images);
+        $data['videos'] = VideoResource::collection($this->videos);
+        $data['audios'] = AudioResource::collection($this->audios);
+        $data['files'] = FileResource::collection($this->files);
+        $data['salaries'] = PaymentTypeResource::collection($this->salaries);
+        $data['commissions'] = PaymentTypeResource::collection($this->commissions);
+        $data['fees'] = PaymentTypeResource::collection($this->fees);
+        $data['discounts'] = PaymentTypeResource::collection($this->discounts);
+        $data['createdAt'] = $this->created_at->diffForHumans();
+
+        $requestDTO = unserialize($this->data);
+        $data['action'] = $requestDTO->action;
+        $data['message'] = $requestDTO->message;
 
         return $data;
     }
