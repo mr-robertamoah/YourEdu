@@ -2469,10 +2469,9 @@ class DiscussionTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'discussionId' => $discussion->id
         ];
 
-        $response = $this->postJson("api/discussion/invitation", $data);
+        $response = $this->postJson("api/discussion/{$discussion->id}/invite", $data);
 
         $response
             ->dump()
@@ -2512,10 +2511,9 @@ class DiscussionTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'discussionId' => $discussion->id
         ];
 
-        $response = $this->postJson("api/discussion/invitation", $data);
+        $response = $this->postJson("api/discussion/{$discussion->id}/invite", $data);
 
         $response
             ->dump()
@@ -2558,10 +2556,9 @@ class DiscussionTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'discussionId' => $discussion->id
         ];
 
-        $response = $this->postJson("api/discussion/invitation", $data);
+        $response = $this->postJson("api/discussion/{$discussion->id}/invite", $data);
 
         $response
             ->dump()
@@ -2618,10 +2615,9 @@ class DiscussionTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'discussionId' => $discussion->id
         ];
 
-        $response = $this->postJson("api/discussion/invitation", $data);
+        $response = $this->postJson("api/discussion/{$discussion->id}/invite", $data);
 
         $response
             ->dump()

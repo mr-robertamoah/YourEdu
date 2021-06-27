@@ -44,18 +44,21 @@ class AssessmentSection extends Model
         return $this->morphMany(Question::class,'questionable');
     }
 
-    public function notRemovingAllQuestions(array $questions)
+    public function willHaveEnoughQuestions($dto)
     {
-        $questionIds = $this->questions->pluck('id')->toArray();
-
-        return count(
-            array_filter($questions, function($question) use ($questionIds) {
+        return $this->questions->count() - count(
+            array_filter($dto->removedQuestions, function($question) {
                 return in_array(
                     $question->questionId,
-                    $questionIds
+                    $this->questions->pluck('id')->toArray()
                 );
             })
-        ) < $this->questions->count();
+        ) + count($dto->questions) >= $this->maxQuestionsCount();
+    }
+
+    public function maxQuestionsCount()
+    {
+        return $this->random ? $this->max_questions : 1;
     }
 
     public function scopeOrderedByPosition($query)

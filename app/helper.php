@@ -39,6 +39,7 @@ use App\YourEdu\Mark;
 use App\YourEdu\Message;
 use App\YourEdu\Participant;
 use App\YourEdu\Poem;
+use App\YourEdu\PossibleAnswer;
 use App\YourEdu\Post;
 use App\YourEdu\PostAttachment;
 use App\YourEdu\Price;
@@ -53,6 +54,7 @@ use App\YourEdu\Subject;
 use App\YourEdu\Subscription;
 use App\YourEdu\Video;
 use App\YourEdu\Word;
+use App\YourEdu\Work;
 use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -214,6 +216,8 @@ function getYourEduModel($accountText, $accountTextId): Model | null
         $account = Message::find($accountTextId);
     } else if ($accountText === 'question') {
         $account = Question::find($accountTextId);
+    } else if ($accountText === 'possibleAnswer') {
+        $account = PossibleAnswer::find($accountTextId);
     } else if ($accountText === 'follow') {
         $account = Follow::find($accountTextId);
     } else if ($accountText === 'request') {
@@ -222,6 +226,8 @@ function getYourEduModel($accountText, $accountTextId): Model | null
         $account = Mark::find($accountTextId);
     } else if ($accountText === 'word') {
         $account = Word::find($accountTextId);
+    } else if ($accountText === 'work') {
+        $account = Work::find($accountTextId);
     } else if ($accountText === 'keyword') {
         $account = Keyword::find($accountTextId);
     } else if ($accountText === 'character') {

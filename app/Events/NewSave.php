@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\SaveResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,15 +16,13 @@ class NewSave implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $saveArray;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($saveArray)
+    public function __construct(private $saveDTO)
     {
-        $this->saveArray = $saveArray;
     }
 
     /**
@@ -33,33 +32,20 @@ class NewSave implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = null;
-        $accountId = null;
-        if ($this->saveArray->type === 'comment') {
-            $account = class_basename_lower($this->saveArray->save->saveable->commentedby_type);
-            $accountId = $this->saveArray->save->saveable->commentedby_id;
-        } else if ($this->saveArray->type === 'post') {
-            $account = class_basename_lower($this->saveArray->save->saveable->addedby_type);
-            $accountId = $this->saveArray->save->saveable->addedby_id;
-        } else if ($this->saveArray->type === 'answer') {
-            $account = class_basename_lower($this->saveArray->save->saveable->answeredby_type);
-            $accountId = $this->saveArray->save->saveable->answeredby_id;
-        }
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$accountId}")
+            new Channel("youredu.{$this->saveDTO->item}.{$this->saveDTO->itemId}")
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'newSave';
     }
-    
+
     public function broadcastWith()
     {
         return [
-            'save' => $this->saveArray->save
+            'save' => new SaveResource($this->saveDTO->save)
         ];
     }
 }

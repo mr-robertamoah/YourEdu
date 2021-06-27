@@ -2,22 +2,24 @@
 
 namespace App\DTOs;
 
-use App\Contracts\PostTypeDTOContract;
 use App\DTOs\PossibleAnswerDTO;
+use App\Traits\DTOTrait;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class QuestionDTO extends PostTypeDTOContract
+class QuestionDTO
 {
+    use DTOTrait;
+
     public ?string $questionId = null;
     public ?string $body = null;
     public ?string $state = null;
     public ?string $hint = null;
     public ?string $account = null;
     public ?string $accountId = null;
-    public ?string $userId = null;
     public ?string $action = null;
+    public ?string $method = null;
     public bool $autoMark = false;
     public ?int $position = null;
     public ?int $scoreOver = null;
@@ -29,6 +31,7 @@ class QuestionDTO extends PostTypeDTOContract
     public ?Model $questionedby = null;
     public ?string $answerType = null;
     public bool $checkAuthorization = false;
+    public bool $mustHaveScoreOver = false;
     public array $files = [];
     public array $removedFiles = [];
     public ?array $possibleAnswers = [];
@@ -36,30 +39,11 @@ class QuestionDTO extends PostTypeDTOContract
     public ?array $removedPossibleAnswers = [];
     public ?array $correctPossibleAnswers = [];
 
-    public static function new()
-    {
-        return new static;
-    }
-
-    public function addData
-    (
-        $body = null,
-        $hint = null,
-    )
-    {
-        $this->hint = $hint;
-        $this->body = $body;
-
-        return $this;
-    }
-
-    public static function createFromArray
-    (
+    public static function createFromArray(
         array $dataArray
-    ) : array
-    {
+    ): array {
         $questions = [];
-        
+
         foreach ($dataArray as $data) {
             $questions[] = static::createFromData(
                 questionId: $data->questionId ?? null,
@@ -83,14 +67,13 @@ class QuestionDTO extends PostTypeDTOContract
         return $questions;
     }
 
-    public static function createFromData
-    (
+    public static function createFromData(
         array $possibleAnswers = [],
         array $correctPossibleAnswers = [],
         array $removedPossibleAnswers = [],
         array $editedPossibleAnswers = [],
-        $questionId = null, 
-        $body = null, 
+        $questionId = null,
+        $body = null,
         $position = null,
         $state = null,
         $autoMark = false,
@@ -103,8 +86,7 @@ class QuestionDTO extends PostTypeDTOContract
         $answerType = null,
         array $files = [],
         array $removedFiles = [],
-    )
-    {
+    ) {
         $static = new static();
 
         $static->questionId = $questionId;
@@ -129,11 +111,9 @@ class QuestionDTO extends PostTypeDTOContract
         return $static;
     }
 
-    public static function createFromRequest
-    (
+    public static function createFromRequest(
         Request $request,
-    )
-    {
+    ) {
         $static = new static();
 
         $static->questionId = $request->questionId;
@@ -142,7 +122,7 @@ class QuestionDTO extends PostTypeDTOContract
         $static->published = $request->published ?
             Carbon::parse($request->published) : null;
         $static->hint = $request->hint;
-        $static->answerType = $request->answerType ? 
+        $static->answerType = $request->answerType ?
             strtoupper($request->answerType) : null;
         $static->scoreOver = (int)$request->scoreOver;
         if ($static->scoreOver > 100) {
@@ -150,15 +130,15 @@ class QuestionDTO extends PostTypeDTOContract
         } else if ($static->scoreOver < 5) {
             $static->scoreOver = 5;
         }
-        $static->possibleAnswers = !is_null(json_decode($request->possibleAnswers)) ? 
+        $static->possibleAnswers = !is_null(json_decode($request->possibleAnswers)) ?
             PossibleAnswerDTO::createFromArray(
                 json_decode($request->possibleAnswers)
             ) : [];
-        $static->editedPossibleAnswers = !is_null(json_decode($request->editedPossibleAnswers)) ? 
+        $static->editedPossibleAnswers = !is_null(json_decode($request->editedPossibleAnswers)) ?
             PossibleAnswerDTO::createFromArray(
                 json_decode($request->editedPossibleAnswers)
             ) : [];
-        $static->removedPossibleAnswers = !is_null(json_decode($request->removedPossibleAnswers)) ? 
+        $static->removedPossibleAnswers = !is_null(json_decode($request->removedPossibleAnswers)) ?
             PossibleAnswerDTO::createFromArray(
                 json_decode($request->removedPossibleAnswers)
             ) : [];
@@ -170,24 +150,6 @@ class QuestionDTO extends PostTypeDTOContract
             ) : [];
 
         return $static;
-    }
-
-    public function withAddedby(Model $addedby)
-    {
-        $clone = clone $this;
-
-        $clone->addedby = $addedby;
-
-        return $clone;
-    }
-
-    public function withQuestion(Model $question)
-    {
-        $clone = clone $this;
-
-        $clone->question = $question;
-
-        return $clone;
     }
 
     public function resetFiles()
@@ -225,7 +187,7 @@ class QuestionDTO extends PostTypeDTOContract
         if (is_null($files)) {
             return $this;
         }
-        
+
         if (is_null($this->answerDTO)) {
             $this->answerDTO = AnswerDTO::new();
         }

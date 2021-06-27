@@ -64,6 +64,10 @@ trait ServiceTrait
             return;
         }
 
+        if (is_null($account->point)) {
+            return;
+        }
+
         $account->point->value = $account->point->value + 1;
         $account->point->save();
     }

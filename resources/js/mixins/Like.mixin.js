@@ -1,3 +1,5 @@
+import { mapActions } from "vuex"
+
 export default {
     data() {
         return {
@@ -12,20 +14,43 @@ export default {
     watch: {
         "likeData.isLiked"(newValue){
             if (newValue) {
-                this.likeData.likeTitle = 'unlike this discussion'
+                this.likeData.likeTitle = `unlike this ${this.computedItem.item}`
             } else {
-                this.likeData.likeTitle = 'like this discussion'
+                this.likeData.likeTitle = `like this ${this.computedItem.item}`
             }
         },
-        "likeData.likes"(newValue){
-            if (! newValue) {
-                this.likeData.myLike = null
-                this.likeData.isLiked = false
+        "likeData.myLike"(newValue){
+            if (newValue) {
+                this.likeData.isLiked = true
+                return
             }
+            
+            this.likeData.isLiked = false
         },
     },
     methods: {
-        async clickedLike(data){
+        ...mapActions([
+            'profile/createLike', 'profile/deleteLike',
+            'profile/newLike', 'profile/removeLike',
+            'home/newLike', 'home/removeLike',
+        ]),
+        listenForLikes() {
+            
+            Echo.channel(`youredu.${this.computedItem.item}.${this.computedItem.itemId}`)
+                .listen('.newLike', data=>{
+                    this[`${this.$route.name}/newLike`]({
+                        ...this.computedItem,
+                        like: data.like
+                    })
+                })
+                .listen('.deleteLike', data=>{
+                    this[`${this.$route.name}/removeLike`]({
+                        ...this.computedItem,
+                        likeId: data.likeId
+                    })
+                })
+        },
+        async clickedLike() {
             if (this.disabled) {
                 return
             }
@@ -39,14 +64,13 @@ export default {
                 return
             }
             
-            if (!this.getProfiles.length) {
-                this.smallModalInfo= true
-                this.smallModalDelete = false
-                this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can like.'
-                this.showSmallModal = true
-                setTimeout(() => {
-                    this.clearSmallModal()
-                }, 4000);
+            if (! this.getProfiles.length) {
+                this.issueCustomMessage({
+                    type: 'info',
+                    message: 'you must have an account (eg. learner, parent, etc) before you can like.',
+                })
+
+                this.clearSmallModal(false)
                 return
             }
             
@@ -68,7 +92,7 @@ export default {
             this.likeData.likes -= 1
             this.likeData.isLiked = false
 
-            let newData = {
+            let data = {
                 likeId: this.likeData.myLike.id,
                 item: this.computedItem.item,
                 itemId: this.computedItem.itemId,
@@ -76,13 +100,19 @@ export default {
                 ownerId: this.computedOwner.accountId,
             }
 
-            newData.where = this.$route.name
+            if (this.schoolAdmin) {
+                data.adminId = this.schoolAdmin.id
+            }
 
-            let response = await this['profile/deleteLike'](newData)
+            data.where = this.$route.name
+
+            let response = await this['profile/deleteLike'](data)
 
             if (response === 'unsuccessful') {
                 this.likeData.isLiked = true
                 this.likeData.likes += 1
+
+                this.$emit('unlikeSuccessful', {...this.computedItem, likeId: data.like}) //commentUnlikeSuccessful
                 return
             }
 
@@ -103,6 +133,10 @@ export default {
                 ownerId: this.computedOwner.accountId,
             }
 
+            if (this.schoolAdmin) {
+                data.adminId = this.schoolAdmin.id
+            }
+            
             data.where = this.$route.name
 
             let response = await this['profile/createLike'](data)
@@ -110,6 +144,8 @@ export default {
             if (response === 'unsuccessful') {
                 this.likeData.isLiked = false
                 this.likeData.likes -= 1
+
+                this.$emit('likeSuccessful', {...this.computedItem, like: response.like}) //commentLikeSuccessful
                 return
             }
 
@@ -122,7 +158,7 @@ export default {
             }
 
             let index = this.computedItemable.likes.findIndex(like=>{
-                return like.user_id == this.getUser.id
+                return like.userId == this.getUser.id
             })
 
             if (index > -1) {

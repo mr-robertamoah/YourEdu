@@ -36,16 +36,17 @@ class NewPost implements ShouldBroadcast
         $account = class_basename_lower($this->post->addedby_type);
         $accountId = $this->post->addedby_id;
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$accountId}")
+            // new Channel('youredu.home.country'),
+            new PrivateChannel("youredu.followers{$this->post->addedby->accountType}.{$this->post->addedby->id}"),
+            new PrivateChannel("youredu.followings{$this->post->addedby->accountType}.{$this->post->addedby->id}")
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'newPost';
     }
-    
+
     public function broadcastWith()
     {
         return [

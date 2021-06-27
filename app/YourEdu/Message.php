@@ -2,7 +2,7 @@
 
 namespace App\YourEdu;
 
-use App\Traits\ItemFilesTrait;
+use App\Traits\HasFilesTrait;
 use App\User;
 use Database\Factories\MessageFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +13,7 @@ class Message extends Model
 {
     use SoftDeletes,
         HasFactory,
-        ItemFilesTrait;
+        HasFilesTrait;
 
     protected $fillable = [
         'from_user_id','to_user_id','state','message','user_deletes',

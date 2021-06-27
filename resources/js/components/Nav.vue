@@ -270,6 +270,19 @@ import { dates, strings } from '../services/helpers';
                     this.clickedRemoveAlert(id)
                 }, 5000);
             },
+            handleNotification(notification) {
+                console.log(notification);
+                let alert = {
+                    isMessage: true,
+                    account: notification.account,
+                    text: notification.message,
+                    id: Math.floor(Math.random() * 10000)
+                }
+
+                this.alerts.unshift(alert)
+
+                this.clearAlert(alert.id)
+            },
             listen(){
 
                 if (this.getUser && TokenService.getToken()) {
@@ -397,7 +410,10 @@ import { dates, strings } from '../services/helpers';
                                 alert.id = Math.floor(Math.random() * 10000)
                                 this.alerts.unshift(alert)
                                 this.clearAlert(alert.id)
+                            } else {
+                                this.handleNotification(notification)
                             }
+
                             this.newNotification = true
                         })
                         .listen('.newFollower', data=>{

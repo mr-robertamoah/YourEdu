@@ -2,7 +2,8 @@
 
 namespace App\YourEdu;
 
-use App\Traits\ItemFilesTrait;
+use App\Traits\HasFilesTrait;
+use App\Traits\HasPositionsTrait;
 use Database\Factories\QuestionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,8 @@ class Question extends Model
     //
     use SoftDeletes, 
         HasFactory,
-        ItemFilesTrait;
+        HasFilesTrait,
+        HasPositionsTrait;
     
     const IMAGE = 'IMAGE';
     const VIDEO = 'VIDEO';
@@ -189,9 +191,15 @@ class Question extends Model
         return ! $this->hasAnswerLike($answer);
     }
 
-    public function scopeOrderedByPosition($query)
+    public function scopeWhereAssessment($query, $assessmentId)
     {
-        return $query->orderBy('position', 'asc');
+        return $query->whereHasMorph(
+            'questionable', 
+            'App\\YourEdu\\AssessmentSection', 
+            function($query) use ($assessmentId) {
+                $query->where('assessment_id', $assessmentId);
+            }
+        );
     }
     
     protected static function newFactory()

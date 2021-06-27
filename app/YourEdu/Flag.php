@@ -10,12 +10,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Flag extends Model
 {
-    //
     use SoftDeletes,
         HasFactory;
 
     protected $fillable = [
-        'user_id', 'admin_id', 'status', 'reason'
+        'user_id',  'flag_id', 'admin_id', 'status', 'reason'
     ];
 
     // protected $touches = [
@@ -37,6 +36,11 @@ class Flag extends Model
         return $this->belongsTo(Admin::class);
     }
 
+    public function flags()
+    {
+        return $this->hasMany(Admin::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -44,12 +48,12 @@ class Flag extends Model
 
     public function comments()
     {
-        return $this->morphMany(Comment::class,'commentable');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     public function bans()
     {
-        return $this->morphOne(Ban::class,'issuedfor');
+        return $this->morphOne(Ban::class, 'issuedfor');
     }
 
     protected static function newFactory()

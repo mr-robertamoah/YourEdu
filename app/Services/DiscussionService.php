@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\AttachmentDTO;
 use App\DTOs\DiscussionDTO;
 use App\DTOs\SearchDTO;
 use App\DTOs\InvitationDTO;
@@ -55,7 +56,7 @@ class DiscussionService
         $discussion = $this->addDiscussion($discussionDTO);
 
         $this->checkDiscussion($discussion);
-        
+
         $discussionDTO = $discussionDTO->withDiscussion($discussion);
 
         $this->checkFiles($discussionDTO);
@@ -76,7 +77,7 @@ class DiscussionService
             $discussionDTO->discussion,
             $discussionDTO
         );
-        
+
         if ($itemFilesDTO->totalFiles() <= self::MAX_NUMBER_OF_FILES) {
             return;
         }
@@ -101,12 +102,16 @@ class DiscussionService
 
     private function addAttachmentsToDiscussion($discussionDTO)
     {
+        $attachmentDTO = AttachmentDTO::new()
+            ->withAddedby($discussionDTO->raisedby)
+            ->withAttachable($discussionDTO->discussion);
+
         foreach ($discussionDTO->attachments as $attachment) {
-            
-            (new AttachmentService())->attach(
-                $discussionDTO->raisedby,
-                $discussionDTO->discussion,
-                $this->getModel($attachment->type, $attachment->typeId)
+
+            (new AttachmentService)->attach(
+                $attachmentDTO
+                    ->addData(note: $attachment->note ?? null)
+                    ->withAttachedwith($this->getModel($attachment->type, $attachment->typeId))
             );
         }
 
@@ -142,7 +147,7 @@ class DiscussionService
         return $discussionDTO->raisedby->discussions()->create([
             'title' => $discussionDTO->title,
             'preamble' => $discussionDTO->preamble,
-            'restricted' => $discussionDTO->restricted,  
+            'restricted' => $discussionDTO->restricted,
             'type' => Str::upper($discussionDTO->type),
             'allowed' => Str::upper($discussionDTO->allowed),
         ]);
@@ -167,15 +172,17 @@ class DiscussionService
 
     private function withLoadedRelationships($discussion)
     {
-        return $discussion->load(['likes','messages','comments','flags','beenSaved',
-            'attachments','participants','raisedby.profile']);
+        return $discussion->load([
+            'likes', 'messages', 'comments', 'flags', 'beenSaved',
+            'attachments', 'participants', 'raisedby.profile'
+        ]);
     }
 
     public function getMessages(DiscussionDTO $discussionDTO)
     {
         $discussionDTO = $this->setDiscussion($discussionDTO);
 
-        if (! $discussionDTO->discussion->restricted) {
+        if (!$discussionDTO->discussion->restricted) {
             return $discussionDTO->discussion->getPaginatedMessages();
         }
 
@@ -189,14 +196,14 @@ class DiscussionService
 
     private function ensureIsAdminOfDiscussion($discussionDTO)
     {
-        if (! $discussionDTO->main) {
+        if (!$discussionDTO->main) {
             return;
         }
 
         if ($discussionDTO->discussion->isAdmin($discussionDTO->userId)) {
             return;
         }
-        
+
         $this->throwDiscussionException(
             message: 'you are not authorized to perform this action on this discussion',
             data: $discussionDTO
@@ -215,19 +222,19 @@ class DiscussionService
 
         return $discussionDTO->discussion->refresh();
     }
-    
+
     public function updateDiscussion(DiscussionDTO $discussionDTO)
     {
         $discussion = $this->getModel('discussion', $discussionDTO->discussionId);
-        
+
         $discussionDTO = $discussionDTO->withDiscussion($discussion);
-        
+
         $this->ensureIsAdminOfDiscussion($discussionDTO);
-        
+
         $this->checkFiles($discussionDTO);
 
         $discussionDTO = $this->setRaisedby($discussionDTO);
-        
+
         $discussion = $this->putDiscussion($discussionDTO);
 
         $discussion = $this->addFiles($discussionDTO);
@@ -240,7 +247,7 @@ class DiscussionService
 
         $discussionDTO->methodType = 'updated';
         $this->broadcastDiscussion($discussionDTO);
-        
+
         return $this->withLoadedRelationships($discussion);
     }
 
@@ -248,8 +255,9 @@ class DiscussionService
     {
         foreach ($discussionDTO->removedAttachments as $attachment) {
             (new AttachmentService)->detach(
-                attachable: $discussionDTO->discussion,
-                attach: $this->getModel($attachment->item, $attachment->itemid)
+                AttachmentDTO::new()
+                    ->withAttachable($discussionDTO->discussion)
+                    ->withAttachedwith($this->getModel($attachment->item, $attachment->itemid))
             );
         }
 
@@ -296,15 +304,15 @@ class DiscussionService
             data: [$discussion, $userId]
         );
     }
-    
+
     public function sendMessage(MessageDTO $messageDTO)
     {
         $discussion = $this->getModel($messageDTO->item, $messageDTO->itemId);
-        
+
         $messageDTO = $messageDTO->withFromable(
             $this->getDiscussionParticipantAccountUsingUserId($discussion, $messageDTO->userId)
         );
-        
+
         $messageDTO = $messageDTO->withMessageable($discussion);
 
         $messageDTO->state = $this->getNewMessageState($messageDTO);
@@ -318,7 +326,7 @@ class DiscussionService
         $this->sendMessageRequest($messageDTO);
 
         if ($message->state === 'ACCEPTED') {
-            
+
             $messageDTO->methodType = 'createdMessage';
             $this->broadcastDiscussion($messageDTO);
         }
@@ -328,7 +336,7 @@ class DiscussionService
 
     private function getNewMessageState($messageDTO)
     {
-        if (! $messageDTO->messageable->restricted) {
+        if (!$messageDTO->messageable->restricted) {
             return 'accepted';
         }
 
@@ -341,7 +349,7 @@ class DiscussionService
 
     private function sendMessageRequest($messageDTO)
     {
-        if (! $messageDTO->messageable->restricted) {
+        if (!$messageDTO->messageable->restricted) {
             return;
         }
 
@@ -357,7 +365,7 @@ class DiscussionService
         );
     }
 
-    private function sendNotification($users, $item) 
+    private function sendNotification($users, $item)
     {
         if (is_null($users)) {
             return;
@@ -405,29 +413,35 @@ class DiscussionService
         if ($item->methodType === 'joinRequest') {
             return new DiscussionJoinRequestNotification($item);
         }
-        
+
         if ($item->methodType === 'joinDiscussion') {
             return new DiscussionJoinNotification($item);
         }
-        
+
         return null;
     }
 
     private function checkMessageDeletionAuthorization($messageDTO)
     {
-        if ($messageDTO->action !== 'delete' &&
-            $messageDTO->message->messageable->isAdmin($messageDTO->userId)) {
+        if (
+            $messageDTO->action !== 'delete' &&
+            $messageDTO->message->messageable->isAdmin($messageDTO->userId)
+        ) {
             return;
         }
 
-        if ($messageDTO->action === 'self' && 
-            $messageDTO->message->messageable->isParticipant($messageDTO->userId)) {
+        if (
+            $messageDTO->action === 'self' &&
+            $messageDTO->message->messageable->isParticipant($messageDTO->userId)
+        ) {
             return;
         }
 
-        if ($messageDTO->action === 'delete' && 
+        if (
+            $messageDTO->action === 'delete' &&
             $messageDTO->message->isFromable($messageDTO->userId) &&
-            $messageDTO->message->messageable->isParticipant($messageDTO->userId)) {
+            $messageDTO->message->messageable->isParticipant($messageDTO->userId)
+        ) {
             return;
         }
 
@@ -467,7 +481,7 @@ class DiscussionService
     public function contributionResponse(MessageDTO $messageDTO)
     {
         $message = $this->getModel('message', $messageDTO->messageId);
-        
+
         $this->ensureIsAdminOfDiscussion(
             DiscussionDTO::new()
                 ->withDiscussion($message->discussion())
@@ -516,7 +530,7 @@ class DiscussionService
 
     private function withLoadedMessageRelationships($message)
     {
-        return $message->load(['images','videos','audios','files','fromable.profile']);
+        return $message->load(['images', 'videos', 'audios', 'files', 'fromable.profile']);
     }
 
     private function updateRequestState($messageDTO)
@@ -526,7 +540,7 @@ class DiscussionService
             ->wherePending()
             ->whereSentTo($messageDTO->message->messageable->raisedby)
             ->first();
-            
+
         if (is_null($request)) {
             return;
         }
@@ -537,7 +551,7 @@ class DiscussionService
 
     public function getParticipants(DiscussionDTO $discussionDTO)
     {
-        $this->getModel('discussion',$discussionDTO->discussionId);
+        $this->getModel('discussion', $discussionDTO->discussionId);
 
         if (is_null($discussionDTO->state)) {
             $discussionDTO->state = 'active';
@@ -545,7 +559,7 @@ class DiscussionService
 
         $participantsProfiles = Profile::query()
             ->wherePartOfDiscussion(
-                $discussionDTO->discussionId, 
+                $discussionDTO->discussionId,
                 $discussionDTO->state
             )
             ->orderBy('name')
@@ -561,15 +575,15 @@ class DiscussionService
 
         return $ids;
     }
-    
+
     public function updateDiscussionParticipant(DiscussionDTO $discussionDTO)
     {
         $participant = $this->getParticipant($discussionDTO);
 
         $discussionDTO = $discussionDTO->withParticipant($participant);
-        
+
         $discussionDTO = $discussionDTO->withDiscussion($participant->participation);
-        
+
         $this->ensureIsAdminOfDiscussion($discussionDTO);
 
         $participant = $this->updateParticipantStateUsingAction($discussionDTO);
@@ -603,7 +617,7 @@ class DiscussionService
             data: $discussionDTO
         );
     }
-    
+
     public function deleteDiscussionParticipant(DiscussionDTO $discussionDTO)
     {
         $participant = $this->getParticipant($discussionDTO);
@@ -611,9 +625,9 @@ class DiscussionService
         $discussionDTO = $discussionDTO->withParticipant($participant);
 
         $discussionDTO = $discussionDTO->withDiscussion($participant->participation);
-        
+
         if ($participant->accountable->isNotAuthorizedUser($discussionDTO->userId)) {
-            
+
             $this->ensureIsAdminOfDiscussion($discussionDTO);
         }
 
@@ -672,15 +686,15 @@ class DiscussionService
     public function inviteParticipant(InvitationDTO $invitationDTO)
     {
         $invitationDTO = $this->setItemModel($invitationDTO);
-        
+
         $invitationDTO = $this->setInvitee($invitationDTO);
 
         $discussionDTO = DiscussionDTO::new()
             ->withDiscussion($invitationDTO->itemModel)
             ->withInvitationDTO($invitationDTO)
             ->addData(
-                userId: $invitationDTO->userId, 
-                main: true, 
+                userId: $invitationDTO->userId,
+                main: true,
                 action: 'pending'
             );
 
@@ -742,16 +756,16 @@ class DiscussionService
 
     public function joinResponse(InvitationDTO $invitationDTO)
     {
-        $request = $this->getModel('request',$invitationDTO->requestId);
-        
+        $request = $this->getModel('request', $invitationDTO->requestId);
+
         $this->checkRequestType($request);
-        
+
         $this->validateAction($invitationDTO);
 
         $discussionDTO = DiscussionDTO::new()
             ->withDiscussion($request->requestable)
             ->addData(
-                main: true, 
+                main: true,
                 userId: $invitationDTO->userId,
                 action: 'active'
             );
@@ -764,8 +778,7 @@ class DiscussionService
         $participant = $this->getJoinRequestParticipant($discussionDTO, $request);
 
         $invitationDTO->methodType = 'removePendingParticipant';
-        $invitationDTO->participantId = $participant->id;
-        $this->broadcastDiscussion($invitationDTO);
+        $this->broadcastDiscussion($invitationDTO->addData(userId: $participant->user_id));
 
         $invitationDTO->methodType = 'joinResponse';
         $this->sendNotification(
@@ -774,7 +787,7 @@ class DiscussionService
         );
 
         if ($invitationDTO->action === 'declined') {
-            
+
             $participant->delete();
 
             return null;
@@ -789,7 +802,7 @@ class DiscussionService
         $this->broadcastDiscussion($discussionDTO);
 
         $invitationDTO =  $invitationDTO->withRequest($request);
-        
+
         return $participant;
     }
 
@@ -804,11 +817,11 @@ class DiscussionService
             data: $invitationDTO
         );
     }
-    
+
     public function invitationResponse(InvitationDTO $invitationDTO)
     {
-        $request = $this->getModel('request',$invitationDTO->requestId);
-        
+        $request = $this->getModel('request', $invitationDTO->requestId);
+
         $invitationDTO = $invitationDTO->withRequest($request);
 
         $this->checkRequestOwnership($invitationDTO);
@@ -825,7 +838,7 @@ class DiscussionService
         }
 
         $participant = $this->createParticipant(
-            $request->requestable, 
+            $request->requestable,
             $request->requestto
         );
 
@@ -850,11 +863,11 @@ class DiscussionService
     {
         FileService::deleteYourEduItemFiles($discussion);
     }
-    
+
     public function deleteDiscussion(DiscussionDTO $discussionDTO)
     {
         $discussion = $this->getModel('discussion', $discussionDTO->discussionId);
-        
+
         $discussionDTO = $discussionDTO->withDiscussion($discussion);
 
         $this->ensureIsAdminOfDiscussion($discussionDTO);
@@ -871,7 +884,7 @@ class DiscussionService
 
     private function broadcastDiscussion($dto)
     {
-        if (property_exists($dto, 'main') && ! $dto->main) {
+        if (property_exists($dto, 'main') && !$dto->main) {
             return;
         }
 
@@ -880,7 +893,7 @@ class DiscussionService
         if (is_null($event)) {
             return;
         }
-        
+
         broadcast($event)->toOthers();
     }
 
@@ -897,7 +910,7 @@ class DiscussionService
         if ($dto->methodType === 'deleted') {
             return new DeleteDiscussion($dto);
         }
-        
+
         if ($dto->methodType === 'createdMessage') {
             return new NewDiscussionMessage($dto);
         }
@@ -969,8 +982,8 @@ class DiscussionService
 
         $discussionDTO = DiscussionDTO::new()
             ->addData(
-                userId: $invitationDTO->userId, 
-                main: true, 
+                userId: $invitationDTO->userId,
+                main: true,
                 methodType: "joinDiscussion"
             )
             ->withInvitationDTO($invitationDTO)
@@ -986,7 +999,7 @@ class DiscussionService
         $this->ensureAccountHasAllowedType($discussionDTO);
 
         if ($invitationDTO->itemModel->type === 'PRIVATE') {
-            
+
             return $this->sendJoinRequest($invitationDTO);
         }
 
@@ -999,7 +1012,7 @@ class DiscussionService
             $this->getDiscussionAdminsUsers($discussionDTO->discussion),
             $discussionDTO
         );
-        
+
         $this->broadcastDiscussion(
             $discussionDTO->withParticipant($participant)
         );
@@ -1009,8 +1022,10 @@ class DiscussionService
 
     private function ensureNotAdminOrParticipant($discussionDTO)
     {
-        if ($discussionDTO->discussion->isNotOwner($discussionDTO->userId) &&
-            $discussionDTO->discussion->isNotParticipant($discussionDTO->userId)) {
+        if (
+            $discussionDTO->discussion->isNotOwner($discussionDTO->userId) &&
+            $discussionDTO->discussion->isNotParticipant($discussionDTO->userId)
+        ) {
             return;
         }
 
@@ -1028,7 +1043,7 @@ class DiscussionService
             ->whereRequestFromUser($invitationDTO->userId)
             ->exists();
 
-        if (! $request) {
+        if (!$request) {
             return;
         }
 
@@ -1061,8 +1076,8 @@ class DiscussionService
         $discussionDTO = DiscussionDTO::new()
             ->withParticipant($participant)
             ->addData(
-                main: true, 
-                userId: $invitationDTO->userId, 
+                main: true,
+                userId: $invitationDTO->userId,
                 methodType: 'joinRequest',
                 action: 'pending'
             );
@@ -1074,5 +1089,3 @@ class DiscussionService
         return null;
     }
 }
-
-?>

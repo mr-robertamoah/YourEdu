@@ -1,35 +1,29 @@
 <template>
     <div class="account-badge-wrapper"
         @click.self="goToProfile(account)"
-        :class="{request,notification}"
+        :class="{request: isRequest,notification}"
     >
         <div class="top">
-            <profile-picture class="profile-picture"
-                @click="goToProfile(account)"
-                v-if="account"
+            <profile-picture class="profile-picture mr-2"
+                @click="goToProfile(computedAccount)"
+                v-if="computedAccount"
             >
                 <template slot="image">
-                    <img :src="account.url" >
+                    <img :src="computedAccount.url" >
                 </template>
             </profile-picture>
-            <div class="name" v-if="!message.length">
-                {{account.name}}
+            <div class="name" v-if="!message.length && computedAccount">
+                {{computedAccount.name}}
             </div>
             <div class="account-type" v-if="!message.length">
                 {{computedAccountType}}
-            </div>
-            <div class="message" v-if="message.length">
-                {{message}}
             </div>
             <div class="created-at" v-if="message.length && createdAt.length">
                 {{computedCreatedAt}}
             </div>
         </div>
-        <div class="middle" v-if="request && !message.length">
-            <div class="info"> 
-                {{computedInfo}}
-            </div>
-            <div class="title">{{account.title}}</div>
+        <div class="message w-10/12 mx-auto" v-if="computedMessage.length">
+            {{computedMessage}}
         </div>
         <div class="bottom" v-if="!message.length">
             <action-button
@@ -68,6 +62,12 @@ import { dates } from '../../services/helpers'
                 }
             },
             request: {
+                type: Object,
+                default(){
+                    return null
+                }
+            },
+            isRequest: {
                 type: Boolean,
                 default: false
             },
@@ -130,59 +130,78 @@ import { dates } from '../../services/helpers'
             inviting(newValue){
                 if (!newValue) {
                     this.loading = false
+                    this.acceptLoading = false
+                    this.declineLoading = false
                 }
             }
+        },
+        beforeDestroy () {
+            this.acceptLoading = false;
         },
         computed: {
             ...mapGetters(['getProfiles','getUser']),
             computedAccountType(){
-                return this.account.hasOwnProperty('account') ? this.account.account : ''
+                return this.account?.hasOwnProperty('account') ? this.account.account :
+                    this.request?.account ? this.request.account.account : ''
             },
             computedAccountId(){
-                return this.account.hasOwnProperty('accountId') ? this.account.accountId : ''
-            },
-            computedFromAdmin(){
-                return this.account.isAdmin !== false ? true : false
-            },
-            computedInfo(){
-                return this.computeedFromAdmin ? `wants to join your discussion with title:` :
-                    'invites you to join the discussion with title'
+                return this.account.hasOwnProperty('accountId') ? this.account.accountId :
+                    this.request?.account ? this.request.account.account : ''
             },
             computedCreatedAt(){
                 return this.createdAt.length ? dates.createdAt(this.createdAt) : ''
+            },
+            computedMessage() {
+                return this.message.lemgth ? this.message : this.request?.message ? 
+                    this.request.message : ''
+            },
+            computedAccount() {
+                return this.account ? this.account : this.request?.account ?
+                    this.request.account : null
             },
         },
         methods: {
             ...mapActions([]),
             clickedDecline(){
                 if (this.acceptLoading) return
+
                 this.declineLoading = true
                 this.$emit('clickedAction',{
-                    account: this.account,
+                    myAccount: this.request?.myAccount,
                     action: 'declined',
-                    type: this.computedFromAdmin ? 'invitation' : 'join'
+                    type: this.request?.type,
+                    item: this.request?.item,
+                    itemId: this.request?.itemId,
+                    requestId: this.request?.id
                 })
             },
             clickedAccept(){
                 if (this.declineLoading) return
+
                 this.acceptLoading = true
                 if (this.greenActionButtonText === 'accept') {
+
                     this.$emit('clickedAction',{
                         action: 'accepted',
-                        account: this.account,
-                        type: this.computedFromAdmin ? 'invitation' : 'join'
+                        myAccount: this.request?.myAccount,
+                        type: this.request?.type,
+                        marker: this.request?.marker,
+                        item: this.request?.item,
+                        itemId: this.request?.itemId,
+                        id: this.request?.id
                     })
                     return
                 }
                 this.$emit('clickedAction',{
                     action: 'invite',
-                    account: this.account
+                    account: this.computedAccount
                 })
             },
             goToProfile(data){
-                if (this.request) {
+                if (this.isRequest) {
                     return
                 }
+
                 this.$emit('clearData')
                 this.$router.push({
                     name: 'profile', 
@@ -228,21 +247,18 @@ import { dates } from '../../services/helpers'
                 @include text-overflow()
             }
 
-            .message{
-                width: auto;
-                margin-right: auto;
-                margin-left: 0;
-                color: gray;
-                font-size: 14px;
-                padding: 0 0 5px 5px;
-            }
-
             .created-at{
                 width: 100%;
                 text-align: end;
                 font-size: 12px;
                 color: gray;
             }
+        }
+
+        .message{
+            color: gray;
+            font-size: 14px;
+            padding: 0 0 5px 5px;
         }
 
         .middle{

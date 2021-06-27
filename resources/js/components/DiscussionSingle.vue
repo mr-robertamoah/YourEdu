@@ -1,8 +1,9 @@
 <template>
     <div 
-        class="discussion-single-wrapper h-90vh flex flex-col relative"
+        class="discussion-single-wrapper min-h-90vh flex flex-col relative"
     >
         <item-view-cover
+            class="min-h-90vh"
             v-if="steps === 0"
             :data="computedCoverData"
             :transparent="flagData.isFlagged"
@@ -75,15 +76,14 @@
                         :size="'10px'"
                     ></pulse-loader>
                 </div>
-                <div class="post-attachment" 
-                    v-if="computedAttachments"
-                    @click.self="showAttach = false"
+                <div class="post-attachment h-content"
+                    @click.self="attachmentData.showAttach = false"
                 >
                     <post-attachment
-                        :show="showAttach"
-                        :isAttached="isAttached"
-                        :attachmentsNumber="attachments"
-                        :attachments="myAttachments"
+                        :show="attachmentData.showAttach"
+                        :isAttached="attachmentData.isAttached"
+                        :attachmentsNumber="attachmentData.postAttachments.length"
+                        :attachments="attachmentData.myAttachments"
                         @itemClicked="attachmentClicked"
                         @clickedUnattach="clickedUnattach"
                     ></post-attachment>
@@ -128,7 +128,7 @@
                 <div class="second flex-grow-0 flex-shrink-0" v-if="messageSectionState !=='max'">
                     <div class="attachments-section">
                         <attachment-badge 
-                            v-for="(attachment,index) in postAttachments"
+                            v-for="(attachment,index) in attachmentData.postAttachments"
                             :key="index"
                             :hasClose="false"
                             :attachment="attachment.data"
@@ -260,6 +260,7 @@
                     :likeData="likeData"
                     :classes="computedClasses"
                     :showProfilesText="showProfilesText"
+                    :showOnlyProfiles="computedClasses.length ? true : false"
                     :showProfiles="showProfiles"
                     :profiles="computedProfiles"
                     @hideAddComment="showAddComment = false"
@@ -318,7 +319,9 @@
             :show="showDiscussionRequest"
             :computedItem="computedItem"
             :allowed="discussion.allowed"
-            :loading="searchInvitationLoading"
+            :removedParticipant="removedParticipant"
+            :loading="loading"
+            @clickedParticpantAction="clickedParticpantAction"
             @doneRemovingParticipant="doneRemovingParticipant"
             @clickedCloseRequest="showDiscussionRequest = false"
         ></item-request-section>
@@ -379,10 +382,8 @@
 import MediaModal from './MediaModal';
 import FadeUp from './transitions/FadeUp'
 import DiscussionBadge from './DiscussionBadge';
-import AttachmentBadge from './AttachmentBadge';
 import PostButton from './PostButton';
 import DiscussionTextarea from './DiscussionTextarea';
-import PostAttachment from './PostAttachment';
 import OptionalActions from './OptionalActions';
 import MediaCapture from './MediaCapture';
 import TextTextarea from './TextTextarea';
@@ -398,9 +399,11 @@ import Like from '../mixins/Like.mixin';
 import Flag from '../mixins/Flag.mixin';
 import Save from '../mixins/Save.mixin';
 import Alert from '../mixins/Alert.mixin';
-import RemoveParticipant from '../mixins/RemoveParticipant.mixin';
+import Participation from '../mixins/Participation.mixin';
+import Profiles from '../mixins/Profiles.mixin';
 import SmallModal from '../mixins/SmallModal.mixin'
 import Comments from '../mixins/Comments.mixin'
+import Attachments from '../mixins/Attachments.mixin'
 import { mapActions, mapGetters } from 'vuex';
 import { strings } from '../services/helpers';
     export default {
@@ -411,12 +414,10 @@ import { strings } from '../services/helpers';
             FadeUp,
             MediaCapture,
             OptionalActions,
-            PostAttachment,
             DiscussionTextarea,
             TextInput,
             TextTextarea,
             PostButton,
-            AttachmentBadge,
             DiscussionBadge,
             MediaModal,
             SpecialButton,
@@ -439,8 +440,17 @@ import { strings } from '../services/helpers';
                 type: Boolean,
                 default: false
             },
+            schoolAdmin: {
+                type: Object,
+                default(){
+                    return null
+                },
+            },
         },
-        mixins: [Like, Flag, Save, Alert, SmallModal, Comments, RemoveParticipant],
+        mixins: [
+            Like, Flag, Save, Alert, SmallModal, Comments, Participation,
+            Profiles, Attachments
+        ],
         data() {
             return {
                 steps: 0,
@@ -457,18 +467,6 @@ import { strings } from '../services/helpers';
                 adminButtonText: 'all',
                 participants: [],
                 participantsNextPage: 1,
-                //profiles
-                showProfilesAction: '',
-                showProfilesText: '',
-                showProfiles: false,
-                //attach
-                isAttached: false, //means i have attached and it goes for likes, etc
-                myAttachments: null,
-                attachments: 0,
-                postAttachments: [],
-                attachable: null,
-                showAttach: false,
-                selectedAttachment: null,
                 //messages
                 messageNextPage: 1,
                 messages: [],
@@ -486,8 +484,6 @@ import { strings } from '../services/helpers';
                 fileNumberError: false,
                 showFilePreview: false,
                 activeFile: null,
-                //search
-                searchInvitationLoading: false,
             }
         },
         watch: {
@@ -508,24 +504,17 @@ import { strings } from '../services/helpers';
                     this.alertMessage = 'a new participant just joined'
                 }
             },
+            computedItemable(newValue){
+                if (newValue) {
+                    
+                    this.setMyFlag()
+                }
+            },
             showUnseenMessages(newValue){
                 if (newValue) {
                     setTimeout(() => {
                         this.showUnseenMessages = false
                     }, 5000);
-                }
-            },
-            showProfiles(newValue){
-                if (newValue) {
-                    setTimeout(() => {
-                        this.showProfiles = false
-                    }, 4000);
-                }
-            },
-            attachments(newValue){
-                if (!newValue) {
-                    this.myAttachments = null
-                    this.isAttached = false
                 }
             },
             messageNextPage(newValue){
@@ -535,12 +524,40 @@ import { strings } from '../services/helpers';
                     this.showInfiniteLoader = false
                 }
             },
+            "discussion.likes": {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        
+                        this.likeData.likes = newValue.length
+                    }
+                }
+            },
+            "discussion.saves": {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        
+                        this.saveData.saves = newValue.length
+                    }
+                }
+            },
         },
         mounted(){
+            this.setMyFlag()
+            this.setMyLike()
+            this.setMySave()
+            this.setMyAttachment()
             this.listen()
+            this.listenForComments()
+            this.listenForLikes()
+            this.listenForFlags()
+            this.listenForSaves()
+            this.listenForAttachments()
+            this.listenForParticipation()
         },
         computed: {
-            ...mapGetters(['getUser','getProfiles']),
+            ...mapGetters(['getUser',]),
             computedRestriction() {
                 return this.discussion.restricted ? 'restricted participation' : ''
             },
@@ -594,11 +611,11 @@ import { strings } from '../services/helpers';
                 if (this.showProfilesAction === 'save' || 
                     this.showProfilesAction === 'attach' || 
                     this.showProfilesAction === 'join') {
-                    classes += 'unset'
+                    classes += 'absolute top-5 left-2/3 -ml-1/4 top-10 max-w-content'
                 }
                 
                 if (this.steps === 0) {
-                    classes += ' profiles-down'
+                    classes += ' bottom-8'
                 }
 
                 return classes
@@ -630,39 +647,8 @@ import { strings } from '../services/helpers';
             computedMessagesCount(){
                 return this.discussion.messages_count
             },
-            computedProfiles(){
-                return this.getProfiles ? this.getProfiles : []
-            },
             computedBlocked(){
                 return this.getUser && this.computedRestricted ? true : false
-            },
-            computedAttachments(){
-                if (this.getUser && this.discussion) {
-                    let attachments = []
-                    this.attachments = this.discussion.attachments.length
-                    attachments = this.discussion.attachments.filter(attachment=>{
-                        return attachment.user_id === this.getUser.id
-                    }).map(attachment=>{
-                        return {
-                            id: attachment.id,
-                            with_type: strings.getAccount(attachment.attachedwith_type),
-                            with_id: attachment.attachedwith_id,
-                            with: attachment.name,
-                        }
-                    })
-
-                    this.postAttachments = this.discussion.attachments.map(attach=>{
-                        return {
-                            data: {name: attach.name},
-                            type: strings.getAccount(attach.attachedwith_type)
-                        }
-                    })
-                    if (attachments.length) {
-                        this.isAttached = true
-                        this.myAttachments = attachments
-                    }
-                }
-                return this.showAttach
             }, //add ability to add other admins feature
             computedParticipationNote(){
                 return this.computedIsOwner ? 'you are the owner and admin of this discussion' :
@@ -689,12 +675,6 @@ import { strings } from '../services/helpers';
                     return this.discussion.participants[index]
                 }
                 return null
-            },
-            computedPendingParticipant(){
-                return this.getUser && 
-                    this.discussion.pendingJoinParticipants.findIndex(pending=>{
-                        return pending.userId === this.getUser.id
-                    }) > -1
             },
             computedUserParticipant(){
                 return this.computedIsOwner || (this.computedParticipant && 
@@ -733,18 +713,9 @@ import { strings } from '../services/helpers';
         methods: {
             ...mapActions([
                 'profile/getDiscussionMessages','profile/sendDiscussionMessage',
-                'profile/joinDiscussion','profile/updateDiscussion',
+                'profile/updateDiscussion',
                 'profile/deleteDiscussion','profile/deleteDiscussionMessage',
-                'profile/newDiscussionParticipant','profile/removeDiscussionParticipant',
-                'home/newDiscussionParticipant','home/removeDiscussionParticipant',
-                'profile/updateDiscussionParticipant','home/updateDiscussionParticipant',
-                'profile/newDiscussionPendingParticipant',
-                'home/newDiscussionPendingParticipant','profile/discusionContributionResponse',
-                'profile/removeDiscussionPendingParticipant',
-                'home/removeDiscussionPendingParticipant','profile/inviteParticipant',
-                'profile/createLike','profile/deleteLike','profile/deleteSave',
-                'profile/createSave','profile/createFlag','profile/deleteFlag',
-                'profile/createAttachment','profile/deleteAttachment',
+                'profile/discusionContributionResponse',
                 'profile/getDiscussionParticipants','profile/updateParticpantState',
                 'profile/deleteDiscussionParticipant'
             ]),
@@ -789,100 +760,10 @@ import { strings } from '../services/helpers';
                         console.log('data :>> ', data);
                         this.spliceMessage(data.messageId)
                     })
-                    .listen('.newDiscussionParticipant', data=>{
-                        console.log('data :>> ', data);
-                        if (this.$route.name === 'home') {
-                            this['home/newDiscussionParticipant'](data)
-                        } else if (this.$route.name === 'profile') {
-                            this['profile/newDiscussionParticipant'](data)
-                        }
-                        
-                        this.alertSuccess = true
-                        this.alertMessage = 'a new participant just joined this discussion'
-                    })
-                    .listen('.updatedDiscussionParticipant', data=>{
-                        console.log('data :>> ', data);
-                        if (this.$route.name === 'home') {
-                            this['home/updateDiscussionParticipant'](data)
-                        } else if (this.$route.name === 'profile') {
-                            this['profile/updateDiscussionParticipant'](data)
-                        }
-                        if (this.getUser && data.discussionParticipant.userId === this.getUser.id) {
-                            if (data.discussionParticipant.state === 'RESTRICTED' ||
-                                data.discussionParticipant.state === 'BANNED') {
-                                this.showDiscussionInfo = false
-                                this.showDiscussionEdit = false
-                                this.alertDanger = true
-                                this.alertMessage = `you have been ${data.discussionParticipant.state.toLowerCase()}`
-                            }
-                        }                        
-                    })
-                    .listen('.removeDiscussionParticipant', data=>{
-                        console.log('data :>> ', data);
-                        if (this.$route.name === 'home') {
-                            this['home/removeDiscussionParticipant'](data)
-                        } else if (this.$route.name === 'profile') {
-                            this['profile/removeDiscussionParticipant'](data)
-                        }
-                        if (this.getUser && data.userId === this.getUser.id) {
-                            this.showDiscussionInfo = false
-                            this.showDiscussionEdit = false
-                            this.alertDanger = true
-                            this.alertMessage = `you have been removed`
-                        }    
-                    })
-                    .listen('.newDiscussionPendingParticipant', data=>{
-                        console.log('data :>> ', data);
-                        if (this.computedAdmin) {
-                            this.alertSuccess = true
-                            this.alertMessage = 'new join request received'
-                        }
-                        if (this.$route.name === 'home') {
-                            this['home/newDiscussionPendingParticipant'](data)
-                        } else if (this.$route.name === 'profile') {
-                            this['profile/newDiscussionPendingParticipant'](data)
-                        }
-                    })
-                    .listen('.removeDiscussionPendingParticipant', data=>{
-                        console.log('data :>> ', data);
-                        if (this.$route.name === 'home') {
-                            this['home/removeDiscussionPendingParticipant'](data)
-                        } else if (this.$route.name === 'profile') {
-                            this['profile/removeDiscussionPendingParticipant'](data)
-                        }
-                    })
             },
             clickedMessageSectionToggle(){
                 this.messageSectionState = this.messageSectionState === 'max' ?
                     'min' : 'max'
-            },
-            clickedParticpantAction(data){
-                if (data.action === 'invite') {
-                    this.inviteParticipant(data)
-                }
-            },
-            async inviteParticipant(invitationData){
-                this.searchInvitationLoading = true
-                let response,
-                    data = {
-                        account: invitationData.account.account,
-                        accountId: invitationData.account.accountId,
-                        discussionId: this.discussion.id
-                    }
-
-                response = await this['profile/inviteParticipant'](data)
-
-                this.searchInvitationLoading = false
-                if (response.status) {
-                    this.alertSuccess = true
-                    this.alertMessage = 'invitation sent'
-
-                    this.removedParticipant = invitationData.account
-                } else {
-                    console.log('response :>> ', response);
-                    this.alertDanger = true
-                    this.alertMessage = 'invitation failed'
-                }
             },
             async clickedDiscussionAction(messageData){
                 let response,
@@ -1118,20 +999,32 @@ import { strings } from '../services/helpers';
                 if (data === 'edit') {
                     this.showDiscussionInfo = true
                     this.showDiscussionEdit = true
-                } else if (data === 'save') {
-                    if (this.isSaved) {
+                    return
+                }
+                
+                if (data === 'save') {
+                    if (this.saveData.isSaved) {
                         this.save(null)
                         return
                     }
                     this.showProfilesText = 'save as'
                     this.showProfilesAction = 'save'
                     this.profilesAppear()
-                } else if (data === 'attach') {
+                    return
+                }
+                
+                if (data === 'attach') {
                     this.showAttach = true
-                } else if (data === 'delete') {
+                    return
+                }
+                
+                if (data === 'delete') {
                     this.showProfilesAction = 'delete'
                     this.issueSmallModalDeletionMessage()
-                } else if (data === 'requests') {
+                    return
+                }
+                
+                if (data === 'requests') {
                     this.requestType = data
                     this.showDiscussionRequest = true
                 }
@@ -1216,6 +1109,7 @@ import { strings } from '../services/helpers';
             clickedJoin() {
                 if (this.discussion.allowed === 'ALL') {
                     this.showProfilesAction = 'join'
+                    this.showProfilesText = 'join discussion as'
                     this.showProfiles = true
                     return
                 }
@@ -1226,7 +1120,7 @@ import { strings } from '../services/helpers';
                 }
                 
                 if (this.computedCanJoin.account) {
-                    this.joinDiscussion(this.computedCanJoin)
+                    this.join(this.computedCanJoin)
                 }
             },
             clickedLeaveRemoveParticipant(data){
@@ -1242,31 +1136,6 @@ import { strings } from '../services/helpers';
                 }
 
                 this.issueCustomMessageWithDeletion(msg)
-            },
-            async joinDiscussion(account){
-                this.loading = true
-                let response,
-                    discussionId = this.discussion.id,
-                    data = {
-                        account: account.account,
-                        accountId: account.accountId,
-                    }
-
-                response = await this['profile/joinDiscussion']({item: this.discussion, data, discussionId})
-
-                this.loading = false
-                if (response.status) {
-                    this.alertSuccess = true
-                    if (this.discussion.type === "PRIVATE") {
-                        this.alertMessage = 'your join request has been sent'
-                    } else {
-                        this.alertMessage = 'you just joined this discussion'
-                    }
-                } else {
-                    console.log('response :>> ', response);
-                    this.alertDanger = true
-                    this.alertMessage = 'you could not join'
-                }
             },
             askLoginRegister(data){
                 this.$emit('askLoginRegister',data)
@@ -1550,7 +1419,7 @@ import { strings } from '../services/helpers';
             clickedProfile(data) {
                 this.showProfiles = false
                 if (this.showProfilesAction === 'join') {
-                    this.joinDiscussion(data)
+                    this.join(data)
                     return
                 }
                 
@@ -1588,12 +1457,6 @@ import { strings } from '../services/helpers';
             },
             clickedMedia(data){
 
-            },
-            profilesAppear(){
-                this.showProfiles = true
-                setTimeout(() => {
-                    this.showProfiles = false
-                }, 4000);
             },
         },
     }
@@ -1704,7 +1567,6 @@ import { strings } from '../services/helpers';
 
             .post-attachment{
                 top: 0;
-                height: 100%;
                 width: 100%;
                 position: absolute;
                 z-index: 1;
@@ -1809,6 +1671,7 @@ import { strings } from '../services/helpers';
 
             .third{
                 background: inherit;
+                border-bottom: 1px solid gray;
                 
                 .admin-section{
                     padding: 5px;
@@ -1847,7 +1710,6 @@ import { strings } from '../services/helpers';
                 }
 
                 .discussion-section{
-                    border-bottom: 1px solid gray;
 
                     .main-area{
                         padding: 10px;

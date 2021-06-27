@@ -37,9 +37,12 @@ class AssessmentResource extends JsonResource
             'comments' => $this->when($this->isSocial(), $this->latestComments()),
             'commentsCount' => $this->when($this->isSocial(), $this->commentsCount()),
             'markers' => $this->when($this->isSocial(), UserAccountResource::collection($this->markers())),
-            'participants' => $this->when($this->isSocial(), DiscussionParticipantResource::collection($this->participants)),
-            'pendingJoinParticipants' => $this->when($this->isSocial(), DiscussionPendingParticipantsResource::collection(
-                $this->pendingJoinParticipants->pluck('requestfrom'))),
+            'saves' => $this->when($this->isSocial(), SaveResource::collection($this->saves())),
+            'likes' => $this->when($this->isSocial(), LikeResource::collection($this->likes)),
+            'participants' => $this->when($this->isSocial(), DiscussionParticipantResource::collection($this->nonPendingParticipants())),
+            'pendingParticipants' => $this->when($this->isSocial(), DiscussionPendingParticipantsResource::collection(
+                $this->pendingParticipantAccounts()
+            )),
             'flags' => $this->when($this->isSocial(), FlagResource::collection($this->flags)),
         ];
     }

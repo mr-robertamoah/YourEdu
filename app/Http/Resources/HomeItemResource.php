@@ -29,13 +29,13 @@ class HomeItemResource extends JsonResource
 
         if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
-        } 
+        }
         if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
-        } 
+        }
         if ($this->audios()->exists()) {
             $audios = AudioResource::collection($this->audios);
-        } 
+        }
         if ($this->files()->exists()) {
             $files = FileResource::collection($this->files);
         }
@@ -91,14 +91,15 @@ class HomeItemResource extends JsonResource
         $data['allowed'] = $this->allowed;
         $data['preamble'] = $this->preamble;
         $data['isDiscussion'] = true;
-        $data['pendingJoinParticipants'] = DiscussionPendingParticipantsResource::collection(
-            $this->pendingJoinParticipants->pluck('requestfrom'));
+        $data['pendingParticipants'] = DiscussionPendingParticipantsResource::collection(
+            $this->pendingParticipantAccounts()
+        );
         $data['raisedby'] = new UserAccountResource($this->raisedby);
-        $data['participants'] = DiscussionParticipantResource::collection($this->participants);
+        $data['participants'] = DiscussionParticipantResource::collection($this->nonPendingParticipants());
         $data['messages_count'] = $this->messages()->count();
         $data['messages'] = DiscussionMessageResource::collection($this->messages()
-            ->where('state','ACCEPTED')
-            ->orderby('updated_at','desc')->take(2)->get());
+            ->where('state', 'ACCEPTED')
+            ->orderby('updated_at', 'desc')->take(2)->get());
 
         return $data;
     }

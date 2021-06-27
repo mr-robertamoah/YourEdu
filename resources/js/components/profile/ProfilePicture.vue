@@ -2,8 +2,9 @@
     <div class="profile-picture-out"
         @mouseover="show = true"
         @mouseleave="show = false"
+        :class="[classes, ! classes.length ? 'w-full h-full' : '']"
     >
-        <div class="profile-picture-in">
+        <div class="profile-picture-in w-10/12 h-10/12">
             <div class="edit">
                 <just-fade>
                     <template slot="transition">
@@ -32,6 +33,10 @@ import JustFade from "../transitions/JustFade";
             showEdit: {
                 type: Boolean,
                 default: false
+            },
+            classes: {
+                type: String,
+                default: ''
             },
         },
         data() {
@@ -63,11 +68,8 @@ import JustFade from "../transitions/JustFade";
 </script>
 
 <style lang="scss" scoped>
-    $the-width: 100%;
 
     .profile-picture-out {
-        width: $the-width;
-        height: $the-width;
         background-color: aquamarine;
         display: flex;
         justify-content: center;
@@ -79,8 +81,6 @@ import JustFade from "../transitions/JustFade";
     }
 
     .profile-picture-in {
-        width: $the-width * 0.85;
-        height: $the-width * 0.85;
         border-radius: inherit;
         display: flex;
         justify-content: center;

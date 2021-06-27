@@ -2,7 +2,7 @@
     <fade-right>
         <template slot="transition" 
                 v-if="show">
-            <div class="alert-wrapper z-50" 
+            <div class="alert-wrapper z-50 top-8" 
                 :class="{success, danger, sticky}"
             >
                 {{message}}
@@ -95,7 +95,6 @@ $shadow-color: aliceblue;
         width: 90%;
         margin: 10px auto;
         position: absolute;
-        top: 30px;
         right: 5%;
         font-size: 14px;
         color: white;

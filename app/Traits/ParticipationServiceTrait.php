@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\DTOs\SearchDTO;
+use App\Services\MarkService;
 use App\Services\RequestService;
 use App\Services\SearchService;
 use App\YourEdu\Assessment;
@@ -12,12 +13,10 @@ use Illuminate\Support\Str;
 
 trait ParticipationServiceTrait
 {
-    private function createParticipant
-    (
-        Discussion | Assessment $item, 
+    private function createParticipant(
+        Discussion | Assessment $item,
         Model $account
-    )
-    {
+    ) {
         $participant = $item->participants()->create([
             'user_id' => $account->user_id,
             'state' => 'ACTIVE'
@@ -41,8 +40,8 @@ trait ParticipationServiceTrait
 
     public function validateParticipantAction($dto)
     {
-        if (in_array(Str::upper($dto->action), ['ADMIN','ACTIVE','RESTRICTED','BANNED', 'PENDING'])) {
-           return;
+        if (in_array(Str::upper($dto->action), ['ADMIN', 'ACTIVE', 'RESTRICTED', 'BANNED', 'PENDING'])) {
+            return;
         }
 
         $this->throwAccountNotFoundException(
@@ -134,7 +133,7 @@ trait ParticipationServiceTrait
         if (is_null($otherAccount = $item->getParticipantAccountUsingUserId($account->user_id))) {
             return;
         }
-        
+
         $this->throwAccountNotFoundException(
             message: "sorry 😞, you are already participating with your {$otherAccount->accountType} account.",
             data: [$item, $account]
@@ -144,22 +143,30 @@ trait ParticipationServiceTrait
     public function profileSearch(SearchDTO $searchDTO)
     {
         $item = $this->getModel($searchDTO->item, $searchDTO->itemId);
-        
+
+        if ($searchDTO->forMarkers) {
+            $searchDTO->accountTypes = MarkService::MARKER_CLASSES;
+        }
+
         $userIdsOfInviteesWithPendingRequests = $item->requests()
+            ->when($searchDTO->forMarkers, function ($query) {
+                $query->whereMarkerRequest();
+            })
             ->whereRequestFromUsers(
-                $searchDTO->item === 'discussion' ? 
-                $this->getDiscussionAdminsId($item) :
-                [$item->addedby->user_id]
+                $searchDTO->item === 'discussion' ?
+                    $this->getDiscussionAdminsId($item) :
+                    [$item->addedby->user_id]
             )
             ->wherePending()
             ->get()
             ->pluck('requestto')
-            ->map(function($item){
-                $item->user_id;
-            });
-            
+            ->map(function ($item) {
+                return $item->user_id;
+            })
+            ->toArray();
+
         $searchDTO = $searchDTO->addToExcludedUserIds(
-            array_merge($userIdsOfInviteesWithPendingRequests, $item->getUserIds())
+            array_merge($userIdsOfInviteesWithPendingRequests, $item->getUserIds()->toArray())
         );
         $searchDTO = $searchDTO->addToFlaggedbyUserIds(
             $this->getUserAndParenstUserIds($searchDTO)
@@ -167,5 +174,4 @@ trait ParticipationServiceTrait
 
         return (new SearchService)->profileSearchForHomeItem($searchDTO);
     }
-
 }

@@ -2,11 +2,14 @@
 
 namespace App\DTOs;
 
+use App\Traits\DTOTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class DiscussionDTO
 {
+    use DTOTrait;
+
     public ?string $discussionId = null;
     public ?string $participantId = null;
     public array $files = [];
@@ -17,7 +20,6 @@ class DiscussionDTO
     public ?InvitationDTO $invitationDTO = null;
     public ?Model $discussion = null;
     public ?Model $raisedby = null;
-    public ?int $userId = null;
     public ?string $account = null;
     public ?string $accountId = null;
     public ?string $title = null;
@@ -28,17 +30,11 @@ class DiscussionDTO
     public ?string $state = null;
     public bool $restricted = false;
     public bool $main = false;
-    public ?string $methodType = null;
 
-    public static function new()
-    {
-        return new static;
-    }
-    
     public static function createFromData($data)
     {
         $self = new static;
-        
+
         $self->title = $data->title ?? null;
         $self->preamble = $data->preamble ?? null;
         $self->restricted = $data->restricted ?? false;
@@ -48,13 +44,12 @@ class DiscussionDTO
         return $self;
     }
 
-    public static function createFromRequest
-    (
-        Request $request, bool $main = false
-    )
-    {
+    public static function createFromRequest(
+        Request $request,
+        bool $main = false
+    ) {
         $self = new static;
-        
+
         $self->restricted = $request->restricted ? json_decode($request->restricted) : false;
         $self->action = $request->action;
         $self->allowed = $request->allowed;
@@ -65,17 +60,17 @@ class DiscussionDTO
         $self->preamble = $request->preamble;
         $self->account = $request->account;
         $self->accountId = $request->accountId;
-        $self->userId = (int) $request->user()->id;
+        $self->userId = $request->user()?->id;
         $self->main = $main;
-        $self->attachments = $request->attachments ? 
+        $self->attachments = $request->attachments ?
             ModelDTO::createFromArray(
                 json_decode($request->attachments)
             ) : [];
-        $self->removedAttachments = $request->removedAttachments ? 
+        $self->removedAttachments = $request->removedAttachments ?
             ModelDTO::createFromArray(
                 json_decode($request->removedAttachments)
             ) : [];
-        $self->files = $request->hasFile('files') ? 
+        $self->files = $request->hasFile('files') ?
             $request->file('files') : [];
         $self->removedFiles = static::getRemovedFiles($request);
 
@@ -88,7 +83,7 @@ class DiscussionDTO
         if ($request->removedTypeFiles) {
             $files = $request->removedTypeFiles;
         }
-           
+
         if ($request->removedFiles) {
             $files = $request->removedFiles;
         }
@@ -106,7 +101,7 @@ class DiscussionDTO
             return $this;
         }
 
-        if (is_array($files)) {
+        if (!is_array($files)) {
             return $this;
         }
 
@@ -115,26 +110,6 @@ class DiscussionDTO
         $clone->files = $files;
 
         return $clone;
-    }
-
-    public function addData
-    (
-        $userId = null,
-        $discussionId = null,
-        $methodType = null,
-        $main = false,
-        $state = null,
-        $action = null,
-    )
-    {
-        $this->action = $action;
-        $this->state = $state;
-        $this->main = $main;
-        $this->methodType = $methodType;
-        $this->discussionId = $discussionId;
-        $this->userId = $userId;
-
-        return $this;
     }
 
     public function withRaisedby(Model $raisedby)

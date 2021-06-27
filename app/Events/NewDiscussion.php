@@ -21,7 +21,9 @@ class NewDiscussion implements ShouldBroadcast
      *
      * @return void
      */
-    public function __construct(private $discussionDTO){}
+    public function __construct(private $discussionDTO)
+    {
+    }
 
     /**
      * Get the channels the event should broadcast on.
@@ -31,19 +33,21 @@ class NewDiscussion implements ShouldBroadcast
     public function broadcastOn()
     {
         return [
-            new Channel("youredu.{$this->discussionDTO->discussion->raisedby->accountType}.{$this->discussionDTO->discussion->raisedby_id}")
+            // new Channel("youredu.home.country"),
+            new PrivateChannel("youredu.followers.{$this->discussionDTO->discussion->raisedby->accountType}.{$this->discussionDTO->discussion->raisedby->id}"),
+            new PrivateChannel("youredu.followers.{$this->discussionDTO->discussion->raisedby->accountType}.{$this->discussionDTO->discussion->raisedby->id}"),
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'newDiscussion';
     }
-    
+
     public function broadcastWith()
     {
         return [
-            'discussion' => new DiscussionResource($this->discussionDTO->discussion)
+            'discussion' => new DiscussionResource($this->discussionDTO->discussion->refresh())
         ];
     }
 }

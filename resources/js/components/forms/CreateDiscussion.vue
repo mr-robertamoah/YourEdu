@@ -30,7 +30,7 @@
                                     v-model="discussionData.title"></text-input>
                             </div>
                             <div class="form-edit">
-                                <text-textarea type="text" 
+                                <text-textarea
                                     placeholder="discussion preamble (an introduction to the discussion)"
                                     :bottomBorder="true"
                                     v-model="discussionData.preamble"></text-textarea>

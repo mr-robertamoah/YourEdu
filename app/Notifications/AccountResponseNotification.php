@@ -18,7 +18,9 @@ class AccountResponseNotification extends Notification implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(private $requestDTO){}
+    public function __construct(private $requestDTO)
+    {
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -40,9 +42,9 @@ class AccountResponseNotification extends Notification implements ShouldQueue
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->line('The introduction to the notification.')
-                    ->action('Notification Action', url('/'))
-                    ->line('Thank you for using our application!');
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
     }
 
     /**
@@ -53,11 +55,12 @@ class AccountResponseNotification extends Notification implements ShouldQueue
      */
     public function toArray($notifiable)
     {
+        ray($this->requestDTO)->green();
         return [
             'message' => $this->requestDTO->message,
             'account' => new UserAccountResource(
-                    $this->requestDTO->request->requestto
-                ),
+                $this->requestDTO->request->requestto
+            ),
         ];
     }
 

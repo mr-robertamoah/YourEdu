@@ -14,9 +14,10 @@ class FlagResource extends JsonResource
      */
     public function toArray($request)
     {
-        return[
+        return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
+            'userId' => $this->user_id,
+            'flagId' => $this->flag_id,
         ];
     }
 }

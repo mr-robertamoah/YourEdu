@@ -7,28 +7,54 @@ use App\YourEdu\Request;
 
 trait HasParticipantsTrait
 {
-    public function requests(){
-        return $this->morphMany(Request::class,'requestable');
+    public function requests()
+    {
+        return $this->morphMany(Request::class, 'requestable');
     }
 
     public function participants()
     {
-        return $this->morphMany(Participant::class,'participation');
+        return $this->morphMany(Participant::class, 'participation');
     }
 
-    public function pendingJoinParticipants(){
-        return $this->requests()->where('state','PENDING')
-            ->with('requestfrom');
+    public function nonPendingParticipants()
+    {
+        return $this->participants()
+            ->whereNotPending()
+            ->get();
+    }
+
+    public function pendingParticipants()
+    {
+        return $this->requests()
+            ->where('state', 'PENDING')
+            ->with(['requestfrom', 'requestto'])
+            ->get();
+    }
+
+    public function pendingParticipantAccounts()
+    {
+        return $this->pendingParticipants()
+            ->map(function ($request) {
+                if ($request->requestto->user_id === $this->addedby->user_id) {
+                    return $request->requestfrom;
+                }
+
+                return $request->requestto;
+            });
     }
 
     public function getParticipant($participantId)
     {
-        return $this->participants()->where('id',$participantId)->first();
+        return $this->participants()->where('id', $participantId)->first();
     }
 
     public function getUserIds()
     {
-        $ids = $this->participants->pluck('user_id'); 
+        $ids = $this->participants()
+            ->whereNotPending()
+            ->get()
+            ->pluck('user_id');
         $ids[] = $this->addedby->user_id;
 
         return $ids;
@@ -58,7 +84,7 @@ trait HasParticipantsTrait
 
     public function isNotParticipant($userId)
     {
-        return ! $this->isParticipant($userId);
+        return !$this->isParticipant($userId);
     }
 
     public function getParticipantAccountUsingUserId($userId)
@@ -80,7 +106,6 @@ trait HasParticipantsTrait
 
     public function isNotOwner($userId)
     {
-        return ! $this->isOwner($userId);
+        return !$this->isOwner($userId);
     }
-
 }

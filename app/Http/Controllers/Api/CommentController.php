@@ -3,9 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\DTOs\CommentDTO;
-use App\Events\DeleteComment;
-use App\Events\NewComment;
-use App\Events\UpdateComment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CommentCreateRequest;
 use App\Http\Requests\CommentEditRequest;
@@ -19,16 +16,16 @@ use Illuminate\Http\Request;
 class CommentController extends Controller
 {
     public function createComment(CommentCreateRequest $request)
-    {        
+    {
         try {
             DB::beginTransaction();
-            
+
             $comment = (new CommentService())->createComment(
-                CommentDTO::createFromRequest($request)    
+                CommentDTO::createFromRequest($request)
             );
 
             DB::commit();
-            
+
             return response()->json([
                 'message' => "successful",
                 'comment' => new CommentResource($comment),
@@ -44,20 +41,19 @@ class CommentController extends Controller
 
     public function updateComment(CommentEditRequest $request)
     {
-       try {
+        try {
             DB::beginTransaction();
 
             $comment = (new CommentService())->updateComment(
-                CommentDTO::createFromRequest($request)    
+                CommentDTO::createFromRequest($request)
             );
 
             DB::commit();
-            
+
             return response()->json([
                 'message' => "successful",
                 'comment' => new CommentResource($comment),
             ]);
-            
         } catch (\Throwable $th) {
             DB::rollback();
             // return response()->json([
@@ -75,7 +71,7 @@ class CommentController extends Controller
             (new CommentService())->deleteComment(
                 CommentDTO::createFromRequest($request)
             );
-            
+
             DB::commit();
             return response()->json([
                 'message' => "successful"
@@ -93,17 +89,18 @@ class CommentController extends Controller
     {
         $comments = (new CommentService)->getComments(
             CommentDTO::createFromData(
-                item: $item, itemId: $itemId
+                item: $item,
+                itemId: $itemId
             )
         );
 
-        return CommentResource::collection(paginate($comments,5));
+        return CommentResource::collection(paginate($comments, 5));
     }
 
     public function getComment($commentId)
     {
         $item = Comment::find($commentId);
-        
+
         if (!$item) {
             return response()->json([
                 'message' => 'unsuccessful. comment does not exist.'

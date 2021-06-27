@@ -1,15 +1,11 @@
 <template>
-    <!-- <work-answering-form
-        :show="true"
-    ></work-answering-form> -->
-    <assessment-single>
-        
-    </assessment-single>
+    <the-board></the-board>
 </template>
 
 <script>
 import WorkAnsweringForm from '../components/forms/WorkAnsweringForm'
 import AssessmentSingle from '../components/AssessmentSingle'
+import TheBoard from '../components/TheBoard.vue'
 
     export default {
         data() {
@@ -21,6 +17,7 @@ import AssessmentSingle from '../components/AssessmentSingle'
         components: {
             WorkAnsweringForm,
             AssessmentSingle,
+            TheBoard,
         },
         methods: {
             clickedTesting(){

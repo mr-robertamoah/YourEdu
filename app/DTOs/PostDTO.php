@@ -2,30 +2,31 @@
 
 namespace App\DTOs;
 
-use App\Contracts\PostTypeDTOContract;
+use App\Traits\DTOTrait;
 use App\YourEdu\Post;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class PostDTO 
+class PostDTO
 {
-    public string | null $content;
+    use DTOTrait;
+
+    public ?string $content = null;
     public ?string $socketId = null;
     public ?Model $addedby = null;
-    public string | null $type;
+    public ?string $type = null;
     public ?Model $typeModel = null;
     public ?Post $post = null;
-    public ?PostTypeDTOContract $typeDTO = null;
-    public array | null $attachments;
-    public array | null $removedAttachments;
-    public string | null $postId;
-    public array | null $files;
-    public array | null $removedFiles;
-    public string | null $adminId;
-    public string | null $account;
-    public string | null $accountId;
-    public int | null $userId;
-    public array $types = ['poem', 'riddle','book', 'lesson', 'question', 'activity'];
+    public $typeDTO = null;
+    public ?array $attachments = [];
+    public ?array $removedAttachments = [];
+    public ?string $postId = null;
+    public ?array $files = [];
+    public ?array $removedFiles = [];
+    public ?string $adminId = null;
+    public ?string $account = null;
+    public ?string $accountId = null;
+    public array $types = ['poem', 'riddle', 'book', 'lesson', 'question', 'activity'];
 
     public static function createFromRequest(Request $request)
     {
@@ -36,7 +37,7 @@ class PostDTO
         $self->content = $request->content;
         $self->account = $request->account;
         $self->accountId = $request->accountId;
-        $self->userId = (int) $request->user()->id;
+        $self->userId = $request->user()->id;
         $self->type = $request->type;
         $self->adminId = $request->adminId;
 
@@ -48,9 +49,9 @@ class PostDTO
             ModelDTO::createFromArray(
                 json_decode($request->removedAttachments)
             ) : [];
-        $self->files = $request->hasFile('file') ? 
+        $self->files = $request->hasFile('file') ?
             $request->file('file') : [];
-        $self->removedFiles = $request->removedFiles ? 
+        $self->removedFiles = $request->removedFiles ?
             FileDTO::createFromArray(
                 json_decode($request->removedFiles)
             ) : [];
@@ -70,15 +71,6 @@ class PostDTO
         }
 
         return $self;
-    }
-
-    public function withPost(Post $post)
-    {
-        $clone = clone $this;
-
-        $clone->post = $post;
-
-        return $clone;
     }
 
     public function resetFiles()

@@ -3,7 +3,11 @@
 namespace App\YourEdu;
 
 use App\Traits\FlaggableTrait;
+use App\Traits\HasAddedbyTrait;
+use App\Traits\HasAttachableTrait;
 use App\Traits\HasCommentsTrait;
+use App\Traits\HasLikeableTrait;
+use App\Traits\HasSaveableTrait;
 use App\Traits\HasSocialMediaTrait;
 use App\User;
 use Database\Factories\PostFactory;
@@ -14,96 +18,113 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Post extends Model
 {
-    use SoftDeletes, 
+    use SoftDeletes,
         HasFactory,
         FlaggableTrait,
         HasSocialMediaTrait,
-        HasCommentsTrait;
+        HasCommentsTrait,
+        HasAddedbyTrait,
+        HasLikeableTrait,
+        HasSaveableTrait,
+        HasAttachableTrait;
 
     protected $fillable = [
         'content'
     ];
 
-    public function addedby(){
-        return $this->morphTo();
-    }
-
-    public function likes(){
-        return $this->morphMany(Like::class,'likeable');
-    }
-
     public function files()
     {
-        return $this->morphToMany(File::class,'fileable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(File::class, 'fileable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function audios()
     {
-        return $this->morphToMany(Audio::class,'audioable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Audio::class, 'audioable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function videos()
     {
-        return $this->morphToMany(Video::class,'videoable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Video::class, 'videoable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function images()
     {
-        return $this->morphToMany(Image::class,'imageable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Image::class, 'imageable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function lessons()
     {
-        return $this->morphMany(Lesson::class,'lessonable');
+        return $this->morphMany(Lesson::class, 'lessonable');
     }
 
     public function books()
     {
-        return $this->morphMany(Book::class,'bookable');
+        return $this->morphMany(Book::class, 'bookable');
     }
 
     public function poems()
     {
-        return $this->morphMany(Poem::class,'poemable');
+        return $this->morphMany(Poem::class, 'poemable');
     }
 
     public function riddles()
     {
-        return $this->morphMany(Riddle::class,'riddleable');
+        return $this->morphMany(Riddle::class, 'riddleable');
     }
 
     public function activityTrack()
     {
-       return $this->morphOne(ActivityTrack::class,'what');
+        return $this->morphOne(ActivityTrack::class, 'what');
     }
 
-    public function beenSaved()
-    {
-       return $this->morphMany(Save::class,'saveable');
-    }
-
-    public function attachments()
-    {
-        return $this->morphMany(PostAttachment::class,'attachable');
-    }
-    
     public function discussion()
     {
-        return $this->morphOne(Discussion::class,'discussionable');
+        return $this->morphOne(Discussion::class, 'discussionable');
     }
 
-    public function activities(){
-        return $this->morphMany(Activity::class,'activityfor');
+    public function activities()
+    {
+        return $this->morphMany(Activity::class, 'activityfor');
     }
 
-    public function questions(){
-        return $this->morphMany(Question::class,'questionable');
+    public function questions()
+    {
+        return $this->morphMany(Question::class, 'questionable');
     }
-    
+
+    public function getTypeName()
+    {
+        if ($this->books()->exists()) {
+            return 'book';
+        }
+
+        if ($this->poems()->exists()) {
+            return 'poem';
+        }
+
+        if ($this->riddles()->exists()) {
+            return 'riddle';
+        }
+
+        if ($this->activities()->exists()) {
+            return 'activity';
+        }
+
+        if ($this->questions()->exists()) {
+            return 'question';
+        }
+
+        if ($this->lessons()->exists()) {
+            return 'lesson';
+        }
+
+        return null;
+    }
+
     public function allFiles()
     {
         $files = [];
@@ -140,36 +161,36 @@ class Post extends Model
 
     public function scopeWherePublished($query)
     {
-        return $query->whereDoesntHave('activities',function(Builder $query){
-            $query->where('published_at','>',now());
-        })->whereDoesntHave('questions',function(Builder $query){
-            $query->where('published_at','>',now());
-        })->whereDoesntHave('poems',function(Builder $query){
-            $query->where('published_at','>',now());
-        })->whereDoesntHave('riddles',function(Builder $query){
-            $query->where('published_at','>',now());
-        })->whereDoesntHave('books',function(Builder $query){
-            $query->where('published_at','>',now());
+        return $query->whereDoesntHave('activities', function (Builder $query) {
+            $query->where('published_at', '>', now());
+        })->whereDoesntHave('questions', function (Builder $query) {
+            $query->where('published_at', '>', now());
+        })->whereDoesntHave('poems', function (Builder $query) {
+            $query->where('published_at', '>', now());
+        })->whereDoesntHave('riddles', function (Builder $query) {
+            $query->where('published_at', '>', now());
+        })->whereDoesntHave('books', function (Builder $query) {
+            $query->where('published_at', '>', now());
         });
     }
 
     public function scopeWithRelations($query)
     {
         return $query->with([
-            'books'=>function($query){
-                $query->with(['images','videos','audios','files','comments']);
+            'books' => function ($query) {
+                $query->with(['images', 'videos', 'audios', 'files', 'comments']);
             },
-            'poems'=>function($query){
-                $query->with(['images','videos','audios','files','comments']);
+            'poems' => function ($query) {
+                $query->with(['images', 'videos', 'audios', 'files', 'comments']);
             },
-            'activities'=>function($query){
-                $query->with(['images','videos','audios','files','comments']);
+            'activities' => function ($query) {
+                $query->with(['images', 'videos', 'audios', 'files', 'comments']);
             },
-            'riddles'=>function($query){
-                $query->with(['images','videos','audios','files','answers']);
+            'riddles' => function ($query) {
+                $query->with(['images', 'videos', 'audios', 'files', 'answers']);
             },
-            'questions'=>function($query){
-                $query->with(['images','videos','audios','files','answers']);
+            'questions' => function ($query) {
+                $query->with(['images', 'videos', 'audios', 'files', 'answers']);
             },
             'comments', 'images', 'videos', 'audios', 'files'
         ]);
@@ -177,27 +198,29 @@ class Post extends Model
 
     public function scopeWithTypes($query)
     {
-        return $query::with(['questions.images','questions.videos',
-        'questions.audios','questions.files','activities.images','activities.videos',
-        'activities.files','activities.audios','riddles.images','riddles.videos',
-        'riddles.files','riddles.audios','poems.images','poems.videos',
-        'poems.files','poems.audios','books.images','books.videos','books.files',
-        'books.audios','addedby.profile']);
+        return $query::with([
+            'questions.images', 'questions.videos',
+            'questions.audios', 'questions.files', 'activities.images', 'activities.videos',
+            'activities.files', 'activities.audios', 'riddles.images', 'riddles.videos',
+            'riddles.files', 'riddles.audios', 'poems.images', 'poems.videos',
+            'poems.files', 'poems.audios', 'books.images', 'books.videos', 'books.files',
+            'books.audios', 'addedby.profile'
+        ]);
     }
 
     public function scopeWherePostTypes($query, $postType)
     {
-        return $query->when($postType === 'questions', function(Builder $query){
-                $query->has('questions');
-            })->when($postType === 'poems', function(Builder $query){
-                $query->has('poems');
-            })->when($postType === 'activities', function(Builder $query){
-                $query->has('activities');
-            })->when($postType === 'books', function(Builder $query){
-                $query->has('books');
-            })->when($postType === 'riddles', function(Builder $query){
-                $query->has('riddles');
-            });
+        return $query->when($postType === 'questions', function (Builder $query) {
+            $query->has('questions');
+        })->when($postType === 'poems', function (Builder $query) {
+            $query->has('poems');
+        })->when($postType === 'activities', function (Builder $query) {
+            $query->has('activities');
+        })->when($postType === 'books', function (Builder $query) {
+            $query->has('books');
+        })->when($postType === 'riddles', function (Builder $query) {
+            $query->has('riddles');
+        });
     }
 
     protected static function newFactory()

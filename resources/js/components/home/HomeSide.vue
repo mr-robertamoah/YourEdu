@@ -1,52 +1,13 @@
 <template>
     <div class="home-side-wrapper" ref="checkinputwrapper">
-        <div class="home-side-item"
-            @click="clickedItem('posts')"
-            :class="{active: value === 'posts'}"
+        <div 
+            v-for="(item, index) in items"
+            :key="index"
+            class="home-side-item"
+            @click="clickedItem(item)"
+            :class="{active: value === item}"
         >
-            posts
-        </div>
-        <div class="home-side-item"
-            @click="clickedItem('reads')"
-            :class="{active: value === 'reads'}"
-        >
-            reads
-        </div>
-        <div class="home-side-item"
-            @click="clickedItem('discussions')"
-            :class="{active: value === 'discussions'}"
-        >
-            discussions
-        </div>
-        <div class="home-side-item"
-            @click="clickedItem('questions')"
-            :class="{active: value === 'questions'}"
-        >
-            questions
-        </div>
-        <div class="home-side-item"
-            @click="clickedItem('riddles')"
-            :class="{active: value === 'riddles'}"
-        >
-            riddles
-        </div>
-        <div class="home-side-item"
-            @click="clickedItem('activities')"
-            :class="{active: value === 'activities'}"
-        >
-            activities
-        </div>
-        <div class="home-side-item"
-            @click="clickedItem('poems')"
-            :class="{active: value === 'poems'}"
-        >
-            poems
-        </div>
-        <div class="home-side-item"
-            @click="clickedItem('books')"
-            :class="{active: value === 'books'}"
-        >
-            books
+            {{item}}
         </div>
     </div>
 </template>
@@ -59,6 +20,22 @@
                 type: String,
                 default: ''
             },
+            items: {
+                type: Array,
+                default() {
+                    return [
+                        'posts',
+                        'discussions',
+                        'assessments',
+                        'reads',
+                        'books',
+                        'questions',
+                        'poems',
+                        'riddles',
+                        'activities'
+                    ]
+                }
+            }
         },
         data() {
             return {
@@ -69,14 +46,7 @@
             sideValue: {
                 immediate: true,
                 handler(newValue){
-                    if (newValue === 'posts' ||
-                        newValue === 'reads' || 
-                        newValue === 'discussions' ||
-                        newValue === 'questions' ||
-                        newValue === 'riddles' ||
-                        newValue === 'poems' ||
-                        newValue === 'activities' ||
-                        newValue === 'books') {
+                    if (this.items.includes(newValue)) {
                         this.value = newValue
                     }
                 }

@@ -2,32 +2,29 @@
 
 namespace App\DTOs;
 
-use App\Contracts\PostTypeDTOContract;
+use App\Traits\DTOTrait;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
-class RiddleDTO extends PostTypeDTOContract
+class RiddleDTO
 {
+    use DTOTrait;
+    
     public ?Carbon $publishedAt = null;
-    public string | null $description;
-    public string | null $riddleId;
-    public array $files;
-    public array $removedFiles;
-    public string | null $body;
-    public string | null $authorNames;
-    public array | null $authorAccounts;
-    public int | null $scoreOver;
+    public ?string $description = null;
+    public ?string $riddleId = null;
+    public array $files = [];
+    public array $removedFiles = [];
+    public ?string $body = null;
+    public ?string $authorNames = null;
+    public ?array $authorAccounts = null;
+    public ?int $scoreOver = null;
     public ?Model $addedby = null;
     public ?Model $riddleable = null;
     public ?Collection $authors = null;
     public ?Model $riddle = null;
-
-    public static function new()
-    {
-        return new static;
-    }
 
     public static function createFromRequest(Request $request)
     {
@@ -57,24 +54,6 @@ class RiddleDTO extends PostTypeDTOContract
             ) : [];
 
         return $self;
-    }
-
-    public function withAddedby(Model $addedby)
-    {
-        $clone = clone $this;
-
-        $clone->addedby = $addedby;
-
-        return $clone;
-    }
-
-    public function withRiddle(Model $riddle)
-    {
-        $clone = clone $this;
-
-        $clone->riddle = $riddle;
-
-        return $clone;
     }
 
     public function resetFiles()

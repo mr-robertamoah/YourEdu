@@ -21,7 +21,7 @@ class CommentResource extends JsonResource
 
         if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
-        } 
+        }
         if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
         }
@@ -40,13 +40,10 @@ class CommentResource extends JsonResource
             // 'comments' => new CommentResource($this->comments()->latest()->first()),
             'flags' => FlagResource::collection($this->flags),
             'saves' => SaveResource::collection($this->beenSaved),
-            'commentedby' => $this->commentedby->name,
-            'profile_url' => $this->commentedby->profile?->url,
-            'commentedby_type' => $this->commentedby_type,
-            'commentedby_id' => $this->commentedby_id,
+            'commentedby' => new UserAccountResource($this->commentedby),
             'commentable_type' => $this->commentable_type,
             'commentable_id' => $this->commentable_id,
-            'created_at' => $this->created_at,
+            'createdAt' => $this->created_at->diffForHumans(),
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,

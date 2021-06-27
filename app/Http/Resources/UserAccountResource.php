@@ -35,7 +35,7 @@ class UserAccountResource extends JsonResource
 
         $data['name'] = $what->profile ? $what->profile->name : $what->name;
         $data['url'] = $what->profile ? $what->profile->url : '';
-        
+
         return $data;
     }
 }

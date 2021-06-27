@@ -2,9 +2,10 @@
     <div class="home-wrapper">
         <app-nav></app-nav>
         <div class="home-top">
-            <div class="move-to-top" @click="moveToTop">
-                <font-awesome-icon :icon="['fa','home']"></font-awesome-icon>
-            </div>
+            <YourEduLogo 
+                class="move-to-top w-10"
+                @click="moveToTop"
+            />
             <div class="search-section">
                 <search-input
                     placeholder="searching for?"
@@ -108,6 +109,7 @@
 <script>
 import HomeMain from '../components/home/HomeMain'
 import HomeMenu from '../components/home/HomeMenu'
+import YourEduLogo from '../components/YourEduLogo'
 import HomeSide from '../components/home/HomeSide'
 import FadeUp from '../components/transitions/FadeUp'
 import SmallModal from '../components/SmallModal'
@@ -119,6 +121,7 @@ import { mapActions, mapGetters } from 'vuex'
 
     export default {
         components: {
+            YourEduLogo,
             HomeMain,
             HomeMenu,
             SearchOutput,
@@ -173,8 +176,8 @@ import { mapActions, mapGetters } from 'vuex'
                 activitiesFollowersNextPage: 1,
                 activitiesFollowingsNextPage: 1,
                 activitiesAttachmentsNextPage: 1,
+                //
                 readsNextPage: 1,
-                discussionsNextPage: 1,
                 loading: false,
                 params: {all:true},
                 //media modal
@@ -220,42 +223,51 @@ import { mapActions, mapGetters } from 'vuex'
         },
         watch: {
             sideValue(newValue) {
-                // this.menuValue = 'all'
-                this.getData(newValue)
+                this.getData()
             },
             menuValue(newValue){
-                if (!this.getUser) {
+                if (! this.getUser) {
                     this.menuValue = 'all'
                     this.showLoginRegister = true
-                } else {
-                    if (newValue === 'all') {
-                        this.params = {user: this.getUser.id}
-                        this.params.all = true
-                    } else if (newValue === 'followers') {
-                        this.params = {user: this.getUser.id}
-                        this.params.followers = true
-                    } else if (newValue === 'followings') {
-                        this.params = {user: this.getUser.id}
-                        this.params.followings = true
-                    } else if (newValue === 'mine') {
-                        this.params = {user: this.getUser.id}
-                        this.params.mine = true
-                    } else if (newValue === 'attachments') {
-                        
-                        return
-                    }
-
-                    this.getData(this.sideValue)
+                    return
                 }
+
+                this.params = {
+                    user: this.getUser.id,
+                }
+
+                if (newValue === 'all') {
+                    this.params.all = true
+                }
+                
+                if (newValue === 'followers') {
+                    this.params.followers = true
+                }
+                
+                if (newValue === 'followings') {
+                    this.params.followings = true
+                }
+                
+                if (newValue === 'mine') {
+                    this.params.mine = true
+                }
+                
+                if (newValue === 'attachments') {
+                    
+                }
+
+                this.getData()
             },
             menuAttachment(newValue){
+                if (! newValue) return
+
                 this.params = {}
                 this.params.user = this.getUser.id
                 this.params.attachments = true
                 this.params.attach = newValue.type,
                 this.params.id = newValue.data.id
 
-                this.getData(this.sideValue)
+                this.getData()
             },
             searchText(newValue){
                 this.searchNextPage = 1
@@ -300,7 +312,16 @@ import { mapActions, mapGetters } from 'vuex'
             },
             computedProfiles() {
                 return this.getProfiles ? this.getProfiles : []
-            }
+            },
+            computedNextPageForMenuValue() {
+                return this.menuValue === 'all' ? '' : this.menuValue
+            },
+            computedIsPostType() {
+                return !this.computedIsNotPostType
+            },
+            computedIsNotPostType() {
+                return ['posts', 'discussions', 'reads', 'assessments'].includes(this.sideValue)
+            },
         },
         methods: {
             ...mapActions(['home/getPosts','home/clearPosts','home/getUserPosts',
@@ -308,74 +329,41 @@ import { mapActions, mapGetters } from 'vuex'
                 'home/getUserPostTypes','home/clearHomeQuestionsAttachments'
                 ,'home/clearHomePoemsAttachments','home/clearHomeRiddlesAttachments'
                 ,'home/clearHomeBooksAttachments','home/clearHomeActivitiesAttachments',
-                'home/search','home/newPost','home/removePost','home/replacePost',
-                'home/newComment','home/removeComment','home/replaceComment',
-                'home/newDiscussion','home/removeDiscussion','home/replaceDiscussion',
-                'home/newFlag','home/newLike','home/removeLike',
-                'home/newAttachment','home/removeAttachment','profile/getPost'
+                'home/search','home/newPost', 'home/newAssessment', 'home/newRead',
+                'home/newDiscussion','profile/getPost'
             ]),
+            setPostTypeOnParams() {
+                if (this.computedIsPostType) {
+                    this.params.postType = this.sideValue
+                    return this.params
+                }
+
+                this.params.postType = 'posts'
+                return this.params
+            },
+            setTypeOnParams() {
+                if (this.computedIsPostType || this.sideValue === 'posts') {
+                    this.params.type = 'posts'
+                    return this.params
+                }
+
+                this.params.type = this.sideValue
+                return this.params
+            },
             clickedSearchOutputButton(data){
                 this.searchOutputType = data
             },
             listen(){
                 Echo.channel('youredu.home')
-                    .listen('.newPost', (post)=>{
-                        console.log(post)
-                        this['home/newPost'](post.post)
+                    .listen('.newPost', (data)=>{
+                        this['home/newPost'](data)
                     })
-                    .listen('.updatePost', post=>{
-                        console.log(post)
-                        this['home/replacePost'](post.post)
+                    .listen('.newDiscussion', (data)=>{
+                        this['home/newDiscussion'](data)
                     })
-                    .listen('.deletePost', postInfo=>{
-                        console.log(postInfo)
-                        this['home/removePost'](postInfo)
+                    .listen('.newAssessment', (data)=>{
+                        this['home/newAssessment'](data)
                     })
-                    .listen('.newComment', (commentData)=>{
-                        console.log(commentData)
-                        this['home/newComment'](commentData)
-                    })
-                    .listen('.updateComment', commentData=>{
-                        console.log(commentData)
-                        this['home/replaceComment'](commentData)
-                    })
-                    .listen('.deleteComment', commentInfo=>{
-                        console.log(commentInfo)
-                        this['home/removeComment'](commentInfo)
-                    })
-                    .listen('.newAttachment', (attachmentData)=>{
-                        console.log(attachmentData)
-                        this['home/newAttachment'](attachmentData)
-                    })
-                    .listen('.deleteAttachment', attachmentInfo=>{
-                        console.log(attachmentInfo)
-                        this['home/removeAttachment'](attachmentInfo)
-                    })
-                    .listen('.newFlag', (flag)=>{
-                        console.log(flag)
-                        this['home/newFlag'](flag)
-                    })
-                    .listen('.newLike', (likeData)=>{
-                        console.log(likeData)
-                        this['home/newLike'](likeData)
-                    })
-                    .listen('.deleteLike', like=>{
-                        console.log(like)
-                        this['home/removeLike'](like)
-                    })
-                    .listen('.newDiscussion', (discussion)=>{
-                        console.log(discussion)
-                        this['home/newDiscussion'](discussion.discussion)
-                    })
-                    .listen('.updateDiscussion', discussion=>{
-                        console.log(discussion)
-                        this['home/replaceDiscussion'](discussion.discussion)
-                    })
-                    .listen('.deleteDiscussion', discussionInfo=>{
-                        console.log(discussionInfo)
-                        this['home/removeDiscussion'](discussionInfo)
-                    })
-                
             },
             async clickedViewPost(data){
                 this.showPostModal = true
@@ -500,559 +488,122 @@ import { mapActions, mapGetters } from 'vuex'
             moveToTop(){
                 window.scrollTo(0,0)
             },
-            getData(data){
-                if (data === 'posts') {
-                    this.getPosts()
-                } else if (data === 'reads') {
-                    this.getReads()
-                } else if (data === 'discussions') {
-                    this.getDiscussions()
-                } else if (data === 'questions') {
-                    this.getQuestions()
-                } else if (data === 'books') {
-                    this.getBooks()
-                } else if (data === 'poems') {
-                    this.getPoems()
-                } else if (data === 'activities') {
-                    this.getActivities()
-                } else if (data === 'riddles') {
-                    this.getRiddles()
-                }
+            getData(){
+                let what = this.computedIsPostType ? 'PostTypes' : 'Posts'
+
+                this[`get${what}`]() //getPosts getPostTypes
             },
             incrementNextPage(){
-                if (this.sideValue === 'posts') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.postsMineNextPage += 1
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.postsFollowersNextPage += 1
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.postsFollowingsNextPage += 1
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.postsAttachmentsNextPage += 1
-                    } else {
-                        this.postsNextPage += 1
-                    }
-                } else if (this.sideValue === 'reads') {
-                    this.readsNextPage += 1
-                } else if (this.sideValue === 'discussions') {
-                    this.discussionsNextPage += 1
-                } else if (this.sideValue === 'riddles') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.riddlesMineNextPage += 1
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.riddlesFollowersNextPage += 1
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.riddlesFollowingsNextPage += 1
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.riddlesAttachmentsNextPage += 1
-                    } else {
-                        this.riddlesNextPage += 1
-                    }
-                } else if (this.sideValue === 'poems') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.poemsMineNextPage += 1
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.poemsFollowersNextPage += 1
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.poemsFollowingsNextPage += 1
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.poemsAttachmentsNextPage += 1
-                    } else {
-                        this.poemsNextPage += 1
-                    }
-                } else if (this.sideValue === 'books') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.booksMineNextPage += 1
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.booksFollowersNextPage += 1
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.booksFollowingsNextPage += 1
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.booksAttachmentsNextPage += 1
-                    } else {
-                        this.booksNextPage += 1
-                    }
-                } else if (this.sideValue === 'activities') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.activitiesMineNextPage += 1
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.activitiesFollowersNextPage += 1
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.activitiesFollowingsNextPage += 1
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.activitiesAttachmentsNextPage += 1
-                    } else {
-                        this.activitiesNextPage += 1
-                    }
-                } else if (this.sideValue === 'questions') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.questionsMineNextPage += 1
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.questionsFollowersNextPage += 1
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.questionsFollowingsNextPage += 1
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.questionsAttachmentsNextPage += 1
-                    } else {
-                        this.questionsNextPage += 1
-                    }
+                if (!this[`${this.sideValue}${_.capitalize(this.computedNextPageForMenuValue)}NextPage`]) {
+                    return
                 }
+
+                this[`${this.sideValue}${_.capitalize(this.computedNextPageForMenuValue)}NextPage`] += 1
             },
             decrementNextPage(){
-                if (this.sideValue === 'posts') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.postsMineNextPage = null
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.postsFollowersNextPage = null
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.postsFollowingsNextPage = null
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.postsAttachmentsNextPage = null
-                    } else {
-                        this.postsNextPage = null
-                    }
-                } else if (this.sideValue === 'reads') {
-                    this.readsNextPage = null
-                } else if (this.sideValue === 'discussions') {
-                    this.discussionsNextPage = null
-                } else if (this.sideValue === 'riddles') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.riddlesMineNextPage = null
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.riddlesFollowersNextPage = null
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.riddlesFollowingsNextPage = null
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.riddlesAttachmentsNextPage = null
-                    } else {
-                        this.riddlesNextPage = null
-                    }
-                } else if (this.sideValue === 'poems') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.poemsMineNextPage = null
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.poemsFollowersNextPage = null
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.poemsFollowingsNextPage = null
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.poemsAttachmentsNextPage = null
-                    } else {
-                        this.poemsNextPage = null
-                    }
-                } else if (this.sideValue === 'books') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.booksMineNextPage = null
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.booksFollowersNextPage = null
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.booksFollowingsNextPage = null
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.booksAttachmentsNextPage = null
-                    } else {
-                        this.booksNextPage = null
-                    }
-                } else if (this.sideValue === 'activities') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.activitiesMineNextPage = null
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.activitiesFollowersNextPage = null
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.activitiesFollowingsNextPage = null
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.activitiesAttachmentsNextPage = null
-                    } else {
-                        this.activitiesNextPage = null
-                    }
-                } else if (this.sideValue === 'questions') {
-                    if (this.params.hasOwnProperty('mine')) {
-                        this.questionsMineNextPage = null
-                    } else if (this.params.hasOwnProperty('followers')) {
-                        this.questionsFollowersNextPage = null
-                    } else if (this.params.hasOwnProperty('followings')) {
-                        this.questionsFollowingsNextPage = null
-                    } else if (this.params.hasOwnProperty('attachments')) {
-                        this.questionsAttachmentsNextPage = null
-                    } else {
-                        this.questionsNextPage = null
-                    }
+                if (!this[`${this.sideValue}${_.capitalize(this.computedNextPageForMenuValue)}NextPage`]) {
+                    return
                 }
+
+                this[`${this.sideValue}${_.capitalize(this.computedNextPageForMenuValue)}NextPage`] -= 1
             },
-            checkNextPageCancel(data){
-                let nextPage = null,
-                    cancel = false
-                if (this.params.hasOwnProperty('mine')) {
-                    if (data === 'posts') {
-                        nextPage = this.postsMineNextPage
-                        if (nextPage !== 1 && this['home/getHomePostsMine']) {
-                            cancel = true
-                        }
-                    } else if (data === 'reads') {
-                        
-                    } else if (data === 'discussions') {
-                        
-                    } else if (data === 'questions') {
-                        nextPage = this.questionsMineNextPage
-                        if (nextPage !== 1 && this['home/getHomeQuestionsMine']) {
-                            cancel = true
-                        }
-                    } else if (data === 'riddles') {
-                        nextPage = this.riddlesMineNextPage
-                        if (nextPage !== 1 && this['home/getHomeRiddlesMine']) {
-                            cancel = true
-                        }
-                    } else if (data === 'poems') {
-                        nextPage = this.poemsMineNextPage
-                        if (nextPage !== 1 && this['home/getHomePoemsMine']) {
-                            cancel = true
-                        }
-                    } else if (data === 'activities') {
-                        nextPage = this.activitiesMineNextPage
-                        if (nextPage !== 1 && this['home/getHomeActivitiesMine']) {
-                            cancel = true
-                        }
-                    } else if (data === 'books') {
-                        nextPage = this.booksMineNextPage
-                        if (nextPage !== 1 && this['home/getHomeBooksMine']) {
-                            cancel = true
-                        }
-                    }
-                } else if (this.params.hasOwnProperty('followers')) {
-                    if (data === 'posts') {
-                        nextPage = this.postsFollowersNextPage
-                        if (nextPage !== 1 && this['home/getHomePostsFollowers']) {
-                            cancel = true
-                        }
-                    } else if (data === 'reads') {
-                        
-                    } else if (data === 'discussions') {
-                        
-                    } else if (data === 'questions') {
-                        nextPage = this.questionsFollowersNextPage
-                        if (nextPage !== 1 && this['home/getHomeQuestionsFollowers']) {
-                            cancel = true
-                        }
-                    } else if (data === 'riddles') {
-                        nextPage = this.riddlesFollowersNextPage
-                        if (nextPage !== 1 && this['home/getHomeRiddlesFollowers']) {
-                            cancel = true
-                        }
-                    } else if (data === 'poems') {
-                        nextPage = this.poemsFollowersNextPage
-                        if (nextPage !== 1 && this['home/getHomePoemsFollowers']) {
-                            cancel = true
-                        }
-                    } else if (data === 'activities') {
-                        nextPage = this.activitiesFollowersNextPage
-                        if (nextPage !== 1 && this['home/getHomeActivitiesFollowers']) {
-                            cancel = true
-                        }
-                    } else if (data === 'books') {
-                        nextPage = this.booksFollowersNextPage
-                        if (nextPage !== 1 && this['home/getHomeBooksFollowers']) {
-                            cancel = true
-                        }
-                    }
-                } else if (this.params.hasOwnProperty('followings')) {
-                    if (data === 'posts') {
-                        nextPage = this.postsFollowingsNextPage
-                        if (nextPage !== 1 && this['home/getHomePostsFollowings']) {
-                            cancel = true
-                        }
-                    } else if (data === 'reads') {
-                        
-                    } else if (data === 'discussions') {
-                        
-                    } else if (data === 'questions') {
-                        nextPage = this.questionsFollowingsNextPage
-                        if (nextPage !== 1 && this['home/getHomeQuestionsFollowings']) {
-                            cancel = true
-                        }
-                    } else if (data === 'riddles') {
-                        nextPage = this.riddlesFollowingsNextPage
-                        if (nextPage !== 1 && this['home/getHomeRiddlesFollowings']) {
-                            cancel = true
-                        }
-                    } else if (data === 'poems') {
-                        nextPage = this.poemsFollowingsNextPage
-                        if (nextPage !== 1 && this['home/getHomePoemsFollowings']) {
-                            cancel = true
-                        }
-                    } else if (data === 'activities') {
-                        nextPage = this.activitiesFollowingsNextPage
-                        if (nextPage !== 1 && this['home/getHomeActivitiesFollowings']) {
-                            cancel = true
-                        }
-                    } else if (data === 'books') {
-                        nextPage = this.booksFollowingsNextPage
-                        if (nextPage !== 1 && this['home/getHomeBooksFollowings']) {
-                            cancel = true
-                        }
-                    }
-                } else if (this.params.hasOwnProperty('attachments')) {
-                    if (data === 'posts') {
-                        nextPage = this.postsAttachmentsNextPage
-                        if (nextPage !== 1 && this['home/getHomePostsAttachments'] && 
-                            (this.menuAttachment.data.id === this.postsAttachmentAfter.data.id) &&
-                            (this.menuAttachment.type === this.postsAttachmentAfter.type)) {
-                            cancel = true
-                        } else {
-                            this['home/clearHomePostsAttachments']()
-                        }
-                    } else if (data === 'reads') {
-                        
-                    } else if (data === 'discussions') {
-                        
-                    } else if (data === 'questions') {
-                        nextPage = this.questionsAttachmentsNextPage
-                        if (nextPage !== 1 && this['home/getHomeQuestionsAttachments'] && 
-                            (this.menuAttachment.data.id === this.questionsAttachmentAfter.data.id) &&
-                            (this.menuAttachment.type === this.questionsAttachmentAfter.type)) {
-                            cancel = true
-                        } else {
-                            this['home/clearHomeQuestionsAttachments']()
-                        }
-                    } else if (data === 'riddles') {
-                        nextPage = this.riddlesAttachmentsNextPage
-                        if (nextPage !== 1 && this['home/getHomeRiddlesAttachments'] && 
-                            (this.menuAttachment.data.id === this.riddlesAttachmentAfter.data.id) &&
-                            (this.menuAttachment.type === this.riddlesAttachmentAfter.type)) {
-                            cancel = true
-                        } else {
-                            this['home/clearHomeRiddlesAttachments']()
-                        }
-                    } else if (data === 'poems') {
-                        nextPage = this.poemsAttachmentsNextPage
-                        if (nextPage !== 1 && this['home/getHomePoemsAttachments'] && 
-                            (this.menuAttachment.data.id === this.poemsAttachmentAfter.data.id) &&
-                            (this.menuAttachment.type === this.poemsAttachmentAfter.type)) {
-                            cancel = true
-                        } else {
-                            this['home/clearHomePoemsAttachments']()
-                        }
-                    } else if (data === 'activities') {
-                        nextPage = this.activitiesAttachmentsNextPage
-                        if (nextPage !== 1 && this['home/getHomeActivitiesAttachments'] && 
-                            (this.menuAttachment.data.id === this.activitiesAttachmentAfter.data.id) &&
-                            (this.menuAttachment.type === this.activitiesAttachmentAfter.type)) {
-                            cancel = true
-                        } else {
-                            this['home/clearHomeActivitiesAttachments']()
-                        }
-                    } else if (data === 'books') {
-                        nextPage = this.booksAttachmentsNextPage
-                        if (nextPage !== 1 && this['home/getHomeBooksAttachments'] && 
-                            (this.menuAttachment.data.id === this.booksAttachmentAfter.data.id) &&
-                            (this.menuAttachment.type === this.booksAttachmentAfter.type)) {
-                            cancel = true
-                        } else {
-                            this['home/clearHomeBooksAttachments']()
-                        }
-                    }
-                } else {
-                    if (data === 'posts') {
-                        nextPage = this.postsNextPage
-                        if (nextPage !== 1 && this['home/getHomePosts']) {
-                            cancel = true
-                        }
-                    } else if (data === 'reads') {
-                        
-                    } else if (data === 'discussions') {
-                        
-                    } else if (data === 'questions') {
-                        nextPage = this.questionsNextPage
-                        if (nextPage !== 1 && this['home/getHomeQuestions']) {
-                            cancel = true
-                        }
-                    } else if (data === 'riddles') {
-                        nextPage = this.riddlesNextPage
-                        if (nextPage !== 1 && this['home/getHomeRiddles']) {
-                            cancel = true
-                        }
-                    } else if (data === 'poems') {
-                        nextPage = this.poemsNextPage
-                        if (nextPage !== 1 && this['home/getHomePoems']) {
-                            cancel = true
-                        }
-                    } else if (data === 'activities') {
-                        nextPage = this.activitiesNextPage
-                        if (nextPage !== 1 && this['home/getHomeActivities']) {
-                            cancel = true
-                        }
-                    } else if (data === 'books') {
-                        nextPage = this.booksNextPage
-                        if (nextPage !== 1 && this['home/getHomeBooks']) {
-                            cancel = true
-                        }
-                    }
+            checkNextPageCancel(){
+                if (this[`${this.sidevalue}${_.capitalize(this.computedNextPageForMenuValue)}NextPage`] !== 1 && 
+                    this[`home/getHome${_.capitalize(this.sideValue)}${_.capitalize(this.menuValue)}`]) {
+                    return true
                 }
-                console.log(`nextpage ${nextPage} cancel ${cancel}`);
-                return {nextPage, cancel}
+
+                return false
             },
             setAttachmentAfter(){
-                if (this.params.hasOwnProperty('attachments')) {
-                    if (this.sideValue === 'posts') {
-                        this.postsAttachmentAfter =  this.menuAttachment
-                    } else if (this.sideValue === 'questions') {
-                        this.questionsAttachmentAfter =  this.menuAttachment
-                    } else if (this.sideValue === 'riddles') {
-                        this.riddlesAttachmentAfter =  this.menuAttachment
-                    } else if (this.sideValue === 'poems') {
-                        this.poemsAttachmentAfter =  this.menuAttachment
-                    } else if (this.sideValue === 'activities') {
-                        this.activitiesAttachmentAfter =  this.menuAttachment
-                    } else if (this.sideValue === 'books') {
-                        this.booksAttachmentAfter =  this.menuAttachment
-                    }
+
+                if (!this.params.attachments) {
+                    return
                 } 
+
+                this[`${this.sideValue}AttachmentAfter`] =  this.menuAttachment
             },
             async getPosts() {
                 console.log('in get posts');
-                let {nextPage, cancel} = this.checkNextPageCancel('posts')
                 
-                if (cancel) {
+                if (this.checkNextPageCancel()) {
                     return
                 }
-                this.loading = true 
-                let response = null
-                if (this.getAccessToken) {
-                    response = await this['home/getUserPosts']({
-                        nextPage,
-                        params: this.params,
-                    })
-                } else {
-                    response = await this['home/getPosts']({
-                        nextPage,
-                        params: this.params,
-                    })
-                }
-                this.loading = false
-                if (response) {
-                    this.incrementNextPage()
-                } else {
-                    this.decrementNextPage()
-                }
-                this.setAttachmentAfter()
-            },
-            async getReads(){
-                if (this.getUser) {
-                    
-                }
-            },
-            async getDiscussions(){
 
+                this.loading = true 
+                let response = await this[`home/get${this.getAccessToken ? 'User' : ''}Posts`]({
+                    nextPage: this.computedNextPageForMenuValue,
+                    params: this.setTypeOnParams(),
+                })
+
+                this.setNextPageAndAttachmentAfter(response)
+                
+                this.loading = false
             },
             async getPostTypes(){
                 
-                let {nextPage, cancel} = this.checkNextPageCancel(this.sideValue)
-                
-                if (cancel) {
+                if (this.checkNextPageCancel()) {
                     return
                 }
+
                 this.loading = true 
-                let response = null
-                if (this.getAccessToken) {
-                    response = await this['home/getUserPostTypes']({
-                        nextPage,
-                        params: this.params,
-                    })
-                } else {
-                    response = await this['home/getPostTypes']({
-                        nextPage,
-                        params: this.params,
-                    })
-                }
+
+                let response = await this[`home/get${this.getAccessToken ? 'User' : ''}PostTypes`]({
+                    nextPage: this.computedNextPageForMenuValue,
+                    params: this.setPostTypeOnParams(),
+                })
+                    
+                this.setNextPageAndAttachmentAfter(response)
+
                 this.loading = false
+            },
+            setNextPageAndAttachmentAfter(response, $state = null) {
                 if (response) {
                     this.incrementNextPage()
-                } else {
+                    $state?.loaded()
+                } 
+                
+                if (! response) {
                     this.decrementNextPage()
+                    $state?.complete()
                 }
+
                 this.setAttachmentAfter()
-            },
-            getBooks(){
-                this.params.postType = 'books' //attach posttype for filtering using the same api call as getPosts
-                this.getPostTypes()
-            },
-            getRiddles(){
-                this.params.postType = 'riddles'
-                this.getPostTypes()
-            },
-            getPoems(){
-                this.params.postType = 'poems'
-                this.getPostTypes()
-            },
-            getQuestions(){
-                this.params.postType = 'questions'
-                this.getPostTypes()
-            },
-            getActivities(){
-                this.params.postType = 'activities'
-                this.getPostTypes()
             },
             async infiniteHandler($state){
-                let response = null,
-                    {nextPage} = this.checkNextPageCancel(this.sideValue)
-
-                if (this.sideValue === 'posts') {
-                    if (!nextPage) {
-                        $state.complete()
-                        return
-                    }
-                    if (nextPage === 1) {
-                        return
-                    }
-                    if (this.getAccessToken) {
-                        response = await this['home/getUserPosts']({
-                            nextPage,
-                            params: this.params,
-                        })
-                    } else {
-                        response = await this['home/getPosts']({
-                            nextPage,
-                            params: this.params,
-                        })
-                    }
-                } else if (this.sideValue === 'reads') {
-
-                } else if (this.sideValue === 'discussions') {
-
-                } else if (this.sideValue === 'riddles' || this.sideValue === 'poems' ||
-                    this.sideValue === 'books' || this.sideValue === 'questions' ||
-                    this.sideValue === 'activities') {
-                    if (!nextPage) {
-                        $state.complete()
-                        return
-                    }
-                    if (this.getAccessToken) {
-                        response = await this['home/getUserPostTypes']({
-                            nextPage,
-                            params: this.params,
-                        })
-                    } else {
-                        response = await this['home/getPostTypes']({
-                            nextPage,
-                            params: this.params,
-                        })
-                    }
+                
+                if (this.computedNextPageForMenuValue === 1) {
+                    return
                 }
 
-                if (response) {
-                    this.incrementNextPage()
-                    
-                    $state.loaded()
-                } else {
-                    this.decrementNextPage()
+                if (! this.computedNextPageForMenuValue) {
                     $state.complete()
+                    return
                 }
-                this.setAttachmentAfter()
+                
+                let response = null
+
+                if (this.computedIsNotPostType) {
+                    response = await this['home/getUserPosts']({
+                        nextPage: this.computedNextPageForMenuValue,
+                        params: this.params,
+                    })
+                }
+                
+                if (this.computedIsPostType) {
+                    response = await this['home/getUserPostTypes']({
+                        nextPage: this.computedNextPageForMenuValue,
+                        params: this.params,
+                    })
+                }
+
+                this.setNextPageAndAttachmentAfter(response, $state)
             },
         },
     }
 </script>
 
 <style lang="scss" scoped>
-// $color-primary: rgba(127,255,212,1.0);
-// $local-color-main: whitesmoke;
 
     .home-wrapper{
         position: relative;

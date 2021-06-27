@@ -1,22 +1,23 @@
-<?php 
+<?php
 
 namespace App\DTOs;
 
-use App\Contracts\ItemDataContract;
-use App\Contracts\PostTypeDTOContract;
+use App\Traits\DTOTrait;
 use App\YourEdu\Lesson;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
-class LessonDTO extends PostTypeDTOContract
+class LessonDTO
 {
+    use DTOTrait;
+
     public ?Carbon $publishedAt = null;
-    public string | null $lessonId;
-    public string | null $title;
-    public string | null $ageGroup;
-    public bool | null $intro;
-    public bool | null $free;
+    public ?string $lessonId = null;
+    public ?string $title = null;
+    public ?string $ageGroup = null;
+    public ?bool $intro = false;
+    public ?bool $free = false;
     public bool $main = false;
     public array $links;
     public array $removedLinks;
@@ -30,16 +31,15 @@ class LessonDTO extends PostTypeDTOContract
     public ?object $discussionData = null;
     public ?array $discussionFiles = [];
     public string $action = 'delete';
-    public string | null $owner;
-    public string | null $ownerId;
+    public ?string $owner = null;
+    public ?string $ownerId = null;
     public ?string $adminId = null;
-    public string | null $account;
-    public string | null $accountId;
-    public string | null $description;
-    public string | null $state;
+    public ?string $account = null;
+    public ?string $accountId = null;
+    public ?string $description = null;
+    public ?string $state = null;
     public ?PaymentDTO $paymentDTO = null;
     public ?PaymentDTO $removedPaymentDTO = null;
-    public int | null $userId;
     public ?Lesson $lesson = null;
     public ?Model $addedby = null;
     public ?Model $ownedby = null;
@@ -47,16 +47,10 @@ class LessonDTO extends PostTypeDTOContract
     public ?string $methodType = null;
     public ?string $method = null;
 
-    public static function new()
-    {
-        return new static;
-    }
-
-    public static function createFromRequest
-    (
-        Request $request, bool $main = false
-    )
-    {
+    public static function createFromRequest(
+        Request $request,
+        bool $main = false
+    ) {
         $self = new static();
 
         $self->title = $request->title;
@@ -79,20 +73,20 @@ class LessonDTO extends PostTypeDTOContract
         $self->ownerId = $request->ownerId;
         $self->account = $request->account;
         $self->accountId = $request->accountId;
-        $self->userId = (int) $request->user()->id;
+        $self->userId = $request->user()->id;
         $self->state = $request->state;
         $self->main = $main;
         $self->free = $request->free ? json_decode($request->free) : null;
         $self->intro = $request->intro ? json_decode($request->intro) : null;
-        $self->items = $request->items ? 
+        $self->items = $request->items ?
             json_decode($request->items) : [];
-        $self->removedItems = $request->removedItems ? 
+        $self->removedItems = $request->removedItems ?
             json_decode($request->removedItems) : [];
-        $self->attachments = $request->attachments ? 
+        $self->attachments = $request->attachments ?
             ModelDTO::createFromArray(
                 json_decode($request->attachments)
             ) : [];
-        $self->removedAttachments = $request->removedAttachments ? 
+        $self->removedAttachments = $request->removedAttachments ?
             ModelDTO::createFromArray(
                 json_decode($request->removedAttachments)
             ) : [];
@@ -105,40 +99,22 @@ class LessonDTO extends PostTypeDTOContract
         );
         $self->discussionData = $request->discussionData ?
             json_decode($request->discussionData) : null;
-        $self->discussionFiles = $request->hasFile('discussionFile') ? 
+        $self->discussionFiles = $request->hasFile('discussionFile') ?
             $request->file('discussionFile') : [];
         $self->removedFiles = $request->removedTypeFiles ?
             FileDTO::createFromArray(
                 json_decode($request->removedTypeFiles)
             ) : [];
-            
+
         if ($main) {
-            $self->files = $request->hasFile('files') ? 
+            $self->files = $request->hasFile('files') ?
                 $request->file('files') : [];
         } else {
-            $self->files = $request->hasFile('typeFiles') ? 
+            $self->files = $request->hasFile('typeFiles') ?
                 $request->file('typeFiles') : [];
         }
 
         return $self;
-    }
-
-    public function withLesson(Lesson $lesson)
-    {
-        $clone = clone $this;
-
-        $clone->lesson = $lesson;
-
-        return $clone;
-    }
-
-    public function withAddedby(Model $addedby)
-    {
-        $clone = clone $this;
-
-        $clone->addedby = $addedby;
-
-        return $clone;
     }
 
     public function resetFiles()

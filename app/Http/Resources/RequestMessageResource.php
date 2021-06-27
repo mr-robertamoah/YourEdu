@@ -21,17 +21,18 @@ class RequestMessageResource extends JsonResource
 
         if ($this->images->count()) {
             $images = ImageResource::collection($this->images);
-        } 
+        }
         if ($this->videos()->exists()) {
             $videos = VideoResource::collection($this->videos);
-        } 
+        }
         if ($this->audios()->exists()) {
             $audios = AudioResource::collection($this->audios);
-        } 
+        }
         if ($this->files()->exists()) {
             $files = FileResource::collection($this->files);
         }
-        
+
+        ray($this->fromable->profile, $this->fromable)->green();
         return [
             'id' => $this->id,
             'requestId' => $this->messageable_id,

@@ -17,6 +17,7 @@ const state = {
     userFollowings: [],
     requestingStatus: null,
     requestMessage: '',
+    items: ['post', 'assessment', 'discussion']
 }
 
 export default state

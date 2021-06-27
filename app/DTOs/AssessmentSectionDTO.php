@@ -2,18 +2,22 @@
 
 namespace App\DTOs;
 
+use App\Traits\DTOTrait;
 use App\YourEdu\Assessment;
 use App\YourEdu\AssessmentSection;
 use Illuminate\Database\Eloquent\Model;
 
 class AssessmentSectionDTO
 {
-    public string | null $assessmentSectionId;
-    public string | null $name;
-    public string | null $instruction;
-    public string | null $answerType;
-    public int | null $position;
-    public int | null $maxQuestions;
+    use DTOTrait;
+
+    public ?string $assessmentSectionId = null;
+    public ?string $name = null;
+    public ?string $method = null;
+    public ?string $instruction = null;
+    public ?string $answerType = null;
+    public ?int $position = null;
+    public ?int $maxQuestions = null;
     public ?AssessmentSection $assessmentSection = null;
     public ?Assessment $assessment = null;
     public ?Model $addedby = null;
@@ -124,5 +128,25 @@ class AssessmentSectionDTO
         $question->files = $request->$questionFileId;
 
         return $question;
+    }
+
+    public function hasEnoughQuestions()
+    {
+        return $this->random ? 
+            count($this->questions) >= $this->maxQuestions :
+            count($this->questions);
+    }
+
+    public function hasAppropriateRandomAndMaxQuestionsData()
+    {
+        if (! $this->random) {
+            return true;
+        }
+
+        if ($this->maxQuestions) {
+            return true;
+        }
+
+        return false;
     }
 }

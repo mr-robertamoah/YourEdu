@@ -95,12 +95,12 @@ const app = new Vue({
             
             ApiService.setHeaderAuth()
             store.dispatch('reloadUser')
-            setTimeout(() => {
+            .then(()=>{
                 store.dispatch('getFollowers')
-            }, 500);
-            setTimeout(() => {
-                store.dispatch('getFollowings')
-            }, 1000);
+                .then(() => {
+                    store.dispatch('getFollowings')
+                })
+            })
         } 
 
         if (!token) {

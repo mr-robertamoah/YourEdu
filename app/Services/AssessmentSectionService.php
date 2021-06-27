@@ -6,22 +6,26 @@ use App\DTOs\AssessmentSectionDTO;
 use App\DTOs\QuestionDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\AssessmentSectionException;
+use App\Traits\ServiceTrait;
 use App\YourEdu\AssessmentSection;
 
 class AssessmentSectionService
 {
+    use ServiceTrait;
+
     public function createAssessmentSection
     (
         AssessmentSectionDTO $assessmentSectionDTO
     ) : AssessmentSection
     {
+        $assessmentSectionDTO = $assessmentSectionDTO->addData(method: 'create');
+
         $this->checkRequiredData(
             assessmentSectionDTO: $assessmentSectionDTO
         );
 
         $assessmentSection = $this->createOrUpdateAssessmentSection(
             assessmentSectionDTO: $assessmentSectionDTO,
-            method: 'create'
         );
 
         $assessmentSection = $this->addAssessmentSectionQuestions(
@@ -37,9 +41,10 @@ class AssessmentSectionService
         AssessmentSectionDTO $assessmentSectionDTO
     ) : AssessmentSection
     {
+        $assessmentSectionDTO = $assessmentSectionDTO->addData(method: 'update');
+        
         $assessmentSection = $this->createOrUpdateAssessmentSection(
-            assessmentSectionDTO: $assessmentSectionDTO,
-            method: 'update'
+            assessmentSectionDTO: $assessmentSectionDTO
         );
 
         $this->checkRequiredData(
@@ -118,7 +123,7 @@ class AssessmentSectionService
         foreach ($assessmentSectionDTO->questions as $questionDTO) {
             
             $questionDTO = $this->updateQuestionDTO(
-                questionDTO: $questionDTO,
+                questionDTO: $questionDTO->addData(mustHaveScoreOver: true),
                 assessmentSection: $assessmentSection,
                 assessmentSectionDTO: $assessmentSectionDTO
             );
@@ -183,7 +188,6 @@ class AssessmentSectionService
     private function createOrUpdateAssessmentSection
     (
         AssessmentSectionDTO $assessmentSectionDTO,
-        string $method
     ) : AssessmentSection
     {
         $data = [
@@ -198,18 +202,18 @@ class AssessmentSectionService
 
         $assessmentSection = null;
 
-        if ($method === 'create') {
+        if ($assessmentSectionDTO->method === 'create') {
             $assessmentSection = $assessmentSectionDTO
                 ->assessment->assessmentSections()
-                ->$method($data); 
+                ->create($data); 
         }
         
-        if ($method === 'update') {
+        if ($assessmentSectionDTO->method === 'update') {
             $assessmentSection = $this->getAssessmentSectionModel(
                 $assessmentSectionDTO
             );
                 
-            $assessmentSection?->$method($data); 
+            $assessmentSection?->update($data); 
         }
 
         if (is_null($assessmentSection)) {
@@ -231,14 +235,7 @@ class AssessmentSectionService
             return $assessmentSectionDTO->assessmentSection;
         }
 
-        $assessmentSection = getYourEduModel('assessmentSection', $assessmentSectionDTO->assessmentSectionId);
-        if (is_null($assessmentSection)) {
-            throw new AccountNotFoundException(
-                "assessment section with id {$assessmentSectionDTO->assessmentSectionId} not found."
-            );
-        }
-
-        return $assessmentSection;
+        return $this->getModel('assessmentSection', $assessmentSectionDTO->assessmentSectionId);
     }
 
     private function checkRequiredData
@@ -247,16 +244,34 @@ class AssessmentSectionService
         AssessmentSectionDTO $assessmentSectionDTO
     )
     {
-        if (count($assessmentSectionDTO->questions)) {
+        $this->ensureAppropriateRandomAndMaxQuestionsCombination($assessmentSectionDTO);
+
+        if ($assessmentSectionDTO->method === 'create' && 
+            $assessmentSectionDTO->hasEnoughQuestions()) {
             return;
         }
 
-        if ($assessmentSection?->notRemovingAllQuestions($assessmentSectionDTO->removedQuestions)) {
+        if ($assessmentSectionDTO->method === 'update' && 
+            $assessmentSection?->willHaveEnoughQuestions($assessmentSectionDTO)) {
             return;
         }
 
         $this->throwAssessmentSectionException(
-            message: "am assessment section requires at least one question",
+            message: $assessmentSectionDTO->maxQuestions ? 
+                "sorry 😞, to {$assessmentSectionDTO->method} an assessment section, ensure it has at least the max number of questions" : 
+                "sorry 😞, to {$assessmentSectionDTO->method} an assessment section, ensure it has at least one question",
+            data: $assessmentSectionDTO
+        );
+    }
+
+    private function ensureAppropriateRandomAndMaxQuestionsCombination($assessmentSectionDTO)
+    {
+        if ($assessmentSectionDTO->hasAppropriateRandomAndMaxQuestionsData()) {
+            return;
+        }
+
+        $this->throwAssessmentSectionException(
+            message: "sorry 😞, please fill the max questions field, with a number greater than 0, since it is required for a randomized assessment section.",
             data: $assessmentSectionDTO
         );
     }

@@ -14,10 +14,12 @@ class SearchService
 
     public function profileSearchForHomeItem(SearchDTO $searchDTO)
     {
+        ray($searchDTO)->green();
         return Profile::query()
             ->whereNotIn('user_id', $searchDTO->excludedUserIds)
             ->whereDoesntHaveFlagsFrom($searchDTO->flaggedbyUserIds)
             ->whereAccountType(getAccountClass($searchDTO->searchType))
+            ->whereAccountTypes($searchDTO->accountTypes)
             ->whereSearchName($searchDTO->search)
             ->paginate(self::PAGINATION);
     }

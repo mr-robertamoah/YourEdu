@@ -2,83 +2,141 @@
 
 namespace App\Services;
 
+use App\DTOs\GradeDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\GradeException;
+use App\Traits\AliasesServiceTrait;
+use App\Traits\ServiceTrait;
+use App\YourEdu\Grade;
 
 class GradeService
 {
-    public function gradeCreate($account,$accountId,$name,$description,$rationale,$aliases)
+    use ServiceTrait,
+        AliasesServiceTrait;
+
+    public function createGradeAsAttachment(GradeDTO $gradeDTO)
     {
-        if ($account === 'learner' || $account === 'parent') {
-            throw new GradeException('learner or parent can only create an alias of a subject');
-        }
+        $this->checkAccountType($gradeDTO);
 
-        $grade = (new AttachmentService())->createAttachment($account,
-            $accountId,'grade',$name,$description,
-            $rationale,$aliases);
+        $this->ensureGradeDoesntExist($gradeDTO);
 
-        if (is_null($grade)) {
-            throw new GradeException('grade was not created');
-        }
+        $gradeDTO = $this->setAddedby($gradeDTO);
 
-        return $grade;
+        $grade = $this->makeGrade($gradeDTO);
 
+        $this->createAliases($gradeDTO->withAliasable($grade));
+
+        return $grade->refresh();
     }
 
-    public function gradeAliasCreate($gradeId,$account,$accountId,$name,$description)
+    private function makeGrade($gradeDTO)
     {
-        $mainGrade = getYourEduModel('grade',$gradeId);
-        if (is_null($mainGrade)) {
-            throw new AccountNotFoundException("grade not found with id {$gradeId}");
-        }
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
-        }
-
-        $alias = (new AttachmentService())->createAttachmentAlias($mainAccount,$mainGrade,
-            $name,$description);
-
-        if (!$alias) {
-            throw new GradeException('alias was not created');
-        }
-
-        return $mainGrade;
+        return $gradeDTO->addedby->uniqueGradesAdded()->create([
+            'name' => $gradeDTO->name,
+            'description' => $gradeDTO->description,
+            'level' => $gradeDTO->level,
+            'age_group' => $gradeDTO->ageGroup,
+        ]);
     }
 
-    public function gradeDelete($gradeId,$id)
+    private function ensureGradeDoesntExist($gradeDTO)
     {
-        $grade = getYourEduModel('grade',$gradeId);
-        if (is_null($grade)) {
-            throw new AccountNotFoundException("grade not found with id {$gradeId}");
+        if (!Grade::query()->whereName($gradeDTO->name)->exists()) {
+            return;
         }
 
-        if ($grade->addedby->user_id !== $id) {
-            throw new GradeException('you cannot delete grade you did not create');
-        }
-
-        $grade->delete();
-
-        return 'successful';
+        $this->throwGradeException(
+            message: "sorry 😞, there is already a grade with the name {$gradeDTO->name}",
+            data: $gradeDTO
+        );
     }
 
-    public static function gradeAttachItem($gradeId,$item)
+    private function setAddedby($gradeDTO)
     {
-        if (is_null(
-            $item->grades->where('id',$gradeId)->first()
-        )) {
-            $item->grades()->attach($gradeId);
-            $item->save();
+        if ($gradeDTO->addedby) {
+            return $gradeDTO;
         }
+
+        return $gradeDTO->withAddedby(
+            $this->getModel($gradeDTO->account, $gradeDTO->accountId)
+        );
     }
 
-    public static function gradeUnattachItem($gradeId,$item)
+    private function checkAccountType($gradeDTO)
     {
-        if (!is_null(
-            $item->grades->where('id',$gradeId)->first()
-        )) {
+        if (!in_array($gradeDTO->account, ['learner', 'parent'])) {
+            return;
+        }
+
+        $this->throwGradeException(
+            message: 'sorry 😞, learners or parents can only create an alias of a grade',
+            data: $gradeDTO
+        );
+    }
+
+    public function createGradeAttachmentAlias(GradeDTO $gradeDTO)
+    {
+        $grade = $this->getModel('grade', $gradeDTO->gradeId);
+
+        $gradeDTO = $this->setAddedby($gradeDTO);
+
+        $alias = $this->createAlias(
+            $gradeDTO
+                ->withAliasable($grade)
+                ->setAlias()
+        );
+
+        if (is_not_null($alias)) {
+            return $grade->refresh();
+        }
+
+        $this->throwGradeException(
+            message: 'alias was not created',
+            data: $gradeDTO
+        );
+    }
+
+    public function deleteGradeAsAttachment(GradeDTO $gradeDTO)
+    {
+        $grade = $this->getModel('grade', $gradeDTO->gradeId);
+
+        $this->checkAttachmentAuthorization($grade, $gradeDTO);
+
+        $deletionStatus = $grade->delete();
+
+        if ($deletionStatus) {
+            return;
+        }
+
+        $this->throwGradeException(
+            message: "deletion of the grade, with name: {$grade->name}, failed",
+            data: $gradeDTO
+        );
+    }
+
+    public static function gradeAttachItem($gradeId, $item)
+    {
+        if ($item->grades->where('id', $gradeId)->exists()) {
+            return;
+        }
+
+        $item->grades()->attach($gradeId);
+        $item->save();
+    }
+
+    public static function gradeUnattachItem($gradeId, $item)
+    {
+        if ($item->grades->where('id', $gradeId)->exists()) {
             $item->grades()->detach($gradeId);
             $item->save();
         }
+    }
+
+    private function throwGradeException($message, $data = null)
+    {
+        throw new GradeException(
+            message: $message,
+            data: $data
+        );
     }
 }

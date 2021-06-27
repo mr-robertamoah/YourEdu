@@ -3,11 +3,9 @@
 namespace App\Services;
 
 use App\DTOs\QuestionDTO;
-use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\QuestionException;
 use App\Traits\ServiceTrait;
 use App\YourEdu\Question;
-use Carbon\Carbon;
 use \Debugbar;
 use Illuminate\Support\Arr;
 
@@ -15,12 +13,11 @@ class QuestionService
 {
     use ServiceTrait;
 
-    public function createQuestion
-    (
-        QuestionDTO $questionDTO
-    ) : Question
+    public function createQuestion(QuestionDTO $questionDTO) : Question
     {
-        $question = $this->createOrUpdateQuestion($questionDTO, 'create');
+        $this->checkScoreOver($questionDTO);
+
+        $question = $this->createOrUpdateQuestion($questionDTO->addData(method: 'create'));
 
         $questionDTO = $questionDTO->withQuestion($question);
 
@@ -38,6 +35,22 @@ class QuestionService
         $question = $this->addQuestionFiles($question, $questionDTO);
 
         return $question;
+    }
+
+    private function checkScoreOver($questionDTO)
+    {
+        if (! $questionDTO->mustHaveScoreOver) {
+            return;
+        }
+
+        if (is_not_null($questionDTO->scoreOver) && is_numeric($questionDTO->scoreOver)) {
+            return;
+        }
+
+        $this->throwQuestionException(
+            message: "sorry 😞, please provide a score over field for the question: {$questionDTO->body}",
+            data: $questionDTO
+        );
     }
 
     private function addQuestionFiles
@@ -111,7 +124,7 @@ class QuestionService
 
     public function updateQuestion(QuestionDTO $questionDTO)
     {
-        $question = $this->createOrUpdateQuestion($questionDTO, 'update');
+        $question = $this->createOrUpdateQuestion($questionDTO->addData(method:'update'));
         
         $questionDTO = $questionDTO->withQuestion($question);
 
@@ -146,43 +159,56 @@ class QuestionService
         return $question->refresh();
     }
 
-    private function createOrUpdateQuestion
-    (
-        QuestionDTO $questionDTO,
-        string $method
-    ) : Question
+    private function createOrUpdateQuestion(QuestionDTO $questionDTO) : Question
     {
-        $data = [
-            'body' => $questionDTO->body,
-            'state' => $questionDTO->state,
-            'hint' => $questionDTO->hint,
-            'position' => $questionDTO->position,
-            'score_over' => $questionDTO->scoreOver,
-            'answer_type' => AssessmentService::getAnswerType($questionDTO->answerType),
-            'published_at' => $questionDTO->publishedAt?->toDateTimeString(),
-        ];
+        $data = [];
+
+        if ($questionDTO->body) {
+            $data['body'] = $questionDTO->body;
+        }
+        
+        if ($questionDTO->state) {
+            $data['state'] = $questionDTO->state;
+        }
+        
+        if ($questionDTO->hint) {
+            $data['hint'] = $questionDTO->hint;
+        }
+        
+        if ($questionDTO->position) {
+            $data['position'] = $questionDTO->position;
+        }
+        if ($questionDTO->scoreOver) {
+            $data['score_over'] = $questionDTO->scoreOver;
+        }
+        if ($questionDTO->answerType) {
+            $data['answer_type'] = AssessmentService::getAnswerType($questionDTO->answerType);
+        }
+        if ($questionDTO->publishedAt) {
+            $data['published_at'] = $questionDTO->publishedAt?->toDateTimeString();
+        }
 
         $question = null;
 
-        if ($method === 'create') {
+        if ($questionDTO->method === 'create') {
             $question = $questionDTO->addedby->questionsAdded()
                 ->create($data);
         }
         
-        if ($method === 'update') {
+        if ($questionDTO->method === 'update') {
             $question = getYourEduModel('question',$questionDTO->questionId);
                 
             $question?->update($data);
         }
         
-        if (is_null($question)) {
-            $this->throwQuestionException(
-                message: "failed to {$method} question.",
-                data: $questionDTO
-            );
+        if (is_not_null($question)) {
+            return $question->refresh();
         }
-
-        return $question->refresh();
+        
+        $this->throwQuestionException(
+            message: "failed to {$question->method} question.",
+            data: $questionDTO
+        );
     }
 
     private function addPossibleAnswers

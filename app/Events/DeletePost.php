@@ -35,18 +35,20 @@ class DeletePost implements ShouldBroadcast
     public function broadcastOn()
     {
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$this->postDTO->account}.{$this->postDTO->accountId}")
+            new Channel("youredu.post.{$this->postDTO->postId}")
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'deletePost';
     }
-    
+
     public function broadcastWith()
     {
-        return $this->postDTO;
+        return [
+            'postId' => $this->postDTO->postId,
+            'postType' => $this->postDTO->post->getTypeName(),
+        ];
     }
 }

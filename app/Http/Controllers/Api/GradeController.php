@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\GradeDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GradeAliasCreateRequest;
 use App\Http\Requests\GradeCreateRequest;
@@ -14,16 +15,14 @@ use Illuminate\Support\Facades\DB;
 
 class GradeController extends Controller
 {
-    //
-
-    public function gradeCreate(GradeCreateRequest $request)
+    public function createGradeAsAttachment(GradeCreateRequest $request)
     {
-        try { 
+        try {
             DB::beginTransaction();
 
-            $grade = (new GradeService())->gradeCreate($request->account,
-                $request->accountId,$request->name,$request->description,
-                $request->rationale,json_decode($request->aliases));
+            $grade = (new GradeService())->createGradeAsAttachment(
+                GradeDTO::createFromRequest($request)
+            );
 
             DB::commit();
             return response()->json([
@@ -37,22 +36,22 @@ class GradeController extends Controller
             //     'message' => "unsuccessful, something happened."
             // ],422);
         }
-
     }
 
-    public function gradeAliasCreate(GradeAliasCreateRequest $request,$grade)
+    public function createGradeAttachmentAlias(GradeAliasCreateRequest $request)
     {
         try {
 
             DB::beginTransaction();
-            
-            $mainGrade = (new GradeService())->gradeAliasCreate($grade,
-                $request->account,$request->accountId,$request->name,$request->description);
+
+            $grade = (new GradeService())->createGradeAttachmentAlias(
+                GradeDTO::createFromRequest($request)
+            );
 
             DB::commit();
             return response()->json([
                 'message' => "successful",
-                'grade' => new GradeResource($mainGrade)
+                'grade' => new GradeResource($grade)
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -61,7 +60,6 @@ class GradeController extends Controller
             //     'message' => "unsuccessful, something happened."
             // ],422);
         }
-
     }
 
     public function gradesGet()
@@ -71,10 +69,10 @@ class GradeController extends Controller
 
     public function gradesSearch($search)
     {
-        $subjects = Grade::where('name','like',"%{$search}%")
-            ->orWhereHas('aliases',function(Builder $query) use ($search){
-                $query->where('name','like',"%{$search}%");
-            })->get(); 
+        $subjects = Grade::where('name', 'like', "%{$search}%")
+            ->orWhereHas('aliases', function (Builder $query) use ($search) {
+                $query->where('name', 'like', "%{$search}%");
+            })->get();
 
         return response()->json([
             'message' => 'successful',
@@ -82,10 +80,16 @@ class GradeController extends Controller
         ]);
     }
 
-    public function gradeDelete($grade)
+    public function deleteGradeAsAttachment(Request $request)
     {
         try {
-            $gradeInfo = (new GradeService())->gradeDelete($grade,auth()->id());
+            $gradeInfo = (new GradeService())->deleteGradeAsAttachment(
+                GradeDTO::new()
+                    ->addData(
+                        gradeId: $request->gradeId,
+                        userId: $request->user()?->id
+                    )
+            );
 
             return response()->json([
                 'message' => $gradeInfo

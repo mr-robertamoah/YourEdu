@@ -100,6 +100,10 @@ import { strings } from '../../services/helpers'
                 type: Boolean,
                 default: false
             },
+            answering: {
+                type: Boolean,
+                default: false
+            },
             drag: {
                 type: Boolean,
                 default: true

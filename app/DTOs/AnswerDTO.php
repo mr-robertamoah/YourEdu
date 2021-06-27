@@ -9,7 +9,6 @@ class AnswerDTO
 {
     use DTOTrait;
 
-    public ?string $userId = null;
     public ?string $answerId = null;
     public ?string $answer = null;
     public ?string $itemId = null;
@@ -23,12 +22,11 @@ class AnswerDTO
     public ?int $workId = null;
     public bool $chat = false;
     public bool $checkAnswerType = true;
-    public ?string $possibleAnswerId = null;
     public array $possibleAnswerIds = [];
     public array $files = [];
     public array $removedFiles = [];
 
-    public static function createFromArray(array $dataArray) : array
+    public static function createFromArray(array $dataArray): array
     {
         $sections = [];
 
@@ -37,7 +35,7 @@ class AnswerDTO
                 answerId: $data->answerId ?? null,
                 answer: $data->answer ?? null,
                 workId: $data->workId ?? null,
-                answerType: $data->answerType ? 
+                answerType: $data->answerType ?
                     strtoupper($data->answerType) : null,
                 possibleAnswerIds: $data->possibleAnswerIds ?? [],
             );
@@ -46,9 +44,8 @@ class AnswerDTO
         return $sections;
     }
 
-    public static function createFromData
-    (
-        $answerId = null, 
+    public static function createFromData(
+        $answerId = null,
         $answer = null,
         $workId = null,
         $account = null,
@@ -60,8 +57,7 @@ class AnswerDTO
         array $possibleAnswerIds = [],
         array $files = [],
         array $removedFiles = [],
-    )
-    {
+    ) {
         $static = new static();
 
         $static->userId = $userId;

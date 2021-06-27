@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\AssessmentAnsweringDTO;
+use App\DTOs\AssessmentMarkingDTO;
 use App\DTOs\AssessmentDTO;
 use App\DTOs\InvitationDTO;
 use App\DTOs\SearchDTO;
@@ -61,7 +63,7 @@ class AssessmentController extends Controller
                 new AssessmentResource($assessment) : null
         ]);
     }
-    
+
     public function getWork(Request $request)
     {
         $assessmentResource = (new AssessmentService())->getWork(
@@ -87,7 +89,7 @@ class AssessmentController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             $participant = (new AssessmentService())->updateAssessmentParticipant(
                 AssessmentDTO::createFromRequest($request, true)
             );
@@ -108,11 +110,11 @@ class AssessmentController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             (new AssessmentService())->deleteAssessmentParticipant(
                 AssessmentDTO::createFromRequest($request)
             );
-            
+
             DB::commit();
 
             return response()->json([
@@ -128,14 +130,14 @@ class AssessmentController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             (new AssessmentService())->deleteAssessmentMarker(
                 AssessmentDTO::new()->addData(
                     participantId: $request->markerId,
                     userId: $request->user()?->id,
                 )
             );
-            
+
             DB::commit();
 
             return response()->json([
@@ -146,29 +148,109 @@ class AssessmentController extends Controller
             throw $th;
         }
     }
-    
+
+    public function answerAssessment(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            (new AssessmentService())->answerAssessment(
+                AssessmentAnsweringDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function doneAnsweringAssessment(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            (new AssessmentService())->doneAnsweringAssessment(
+                AssessmentAnsweringDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function markAssessment(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            (new AssessmentService())->markAssessment(
+                AssessmentmarkingDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
+    public function doneMarkingAssessment(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            (new AssessmentService())->doneMarkingAssessment(
+                AssessmentMarkingDTO::createFromRequest($request)
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'successful',
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+    }
+
     public function invitationResponse(Request $request)
     {
         try {
             DB::beginTransaction();
 
-            $participant = (new AssessmentService())->invitationResponse(
+            $account = (new AssessmentService())->invitationResponse(
                 InvitationDTO::createFromRequest($request)
             );
-            
+
             DB::commit();
 
             return response()->json([
                 'message' => 'successful',
-                'participant' => $participant ? 
-                    new DiscussionParticipantResource($participant) : $participant
+                'participant' => AssessmentService::getParticipantOrNull($account),
+                'marker' => AssessmentService::getMarkerOrNull($account),
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
         }
     }
-    
+
     public function joinResponse(Request $request)
     {
         try {
@@ -176,7 +258,7 @@ class AssessmentController extends Controller
             $account = (new AssessmentService())->joinResponse(
                 InvitationDTO::createFromRequest($request)
             );
-            
+
             DB::commit();
             return response()->json([
                 'message' => 'successful',
@@ -224,7 +306,7 @@ class AssessmentController extends Controller
 
             return response()->json([
                 'message' => 'successful',
-                'pendingParticipant' => $account ? 
+                'pendingParticipant' => $account ?
                     new DiscussionPendingParticipantsResource($account) : null
             ]);
         } catch (\Throwable $th) {

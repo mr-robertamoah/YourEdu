@@ -17,6 +17,10 @@
 // {
 //     broadcast(new TestEvent('hello')) ;
 // });
+Route::get('/test', function () {
+
+    // ray(unserialize(DB::table('failed_jobs')->where('id', 8)->first()->payload))->green();
+});
 Route::get('/{any}', 'Api\YourEduController@index')->where('any', '.*');
 
 // Route::get('/', function () {

@@ -21,7 +21,9 @@ class UpdateDiscussion implements ShouldBroadcast
      *
      * @return void
      */
-    public function __construct(private $discussionDTO){}
+    public function __construct(private $discussionDTO)
+    {
+    }
 
     /**
      * Get the channels the event should broadcast on.
@@ -34,16 +36,16 @@ class UpdateDiscussion implements ShouldBroadcast
             new Channel("youredu.discussion.{$this->discussionDTO->discussion->id}"),
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'updateDiscussion';
     }
-    
+
     public function broadcastWith()
     {
         return [
-            'discussion' => new DiscussionResource($this->discussionDTO->discussion)
+            'discussion' => new DiscussionResource($this->discussionDTO->discussion->refresh())
         ];
     }
 }

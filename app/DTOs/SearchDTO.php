@@ -13,6 +13,8 @@ class SearchDTO
     public ?Model $itemModel = null;
     public ?string $search = null;
     public ?string $searchType = null;
+    public bool $forMarkers = false;
+    public array $accountTypes = [];
     public array $excludedUserIds = [];
     public array $flaggedbyUserIds = [];
 
@@ -26,10 +28,14 @@ class SearchDTO
             $self->itemId = $request->discussionId;
             $self->item = 'discussion';
         }
-        
+
         if ($request->assessmentId) {
             $self->itemId = $request->assessmentId;
             $self->item = 'assessment';
+        }
+
+        if ($request->markers) {
+            $self->forMarkers = true;
         }
 
         $self->search = $request->search;
@@ -49,14 +55,16 @@ class SearchDTO
 
     public function addToExcludedUserIds(array $userIds)
     {
-        $this->excludedUserIds = array_push($this->excludedUserIds, ...$userIds);
+        array_push($this->excludedUserIds, ...$userIds);
+
+        ray($this->excludedUserIds)->green();
 
         return $this;
     }
 
     public function addToFlaggedbyUserIds(array $userIds)
     {
-        $this->flaggedbyUserIds = array_push($this->flaggedbyUserIds, ...$userIds);
+        array_push($this->flaggedbyUserIds, ...$userIds);
 
         return $this;
     }

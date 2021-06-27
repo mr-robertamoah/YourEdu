@@ -4,7 +4,7 @@ namespace App\Traits;
 
 use Illuminate\Support\Collection;
 
-trait ItemFilesTrait
+trait HasFilesTrait
 {
     public function hasFiles()
     {

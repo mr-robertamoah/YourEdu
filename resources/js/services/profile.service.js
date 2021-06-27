@@ -772,9 +772,9 @@ const ProfileService = {
             return error.response
         }
     },
-    async discussionDelete(discussionId){
+    async discussionDelete(data){
         try {
-            let response = await ApiService.delete(`/api/discussion/${discussionId}`)
+            let response = await ApiService.delete(`/api/discussion/${data.discussionId}`)
     
             return response
         } catch (error) {
@@ -790,18 +790,18 @@ const ProfileService = {
             return error.response
         }
     },
-    async joinDiscussionResponse(data){
+    async joinItemResponse(data){
         try {
-            let response = await ApiService.post(`/api/discussion/join/response`,data)
+            let response = await ApiService.post(`/api/${data.item}/join/response`,data)
     
             return response
         } catch (error) {
             return error.response
         }
     },
-    async invitationDiscussionResponse(data){
+    async invitationItemResponse(data){
         try {
-            let response = await ApiService.post(`/api/discussion/invitation/response`,data)
+            let response = await ApiService.post(`/api/${data.item}/invitation/response`,data)
     
             return response
         } catch (error) {
@@ -868,10 +868,11 @@ const ProfileService = {
             return error.response
         }
     },
-    async inviteParticipant(data){
-        let response
+    async inviteAccount(main){
+        let response,
+            {data, computedItem: item} = main
         try {
-            response = await ApiService.post(`/api/discussion/invitation`,data)
+            response = await ApiService.post(`/api/${item.item}/${item.itemId}/invite`,data)
     
             return response
         } catch (error) {

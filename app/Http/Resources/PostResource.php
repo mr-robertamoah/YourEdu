@@ -15,24 +15,17 @@ class PostResource extends JsonResource
     public function toArray($request)
     {
         $type = null;
-        $typeName = null;
         if ($this->books()->exists()) {
-            $typeName = 'book';
             $type = BookResource::collection($this->books()->latest()->get());
         } else if ($this->poems()->exists()) {
-            $typeName = 'poem';
             $type = PoemResource::collection($this->poems()->latest()->get());
         } else if ($this->riddles()->exists()) {
-            $typeName = 'riddle';
             $type = RiddleResource::collection($this->riddles()->latest()->get());
         } else if ($this->activities()->exists()) {
-            $typeName = 'activity';
             $type = ActivityResource::collection($this->activities()->latest()->get());
         } else if ($this->questions()->exists()) {
-            $typeName = 'question';
             $type = QuestionResource::collection($this->questions()->latest()->get());
         } else if ($this->lessons()->exists()) {
-            $typeName = 'lesson';
             $type = LessonResource::collection($this->lessons()->latest()->get());
         }
 
@@ -55,7 +48,7 @@ class PostResource extends JsonResource
             'id' => $this->id,
             'content' => $this->content,
             'type' => $type,
-            'typeName' => $typeName,
+            'typeName' => $this->getTypeName(),
             'isPost' => true,
             'likes' => LikeResource::collection($this->likes),
             'commentsCount' => $this->commentsCount(),

@@ -2,6 +2,8 @@
 
 namespace App\YourEdu;
 
+use App\Services\MarkService;
+use Database\Factories\AssessmentableFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -32,27 +34,31 @@ class Assessmentable extends Model
     {
         return $query
             ->has('assessmentable')
-            ->whereIn('assessmentable_type', [
-                "App\\YourEdu\\Facilitator",
-                "App\\YourEdu\\Professional",
-            ]);
+            ->whereIn('assessmentable_type', MarkService::MARKER_CLASSES);
     }
 
     public function scopeWhereNotMarker($query)
     {
         return $query
             ->has('assessmentable')
-            ->whereNotIn('assessmentable_type', [
-                "App\\YourEdu\\Facilitator",
-                "App\\YourEdu\\Professional",
-            ]);
+            ->whereNotIn('assessmentable_type', MarkService::MARKER_CLASSES);
     }
 
     public function scopeWhereAssessmentableUser($query, $userId)
     {
         return $query
-            ->whereHasMorph('assessmentable', '*', function($query) use ($userId) {
+            ->whereHasMorph('assessmentable', MarkService::MARKER_CLASSES, function ($query) use ($userId) {
                 $query->whereUser($userId);
+            });
+    }
+
+    public function scopeWhereAssessmentableAccount($query, $account)
+    {
+        return $query
+            ->where(function ($query) use ($account) {
+                $query
+                    ->where('assessmentable_type', $account::class)
+                    ->where('assessmentable_id', $account->id);
             });
     }
 
@@ -63,6 +69,6 @@ class Assessmentable extends Model
 
     protected static function newFactory()
     {
-        //
+        return AssessmentableFactory::new();
     }
 }

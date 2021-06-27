@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\DTOs\AssessmentAnsweringDTO;
 use App\DTOs\AssessmentDTO;
+use App\DTOs\AssessmentMarkingDTO;
 use App\DTOs\DiscussionDTO;
 use App\DTOs\InvitationDTO;
+use App\DTOs\MarkDTO;
 use App\DTOs\SearchDTO;
+use App\DTOs\WorkDTO;
 use App\Events\DeleteAssessmentEvent;
 use App\Events\NewAssessmentEvent;
 use App\Events\NewAssessmentMarker;
@@ -22,6 +25,8 @@ use App\Http\Resources\AssessmentMiniResource;
 use App\Http\Resources\AssessmentResource;
 use App\Http\Resources\DiscussionParticipantResource;
 use App\Http\Resources\UserAccountResource;
+use App\Notifications\AssessmentAnsweredNotification;
+use App\Notifications\AssessmentAnswerMarkedNotification;
 use App\Notifications\AssessmentInvitationNotification;
 use App\Notifications\AssessmentInvitationResponseNotification;
 use App\Notifications\AssessmentJoinNotification;
@@ -39,7 +44,6 @@ use App\YourEdu\Assessment;
 use App\YourEdu\Assessmentable;
 use App\YourEdu\Profile;
 use App\YourEdu\Request;
-use Illuminate\Notifications\Notification as NotificationsNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -57,22 +61,22 @@ class AssessmentService
     ];
 
     const PAGINATION = 10;
-    
+
     public static function getAnswerType($answerType)
     {
         if (!strlen($answerType)) {
             return 'SHORT_ANSWER';
         }
 
-        if (str_contains(strtolower($answerType),'short')) {
+        if (str_contains(strtolower($answerType), 'short')) {
             return 'SHORT_ANSWER';
         }
 
-        if (str_contains(strtolower($answerType),'long')) {
+        if (str_contains(strtolower($answerType), 'long')) {
             return 'LONG_ANSWER';
         }
 
-        if (str_contains(strtolower($answerType),'true')) {
+        if (str_contains(strtolower($answerType), 'true')) {
             return 'TRUE_FALSE';
         }
 
@@ -83,10 +87,7 @@ class AssessmentService
         return strtoupper($answerType);
     }
 
-    public function createAssessment
-    (
-        AssessmentDTO $assessmentDTO
-    ): Assessment
+    public function createAssessment(AssessmentDTO $assessmentDTO): Assessment
     {
         try {
             DB::beginTransaction();
@@ -100,11 +101,11 @@ class AssessmentService
                 assessmentDTO: $assessmentDTO
             );
 
-            $assessment = $this->createOrUpdateAssessment($assessmentDTO, 'create');
+            $assessment = $this->createOrUpdateAssessment($assessmentDTO->addData(method: 'create'));
 
             $this->comparePublishedAndDueDates($assessment, $assessmentDTO);
 
-            $assessment = $this->addAssessmentSections($assessment,$assessmentDTO);
+            $assessment = $this->addAssessmentSections($assessment, $assessmentDTO);
 
             $assessmentDTO = $assessmentDTO->withAssessment($assessment);
 
@@ -113,6 +114,8 @@ class AssessmentService
             $this->checkAssessmentSections($assessment);
 
             $assessment = $this->createAutoDiscussion($assessmentDTO);
+
+            $assessment = $this->addAttachmentsToAssessment($assessmentDTO);
 
             $this->notifyAttachedItemsAccounts(
                 $assessment,
@@ -133,12 +136,28 @@ class AssessmentService
         }
     }
 
-    private function comparePublishedAndDueDates
-    (
+    private function addAttachmentsToAssessment($assessmentDTO)
+    {
+        $attachmentDTO = AttachmentDTO::new()
+            ->withAttachable($assessmentDTO->assessment)
+            ->withAddedby($assessmentDTO->addedby);
+
+        foreach ($assessmentDTO->attachments as $attachment) {
+
+            (new AttachmentService)->attach(
+                $attachmentDTO
+                    ->addData(note: $attachment->note ?? null)
+                    ->withAttachedwith($this->getModel($attachment->type, $attachment->typeId))
+            );
+        }
+
+        return $assessmentDTO->assessment->refresh();
+    }
+
+    private function comparePublishedAndDueDates(
         Assessment $assessment,
         AssessmentDTO $assessmentDTO
-    )
-    {
+    ) {
         if (!$assessment->publised_at || !$assessment->due_at) {
             return;
         }
@@ -155,12 +174,10 @@ class AssessmentService
         );
     }
 
-    private function checkRequiredData
-    (
+    private function checkRequiredData(
         Assessment $assessment = null,
         AssessmentDTO $assessmentDTO
-    )
-    {
+    ) {
         if (count($assessmentDTO->assessmentSections)) {
             return;
         }
@@ -175,17 +192,15 @@ class AssessmentService
         );
     }
 
-    private function notifyAttachedItemsAccounts
-    (
+    private function notifyAttachedItemsAccounts(
         Assessment $assessment,
         string $message,
         $authority = false,
         $detachedItems = [],
         $onlyDetached = false,
-    ) : void
-    {
+    ): void {
         $userIds = [];
-        
+
         if (!$onlyDetached) {
             $userIds = $this->getItemsUserIds(
                 assessment: $assessment,
@@ -194,26 +209,24 @@ class AssessmentService
         }
 
         foreach ($detachedItems as $item) {
-            array_push($userIds,...$item->getAuthorizedUserIds($authority));
+            array_push($userIds, ...$item->getAuthorizedUserIds($authority));
         }
-        
+
         $this->notifyUsers(
-            users: User::whereIn('id',$userIds)->get(),
+            users: User::whereIn('id', $userIds)->get(),
             message: $message,
             assessment: $assessment
         );
     }
 
-    private function detachAssessmentFromAllItems
-    (
+    private function detachAssessmentFromAllItems(
         AssessmentDTO $assessmentDTO
-    ) : array
-    {
+    ): array {
         $detachedItems = $assessmentDTO->assessment->items()->unique();
-        
+
         $assessmentDTO->assessment->assessmentables->each(
-            function($assessmentable) use ($assessmentDTO) {
-            
+            function ($assessmentable) use ($assessmentDTO) {
+
                 $this->checkCanAttachOrDetachItem(
                     $assessmentable->assessmentable,
                     $assessmentDTO,
@@ -223,32 +236,28 @@ class AssessmentService
                 $assessmentable->delete();
             }
         );
-        
+
         return [$assessmentDTO->assessment->refresh(), $detachedItems];
     }
 
-    private function getItemsUserIds
-    (
-        Assessment $assessment, 
+    private function getItemsUserIds(
+        Assessment $assessment,
         bool $authority = false
-    ) : array
-    {
+    ): array {
         $userIds = [];
-        
+
         foreach ($assessment->allItems() as $item) {
-            array_push($userIds,...$item->getAuthorizedUserIds($authority));
+            array_push($userIds, ...$item->getAuthorizedUserIds($authority));
         }
 
         return array_unique($userIds);
     }
 
-    private function notifyUsers
-    (
+    private function notifyUsers(
         Collection $users,
         $message,
         Assessment $assessment = null
-    )
-    {
+    ) {
         Notification::send(
             $users,
             new AssessmentNotification(
@@ -258,47 +267,43 @@ class AssessmentService
         );
     }
 
-    public function attachAssessmentToItems
-    (
+    public function attachAssessmentToItems(
         AssessmentDTO $assessmentDTO
-    ) : Assessment
-    {
+    ): Assessment {
         foreach ($assessmentDTO->attachedItems as $attachedItemDTO) {
             $assessmentable = $this->getModel($attachedItemDTO->item, $attachedItemDTO->itemId);
 
             $itemable = $this->getItemable($attachedItemDTO, $assessmentable);
 
             $this->checkCanAttachOrDetachItem(
-                $assessmentable, 
+                $assessmentable,
                 $assessmentDTO,
                 $attachedItemDTO
             );
 
             $this->checkExistenceOfAssessment(
-                $assessmentDTO->assessment, 
-                $assessmentable, 
-                $itemable, 
+                $assessmentDTO->assessment,
+                $assessmentable,
+                $itemable,
                 $attachedItemDTO
             );
 
             $this->createAssessmentables(
-                $assessmentDTO->assessment, 
-                $assessmentable, 
+                $assessmentDTO->assessment,
+                $assessmentable,
                 $itemable
             );
         }
-        
+
         return $assessmentDTO->assessment->refresh();
     }
 
-    private function checkExistenceOfAssessment
-    (
+    private function checkExistenceOfAssessment(
         Assessment $assessment,
         $assessmentable,
         $itemable,
         $attachedItemDTO
-    )
-    {
+    ) {
         if ($assessment->doesntHaveSpecificAssessmentable($assessmentable, $itemable)) {
             return;
         }
@@ -309,23 +314,21 @@ class AssessmentService
         );
     }
 
-    private function createAssessmentables
-    (
+    private function createAssessmentables(
         $assessment,
         $assessmentable,
         $itemable = null
-    )
-    {
-        $assessmentables = $assessment->assessmentables()->create();
-        $assessmentables->assessmentable()->associate($assessmentable);
+    ) {
+        $assessmentable = $assessment->assessmentables()->create();
+        $assessmentable->assessmentable()->associate($assessmentable);
 
         if ($itemable) {
-            $assessmentables->itemable()->associate($itemable);
+            $assessmentable->itemable()->associate($itemable);
         }
 
-        $assessmentables->save();
+        $assessmentable->save();
 
-        return $assessmentables;
+        return $assessmentable;
     }
 
     private function getItemable($dto, $item)
@@ -348,26 +351,24 @@ class AssessmentService
         return $this->getModel('class', $dto->extraItemId);
     }
 
-    private function checkCanAttachOrDetachItem
-    (
+    private function checkCanAttachOrDetachItem(
         $item,
         $assessmentDTO,
         $itemable
-    )
-    {
+    ) {
         $type = class_basename_lower($item);
 
         if (in_array($type, ['facilitator', 'professional'])) {
             return;
         }
-        
+
         $userIds = $item->getAuthorizedUserIds(
             onlyMain: true
         ) ?? [];
-        
+
         if ($type === 'subject' || $type === 'courseSection') {
             array_push(
-                $userIds, 
+                $userIds,
                 ...$itemable->getAuthorizedUserIds(onlyMain: true)
             );
         }
@@ -382,12 +383,10 @@ class AssessmentService
         );
     }
 
-    public function detachAssessmentFromItems
-    (
+    public function detachAssessmentFromItems(
         Assessment $assessment,
         AssessmentDTO $assessmentDTO
-    ) : array
-    {
+    ): array {
         $detachedItems = [];
         foreach ($assessmentDTO->unattachedItems as $unattachedItemDTO) {
             $assessmentable = $this->getModel($unattachedItemDTO->item, $unattachedItemDTO->itemId);
@@ -400,102 +399,117 @@ class AssessmentService
 
             $assessmentable->save();
         }
-        
+
         return [$assessment->refresh(), $detachedItems];
     }
 
-    private function detachItem
-    (
-        $assessmentable, 
-        $itemable, 
+    private function detachItem(
+        $assessmentable,
+        $itemable,
         $assessment
-    ) : bool
-    {
+    ): bool {
         return (bool) $assessment->specificAssessmentable(
-                $assessmentable, $itemable
-            )?->delete();
+            $assessmentable,
+            $itemable
+        )?->delete();
     }
 
-    public function addAssessmentSections
-    (
+    public function addAssessmentSections(
         Assessment $assessment,
         AssessmentDTO $assessmentDTO,
         bool $checkIfTaken = false
-    ) : Assessment
-    {
+    ): Assessment {
         if ($checkIfTaken) {
             $this->ensureAssessmentNotTaken($assessment);
         }
-        
+
         foreach ($assessmentDTO->assessmentSections as  $assessmentSectionDTO) {
 
             $assessmentSectionDTO = $assessmentSectionDTO
                 ->withAssessment($assessment)
                 ->withAddedby($assessmentDTO->addedby);
-            
+
             (new AssessmentSectionService)->createAssessmentSection(
                 $assessmentSectionDTO
             );
         }
-        
+
         return $assessment->refresh();
     }
 
-    private function createOrUpdateAssessment
-    (
-        AssessmentDTO $assessmentDTO,
-        string $method
-    ) : Assessment
+    private function createOrUpdateAssessment(AssessmentDTO $assessmentDTO): Assessment
     {
-        $data = [
-            'name' => $assessmentDTO->name,
-            'description' => $assessmentDTO->description,
-            'duration' => $assessmentDTO->duration,
-            'social' => $assessmentDTO->social,
-            'state' => $assessmentDTO->state ? 
-                Str::upper($assessmentDTO->state): "ACCEPTED",
-            'type' => $assessmentDTO->type,
-            'total_mark' => $assessmentDTO->totalMark,
-            'due_at' => $assessmentDTO->dueAt?->toDateString(),
-            'published_at' => $assessmentDTO->publishedAt?->toDateString(),
-        ];
-
-        if ($method === 'create') {
-            $assessment = $assessmentDTO->addedby->addedAssessments()
-                ->create($data);            
+        if ($assessmentDTO->method === 'create') {
+            return $assessmentDTO->addedby->addedAssessments()
+                ->create([
+                    'name' => $assessmentDTO->name,
+                    'description' => $assessmentDTO->description,
+                    'duration' => $assessmentDTO->duration,
+                    'social' => $assessmentDTO->social,
+                    'state' => $assessmentDTO->state ?
+                        Str::upper($assessmentDTO->state) : "ACCEPTED",
+                    'type' => $assessmentDTO->type,
+                    'total_mark' => $assessmentDTO->totalMark ?: 100,
+                    'due_at' => $assessmentDTO->dueAt?->toDateString(),
+                    'published_at' => $assessmentDTO->publishedAt?->toDateString(),
+                ]);
         }
 
-        if ($method === 'update') {
-            $assessment = getYourEduModel('assessment', $assessmentDTO->assessmentId);
-                
-            $assessment?->update($data);
-        }
+        $assessment = $this->getModel('assessment', $assessmentDTO->assessmentId);
 
-        if (is_null($assessment)) {
-            $this->throwAssessmentException(
-                message: "failed to {$method} assessment.",
-                data: $assessmentDTO
-            );
-        }
+        $assessment->update($this->getUpdateData($assessmentDTO));
 
         return $assessment->refresh();
     }
 
-    private function throwAssessmentException
-    (
-        $message,
-        $data = null
-    )
+    private function getUpdateData($assessmentDTO)
+    {
+        $data = [];
+
+        if ($assessmentDTO->name) {
+            $data['name'] = $assessmentDTO->name;
+        }
+
+        if ($assessmentDTO->description) {
+            $data['description'] = $assessmentDTO->description;
+        }
+
+        if ($assessmentDTO->duration) {
+            $data['duration'] = $assessmentDTO->duration;
+        }
+
+        if ($assessmentDTO->type) {
+            $data['type'] = Str::upper($assessmentDTO->type);
+        }
+
+        if ($assessmentDTO->state) {
+            $data['state'] = Str::upper($assessmentDTO->state);
+        }
+
+        if ($assessmentDTO->totalMark) {
+            $data['total_mark'] = $assessmentDTO->totalMark ?: 100;
+        }
+
+        if ($assessmentDTO->dueAt) {
+            $data['due_at'] = $assessmentDTO->dueAt?->toDateString();
+        }
+
+        if ($assessmentDTO->publishedAt) {
+            $data['published_at'] = $assessmentDTO->publishedAt?->toDateString();
+        }
+
+        return $data;
+    }
+
+    private function throwAssessmentException($message, $data = null)
     {
         throw new AssessmentException(
-            message: $message, data: $data
+            message: $message,
+            data: $data
         );
     }
 
-    public function updateAssessment
-    (
-        AssessmentDTO $assessmentDTO
-    ) : Assessment
+    public function updateAssessment(AssessmentDTO $assessmentDTO): Assessment
     {
         try {
             DB::beginTransaction();
@@ -504,40 +518,48 @@ class AssessmentService
                 $assessmentDTO->account,
                 $assessmentDTO->accountId
             );
-            
+
             $assessment = $this->getAssessmentWithId($assessmentDTO);
 
             $assessmentDTO = $assessmentDTO->withAssessment($assessment);
 
             $this->checkAuthorization($assessmentDTO);
-            
+
             $this->checkRequiredData($assessment, $assessmentDTO);
 
-            $assessment = $this->createOrUpdateAssessment($assessmentDTO, 'update');
+            $assessment = $this->createOrUpdateAssessment($assessmentDTO->addData(method: 'create'));
 
             $this->comparePublishedAndDueDates($assessment, $assessmentDTO);
-            
+
             $assessment = $this->editAssessmentSections(
-                $assessment, $assessmentDTO
+                $assessment,
+                $assessmentDTO
             );
 
             $assessment = $this->removeAssessmentSections(
-                $assessment, $assessmentDTO
+                $assessment,
+                $assessmentDTO
             );
 
             $assessment = $this->addAssessmentSections(
-                $assessment, $assessmentDTO, true
+                $assessment,
+                $assessmentDTO,
+                true
             );
 
             $this->checkAssessmentSections($assessment);
 
             $assessmentDTO = $assessmentDTO->withAssessment($assessment);
-            
+
             $assessment = $this->attachAssessmentToItems($assessmentDTO);
 
-            list($assessment, $detachedItems) = $this->detachAssessmentFromItems($assessment,$assessmentDTO);
+            list($assessment, $detachedItems) = $this->detachAssessmentFromItems($assessment, $assessmentDTO);
 
             $assessment = $this->createAutoDiscussion($assessmentDTO);
+
+            $assessment = $this->addAttachmentsToAssessment($assessmentDTO);
+
+            $assessment = $this->removeAttachmentsFromAssessment($assessmentDTO);
 
             $this->notifyAttachedItemsAccounts(
                 assessment: $assessment,
@@ -559,6 +581,19 @@ class AssessmentService
         }
     }
 
+    private function removeAttachmentsFromAssessment(AssessmentDTO $assessmentDTO)
+    {
+        foreach ($assessmentDTO->removedAttachments as $attachment) {
+            (new AttachmentService)->detach(
+                AttachmentDTO::new()
+                    ->withAttachable($assessmentDTO->assessment)
+                    ->withAttachedwith($this->getModel($attachment->item, $attachment->itemid))
+            );
+        }
+
+        return $assessmentDTO->assessment->refresh();
+    }
+
     private function checkAssessmentSections(Assessment $assessment)
     {
         if ($assessment->doesntHaveAssessmentSections()) {
@@ -569,11 +604,9 @@ class AssessmentService
         }
     }
 
-    private function ensureAssessmentNotTaken
-    (
+    private function ensureAssessmentNotTaken(
         Assessment $assessment,
-    ) : void
-    {
+    ): void {
         if ($assessment->hasBeenTaken()) {
             $this->throwAssessmentException(
                 message: "this assessment has already been taken and cannot have sections or questions changed.",
@@ -582,18 +615,16 @@ class AssessmentService
         }
     }
 
-    private function editAssessmentSections
-    (
+    private function editAssessmentSections(
         Assessment $assessment,
         AssessmentDTO $assessmentDTO
-    ) : Assessment
-    {
-        if (count($assessmentDTO->editedAssessmentSections) > 0 ) {
+    ): Assessment {
+        if (count($assessmentDTO->editedAssessmentSections) > 0) {
             $this->ensureAssessmentNotTaken($assessment);
         }
-        
+
         foreach ($assessmentDTO->editedAssessmentSections as $assessmentSectionDTO) {
-            
+
             $assessmentSectionDTO = $assessmentSectionDTO
                 ->withAssessment($assessment)
                 ->withAddedby($assessmentDTO->addedby);
@@ -606,18 +637,16 @@ class AssessmentService
         return $assessment->refresh();
     }
 
-    private function removeAssessmentSections
-    (
+    private function removeAssessmentSections(
         Assessment $assessment,
         AssessmentDTO $assessmentDTO
-    ) : Assessment
-    {
+    ): Assessment {
         if (count($assessmentDTO->removedAssessmentSections) > 0) {
             $this->ensureAssessmentNotTaken($assessment);
         }
 
         foreach ($assessmentDTO->removedAssessmentSections as $assessmentSectionDTO) {
-            
+
             $assessmentSectionDTO = $assessmentSectionDTO
                 ->withAssessment($assessment);
 
@@ -630,25 +659,23 @@ class AssessmentService
 
     private function deleteAssessmentSections(Assessment $assessment)
     {
-        $assessment->assessmentSections->each(function($assessmentSection) {
+        $assessment->assessmentSections->each(function ($assessmentSection) {
             $assessmentSection->questions()->delete();
             $assessmentSection->delete();
         });
     }
 
-    public function deleteAssessment
-    (
+    public function deleteAssessment(
         AssessmentDTO $assessmentDTO
-    ) 
-    {
+    ) {
         try {
             DB::beginTransaction();
 
             $assessmentDTO->addedby = $this->getModel(
-                $assessmentDTO->account, 
+                $assessmentDTO->account,
                 $assessmentDTO->accountId
             );
-            
+
             $assessment = $this->getAssessmentWithId($assessmentDTO);
 
             $assessmentDTO = $assessmentDTO->withAssessment($assessment);
@@ -657,12 +684,12 @@ class AssessmentService
 
             if ($assessmentDTO->action === 'undo') {
                 $assessmentDTO->state = 'accepted';
-                return $this->changeState($assessment,$assessmentDTO);
-            } 
+                return $this->changeState($assessment, $assessmentDTO);
+            }
 
             if ($this->paymentMadeFor($assessment) || $this->usedByAnotherItem($assessment)) {
                 $assessmentDTO->state = 'deleted';
-                return $this->changeState($assessment,$assessmentDTO);
+                return $this->changeState($assessment, $assessmentDTO);
             }
 
             $this->deleteAssessmentSections($assessment);
@@ -694,9 +721,8 @@ class AssessmentService
                 data: $assessmentDTO
             );
         }
-        
     }
-    
+
     private function createAutoDiscussion($assessmentDTO)
     {
         if ($assessmentDTO->assessment->hasDiscussion()) {
@@ -712,7 +738,7 @@ class AssessmentService
                 ->withRaisedby($assessmentDTO->assessment->addedby)
                 ->withFiles($assessmentDTO->discussionFiles),
         );
-        
+
         $assessmentDTO->assessment->discussions()->save($discussion);
 
         return $assessmentDTO->assessment->refresh();
@@ -734,25 +760,21 @@ class AssessmentService
         return $assessment->refresh();
     }
 
-    private function changeState
-    (
+    private function changeState(
         $assessment,
         $assessmentDTO
-    )
-    {
+    ) {
         $assessment->update(['state' => Str::upper($assessmentDTO->state)]);
-        
+
         $assessmentDTO->methodType = 'updated';
         $this->broadcastAssessment($assessmentDTO->withAssessment($assessment));
 
         return $assessment;
     }
 
-    private function broadcastAssessment
-    (
+    private function broadcastAssessment(
         $assessmentDTO,
-    )
-    {
+    ) {
         $event = $this->getEvent($assessmentDTO);
 
         if (is_null($event)) {
@@ -841,17 +863,15 @@ class AssessmentService
         );
     }
 
-    private function getAssessmentWithId(AssessmentDTO $assessmentDTO)
+    private function getAssessmentWithId($dto)
     {
-        return $this->getModel('assessment', $assessmentDTO->assessmentId);
+        return $this->getModel('assessment', $dto->assessmentId);
     }
-    
-    private function removeAssessment
-    (
+
+    private function removeAssessment(
         Assessment $assessment,
         AssessmentDTO $assessmentDTO
-    ) : bool
-    {
+    ): bool {
         $deletionStatus = $assessment->delete();
 
         if (!$deletionStatus) {
@@ -866,16 +886,13 @@ class AssessmentService
 
     public function getWork(AssessmentDTO $assessmentDTO)
     {
-        ray($assessmentDTO)->green();
         $assessment = $this->getAssessmentWithId($assessmentDTO);
 
-        if (! $this->isValidUser($assessmentDTO)) {
+        if (!$this->isValidUser($assessmentDTO)) {
             return $this->getAssessmentMiniResource($assessment);
         }
 
-        $hasAccess = $this->checkWorkAccess($assessment, $assessmentDTO);
-
-        if (! $hasAccess) {
+        if ($assessment->doesnthaveAccess()) {
             return $this->getAssessmentMiniResource($assessment);
         }
 
@@ -892,59 +909,10 @@ class AssessmentService
         return new AssessmentResource($assessment);
     }
 
-    private function checkWorkAccess
-    (
+    public static function learnerHasAccessByUserId(
         Assessment $assessment,
-        AssessmentDTO $assessmentDTO
-    ) : bool
-    {
-        if ($assessment->isntUsedByAnotherItem()) {
-            return false;
-        }
-
-        if ($this->hasAccessToItems($assessment->lessons, $assessmentDTO->userId)) {
-            return true;
-        }
-
-        if ($this->hasAccessToItems($assessment->courses, $assessmentDTO->userId)) {
-            return true;
-        }
-
-        if ($this->hasAccessToItems($assessment->extracurriculums, $assessmentDTO->userId)) {
-            return true;
-        }
-
-        if ($this->hasAccessToItems($assessment->classes, $assessmentDTO->userId)) {
-            return true;
-        }
-
-        if ($this->hasAccessToItems($assessment->programs, $assessmentDTO->userId)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    private function hasAccessToItems($items, $userId)
-    {
-        if (!count($items)) {
-            return false;
-        }
-
-        foreach ($items as $item) {
-            if (! in_array($userId, $item->getAuthorizedLearnerUserIds())) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public static function learnerHasAccessByUserId
-    (
-        Assessment $assessment, $userId
-    ) : bool
-    {
+        $userId
+    ): bool {
         foreach ($assessment->allItems() as $item) {
             if (in_array($userId, $item->getAuthorizedLearnerUserIds())) {
                 return true;
@@ -956,7 +924,7 @@ class AssessmentService
 
     public function getParticipants(AssessmentDTO $assessmentDTO)
     {
-        $this->getModel('assessment',$assessmentDTO->assessmentId);
+        $this->getModel('assessment', $assessmentDTO->assessmentId);
 
         if (is_null($assessmentDTO->state)) {
             $assessmentDTO->state = 'active';
@@ -964,8 +932,8 @@ class AssessmentService
 
         $participantsProfiles = Profile::query()
             ->wherePartOf(
-                'assessment', 
-                $assessmentDTO->assessmentId, 
+                'assessment',
+                $assessmentDTO->assessmentId,
                 $assessmentDTO->state
             )
             ->orderBy('name')
@@ -992,52 +960,75 @@ class AssessmentService
         );
     }
 
+    private function ensureAccountUserDoesHaveMarkingAccount($item, $account)
+    {
+        if (is_null($otherAccount = $item->getMarkerAccountUsingUserId($account->user_id))) {
+            return;
+        }
+
+        $this->throwAccountNotFoundException(
+            message: "sorry 😞, you are already marking with your {$otherAccount->accountType} account.",
+            data: [$item, $account]
+        );
+    }
+
     public function inviteParticipant(InvitationDTO $invitationDTO)
     {
         $invitationDTO = $this->setItemModel($invitationDTO);
-        
+
         $invitationDTO = $this->setInvitee($invitationDTO);
-        
+
         $assessmentDTO = AssessmentDTO::new()
             ->withAssessment($invitationDTO->itemModel)
             ->addData(
-                userId: $invitationDTO->userId, 
+                userId: $invitationDTO->userId,
                 action: 'pending'
             );
 
         $this->ensureIsOwnerOfAssessment($assessmentDTO);
 
         if ($invitationDTO->type === 'marker') {
-            
+
             $this->validateMarkerAccount(
                 $assessmentDTO->addData(account: $invitationDTO->invitee->accountType)
+            );
+
+            $this->ensureAccountUserDoesHaveMarkingAccount(
+                item: $assessmentDTO->assessment,
+                account: $invitationDTO->invitee
             );
         }
 
         $request = $this->createInviteRequest($invitationDTO);
 
         $invitationDTO = $invitationDTO->withRequest($request);
-        
+
         if ($invitationDTO->type !== 'marker') {
-            
+
             $this->ensureAccountUserDoesHaveParticipatingAccount(
                 item: $assessmentDTO->assessment,
                 account: $invitationDTO->invitee
             );
-    
+
             $participant = $this->createParticipant(
                 $invitationDTO->itemModel,
                 $invitationDTO->invitee
             );
-    
+
             $assessmentDTO = $assessmentDTO->withParticipant($participant);
-    
+
             $participant = $this->updateParticipantStateUsingAction($assessmentDTO);
-            
+
             $assessmentDTO->methodType = 'pendingParticipant';
 
             $this->broadcastAssessment($assessmentDTO);
-            
+
+            $invitationDTO->methodType = 'inviteParticipant';
+
+            $this->sendNotification(
+                $invitationDTO->withUsers($invitationDTO->invitee->user)
+            );
+
             return $participant;
         }
 
@@ -1049,11 +1040,11 @@ class AssessmentService
 
         return null;
     }
-    
+
     public function invitationResponse(InvitationDTO $invitationDTO)
     {
-        $request = $this->getModel('request',$invitationDTO->requestId);
-        
+        $request = $this->getModel('request', $invitationDTO->requestId);
+
         $invitationDTO = $invitationDTO->withRequest($request);
 
         $this->checkRequestOwnership($invitationDTO);
@@ -1069,7 +1060,7 @@ class AssessmentService
 
         $assessmentDTO = AssessmentDTO::new()
             ->withAssessment($request->requestable);
-            
+
         if ($request->isMarkerRequest()) {
             $assessmentDTO = $assessmentDTO->withInvitationDTO($invitationDTO);
 
@@ -1080,7 +1071,7 @@ class AssessmentService
             ->getParticipantUsingAccount($invitationDTO->request->requestto);
 
         if (is_null($participant)) {
-            
+
             $request->delete();
 
             ray($invitationDTO->request->refresh())->green();
@@ -1096,7 +1087,7 @@ class AssessmentService
                 methodType: 'removePendingParticipant'
             )
         );
-        
+
         $invitationDTO->methodType = 'invitationResponse';
         $this->sendNotification(
             $invitationDTO->withUsers($request->requestfrom->user),
@@ -1123,15 +1114,15 @@ class AssessmentService
 
         return $participant;
     }
-    
+
     public function updateAssessmentParticipant(AssessmentDTO $assessmentDTO)
     {
         $participant = $this->getParticipant($assessmentDTO);
 
         $assessmentDTO = $assessmentDTO->withParticipant($participant);
-        
+
         $assessmentDTO = $assessmentDTO->withAssessment($participant->participation);
-        
+
         $this->ensureIsOwnerOfAssessment($assessmentDTO);
 
         $participant = $this->updateParticipantStateUsingAction($assessmentDTO);
@@ -1170,7 +1161,7 @@ class AssessmentService
         $this->ensureNotOwnerOrParticipant($assessmentDTO);
 
         if ($invitationDTO->itemModel->type === 'PRIVATE') {
-            
+
             return $this->sendJoinRequest($invitationDTO);
         }
 
@@ -1183,7 +1174,7 @@ class AssessmentService
             $assessmentDTO
                 ->withUsers($invitationDTO->itemModel->addedby->user)
         );
-        
+
         $this->broadcastAssessment(
             $assessmentDTO->withParticipant($participant)
         );
@@ -1193,10 +1184,10 @@ class AssessmentService
 
     public function joinResponse(InvitationDTO $invitationDTO)
     {
-        $request = $this->getModel('request',$invitationDTO->requestId);
-        
+        $request = $this->getModel('request', $invitationDTO->requestId);
+
         $this->checkRequestType($request);
-        
+
         $this->validateAction($invitationDTO);
 
         $assessmentDTO = AssessmentDTO::new()
@@ -1212,7 +1203,7 @@ class AssessmentService
         $request->save();
 
         if ($request->isMarkerRequest()) {
-            
+
             $assessmentDTO = $assessmentDTO->withInvitationDTO(
                 $invitationDTO->withRequest($request)
             );
@@ -1232,7 +1223,7 @@ class AssessmentService
         );
 
         if ($invitationDTO->action === 'declined') {
-            
+
             $participant->delete();
 
             return null;
@@ -1245,7 +1236,7 @@ class AssessmentService
         $assessmentDTO->methodType = 'joinAssessment';
 
         $this->broadcastAssessment($assessmentDTO);
-        
+
         return $participant;
     }
 
@@ -1267,23 +1258,25 @@ class AssessmentService
             return null;
         }
 
-        $this->createAssessmentables(
+        $assessmentable = $this->createAssessmentables(
             $assessmentDTO->invitationDTO->request->requestable,
             $assessmentDTO->invitationDTO->request->requestto
         );
-        
+
         $assessmentDTO->methodType = 'joinAsMarker';
 
         $this->broadcastAssessment(
             $assessmentDTO->withAssessmentable($assessmentDTO->invitationDTO->request->requestto)
         );
+
+        return $assessmentable->assessmentable;
     }
 
     private function handleMarkerJoinRequest($assessmentDTO)
     {
         if ($assessmentDTO->invitationDTO->request->state == 'DECLINED') {
             $assessmentDTO->invitationDTO->methodType = 'joinResponse';
-            
+
             $this->sendNotification(
                 $assessmentDTO->invitationDTO
                     ->withUsers(
@@ -1295,7 +1288,7 @@ class AssessmentService
         }
 
         $assessmentDTO->methodType = 'joinAsMarker';
-        
+
         $assessmentDTO->invitationDTO = $assessmentDTO->invitationDTO
             ->withJoiner(
                 $assessmentDTO->invitationDTO->request->requestfrom
@@ -1310,7 +1303,7 @@ class AssessmentService
             );
 
         return $this->addAccountAsMarker(
-            $assessmentDTO->invitationDTO->request->requestfrom, 
+            $assessmentDTO->invitationDTO->request->requestfrom,
             $assessmentDTO
         );
     }
@@ -1324,7 +1317,7 @@ class AssessmentService
         if (class_basename_lower($account) === 'participant') {
             return new DiscussionParticipantResource($account);
         }
-        
+
         return null;
     }
 
@@ -1337,10 +1330,10 @@ class AssessmentService
         if (class_basename_lower($account) !== 'participant') {
             return new UserAccountResource($account);
         }
-        
+
         return null;
     }
-    
+
     public function deleteAssessmentParticipant(AssessmentDTO $assessmentDTO)
     {
         $participant = $this->getParticipant($assessmentDTO);
@@ -1348,10 +1341,10 @@ class AssessmentService
         $assessmentDTO = $assessmentDTO->withParticipant($participant);
 
         $assessmentDTO = $assessmentDTO->withAssessment($participant->participation);
-        
+
         $mustBeOwner = $participant->accountable->isNotAuthorizedUser($assessmentDTO->userId);
         if ($mustBeOwner) {
-            
+
             $this->ensureIsOwnerOfAssessment($assessmentDTO);
         }
 
@@ -1363,7 +1356,7 @@ class AssessmentService
 
         $this->sendNotification(
             $assessmentDTO->withUsers(
-                $mustBeOwner ? $assessmentDTO->participant->accountable->user : 
+                $mustBeOwner ? $assessmentDTO->participant->accountable->user :
                     $assessmentDTO->assessment->addedby->user
             )
         );
@@ -1412,7 +1405,6 @@ class AssessmentService
         $this->ensureNoPendingJoinRequests($invitationDTO, $invitationDTO->type === 'marker');
 
         $request = $this->createJoinRequest($invitationDTO);
-        ray($request, $request->data)->green();
 
         $invitationDTO = $invitationDTO->withRequest($request);
 
@@ -1435,7 +1427,7 @@ class AssessmentService
         $assessmentDTO = AssessmentDTO::new()
             ->withParticipant($participant)
             ->addData(
-                userId: $invitationDTO->userId, 
+                userId: $invitationDTO->userId,
                 methodType: 'joinRequest',
                 action: 'pending'
             );
@@ -1451,9 +1443,14 @@ class AssessmentService
     {
         $invitationDTO = $this->setJoiner($invitationDTO);
 
-        $this->validateMarkerAccount($invitationDTO);
-
         $invitationDTO = $this->setItemModel($invitationDTO);
+
+        $isNotOwner = $invitationDTO->itemModel->isNotOwner($invitationDTO->userId);
+
+        if ($isNotOwner) {
+
+            $this->validateMarkerAccount($invitationDTO);
+        }
 
         $assessmentDTO = AssessmentDTO::new()
             ->withAssessment($invitationDTO->itemModel)
@@ -1464,10 +1461,13 @@ class AssessmentService
 
         $this->ensureUserIsNotMarker($assessmentDTO);
 
-        if ($assessmentDTO->assessment->type === 'PRIVATE') {
+        if (
+            $assessmentDTO->assessment->type === 'PRIVATE' &&
+            $isNotOwner
+        ) {
             return $this->sendJoinRequest($invitationDTO);
         }
-        
+
         $assessmentDTO = $assessmentDTO->withInvitationDTO($invitationDTO);
 
         $assessmentDTO = $assessmentDTO->withUsers($assessmentDTO->assessment->addedby->user);
@@ -1524,13 +1524,13 @@ class AssessmentService
         $request = Request::query()
             ->whereAssessmentRequest()
             ->wherePending()
-            ->when($marker, function($query) {
+            ->when($marker, function ($query) {
                 $query->whereMarkerRequest();
             })
             ->whereRequestFromUser($invitationDTO->userId)
             ->exists();
 
-        if (! $request) {
+        if (!$request) {
             return;
         }
 
@@ -1545,7 +1545,7 @@ class AssessmentService
         if ($assessmentDTO->assessment->isOwner($assessmentDTO->userId)) {
             return;
         }
-        
+
         $this->throwAssessmentException(
             message: 'you are not authorized to perform this action on this assessment',
             data: $assessmentDTO
@@ -1554,8 +1554,10 @@ class AssessmentService
 
     private function ensureNotOwnerOrParticipant($assessmentDTO)
     {
-        if ($assessmentDTO->assessment->isNotOwner($assessmentDTO->userId) &&
-            $assessmentDTO->assessment->isNotParticipant($assessmentDTO->userId)) {
+        if (
+            $assessmentDTO->assessment->isNotOwner($assessmentDTO->userId) &&
+            $assessmentDTO->assessment->isNotParticipant($assessmentDTO->userId)
+        ) {
             return;
         }
 
@@ -1591,13 +1593,345 @@ class AssessmentService
     public function answerAssessment(AssessmentAnsweringDTO $assessmentAnsweringDTO)
     {
         $assessmentAnsweringDTO = $this->setAnsweredby($assessmentAnsweringDTO);
-    
-        $this->checkAccountOwnership($assessmentAnsweringDTO->answeredby, $assessmentAnswerDTO->userId);
 
-        
+        $assessmentAnsweringDTO = $assessmentAnsweringDTO->withAssessment(
+            $this->getModel('assessment', $assessmentAnsweringDTO->assessmentId)
+        );
+
+        $this->checkAccountOwnership($assessmentAnsweringDTO->answeredby, $assessmentAnsweringDTO->userId);
+
+        $this->ensureCanAnswer($assessmentAnsweringDTO);
+
+        $this->ensureWorkNotDone($assessmentAnsweringDTO);
+
+        $assessmentAnsweringDTO = $assessmentAnsweringDTO->setUpAnsweredby();
+
+        if ($assessmentAnsweringDTO->type === 'one') {
+            $this->answerQuestion($assessmentAnsweringDTO);
+        }
+
+        if ($assessmentAnsweringDTO->type === 'all') {
+            $this->answerAllQuestions($assessmentAnsweringDTO);
+
+            $assessmentAnsweringDTO = $assessmentAnsweringDTO->addData(status: 'done');
+        }
+
+        $this->submitWork($assessmentAnsweringDTO);
+
+        if ($assessmentAnsweringDTO->type !== 'all') {
+            return;
+        }
+
+        $this->notifyMarkersAndOwner($assessmentAnsweringDTO);
     }
 
-    private function sendNotification($dto) 
+    private function ensureWorkNotDone($assessmentAnsweringDTO)
+    {
+        if ($assessmentAnsweringDTO->answeredby->doesntHaveWorkForAssessment($assessmentAnsweringDTO->assessment->id)) {
+            return;
+        }
+
+
+        if ($assessmentAnsweringDTO->answeredby->doesntHaveASubmittedWorkForAssessment($assessmentAnsweringDTO->assessment->id)) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you are done submitting this work and cannot do anything else.",
+            data: $assessmentAnsweringDTO
+        );
+    }
+
+    public function doneAnsweringAssessment(AssessmentAnsweringDTO $assessmentAnsweringDTO)
+    {
+        $assessmentAnsweringDTO = $this->setAnsweredby($assessmentAnsweringDTO);
+
+        $assessmentAnsweringDTO = $assessmentAnsweringDTO->withAssessment(
+            $this->getModel('assessment', $assessmentAnsweringDTO->assessmentId)
+        );
+
+        $this->checkAccountOwnership($assessmentAnsweringDTO->answeredby, $assessmentAnsweringDTO->userId);
+
+        $this->ensureCanAnswer($assessmentAnsweringDTO);
+
+        $assessmentAnsweringDTO = $assessmentAnsweringDTO->withWork(
+            $this->submitWork($assessmentAnsweringDTO->addData(status: 'done'))
+        );
+
+        $this->updateSubmittedWork($assessmentAnsweringDTO);
+
+        $this->notifyMarkersAndOwner($assessmentAnsweringDTO);
+    }
+
+    private function answerQuestion($assessmentAnsweringDTO)
+    {
+        $this->createAnswer(
+            $assessmentAnsweringDTO->answerDTO
+        );
+    }
+
+    private function answerAllQuestions($assessmentAnsweringDTO)
+    {
+        foreach ($assessmentAnsweringDTO->answerDTOs as $answerDTO) {
+
+            $this->createAnswer($answerDTO);
+        }
+    }
+
+    private function createAnswer($answerDTO)
+    {
+        return (new AnswerService)->createAnswer($answerDTO);
+    }
+
+    private function submitWork($assessmentAnsweringDTO)
+    {
+        $work = $assessmentAnsweringDTO->answeredby->getWorkForAssessment($assessmentAnsweringDTO->assessment->id);
+
+        if ($work) {
+            return $work;
+        }
+
+        return (new WorkService)->submitWork(
+            WorkDTO::new()
+                ->withAssessment($assessmentAnsweringDTO->assessment)
+                ->withAddedby($assessmentAnsweringDTO->answeredby)
+                ->addData(
+                    accessChecked: true,
+                    dontBroadcast: true,
+                    status: $assessmentAnsweringDTO->status
+                )
+        );
+    }
+
+    private function updateSubmittedWork($assessmentAnsweringDTO)
+    {
+        return (new WorkService)->updateWorkStatus(
+            WorkDTO::new()
+                ->withWork($assessmentAnsweringDTO->work)
+                ->withAddedby($assessmentAnsweringDTO->answeredby)
+                ->addData(
+                    accessChecked: true,
+                    dontBroadcast: true,
+                    status: $assessmentAnsweringDTO->status
+                )
+        );
+    }
+
+    private function ensureCanAnswer($assessmentAnsweringDTO)
+    {
+        if ($assessmentAnsweringDTO->assessment->isOwner($assessmentAnsweringDTO->userId)) {
+            return;
+        }
+
+        if ($assessmentAnsweringDTO->assessment->isSocial() && $assessmentAnsweringDTO->assessment->isParticipant($assessmentAnsweringDTO->userId)) {
+            return;
+        }
+
+        if ($assessmentAnsweringDTO->assessment->isNotSocial() && $assessmentAnsweringDTO->assessment->hasAccess($assessmentAnsweringDTO->userId)) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you do not have access to the assessment with name: {$assessmentAnsweringDTO->assessment->name}",
+            data: $assessmentAnsweringDTO
+        );
+    }
+
+    private function notifyMarkersAndOwner($assessmentAnsweringDTO)
+    {
+        $assessmentAnsweringDTO->methodType = 'answered';
+
+        $this->sendNotification(
+            $assessmentAnsweringDTO->withUsers(
+                $assessmentAnsweringDTO->assessment->getOwnerAndMarkersUsers()
+            )
+        );
+    }
+
+    private function setMarker($assessmentMarkingDTO)
+    {
+        if ($assessmentMarkingDTO->marker) {
+            return $assessmentMarkingDTO;
+        }
+
+        return $assessmentMarkingDTO->withMarker(
+            $this->getModel($assessmentMarkingDTO->account, $assessmentMarkingDTO->accountId)
+        );
+    }
+
+    public function markAssessment(AssessmentMarkingDTO $assessmentMarkingDTO)
+    {
+        $assessmentMarkingDTO = $this->setMarker($assessmentMarkingDTO);
+
+        $this->checkAccountOwnership($assessmentMarkingDTO->marker, $assessmentMarkingDTO->userId);
+
+        $assessmentMarkingDTO = $assessmentMarkingDTO->withAssessment(
+            $this->getAssessmentWithId($assessmentMarkingDTO)
+        );
+
+        $this->ensureCanMark($assessmentMarkingDTO);
+
+        $assessmentMarkingDTO = $assessmentMarkingDTO->withWork(
+            $this->getModel('work', $assessmentMarkingDTO->workId)
+        );
+
+        $this->ensureIsNotDoneMarkingWork($assessmentMarkingDTO);
+
+        $this->ensureHasMarkingData($assessmentMarkingDTO);
+
+        $assessmentMarkingDTO = $assessmentMarkingDTO->setUpMarker();
+
+        if ($assessmentMarkingDTO->type === 'one') {
+
+            $this->markAnswer($assessmentMarkingDTO);
+
+            return null;
+        }
+
+        $this->markAllAnswer($assessmentMarkingDTO);
+
+        $this->markWork($assessmentMarkingDTO);
+
+        $this->sendNotification(
+            $assessmentMarkingDTO
+                ->withUsers($assessmentMarkingDTO->work->addedby->user)
+                ->addData(methodType: 'marked')
+        );
+    }
+
+    public function doneMarkingAssessment(AssessmentMarkingDTO $assessmentMarkingDTO)
+    {
+        $assessmentMarkingDTO = $this->setMarker($assessmentMarkingDTO);
+
+        $this->checkAccountOwnership($assessmentMarkingDTO->marker, $assessmentMarkingDTO->userId);
+
+        $assessmentMarkingDTO = $assessmentMarkingDTO->withAssessment(
+            $this->getAssessmentWithId($assessmentMarkingDTO)
+        );
+
+        $this->ensureCanMark($assessmentMarkingDTO);
+
+        $assessmentMarkingDTO = $assessmentMarkingDTO->withWork(
+            $this->getModel('work', $assessmentMarkingDTO->workId)
+        );
+
+        $this->ensureIsDoneMarkingWork($assessmentMarkingDTO);
+
+        $this->sendNotification(
+            $assessmentMarkingDTO
+                ->withUsers($assessmentMarkingDTO->work->addedby->user)
+                ->addData(methodType: 'marked')
+        );
+    }
+
+    private function ensureIsNotDoneMarkingWork($assessmentMarkingDTO)
+    {
+        if ($assessmentMarkingDTO->work->addedby
+            ->hasAnUnmarkedAnswerForAssessmentAndByMarker(
+                $assessmentMarkingDTO->assessmentId,
+                $assessmentMarkingDTO->marker
+            )
+        ) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you are already done marking this work",
+            data: $assessmentMarkingDTO
+        );
+    }
+
+    private function ensureIsDoneMarkingWork($assessmentMarkingDTO)
+    {
+        if ($assessmentMarkingDTO->work->addedby
+            ->doesntHaveAnUnmarkedAnswerForAssessmentAndByMarker(
+                $assessmentMarkingDTO->assessmentId,
+                $assessmentMarkingDTO->marker
+            )
+        ) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you still have not finished marking this work",
+            data: $assessmentMarkingDTO
+        );
+    }
+
+    private function ensureHasMarkingData($assessmentMarkingDTO)
+    {
+        if ($assessmentMarkingDTO->hasMarkingData()) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you do not have data for marking one or all of the answers",
+            data: $assessmentMarkingDTO
+        );
+    }
+
+    private function markWork($assessmentMarkingDTO)
+    {
+        return $this->createMark(
+            MarkDTO::new()
+                ->withMarkedby($assessmentMarkingDTO->marker)
+                ->withMarkable($assessmentMarkingDTO->work)
+                ->addData(
+                    remarks: $assessmentMarkingDTO->remarks,
+                    score: $assessmentMarkingDTO->work->addedby->getTotalScoreOfAnswers($assessmentMarkingDTO->assessment),
+                    scoreOver: $assessmentMarkingDTO->assessment->getTotalScoreOver(),
+                )
+        );
+    }
+
+    private function markAnswer($assessmentMarkingDTO)
+    {
+        return $this->createMark($assessmentMarkingDTO->markDTO);
+    }
+
+    private function markAllAnswer($assessmentMarkingDTO)
+    {
+        $marks = [];
+
+        foreach ($assessmentMarkingDTO->markDTOs as $markDTO) {
+            $marks[] = $this->createMark($markDTO);
+        }
+
+        return $marks;
+    }
+
+    private function createMark(MarkDTO $markDTO)
+    {
+        return (new MarkService)->createMark($markDTO);
+    }
+
+    private function ensureCanMark($assessmentMarkingDTO)
+    {
+        if ($assessmentMarkingDTO->assessment->isOwner($assessmentMarkingDTO->userId)) {
+            return;
+        }
+
+        if (
+            $assessmentMarkingDTO->assessment->isSocial() &&
+            $assessmentMarkingDTO->assessment->isMarker($assessmentMarkingDTO->userId)
+        ) {
+            return;
+        }
+
+        if (
+            $assessmentMarkingDTO->assessment->isNotSocial() &&
+            $assessmentMarkingDTO->assessment->hasAccess($assessmentMarkingDTO->userId, true)
+        ) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you do not have access to mark any work submitted for the assessment with name: {$assessmentMarkingDTO->assessment->name}",
+            data: $assessmentMarkingDTO
+        );
+    }
+
+    private function sendNotification($dto)
     {
         if (is_null($dto->users)) {
             return;
@@ -1630,7 +1964,7 @@ class AssessmentService
             return new RemoveAssessmentMarkerNotification($dto);
         }
 
-        if ($dto->methodType === 'inviteParticipant') {
+        if ($dto->methodType === 'inviteParticipant' || $dto->methodType === 'pendingParticipant') {
             return new AssessmentInvitationNotification($dto);
         }
 
@@ -1641,11 +1975,19 @@ class AssessmentService
         if ($dto->methodType === 'joinRequest') {
             return new AssessmentJoinRequestNotification($dto);
         }
-        
+
+        if ($dto->methodType === 'answered') {
+            return new AssessmentAnsweredNotification($dto);
+        }
+
+        if ($dto->methodType === 'marked') {
+            return new AssessmentAnswerMarkedNotification($dto);
+        }
+
         if ($dto->methodType === 'joinAssessment' || $dto->methodType === 'joinAsMarker') {
             return new AssessmentJoinNotification($dto);
         }
-        
+
         return null;
     }
 
@@ -1653,5 +1995,4 @@ class AssessmentService
     {
         return $this->profileSearch($searchDTO);
     }
-
 }

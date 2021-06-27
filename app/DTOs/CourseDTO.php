@@ -3,37 +3,42 @@
 namespace App\DTOs;
 
 use App\Contracts\ItemDataContract;
+use App\Traits\AliasDTOTrait;
+use App\Traits\DTOTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class CourseDTO extends ItemDataContract
 {
-    public string | null $courseId;
-    public string | null $name;
-    public bool | null $facilitate;
+    use DTOTrait,
+        AliasDTOTrait;
+
+    public ?string $courseId = null;
+    public ?string $name = null;
+    public bool $facilitate = false;
+    public bool $isAttachment = false;
     public bool $standAlone = false;
-    public array | null $sections;
-    public array | null $removedSections;
-    public array | null $editedSections;
-    public array | null $items;
-    public array | null $removedItems;
-    public array | null $attachments;
-    public array | null $removedAttachments;
-    public object | null $discussionData;
-    public array | null $discussionFiles;
-    public string | null $action;
-    public string | null $owner;
-    public string | null $ownerId;
-    public string | null $adminId;
-    public string | null $account;
-    public string | null $accountId;
-    public string | null $description;
-    public string | null $state;
+    public array $sections = [];
+    public array $removedSections = [];
+    public array $editedSections = [];
+    public array $items = [];
+    public array $removedItems = [];
+    public array $attachments = [];
+    public array $removedAttachments = [];
+    public ?object $discussionData = null;
+    public array $discussionFiles = [];
+    public ?string $action = null;
+    public ?string $owner = null;
+    public ?string $ownerId = null;
+    public ?string $adminId = null;
+    public ?string $account = null;
+    public ?string $accountId = null;
+    public ?string $description = null;
+    public ?string $state = null;
     public ?string $methodType = null;
     public ?string $method = null;
     public ?PaymentDTO $paymentDTO = null;
     public ?PaymentDTO $removedPaymentDTO = null;
-    public int | null $userId;
     public ?Model $addedby = null;
     public ?Model $ownedby = null;
 
@@ -72,7 +77,7 @@ class CourseDTO extends ItemDataContract
         );
         $self->sections = $request->sections ?
             json_decode($request->sections) : [];
-        $self->removedSections = $request-> removedSections?
+        $self->removedSections = $request->removedSections ?
             json_decode($request->removedSections) : [];
         $self->editedSections = $request->editedSections ?
             json_decode($request->editedSections) : [];

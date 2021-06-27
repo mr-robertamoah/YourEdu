@@ -7,10 +7,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PostAttachment extends Model
 {
-    //
     use SoftDeletes;
 
-    const ATTACHMENTCREATORACCOUNTTYPE = [
+    const ATTACHEDBY_ACCOUNT_TYPES = [
         'professional', 'facilitator', 'school', 'admin'
     ];
 

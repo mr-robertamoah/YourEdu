@@ -19,12 +19,12 @@ class Request extends Model
     const DECLINED = 'DECLINED';
 
     protected $fillable = [
-        'state','data',
+        'state', 'data',
     ];
 
     public function price()
     {
-        return $this->morphOne(Price::class,'priceable');
+        return $this->morphOne(Price::class, 'priceable');
     }
 
     public function requestable()
@@ -34,7 +34,7 @@ class Request extends Model
 
     public function messages()
     {
-        return $this->morphMany(Message::class,'messageable');
+        return $this->morphMany(Message::class, 'messageable');
     }
 
     public function requestfrom()
@@ -49,33 +49,33 @@ class Request extends Model
 
     public function comments()
     {
-        return $this->morphMany(Comment::class,'commentable');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     public function files()
     {
-        return $this->morphToMany(File::class,'fileable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(File::class, 'fileable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function audios()
     {
-        return $this->morphToMany(Audio::class,'audioable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Audio::class, 'audioable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function videos()
     {
-        return $this->morphToMany(Video::class,'videoable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Video::class, 'videoable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function images()
     {
-        return $this->morphToMany(Image::class,'imageable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Image::class, 'imageable')
+            ->withPivot(['state'])->withTimestamps();
     }
-    
+
     public function allFiles()
     {
         $files = [];
@@ -113,6 +113,11 @@ class Request extends Model
         return $this->morphedByMany(Discount::class, 'requestable', 'requestables');
     }
 
+    public function isFollowRequest()
+    {
+        return $this->requestable_type === 'App\YourEdu\Follow';
+    }
+
     public function isMessageRequest()
     {
         return $this->requestable_type === 'App\YourEdu\Message';
@@ -125,7 +130,7 @@ class Request extends Model
 
     public function isNotDiscussionRequest()
     {
-        return ! $this->isDiscussionRequest();
+        return !$this->isDiscussionRequest();
     }
 
     public function isAssessmentRequest()
@@ -135,7 +140,7 @@ class Request extends Model
 
     public function isNotAssessmentRequest()
     {
-        return ! $this->isAssessmentRequest();
+        return !$this->isAssessmentRequest();
     }
 
     public function isMarkerRequest()
@@ -145,29 +150,45 @@ class Request extends Model
 
     public function isNotMarkerRequest()
     {
-        return ! $this->isMarkerRequest();
+        return !$this->isMarkerRequest();
     }
 
-    public function scopeWhereSentBy
-    (
+    public function getOtherAccount($userId)
+    {
+        if ($this->requestfrom->user_id === $userId) {
+            return $this->requestto;
+        }
+
+        return $this->requestfrom;
+    }
+
+    public function getMyAccount($userId)
+    {
+        if ($this->requestfrom->user_id === $userId) {
+            return $this->requestto;
+        }
+
+        return $this->requestfrom;
+    }
+
+    public function scopeWhereSentBy(
         $query,
         $account
-    )
-    {
-        return $query->where(function($query) use ($account) {
-                $query->where('requestfrom_type', $account::class)
-                    ->where('requestfrom_id', $account->id);
-            });
+    ) {
+        return $query->where(function ($query) use ($account) {
+            $query->where('requestfrom_type', $account::class)
+                ->where('requestfrom_id', $account->id);
+        });
     }
 
     public function scopeWhereRequestFromUsers($query, $userIds)
     {
-        if (! is_array($userIds)) {
+        if (!is_array($userIds)) {
             return $query;
         }
 
-        return $query->where(function($query) use ($userIds) {
-            $query->whereHasMorph('requestfrom','*',function($query) use ($userIds){
+        return $query->where(function ($query) use ($userIds) {
+            $query->whereHasMorph('requestfrom', '*', function ($query) use ($userIds) {
                 $query->whereUsers($userIds);
             });
         });
@@ -175,87 +196,77 @@ class Request extends Model
 
     public function scopeWhereRequestFromUser($query, $userIds)
     {
-        return $query->where(function($query) use ($userIds) {
-            $query->whereHasMorph('requestfrom','*',function($query) use ($userIds){
+        return $query->where(function ($query) use ($userIds) {
+            $query->whereHasMorph('requestfrom', '*', function ($query) use ($userIds) {
                 $query->whereUser($userIds);
             });
         });
     }
 
-    public function scopeWhereSentTo
-    (
+    public function scopeWhereSentTo(
         $query,
         $account
-    )
-    {
-        return $query->where(function($query) use ($account) {
-                $query->where('requestto_type', $account::class)
-                    ->where('requestto_id', $account->id);
-            });
+    ) {
+        return $query->where(function ($query) use ($account) {
+            $query->where('requestto_type', $account::class)
+                ->where('requestto_id', $account->id);
+        });
     }
 
-    public function scopeWhereSentByOrSentTo
-    (
+    public function scopeWhereSentByOrSentTo(
         $query,
         $account
-    )
-    {
-        return $query->where(function($query) use ($account) {
-                $query->whereSentby($account);
-            })->orWhere(function($query) use ($account) {
-                $query->whereSentTo($account);
-            });
+    ) {
+        return $query->where(function ($query) use ($account) {
+            $query->whereSentby($account);
+        })->orWhere(function ($query) use ($account) {
+            $query->whereSentTo($account);
+        });
     }
 
-    public function scopeWhereRequestableTypeNotIn
-    (
+    public function scopeWhereRequestableTypeNotIn(
         $query,
         $requestableTypes = []
-    )
-    {
+    ) {
         return $query->when(
             count($requestableTypes),
-            function($query) use ($requestableTypes) {
-                $query->where(function($query) use ($requestableTypes) {
+            function ($query) use ($requestableTypes) {
+                $query->where(function ($query) use ($requestableTypes) {
                     $query->whereNotIn('requestable_type', $requestableTypes);
                 });
             },
-            function($query) {
+            function ($query) {
                 return $query;
             }
         );
     }
 
-    public function scopeWhereRequestableTypeIn
-    (
+    public function scopeWhereRequestableTypeIn(
         Builder $query,
         $requestableTypes = []
-    )
-    {
+    ) {
         return $query->when(
             count($requestableTypes),
-            function($query) use ($requestableTypes) {
-                $query->where(function($query) use ($requestableTypes) {
+            function ($query) use ($requestableTypes) {
+                $query->where(function ($query) use ($requestableTypes) {
                     $query->whereIn('requestable_type', $requestableTypes);
                 });
             },
-            function($query) {
+            function ($query) {
                 return $query;
             }
         );
     }
 
-    public function scopeWhereSentToAccountByUser
-    (
+    public function scopeWhereSentToAccountByUser(
         $query,
         $userId,
         $requestto
-    )
-    {
-        return $query->where(function($query) use ($userId, $requestto) {
+    ) {
+        return $query->where(function ($query) use ($userId, $requestto) {
             $query->where('requestto_type', $requestto::class)
                 ->where('requestto_id', $requestto->id)
-                ->whereHasMorph('requestfrom','*',function($query,) use ($userId){
+                ->whereHasMorph('requestfrom', '*', function ($query,) use ($userId) {
                     $query->whereUser($userId);
                 });
         });
@@ -266,14 +277,12 @@ class Request extends Model
         return $query->where('data', 'like', '%marker%');
     }
 
-    public function scopeWhereSentToAccountByAccount
-    (
+    public function scopeWhereSentToAccountByAccount(
         $query,
         $requestfrom,
         $requestto,
-    )
-    {
-        return $query->where(function($query) use ($requestfrom, $requestto) {
+    ) {
+        return $query->where(function ($query) use ($requestfrom, $requestto) {
             $query->where('requestto_type', $requestto::class)
                 ->where('requestto_id', $requestto->id)
                 ->where('requestfrom_type', $requestfrom::class)
@@ -283,36 +292,36 @@ class Request extends Model
 
     public function scopeWherePending($query)
     {
-        return $query->where(function($query) {
-            $query->where('state', 'PENDING');
+        return $query->where(function ($query) {
+            $query->where('state', self::PENDING);
         });
     }
 
     public function scopeWhereFollowRequest($query)
     {
-        return $query->where(function($query) {
-            $query->where('requestable_type','App\YourEdu\Follow');
+        return $query->where(function ($query) {
+            $query->where('requestable_type', 'App\YourEdu\Follow');
         });
     }
 
     public function scopeWhereDiscussionRequest($query)
     {
-        return $query->where(function($query) {
-            $query->where('requestable_type','App\YourEdu\Discussion');
+        return $query->where(function ($query) {
+            $query->where('requestable_type', 'App\YourEdu\Discussion');
         });
     }
 
     public function scopeWhereMessageRequest($query)
     {
-        return $query->where(function($query) {
-            $query->where('requestable_type','App\YourEdu\Message');
+        return $query->where(function ($query) {
+            $query->where('requestable_type', 'App\YourEdu\Message');
         });
     }
 
     public function scopeWhereAssessmentRequest($query)
     {
-        return $query->where(function($query) {
-            $query->where('requestable_type','App\YourEdu\Assessment');
+        return $query->where(function ($query) {
+            $query->where('requestable_type', 'App\YourEdu\Assessment');
         });
     }
 

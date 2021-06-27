@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\DTOs\ActivityTrackDTO;
 use App\DTOs\AttachmentDTO;
+use App\Events\DeleteAttachment;
+use App\Events\NewAttachment;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\AttachmentException;
 use App\Traits\ServiceTrait;
@@ -19,143 +21,192 @@ class AttachmentService
         'subject', 'grade', 'program', 'course', 'extracurriculum'
     ];
 
-    public function attachmentCreate($account,$accountId,$item,$itemId,$attachable,
-        $attachableId,$note,$adminId)
+    private function trackSchoolAdmin($attachmentDTO)
     {
-        $mainAccount = $this->getModel($account,$accountId); 
-        
-        $mainItem = $this->getModel($item,$itemId);
-        
-        $attach = $this->getModel($attachable, $attachableId);
-        
-        $attachment = $this->attach($mainAccount,$mainItem,$attach,$note);
-
-        if (is_null($attachment)) {
-            $this->throwAttachmentException('attachment creation failed');
-        }
-        
-        $this->trackSchoolAdmin($attachment, $adminId, __METHOD__);
-
-        return $attachment;        
-    }
-
-    private function trackSchoolAdmin($attachment, $adminId, $method)
-    {
-        if (is_null($adminId)) {
+        if (is_null($attachmentDTO->adminId)) {
             return;
         }
 
-        $admin = $this->getModel('admin',$adminId);
-        
         (new ActivityTrackService)->trackActivity(
             ActivityTrackDTO::createFromData(
-                activityfor: $attachment->attachedby,
-                performedby: $admin,
-                action: $method,
-                activity: $attachment
+                activityfor: $attachmentDTO->attachment->attachedby,
+                performedby: $this->getModel('admin', $attachmentDTO->adminId),
+                action: $attachmentDTO->method,
+                activity: $attachmentDTO->attachment
             )
         );
     }
-    //delete an attachment from request
-    public function attachmentDelete($attachmentId,$id,$adminId)
+
+    public function deleteAttachment(AttachmentDTO $attachmentDTO)
     {
-        $mainAttachment = $this->getModel('postattachment',$attachmentId);
-        
-        if (($mainAttachment->attachedby->user_id && 
-            $mainAttachment->attachedby->user_id !== $id) ||
-            ($mainAttachment->attachedby->owner_id && 
-            $mainAttachment->attachedby->owner_id !== $id) ||
-            (class_basename_lower($mainAttachment->attachedby) === 'school' && 
-            !in_array($id,$mainAttachment->attachedby->getAdminIds()))) {
-            $this->throwAttachmentException('you cannot delete attachment you did not create');
+        $attachment = $this->getModel('postattachment', $attachmentDTO->attachmentId);
+
+        $attachmentDTO = $attachmentDTO->withAttachment($attachment);
+
+        $this->ensureCanDelete($attachmentDTO);
+
+        $attachmentDTO->method = __METHOD__;
+
+        $this->trackSchoolAdmin($attachmentDTO);
+
+        $attachment->delete();
+
+        $attachmentDTO->methodType = 'deleted';
+
+        $attachmentDTO = $this->prepareForBroadcast($attachmentDTO);
+
+        $this->broadcastAttachment($attachmentDTO);
+    }
+
+    private function ensureCanDelete($attachmentDTO)
+    {
+        if ($attachmentDTO->attachment->attachedby->user_id == $attachmentDTO->userId) {
+            return;
         }
-        
-        $this->trackSchoolAdmin($mainAttachment, $adminId,__METHOD__);
 
-        $mainAttachment->delete();
+        if ((class_basename_lower($attachmentDTO->attachment->attachedby) === 'school' &&
+            !in_array($attachmentDTO->userId, $attachmentDTO->attachment->attachedby->getAdminIds()))) {
+            return;
+        }
 
-        return [
-            'item' => class_basename_lower($mainAttachment->attachable_type),
-            'itemId' => $mainAttachment->attachable_id
-        ];
+        $this->throwAttachmentException(
+            message: 'sorry 😞, you cannot delete attachment you did not create',
+            data: $attachmentDTO
+        );
     }
 
     /**
      * attach an attachment to something(post) by an account
      * 
-    */
-    public function attach($account, $attachable, $attach = null, $note = null)
+     */
+    public function attach(AttachmentDTO $attachmentDTO)
     {
-        if (is_null($attach)) return null;
-        
-        $attachment = $account->attachments()->create([
-            'note' => $note
-        ]);
-
-        if ($attachment) {
-            $attachment->attachedwith()->associate($attach);
-            $attachment->attachable()->associate($attachable);
-            $attachment->save();
-
-            $account->point->value = $account->point->value + 1;
-            $account->point->save();
+        if (is_null($attachmentDTO->attachedwith)) {
+            return null;
         }
 
-        return $attachment;
+        return $this->createAttachmentWithSetData($attachmentDTO);
     }
 
     /**
      * detach an item from an attachable
      * 
-    */
-    public function detach($attachable, $attach = null)
+     */
+    public function detach(AttachmentDTO $attachmentDTO)
     {
-        if (is_null($attach)) return null;
-        
-        $attachable->attachments()
-            ->where('attachedwith_type', $attach::class)
-            ->where('attachedwith_id', $attach->id)
+        if (is_null($attachmentDTO->attachedwith)) {
+            return null;
+        }
+
+        $attachmentDTO->attachable->attachments()
+            ->where('attachedwith_type', $attachmentDTO->attachedwith::class)
+            ->where('attachedwith_id', $attachmentDTO->attachedwith->id)
             ->first()
             ?->delete();
     }
 
-    public function createAttachment($account,$accountId,$type,$name,$description,$rationale,$aliases)
+    private function setAddedby($attachmentDTO)
     {
-        $mainAccount = $this->getModel($account,$accountId);
-
-        if ($type !== 'subject' && $type !== 'grade' && $type !== 'program' &&
-            $type !== 'course' && $type !== 'extracurriculum') {
-            $this->throwAttachmentException('not a valid attachment type');
+        if ($attachmentDTO->addedby) {
+            return $attachmentDTO;
         }
 
-        $attachment = PostAttachment::create([
-            'name' => $name,
-            'description' => $description,
-            'rationale' => $rationale,
-        ]);
-        if (is_null($attachment)) {
-            $this->throwAttachmentException('attachment creation failed');
-        }  
-        
-        $attachment->attachedby->associate($mainAccount);
-        $attachment->save();
+        return $attachmentDTO->withAddedby(
+            $this->getModel($attachmentDTO->account, $attachmentDTO->accountId)
+        );
+    }
 
-        if (!is_null($aliases)) {
-            foreach ($aliases as $aliasName) {
-                if (Str::length($aliasName)) {
-
-                    $alias = $this->createAlias($mainAccount, $aliasName);
-
-                    $alias->aliasable()->associate($attachment);
-                    $alias->save();
-                }
-            }
+    private function setAttachable($attachmentDTO)
+    {
+        if ($attachmentDTO->attachable) {
+            return $attachmentDTO;
         }
 
-        $mainAccount->point->value += 1;
-        $mainAccount->point->save();
+        return $attachmentDTO->withAttachable(
+            $this->getModel($attachmentDTO->item, $attachmentDTO->itemId)
+        );
+    }
 
-        return $attachment;
+    private function setAttachedwith($attachmentDTO)
+    {
+        if ($attachmentDTO->attachedwith) {
+            return $attachmentDTO;
+        }
+
+        return $attachmentDTO->withAttachedwith(
+            $this->getModel($attachmentDTO->type, $attachmentDTO->typeId)
+        );
+    }
+
+
+    public function createAttachment(AttachmentDTO $attachmentDTO)
+    {
+        $attachmentDTO = $this->setAddedby($attachmentDTO);
+
+        $attachmentDTO = $this->setAttachable($attachmentDTO);
+
+        $attachmentDTO = $this->setAttachedwith($attachmentDTO);
+
+        $attachment = $this->createAttachmentWithSetData($attachmentDTO);
+
+        $attachmentDTO->method = __METHOD__;
+
+        $this->trackSchoolAdmin($attachmentDTO);
+
+        $attachmentDTO->methodType = 'created';
+
+        $attachmentDTO = $this->prepareForBroadcast($attachmentDTO);
+
+        $this->broadcastAttachment($attachmentDTO->withAttachment($attachment));
+
+        return $attachment->refresh();
+    }
+
+    private function prepareForBroadcast($attachmentDTO)
+    {
+        if ($attachmentDTO->item) {
+            return $attachmentDTO;
+        }
+
+        if ($attachmentDTO->attachedwith) {
+            return $attachmentDTO->addData(
+                item: class_basename_lower($attachmentDTO->attachedwith),
+                itemId: $attachmentDTO->attachedwith->id,
+            );
+        }
+
+        if (is_null($attachmentDTO->attachment)) {
+            return $attachmentDTO;
+        }
+
+        return $attachmentDTO->addData(
+            item: class_basename_lower($attachmentDTO->attachment->attachedwith),
+            itemId: $attachmentDTO->attachment->attachedwith->id,
+        );
+    }
+
+    private function broadcastAttachment($attachmentDTO)
+    {
+        $event = $this->getEvent($attachmentDTO);
+
+        if (is_null($event)) {
+            return;
+        }
+
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($attachmentDTO)
+    {
+        if ($attachmentDTO->methodType === 'created') {
+            return new NewAttachment($attachmentDTO);
+        }
+
+        if ($attachmentDTO->methodType === 'deleted') {
+            return new DeleteAttachment($attachmentDTO);
+        }
+
+        return null;
     }
 
     private function checkAttachmentType(AttachmentDTO $attachmentDTO)
@@ -165,16 +216,12 @@ class AttachmentService
         }
 
         $this->throwAttachmentException(
-            message: 'not a valid attachment type',
+            message: "sorry 😞, {$attachmentDTO->type} not a valid attachment type",
             data: $attachmentDTO
         );
     }
 
-    private function throwAttachmentException
-    (
-        $message,
-        $data = null
-    )
+    private function throwAttachmentException($message, $data = null)
     {
         throw new AttachmentException(
             message: $message,
@@ -185,111 +232,74 @@ class AttachmentService
     private function makeAttachment(AttachmentDTO $attachmentDTO)
     {
         $attachment = PostAttachment::create([
-            'name' => $attachmentDTO->name,
-            'description' => $attachmentDTO->description,
-            'rationale' => $attachmentDTO->rationale,
+            'note' => $attachmentDTO->note,
         ]);
 
-        if (is_null($attachment)) {
-            $this->throwAttachmentException('attachment creation failed');
+        if (is_not_null($attachment)) {
+            return $attachment;
         }
 
-        return $attachment;
+        $this->throwAttachmentException(
+            message: 'attachment creation failed',
+            data: $attachmentDTO
+        );
     }
 
-    public function createAttachmentWithAccount(AttachmentDTO $attachmentDTO)
+    public function createAttachmentWithSetData(AttachmentDTO $attachmentDTO)
     {
         $this->checkAttachmentType($attachmentDTO);
 
         $attachment = $this->makeAttachment($attachmentDTO);
-        
-        $attachment = $this->makeAccountAttachmentAddedby($attachment, $attachmentDTO);
 
-        $attachment = $this->addAliasesToAttachment($attachment, $attachmentDTO);
+        $attachmentDTO = $attachmentDTO->withAttachment($attachment);
+
+        $attachment = $this->addAttachedby($attachmentDTO);
+
+        $attachment = $this->addAttachable($attachmentDTO);
+
+        $attachment = $this->addAttachedwith($attachmentDTO);
 
         $attachmentDTO = $this->increaseAccountPoints($attachmentDTO);
 
-        return $attachment;
-    }
-
-    private function addAliasesToAttachment
-    (
-        PostAttachment $attachment,
-        AttachmentDTO $attachmentDTO
-    )
-    {
-        if (is_null($attachmentDTO->aliases) || !is_array($attachmentDTO->aliases)) {
-            return;
-        }
-
-        foreach ($attachmentDTO->aliases as $aliasName) {
-            if (!Str::length($aliasName)) {
-                continue;
-            }
-
-            $alias = $this->createAlias($attachmentDTO->addedby, $aliasName);
-
-            $alias->aliasable()->associate($attachment);
-            $alias->save();
-        }
-
         return $attachment->refresh();
     }
 
-    private function makeAccountAttachmentAddedby
-    (
-        PostAttachment $attachment,
-        AttachmentDTO $attachmentDTO
-    )
+    private function addAttachedby(AttachmentDTO $attachmentDTO)
     {
-        $attachment->attachedby->associate($attachmentDTO->addedby);
-        $attachment->save();
+        $attachmentDTO->attachment->attachedby()->associate($attachmentDTO->addedby);
+        $attachmentDTO->attachment->save();
 
-        return $attachment->refresh();
+        return $attachmentDTO->attachment->refresh();
+    }
+
+    private function addAttachedwith(AttachmentDTO $attachmentDTO)
+    {
+        if (is_null($attachmentDTO->attachedwith)) {
+            return $attachmentDTO->attachment;
+        }
+
+        $attachmentDTO->attachment->attachedwith()->associate($attachmentDTO->attachedwith);
+        $attachmentDTO->attachment->save();
+
+        return $attachmentDTO->attachment->refresh();
+    }
+
+    private function addAttachable(AttachmentDTO $attachmentDTO)
+    {
+        if (is_null($attachmentDTO->attachable)) {
+            return $attachmentDTO->attachment;
+        }
+
+        $attachmentDTO->attachment->attachable()->associate($attachmentDTO->attachable);
+        $attachmentDTO->attachment->save();
+
+        return $attachmentDTO->attachment->refresh();
     }
 
     private function increaseAccountPoints($attachmentDTO)
     {
-        $attachmentDTO->addedby->point->value += 1;
-        $attachmentDTO->addedby->point->save();
+        $this->increasePointsOfAccount($attachmentDTO->addedby);
 
-        $attachmentDTO->addedby->refresh();
         return $attachmentDTO;
     }
-
-    //create an alias of an attachment
-    public function createAttachmentAlias($account,$attachable,$name,$description)
-    {
-        $aliasCheck = $attachable->aliases()->where('name',$name)->count();
-        if ($aliasCheck) {
-            return null;
-        }
-
-        $alias = $this->createAlias($account, $name, $description);
-
-        $alias->aliasable()->associate($attachable);
-        $alias->save();
-
-        if (is_null($alias)) {
-            $this->throwAttachmentException('alias was not created');
-        }
-
-        $account->point->value += 1;
-        $account->point->save();
-
-        return $alias;
-    }
-
-    private function createAlias($account, $name, $description = null)
-    {
-        $alias = $account->aliasesAdded()->create([
-            'name' => $name,
-            'description' => $description,
-        ]);
-
-        return $alias;
-    }
 }
-
-
-?>

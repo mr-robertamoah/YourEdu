@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\PostResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -15,15 +16,13 @@ class UpdatePost implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $post;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($post)
+    public function __construct(private $postDTO)
     {
-        $this->post = $post;
     }
 
     /**
@@ -33,23 +32,20 @@ class UpdatePost implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        $account = class_basename_lower($this->post->addedby_type);
-        $accountId = $this->post->addedby_id;
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$accountId}")
+            new Channel("youredu.post.{$this->postDTO->post->id}")
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'updatePost';
     }
-    
+
     public function broadcastWith()
     {
         return [
-            'post' => $this->post
+            'post' => new PostResource($this->postDTO->post->refresh())
         ];
     }
 }

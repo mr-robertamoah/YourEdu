@@ -15,12 +15,10 @@ class CreateWorkTable extends Migration
     {
         Schema::create('work', function (Blueprint $table) {
             $table->id();
-            $table->morphs('workable'); // learner facilitator professional group
+            $table->nullableMorphs('addedby'); // learner facilitator professional group
             $table->unsignedBigInteger('assessment_id');
             $table->unsignedBigInteger('report_detail_id')->nullable();
-            $table->float('mark');
-            $table->float('marked_over');
-            $table->text('remark');
+            $table->enum('status', ['PENDING','DONE'])->default('PENDING');
             $table->softDeletes();
             $table->timestamps();
 

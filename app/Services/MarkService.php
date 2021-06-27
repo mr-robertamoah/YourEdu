@@ -11,6 +11,11 @@ class MarkService
 {
     use ServiceTrait;
 
+    const MARKER_CLASSES = [
+        'App\\YourEdu\\Facilitator',
+        'App\\YourEdu\\Professional',
+    ];
+
     public function createMark(MarkDTO $markDTO)
     {
         $markDTO = $this->setMarkedby($markDTO);
@@ -40,13 +45,17 @@ class MarkService
 
     private function ensureNotMarkedByAnsweredby($markDTO)
     {
+        if (is_null($markDTO->markable->answeredby)) {
+            return;
+        }
+
         if ($markDTO->markable->answeredby->isNotAccount($markDTO->markedby)) {
             return;
         }
 
         $type = class_basename_lower($markDTO->markable);
         $this->throwMarkException(
-            message: "you cannot mark an your own $type 😏",
+            message: "you cannot mark your own $type 😏",
             data: $markDTO
         );
     }
@@ -95,9 +104,13 @@ class MarkService
 
     private function setScoreOver(MarkDTO $markDTO)
     {
-        $markDTO->scoreOver = $markDTO->markable->answerable->score_over;
+        if ($markDTO->scoreOver) {
+            return $markDTO;
+        }
 
-        return $markDTO;
+        return $markDTO->addData(
+            scoreOver: $markDTO->markable?->answerable->score_over
+        );
     }
 
     private function increasePointsOfMarkedby($markDTO)
@@ -212,5 +225,3 @@ class MarkService
         return $markDTO;
     }
 }
-
-?>

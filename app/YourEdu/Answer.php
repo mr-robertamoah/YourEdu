@@ -2,7 +2,8 @@
 
 namespace App\YourEdu;
 
-use App\Traits\ItemFilesTrait;
+use App\Traits\HasMarkableTrait;
+use App\Traits\HasFilesTrait;
 use Database\Factories\AnswerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,8 +13,9 @@ class Answer extends Model
 {
     //
     use SoftDeletes,
-        ItemFilesTrait,
-        HasFactory;
+        HasFilesTrait,
+        HasFactory,
+        HasMarkableTrait;
 
     protected $fillable = [
         'answer','work_id','possible_answer_ids', 'answeredby_type',
@@ -48,11 +50,6 @@ class Answer extends Model
     public function beenSaved()
     {
        return $this->morphMany(Save::class,'saveable');
-    }
-
-    public function marks()
-    {
-        return $this->morphMany(Mark::class,'markable');
     }
 
     public function files()
@@ -96,33 +93,6 @@ class Answer extends Model
             ->get();
     }
 
-    public function isMarkedbyUser($userId)
-    {
-        return $this->marks()
-            ->whereHasMorph('markedby', '*', function($query) use ($userId) {
-                $query->whereUser($userId);
-            })
-            ->exists();
-    }
-
-    public function isNotMarkedbyUser($userId)
-    {
-        return ! $this->isMarkedbyUser($userId);
-    }
-
-    public function isNotAutoMarkable()
-    {
-        if ($this->answerable->doesntHavePossibleAnswers()) {
-            return true;
-        }
-
-        if ($this->answerable->doesntHaveCorrectPossibleAnswers()) {
-            return true;
-        }
-
-        return false;
-    }
-
     public function scopeWhereAnsweredby($query, $account)
     {
         return $query->where(function($query) use ($account) {
@@ -137,6 +107,18 @@ class Answer extends Model
             $query->where('answerable_type', $item::class)
                 ->where('answerable_id', $item->id);
         });
+    }
+
+    public function scopeWhereAssessment($query, $assessmentId)
+    {
+        return $query
+            ->whereHasMorph(
+                'answerable', 
+                'App\\YourEdu\\Question',
+                function($query) use($assessmentId) {
+                    $query->whereAssessment($assessmentId);
+                }
+            );
     }
 
     protected static function newFactory()

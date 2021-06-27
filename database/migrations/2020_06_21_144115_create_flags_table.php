@@ -17,10 +17,11 @@ class CreateFlagsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('flag_id')->nullable();
             $table->mediumText('reason')->nullable();
             $table->nullableMorphs('flaggedby'); // parent learner facilitator professional
             $table->nullableMorphs('flaggable'); // comment post course answer lesson facilitator professional school learner extracurriculum
-            $table->enum('status',['PENDING','APPROVED','CANCELLED'])->default('PENDING');
+            $table->enum('status', ['PENDING', 'APPROVED', 'CANCELLED'])->default('PENDING');
             $table->softDeletes();
             $table->timestamps();
         });

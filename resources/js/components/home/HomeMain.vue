@@ -44,7 +44,7 @@
                 <template
                     v-for="post in computedPosts"
                 >
-                    <post-show
+                    <post-single
                         :key="`post.${post.id}`"
                         v-if="post.isPost"
                         :post="post"
@@ -52,7 +52,7 @@
                         @clickedMedia="clickedMedia"
                         @clickedShowPostComments="clickedShowPostComments"
                         @clickedShowPostPreview="clickedShowPostPreview"
-                    ></post-show>
+                    ></post-single>
                     <discussion-single
                         v-if="post.isDiscussion"
                         :key="`discussion.${post.id}`"
@@ -92,7 +92,7 @@ import PostCreateAlt from '../PostCreateAlt'
 import PostButton from '../PostButton'
 import CreateDiscussion from '../forms/CreateDiscussion'
 import CreateAssessment from '../forms/CreateAssessment'
-import PostShow from '../PostShow'
+import PostSingle from '../PostSingle'
 import DiscussionSingle from '../DiscussionSingle'
 import AssessmentSingle from '../AssessmentSingle'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
@@ -109,7 +109,7 @@ import InfiniteLoading from 'vue-infinite-loading'
             PulseLoader,
             AssessmentSingle,
             DiscussionSingle,
-            PostShow,
+            PostSingle,
             InfiniteLoading,
         },
         props: {

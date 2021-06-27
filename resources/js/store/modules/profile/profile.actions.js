@@ -412,7 +412,7 @@ const actions = {
             }
             return {status: true, message: 'successful'}
         }else {
-            commit('PROFILE_FAILURE','liking unsuccessful')
+            commit('PROFILE_FAILURE','saving unsuccessful')
             return {status: false, message: 'unsuccessful'}
         }
     },
@@ -438,40 +438,46 @@ const actions = {
     },
     async deleteLike({commit},data){
         let response = await ProfileService.likeDelete(data)
-        if (response.data.message === 'successful') {
-            if (data.where === 'profile') {
-                commit('LIKE_DELETE_SUCCESS', data)
-            } else if (data.where === 'dashboard') {
-                commit('dashboard/LIKE_DELETE_SUCCESS', data, {root: true})
-            } else if (data.where === 'home') {
-                commit('home/LIKE_DELETE_SUCCESS', data, {root: true})
-            }
-            return data
-        }else {
+        if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','liking unsuccessful')
             return 'unsuccessful'
         }
+
+        if (router.currentRoute.name === 'profile') {
+            commit('LIKE_DELETE_SUCCESS', data)
+        }
+        
+        if (router.currentRoute.name === 'dashboard') {
+            commit('dashboard/LIKE_DELETE_SUCCESS', data, {root: true})
+        }
+        
+        if (router.currentRoute.name === 'home') {
+            commit('home/LIKE_DELETE_SUCCESS', data, {root: true})
+        }
+        return data
     },
-    newLike({commit}, like){
-        commit('NEW_LIKE', like)
+    newLike({commit}, data){
+        commit('NEW_LIKE', data)
     },
-    removeLike({commit}, likeInfo){
-        commit('REMOVE_LIKE', likeInfo)
+    removeLike({commit}, data){
+        commit('REMOVE_LIKE', data)
     },
 
     ////////////////////////////////////// flags
 
-    async createFlag({commit},data){
+    async createFlag({commit, rootState},data){
         let response = await ProfileService.flagCreate(data)
 
         if (response.data.message === 'successful') {
             data['flag'] = response.data.flag
+            data['items'] = rootState.items
+
             if (data.where === 'profile') {
-                commit('FLAG_CREATE_SUCCESS', {data,flag: response.data.flag})
+                commit('FLAG_CREATE_SUCCESS', data)
             } else if (data.where === 'home') {
                 commit('home/FLAG_CREATE_SUCCESS', data, {root: true})
             } else if (data.where === 'dashboard') {
-                commit('dashboard/FLAG_CREATE_SUCCESS', {data,flag: response.data.flag}, {root: true})
+                commit('dashboard/FLAG_CREATE_SUCCESS', data, {root: true})
             }
             return {status: true,flag: response.data.flag}
         }else {
@@ -479,10 +485,12 @@ const actions = {
             return {status: false, message:'unsuccessful'}
         }
     },
-    async deleteFlag({commit},data){
+    async deleteFlag({commit, rootState},data){
         let response = await ProfileService.flagDelete(data)
 
         if (response.data.message === 'successful') {
+            data['items'] = rootState.items
+
             if (data.where === 'profile') {
                 commit('FLAG_DELETE_SUCCESS', data)
             } else if (data.where === 'home') {
@@ -496,8 +504,10 @@ const actions = {
             return {status: false, message:'unsuccessful'}
         }
     },
-    newFlag({commit}, flag){
-        commit('NEW_FLAG', flag)
+    newFlag({ commit, rootState }, data) {
+        data['items'] = rootState.items
+        
+        commit('NEW_FLAG', data)
     },
 
     ////////////////////////////////////// attachments
@@ -505,46 +515,46 @@ const actions = {
     async createAttachment({commit},data){
         let response = await ProfileService.attachmentCreate(data)
 
-        if (response.data.message === 'successful') {
-            data['attachment'] = response.data.attachment
-            if (data.where === 'profile') {
-                commit('ATTACHMENT_CREATE_SUCCESS', {
-                    data,
-                    attachment: response.data.attachment
-                })
-            } else if (data.where === 'home') {
-                commit('home/ATTACHMENT_CREATE_SUCCESS', {
-                    data,
-                    attachment: response.data.attachment
-                }, {root: true})
-            } else if (data.where === 'dashboard') {
-                commit('dashboard/ATTACHMENT_CREATE_SUCCESS', {
-                    data,
-                    attachment: response.data.attachment
-                }, {root: true})
-            }
-            return {status: true,attachment: response.data.attachment}
-        }else {
+        if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','attaching unsuccessful')
             return {status: false, message:'unsuccessful'}
         }
+
+        data['attachment'] = response.data.attachment
+
+        if (router.currentRoute.name === 'profile') {
+            commit('ATTACHMENT_CREATE_SUCCESS', data)
+        }
+        
+        if (router.currentRoute.name === 'home') {
+            commit('home/ATTACHMENT_CREATE_SUCCESS', data, {root: true})
+        }
+        
+        if (router.currentRoute.name === 'dashboard') {
+            commit('dashboard/ATTACHMENT_CREATE_SUCCESS', data, {root: true})
+        }
+        return {status: true,attachment: response.data.attachment}
     },
     async deleteAttachment({commit},data){
         let response = await ProfileService.attachmentDelete(data)
 
-        if (response.data.message === 'successful') {
-            if (data.where === 'profile') {
-                commit('ATTACHMENT_DELETE_SUCCESS', data)
-            } else if (data.where === 'home') {
-                commit('home/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
-            } else if (data.where === 'dashbaord') {
-                commit('dashbaord/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
-            }
-            return {data,status: true}
-        }else {
+        if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','unattaching unsuccessful')
             return {status: false, message:'unsuccessful'}
         }
+
+        if (router.currentRoute.name === 'profile') {
+            commit('ATTACHMENT_DELETE_SUCCESS', data)
+        }
+        
+        if (router.currentRoute.name === 'home') {
+            commit('home/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
+        }
+        
+        if (router.currentRoute.name === 'dashbaord') {
+            commit('dashbaord/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
+        }
+        return {data,status: true}
     },
     newAttachment({commit}, attachment){
         commit('NEW_ATTACHMENT', attachment)
@@ -585,57 +595,85 @@ const actions = {
         commit('COMMENTING_START')
         let response = await ProfileService.createComment(mainData)
         commit('COMMENTING_END')
-        if (response.data.message === 'successful') {
-            if (mainData.data.where === 'dashboard') {
-                commit('dashboard/COMMENT_SUCCESS',response.data, {root: true})
-            } else if (mainData.data.where === 'home') {
-                commit('home/COMMENT_SUCCESS',response.data, {root: true})
-            } else if (mainData.data.where === 'dashboard') {
-                commit('COMMENT_SUCCESS',response.data)
-            }
-            return response.data
-        }else {
+        if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','commenting unsuccessful')
             return 'unsuccessful'
         }
+
+        if (router.currentRoute.name === 'dashboard') {
+            commit('dashboard/COMMENT_SUCCESS',response.data, {root: true})
+        }
+        
+        if (router.currentRoute.name === 'home') {
+            commit('home/COMMENT_SUCCESS', {
+                comment: response.data.comment,
+                item: mainData.formData.get('item'),
+                itemId: mainData.formData.get('itemId'),
+            }, { root: true })
+        }
+        
+        if (router.currentRoute.name === 'profile') {
+            commit('COMMENT_SUCCESS', {
+                comment: response.data.comment,
+                item: mainData.formData.get('item'),
+                itemId: mainData.formData.get('itemId'),
+            })
+        }
+        return response.data
     },
     async deleteComment({commit},data){
         commit('COMMENTING_START')
         let response = await ProfileService.deleteComment(data)
 
         commit('COMMENTING_END')
-        if (response.data.message === 'successful') {
-            if (data.where === 'profile') {
-                commit('COMMENT_DELETE_SUCCESS',data)
-            } else if (data.where === 'home') {
-                commit('home/COMMENT_DELETE_SUCCESS',data, {root: true})
-            } else if (data.where === 'dashboard') {
-                commit('dashboard/COMMENT_DELETE_SUCCESS',data, {root: true})
-            }
-            return data
-        }else {
+        if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','comment update unsuccessful')
             return 'unsuccessful'
         }
+
+        if (router.currentRoute.name === 'profile') {
+            commit('COMMENT_DELETE_SUCCESS',data)
+        }
+        
+        if (router.currentRoute.name === 'home') {
+            commit('home/COMMENT_DELETE_SUCCESS',data, {root: true})
+        }
+        
+        if (router.currentRoute.name === 'dashboard') {
+            commit('dashboard/COMMENT_DELETE_SUCCESS',data, {root: true})
+        }
+        return data
     },
     async updateComment({commit},data){
         commit('COMMENTING_START')
         let response = await ProfileService.updateComment(data)
 
         commit('COMMENTING_END')
-        if (response.data.message === 'successful') {
-            if (data.data.where === 'profile') {
-                commit('COMMENT_UPDATE_SUCCESS',response.data)
-            } else if (data.data.where === 'home') {
-                commit('home/COMMENT_UPDATE_SUCCESS',response.data, {root: true})
-            } else if (data.data.where === 'dashboard') {
-                commit('dashboard/COMMENT_UPDATE_SUCCESS',response.data, {root: true})
-            }
-            return response.data
-        }else {
+        if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','comment update unsuccessful')
             return 'unsuccessful'
         }
+
+        if (data.data.where === 'profile') {
+            commit('COMMENT_UPDATE_SUCCESS',{
+                comment: response.data.comment,
+                item: data.data.item,
+                itemId: data.data.itemId
+            })
+        }
+        
+        if (data.data.where === 'home') {
+            commit('home/COMMENT_UPDATE_SUCCESS',{
+                comment: response.data.comment,
+                item: data.data.item,
+                itemId: data.data.itemId
+            }, {root: true})
+        }
+        
+        if (data.data.where === 'dashboard') {
+            commit('dashboard/COMMENT_UPDATE_SUCCESS',response.data, {root: true})
+        }
+        return response.data
     },
     async getComment({commit}, data){
         let response = await ProfileService.commentGet(data)
@@ -1003,8 +1041,8 @@ const actions = {
             return {status: false, response}
         }
     },
-    async joinDiscussionResponse({commit},data){
-        let response = await ProfileService.joinDiscussionResponse(data)
+    async joinItemResponse({commit},data){
+        let response = await ProfileService.joinItemResponse(data)
 
         if (response.data.message === 'successful') {
             return {
@@ -1014,16 +1052,53 @@ const actions = {
             return {status: false, response}
         }
     },
-    async invitationDiscussionResponse({commit},data){
-        let response = await ProfileService.invitationDiscussionResponse(data)
+    async invitationItemResponse({commit, rootGetters},data){
+        let response = await ProfileService.invitationItemResponse(data)
 
-        if (response.data.message === 'successful') {
-            return {
-                status: true
-            }
-        } else {
+        if (response.data.message !== 'successful') {
             return {status: false, response}
         }
+        
+        if (router.currentRoute.name === 'home') {
+            
+            if (data.type !== 'marker') {
+
+                commit('home/REMOVE_ITEM_PENDING_PARTICIPANT', {
+                    ...data,
+                    userId: rrotGetter.getUser.id
+                }, { root: true })
+            }
+
+            if (data.action === 'accepted') {
+
+                commit('home/NEW_ITEM_PARTICIPANT', {
+                    participant: response.data.participant,
+                    marker: response.data.marker,
+                    ...data
+                }, { root: true })
+            }
+        }
+
+        if (router.currentRoute.name === 'profile') {
+            
+            if (data.type !== 'marker') {
+
+                commit('REMOVE_ITEM_PENDING_PARTICIPANT', {
+                    ...data,
+                    userId: rrotGetter.getUser.id
+                }, { root: true })
+            }
+
+            if (data.action === 'accepted') {
+                
+                commit('NEW_ITEM_PARTICIPANT', {
+                    participant: response.data.participant,
+                    marker: response.data.marker,
+                    ...data
+                }, { root: true })
+            }
+        }
+        return {status: true}
     },
     async updateDiscussion({commit},data){
         let response = await ProfileService.discussionUpdate(data)
@@ -1041,19 +1116,21 @@ const actions = {
         }
     },
     async deleteDiscussion({commit},data){
-        let response = await ProfileService.discussionDelete(data.discussionId)
+        let response = await ProfileService.discussionDelete(data)
 
-        if (response.data.message === 'successful') {
-            if (data.where === 'profile') {
-                commit('DISCUSSION_DELETE_SUCCESS',data)
-            } else if (data.where === 'home') {
-                commit('home/DISCUSSION_DELETE_SUCCESS',data, {root: true})
-            }
-            return {status: true}
-        }else {
-            commit('PROFILE_FAILURE','post deletion unsuccessful')
+        if (response.data.message !== 'successful') {
+            commit('PROFILE_FAILURE','discussion deletion unsuccessful')
             return {status: false, response: response}
         }
+
+        if (router.currentRoute.name === 'profile') {
+            commit('DISCUSSION_DELETE_SUCCESS',data)
+        }
+        
+        if (router.currentRoute.name === 'home') {
+            commit('home/DISCUSSION_DELETE_SUCCESS',data, {root: true})
+        }
+        return {status: true}
     },
     async deleteDiscussionMessage({commit},data){
         let response = await ProfileService.deleteDiscussionMessage(data)
@@ -1129,17 +1206,32 @@ const actions = {
         }
 
     },
-    async inviteParticipant({commit},data){
-        let response = await ProfileService.inviteParticipant(data)
+    async inviteAccount({commit},data){
+        let response = await ProfileService.inviteAccount(data)
 
-        if (response.data.message === 'successful') {
-            return {
-                status: true
-            }
-        } else {
+        if (response.data.message !== 'successful') {
             return {status: false, response: response}
         }
 
+        if (!response.data.pendingParticipant) {
+            return {status: true}
+        }
+        
+        if (router.currentRoute.name === 'profile') {
+            commit('CREATE_PENDING_ITEM_PARTICIPANT',{
+                pendingParticipant: response.data.pendingParticipant,
+                ...data.computedItem
+            })
+        }
+        
+        if (router.currentRoute.name === 'home') {
+            commit('home/CREATE_PENDING_ITEM_PARTICIPANT',{
+                pendingParticipant: response.data.pendingParticipant,
+                ...data.computedItem
+            }, {root: true})
+        }
+
+        return {status: true}
     },
     async itemSearch({commit},data){
         let response = await ProfileService.itemSearch(data)
@@ -1150,9 +1242,9 @@ const actions = {
                 data: response.data.data,
                 next: response.data.links.next
             }
-        } else {
-            return {status: false, response: response}
         }
+            
+        return {status: false, response: response}
     },
     async joinItem({commit}, data){
         let response = await ProfileService.joinItem(data)
@@ -1161,31 +1253,33 @@ const actions = {
             return {status: false, response: response}
         }
 
-        if (data.item.type === 'PRIVATE'  && router.currentRoute.name === 'home') {
+        if (response.data.pendingParticipant  && router.currentRoute.name === 'home') {
             commit('home/CREATE_PENDING_ITEM_PARTICIPANT',{
                 pendingParticipant: response.data.pendingParticipant,
-                computedItem: data.computedItem
+                ...data.computedItem
             }, {root: true})
         } 
 
-        if (data.item.type === 'PRIVATE'  && router.currentRoute.name === 'profile') {
+        if (response.data.pendingParticipant  && router.currentRoute.name === 'profile') {
             commit('CREATE_PENDING_ITEM_PARTICIPANT',{
                 pendingParticipant: response.data.pendingParticipant,
-                computedItem: data.computedItem
+                ...data.computedItem
             })
         } 
         
-        if (data.item.type === 'PUBLIC'  && router.currentRoute.name === 'home') {
+        if ((response.data.pendingParticipant || response.data.marker)  && router.currentRoute.name === 'home') {
             commit('home/CREATE_ITEM_PARTICIPANT',{
                 participant: response.data.participant,
-                computedItem: data.computedItem
+                marker: response.data.marker,
+                ...data.computedItem
             }, {root: true})
         }
         
-        if (data.item.type === 'PUBLIC'  && router.currentRoute.name === 'profile') {
+        if ((response.data.pendingParticipant || response.data.marker)  && router.currentRoute.name === 'profile') {
             commit('CREATE_ITEM_PARTICIPANT',{
                 participant: response.data.participant,
-                computedItem: data.computedItem
+                marker: response.data.marker,
+                ...data.computedItem
             })
         }
 
@@ -1200,20 +1294,20 @@ const actions = {
     removeDiscussion({commit}, discussionInfo){
         commit('REMOVE_DISCUSSION', discussionInfo)
     },
-    newDiscussionParticipant({commit}, discussion){
-        commit('NEW_DISCUSSION_PARTICIPANT', discussion)
+    newItemParticipant({commit}, data){
+        commit('NEW_ITEM_PARTICIPANT', data)
     },
-    removeDiscussionParticipant({commit}, discussion){
-        commit('REMOVE_DISCUSSION_PARTICIPANT', discussion)
+    removeItemParticipant({commit}, data){
+        commit('REMOVE_ITEM_PARTICIPANT', data)
     },
-    updateDiscussionParticipant({commit}, discussion){
-        commit('UPDATE_DISCUSSION_PARTICIPANT', discussion)
+    updateItemParticipant({commit}, data){
+        commit('UPDATE_ITEM_PARTICIPANT', data)
     },
-    newDiscussionPendingParticipant({commit}, data){
-        commit('NEW_DISCUSSION_PENDING_PARTICIPANT', data)
+    newItemPendingParticipant({commit}, data){
+        commit('NEW_ITEM_PENDING_PARTICIPANT', data)
     },
-    removeDiscussionPendingParticipant({commit}, data){
-        commit('REMOVE_DISCUSSION_PENDING_PARTICIPANT', data)
+    removeItemPendingParticipant({commit}, data){
+        commit('REMOVE_ITEM_PENDING_PARTICIPANT', data)
     },
 
     ////////////////////////////////// posts

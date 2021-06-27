@@ -23,7 +23,7 @@ class PostController extends Controller
     public function createPost(CreatePostRequest $request)
     {
         DB::beginTransaction();
-        
+
         $post = (new PostService)->createPost(
             PostDTO::createFromRequest($request)
         );
@@ -42,8 +42,8 @@ class PostController extends Controller
             $items = (new PostService)->getUserPosts(
                 PostsDTO::createFromRequest($request)
             );
-                           
-            return HomeItemResource::collection($items);            
+
+            return HomeItemResource::collection($items);
         } catch (\Throwable $th) {
             // return response()->json([
             //     'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
@@ -58,8 +58,8 @@ class PostController extends Controller
             $items = (new PostService)->getPosts(
                 PostsDTO::createFromRequest($request)
             );
-                           
-            return HomeItemResource::collection($items);          
+
+            return HomeItemResource::collection($items);
         } catch (\Throwable $th) {
             // return response()->json([
             //     'message' => 'Unsuccessful. Something unexpected happened. Please try again later.',
@@ -77,7 +77,7 @@ class PostController extends Controller
         );
 
         DB::commit();
-        
+
         return response()->json([
             'message' => 'successful',
             'post' => new PostResource($post),
@@ -90,7 +90,7 @@ class PostController extends Controller
         (new PostService)->deletePost(
             PostDTO::createFromRequest($request)
         );
-                   
+
         return response()->json([
             'message' => "successful"
         ]);
@@ -99,13 +99,15 @@ class PostController extends Controller
     public function postGet($post)
     {
         $item = null;
-        $item = Post::with(['questions.images','questions.videos',
-            'questions.audios','questions.files','activities.images','activities.videos',
-            'activities.files','activities.audios','riddles.images','riddles.videos',
-            'riddles.files','riddles.audios','poems.images','poems.videos',
-            'poems.files','poems.audios','books.images','books.videos','books.files',
-            'books.audios','addedby.profile','lessons.images','lessons.videos',
-            'lessons.files','lessons.audios'])->find($post);
+        $item = Post::with([
+            'questions.images', 'questions.videos',
+            'questions.audios', 'questions.files', 'activities.images', 'activities.videos',
+            'activities.files', 'activities.audios', 'riddles.images', 'riddles.videos',
+            'riddles.files', 'riddles.audios', 'poems.images', 'poems.videos',
+            'poems.files', 'poems.audios', 'books.images', 'books.videos', 'books.files',
+            'books.audios', 'addedby.profile', 'lessons.images', 'lessons.videos',
+            'lessons.files', 'lessons.audios'
+        ])->find($post);
 
         if (!$item) {
             return response()->json([
@@ -118,30 +120,19 @@ class PostController extends Controller
         ]);
     }
 
-    public function postsGet($account, $accountId)
+    public function postsGet(Request $request)
     {
-        $mainAccount = getYourEduModel($account, $accountId);
-
-        if (!$mainAccount) {
-            return response()->json([
-                'message' => 'unsuccessful. account does not exist.'
+        try {
+            $items = (new PostService)->getItems(
+                PostsDTO::createFromRequest($request)
+            );
+        } catch (\Throwable $th) {
+            throw $th;
+            response()->json([
+                'message' => "oops! something happened 😕"
             ]);
         }
 
-        $items = $mainAccount->posts()
-            ->with(['questions.images','questions.videos',
-            'questions.audios','questions.files','activities.images','activities.videos',
-            'activities.files','activities.audios','riddles.images','riddles.videos',
-            'riddles.files','riddles.audios','poems.images','poems.videos',
-            'poems.files','poems.audios','books.images','books.videos','books.files',
-            'books.audios','addedby.profile','lessons.images','lessons.videos',
-            'lessons.files','lessons.audios'])->get();
-        
-        $items = $items->merge($mainAccount->discussions()->notSocial()->with([
-            'images','videos','audios','files','likes','comments','messages',
-            'attachments','participants','beenSaved','flags','raisedby.profile',
-        ])->get());
-
-        return HomeItemResource::collection(paginate($items->sortByDesc('updated_at'), 5));
+        return HomeItemResource::collection($items);
     }
 }

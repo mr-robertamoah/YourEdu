@@ -106,7 +106,7 @@ class AnswerService
         }
         
         if ($answerDTO->answerable->isArrangeFlowAnswerType() &&
-            count($answerDTO->possibleAnswerIds) > 1) {
+            count($answerDTO->possibleAnswerIds) === $answerDTO->answerable->possibleAnswers()->count()) {
             return;
         }
 
@@ -178,7 +178,7 @@ class AnswerService
             return $answer;
         }
 
-        $answer->possible_answer_ids = $answerDTO->possibleAnswerIds;
+        $answer->possible_answer_ids = array_unique($answerDTO->possibleAnswerIds);
         $answer->save();
 
         return $answer;

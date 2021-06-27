@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\HasAliasesTrait;
 use Database\Factories\SubjectFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,11 +10,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subject extends Model
 {
-    //
-    use HasFactory;
+    use HasFactory,
+        HasAliasesTrait;
 
     protected $fillable = [
-        'name','description','rationale'
+        'name', 'description', 'rationale'
     ];
 
     public function facilitators()
@@ -23,19 +24,14 @@ class Subject extends Model
 
     public function objectives()
     {
-        return $this->morphMany(Objective::class,'objectiveable');
-    }
-    
-    public function aliases()
-    {
-        return $this->morphMany(Alias::class,'aliasable');
+        return $this->morphMany(Objective::class, 'objectiveable');
     }
 
     public function curricula()
     {
-        return $this->belongsToMany(Curriculum::class,'curriculum_subject','subject_id','curriculum_id')
+        return $this->belongsToMany(Curriculum::class, 'curriculum_subject', 'subject_id', 'curriculum_id')
             ->using(CurriculumSubject::class)
-            ->withPivot(['note','attachedby_type','attachedby_id'])
+            ->withPivot(['note', 'attachedby_type', 'attachedby_id'])
             ->withTimestamps();
     }
 
@@ -46,17 +42,18 @@ class Subject extends Model
 
     public function classes()
     {
-        return $this->morphedByMany(ClassModel::class,'subjectable','subjectables')
+        return $this->morphedByMany(ClassModel::class, 'subjectable', 'subjectables')
             ->withPivot(['activity'])->withTimestamps();
     }
 
     public function subjectClasses()
     {
-        return $this->morphToMany(ClassModel::class,'classable','classables', null, 'class_id')
+        return $this->morphToMany(ClassModel::class, 'classable', 'classables', null, 'class_id')
             ->withPivot(['activity'])->withTimestamps();
     }
 
-    public function grades(){
+    public function grades()
+    {
         return $this->belongsToMany(Grade::class)->withTimestamps();
     }
 
@@ -67,8 +64,8 @@ class Subject extends Model
 
     public function curriculumStructures()
     {
-        return $this->belongsToMany(CurriculumStructure::class,'curriculum_structure_subject','subject_id','curriculum_structure_id')
-                ->withTimestamps();
+        return $this->belongsToMany(CurriculumStructure::class, 'curriculum_structure_subject', 'subject_id', 'curriculum_structure_id')
+            ->withTimestamps();
     }
 
     public function reportDetails()
@@ -80,20 +77,20 @@ class Subject extends Model
     {
         return $this->hasMany(TotalDetail::class);
     }
-    
+
     public function requests()
     {
-        return $this->morphMany(Request::class,'requestable');
+        return $this->morphMany(Request::class, 'requestable');
     }
 
     public function attachments()
     {
-        return $this->morphMany(PostAttachment::class,'attachedwith');
+        return $this->morphMany(PostAttachment::class, 'attachedwith');
     }
-    
+
     public function discussions()
     {
-        return $this->morphMany(Discussion::class,'discussionon');
+        return $this->morphMany(Discussion::class, 'discussionon');
     }
 
     public function facilitationDetails()
@@ -103,7 +100,7 @@ class Subject extends Model
 
     public function lessons()
     {
-        return $this->morphedByMany(Lesson::class,'lessonable','lessonables')
+        return $this->morphedByMany(Lesson::class, 'lessonable', 'lessonables')
             ->withPivot(['lesson_number', 'type'])->withTimestamps();
     }
 
@@ -127,22 +124,27 @@ class Subject extends Model
         return !$this->usesFacilitationDetail();
     }
 
-    public function scopeSearchItems($query,$search)
+    public function scopeSearchItems($query, $search)
     {
-        return $query->where(function($q) use ($search){
-            $q->where('name','like',"%$search%")
-                ->orWhere('description','like',"%$search%");
+        return $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%$search%")
+                ->orWhere('description', 'like', "%$search%");
         });
     }
 
     public function scopeWithClasses($query, $account)
     {
         return $query
-            ->with(['subjectClasses' => function($query) use ($account) {
+            ->with(['subjectClasses' => function ($query) use ($account) {
                 $query->whereOwnedOrFacilitating($account);
             }]);
     }
-    
+
+    public function scopeWhereName($query, $name)
+    {
+        return $query->where('name', $name);
+    }
+
     protected static function newFactory()
     {
         return SubjectFactory::new();

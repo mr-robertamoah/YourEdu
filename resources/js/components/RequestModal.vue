@@ -45,11 +45,11 @@
                                     class="request-badge"
                                 ></account-badge>
                                 <participant-badge
-                                    v-if="request.isParticipant"
+                                    v-if="request.isDiscussionRequest || request.isAssessmentRequest"
                                     :key="`participant.${request.id}`"
                                     @clickedAction="clickedParticipantAction"
-                                    :account="request"
-                                    :request="true"
+                                    :request="request"
+                                    :isRequest="true"
                                     class="request-badge"
                                 ></participant-badge>
                                 <discussion-badge
@@ -186,8 +186,8 @@ import Alert from './../mixins/Alert.mixin';
         },
         methods: {
             ...mapActions(['acceptFollowRequest','declineFollowRequest','userRequests',
-                'profile/discusionContributionResponse','profile/joinDiscussionResponse',
-                'userNotifications','profile/invitationDiscussionResponse',
+                'profile/discusionContributionResponse','profile/joinItemResponse',
+                'userNotifications','profile/invitationItemResponse',
                 'dashboard/sendResponse'
             ]),
             newRequestMessage(data) {
@@ -212,7 +212,7 @@ import Alert from './../mixins/Alert.mixin';
                     }
                     
                     if (type === 'participant') {
-                        return request.id === id && request.isParticipant
+                        return request.id === id && (request.isDiscussionRequest || request.isAssessmentRequest)
                     }
 
                     return request.id === id
@@ -262,10 +262,11 @@ import Alert from './../mixins/Alert.mixin';
             },
             clickedParticipantAction(participantData){
                 if (participantData.type === 'invitation') {
-                    this.invitationDiscussionResponse(participantData)
-                } else {
-                    this.joinDiscussionResponse(participantData)
+                    this.invitationItemResponse(participantData)
+                    return
                 }
+
+                this.joinItemResponse(participantData)
             },
             async acceptOrDeclineRequest(request){
                 let formData = new FormData,
@@ -286,41 +287,58 @@ import Alert from './../mixins/Alert.mixin';
                 this.alertDanger = true
                 this.alertMessage = `oops! it failed 😕. please try again later.`
             },
-            async invitationDiscussionResponse(participantData){
+            async invitationItemResponse(participantData){
                 let response,
                     data = {
-                        account: participantData.account.account,
-                        accountId: participantData.account.accountId,
-                        requestId: participantData.account.id,
-                        discussionId: participantData.account.discussionId,
-                        action: participantData.action
+                        account: participantData.myAccount.account,
+                        accountId: participantData.myAccount.accountId,
+                        requestId: participantData.id,
+                        action: participantData.action,
+                        item: participantData.item,
+                        itemId: participantData.itemId,
+                        type: participantData.marker ? 'marker' : null
                     }
+                    data[`${participantData.item}Id`] = participantData.itemId
                 
-                response = await this['profile/invitationDiscussionResponse'](data)
+                response = await this['profile/invitationItemResponse'](data)
 
                 if (response.status) {
-                    this.removeRequest(participantData.account.id,'participant')
-                } else {
-                    console.log('response :>> ', response);
+                    this.removeRequest(participantData.id,'participant')
+                    this.alertSuccess = true
+                    this.alertMessage = `${participantData.action.slice(0, participantData.action.length - 2)}ing of request was successful 😎.`
+                    return
                 }
+
+                console.log('response :>> ', response);
+                this.alertDanger = true
+                this.alertMessage = `${participantData.action.slice(0, participantData.action.length - 2)}ing of request failed 😕.`
             },
-            async joinDiscussionResponse(participantData){
+            async joinItemResponse(participantData){
                 let response,
                     data = {
-                        account: participantData.account.account,
-                        accountId: participantData.account.accountId,
+                        account: participantData.myAccount.account,
+                        accountId: participantData.myAccount.accountId,
                         requestId: participantData.account.id,
                         discussionId: participantData.account.discussionId,
-                        action: participantData.action
+                        action: participantData.action,
+                        item: participantData.item,
+                        itemId: participantData.itemId,
+                        type: participantData.marker ? 'marker' : null
                     }
+                    data[`${participantData.item}Id`] = participantData.itemId
                 
-                response = await this['profile/joinDiscussionResponse'](data)
+                response = await this['profile/joinItemResponse'](data)
 
                 if (response.status) {
-                    this.removeRequest(participantData.account.id,'participant')
-                } else {
-                    console.log('response :>> ', response);
-                }
+                    this.removeRequest(participantData.id,'participant')
+                    this.alertSuccess = true
+                    this.alertMessage = `${participantData.action.slice(0, participantData.action.length - 2)}ing of request was successful 😎.`
+                    return
+                } 
+                    
+                console.log('response :>> ', response);
+                this.alertDanger = true
+                this.alertMessage = `${participantData.action.slice(0, participantData.action.length - 2)}ing of request failed 😕.`
             },
             async acceptOrDeclineAccount(accountData){
                 let response,

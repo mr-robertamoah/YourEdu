@@ -9,6 +9,7 @@ use App\Http\Resources\AssessmentMiniResource;
 use App\Http\Resources\AssessmentResource;
 use App\Traits\ServiceTrait;
 use App\User;
+use App\YourEdu\Work;
 
 class WorkService
 {
@@ -16,52 +17,117 @@ class WorkService
 
     private function getAssessmentById($workDTO)
     {
-        if (is_null($workDTO->assessmentId)) {
-            $this->throwWorkException(
-                message: "the id of the assessment was not specified",
-                data: $workDTO
-            );
+        return $this->getModel('assessment', $workDTO->assessmentId);
+    }
+
+    private function setAssessment($workDTO)
+    {
+        if (is_not_null($workDTO->assessment)) {
+            return $workDTO;
         }
 
-        return $this->getModel('assessment', $workDTO->assessmentId);
+        return $workDTO->withAssessment(
+            $this->getAssessmentById($workDTO)
+        );
     }
 
     public function submitWork(WorkDTO $workDTO)
     {
-        //get account
-        //check account
-        
-        $assessment = $this->getAssessmentById($workDTO);
+        $workDTO = $this->setAssessment($workDTO);
 
-        $this->checkLearnerAccessToAssessment($assessment, $workDTO);
+        $this->checkLearnerAccessToAssessment($workDTO);
 
         $work = $this->makeWork($workDTO);
 
-        $work = $this->attachWorkToAssessment($workDTO);
+        $workDTO = $workDTO->withWork($work);
 
-        $work = $this->markWork($work, $workDTO);
-
-        $this->notifyMarkers($workDTO);
+        $work = $this->attachWorkToAccount($workDTO);
 
         $workDTO->methodType = 'created';
+
         $this->broadcastWork($workDTO);
+    }
+
+    private function broadcastWork($workDTO)
+    {
+        if ($workDTO->dontBroadcast) {
+            return;
+        }
+
+        $event = $this->getEvent($workDTO);
+
+        if (is_null($event)) {
+            return;
+        }
+
+        broadcast($event)->toOthers();
+    }
+
+    private function getEvent($dto)
+    {
+        if ($dto->methodType === 'created') {
+            return new WorkCreatedEvent($dto);
+        }
+
+        return null;
+    }
+
+    private function attachWorkToAccount($workDTO)
+    {
+        $workDTO->work->addedby()->associate($workDTO->addedby);
+        $workDTO->work->save();
+
+        return $workDTO->work->refresh();
     }
 
     private function makeWork(WorkDTO $workDTO)
     {
+        if (is_not_null($workDTO->status)) {
+            $this->validateStatus($workDTO);
+        }
 
-        return $work;
+        return $workDTO->assessment->works()->create([
+            'status' => $workDTO->status ? 
+                strtoupper($workDTO->status) : Work::PENDING
+        ]);
     }
 
-    private function checkLearnerAccessToAssessment($assessment, $workDTO)
+    public function updateWorkStatus($workDTO)
     {
-        if (AssessmentService::learnerHasAccessByUserId($assessment, $workDTO->userId)) {
+        $this->validateStatus($workDTO);
+
+        $workDTO->work->update([
+            'status' => strtoupper($workDTO->status)
+        ]);
+
+        return $workDTO->work->refresh();
+    }
+
+    private function validateStatus($workDTO)
+    {
+        if (in_array(strtoupper($workDTO->status), Work::VALID_STATUSES)) {
+            return;
+        }
+
+        $this->throwWorkException(
+            message: "sorry 😞, {$workDTO->status} is not a valid staus for a work",
+            data: $workDTO
+        );
+    }
+
+    private function checkLearnerAccessToAssessment($workDTO)
+    {
+        if ($workDTO->accessChecked) {
+            return;
+        }
+
+        if ($workDTO->assessment->learnerHasAccessByUserId($workDTO->userId)) {
             return;
         }
 
         $this->throwWorkException(
             message: "sorry, you do not have access to the assessment for which your work is been submitted",
-            data: $workDTO;
+            data: $workDTO,
         );
     }
 

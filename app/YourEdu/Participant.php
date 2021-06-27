@@ -13,7 +13,7 @@ class Participant extends Model
     use SoftDeletes,
         HasFactory;
 
-    protected $fillable =  ['user_id','state', 'accountable_type', 'accountable_id'];
+    protected $fillable =  ['user_id', 'state', 'accountable_type', 'accountable_id'];
 
     protected $touches =  ['participation'];
 
@@ -46,9 +46,16 @@ class Participant extends Model
         });
     }
 
+    public function scopeWhereNotPending($query)
+    {
+        return $query->where(function ($query) {
+            $query->where('state', '!=', 'PENDING');
+        });
+    }
+
     public function scopeWhereParticipant($query, $account)
     {
-        return $query->where(function($query) use ($account) {
+        return $query->where(function ($query) use ($account) {
             $query->where('accountable_type', $account::class)
                 ->where('accountable_id', $account->id);
         });
@@ -56,8 +63,8 @@ class Participant extends Model
 
     public function scopeWhereParticipantByUserId($query, $userId)
     {
-        return $query->where(function($query) use ($userId) {
-            $query->whereHasMorph('accountable', '*', function($query) use ($userId) {
+        return $query->where(function ($query) use ($userId) {
+            $query->whereHasMorph('accountable', '*', function ($query) use ($userId) {
                 $query->whereUser($userId);
             });
         });

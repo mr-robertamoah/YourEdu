@@ -1,34 +1,39 @@
-<?php 
+<?php
 
 namespace App\DTOs;
 
 use App\Contracts\ItemDataContract;
+use App\Traits\AliasDTOTrait;
+use App\Traits\DTOTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class ProgramDTO extends ItemDataContract
 {
-    public string | null $name;
-    public bool | null $facilitate;
-    public array | null $items;
-    public array | null $removedItems;
-    public array | null $attachments;
-    public array | null $removedAttachments;
-    public string | null $programId;
-    public object | null $discussionData;
-    public array | null $discussionFiles;
-    public string | null $action;
-    public string | null $owner;
-    public string | null $ownerId;
-    public string | null $adminId;
-    public string | null $account;
-    public string | null $accountId;
-    public string | null $description;
-    public string | null $state;
+    use DTOTrait,
+        AliasDTOTrait;
+
+    public ?string $name = null;
+    public bool $facilitate = false;
+    public bool $isAttachment = false;
+    public ?array $items = null;
+    public ?array $removedItems = null;
+    public ?array $attachments = null;
+    public ?array $removedAttachments = null;
+    public ?string $programId = null;
+    public ?object $discussionData = null;
+    public ?array $discussionFiles = null;
+    public ?string $action = null;
+    public ?string $owner = null;
+    public ?string $ownerId = null;
+    public ?string $adminId = null;
+    public ?string $account = null;
+    public ?string $accountId = null;
+    public ?string $description = null;
+    public ?string $state = null;
     public array $aliases = [];
     public ?PaymentDTO $paymentDTO = null;
     public ?PaymentDTO $removedPaymentDTO = null;
-    public int | null $userId;
     public ?Model $addedby = null;
     public ?Model $ownedby = null;
     public ?string $methodType = null;
@@ -46,7 +51,7 @@ class ProgramDTO extends ItemDataContract
         $self->ownerId = $request->ownerId;
         $self->account = $request->account;
         $self->accountId = $request->accountId;
-        $self->userId = (int) $request->user()->id;
+        $self->userId = $request->user()->id;
         $self->description = $request->description;
         $self->state = $request->state;
         $self->facilitate = json_decode($request->facilitate);

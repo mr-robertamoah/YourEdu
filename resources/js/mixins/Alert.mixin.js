@@ -30,8 +30,8 @@ export default {
                 return
             }
 
-            if (different) {
-                this.alertSuccess = message
+            if (message) {
+                this.alertMessage = message
                 return
             }
 

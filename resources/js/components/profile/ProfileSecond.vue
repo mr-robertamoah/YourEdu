@@ -242,7 +242,7 @@
                     <template
                         v-for="post in computedPosts"
                     >
-                        <post-show
+                        <post-single
                             :key="`post.${post.id}`"
                             v-if="post.isPost"
                             :post="post"
@@ -250,7 +250,7 @@
                             @clickedMedia="clickedMedia"
                             @clickedShowPostComments="clickedShowPostComments"
                             @clickedShowPostPreview="clickedShowPostPreview"
-                        ></post-show>
+                        ></post-single>
                         <discussion-single
                             v-if="post.isDiscussion"
                             :key="`discussion.${post.id}`"
@@ -426,7 +426,7 @@ import FadeLeft from '../transitions/FadeLeft'
 import BlackWhiteBadge from '../BlackWhiteBadge'
 import PostCreate from '../PostCreate'
 import SyncLoader from 'vue-spinner/src/SyncLoader'
-import PostShow from '../PostShow'
+import PostSingle from '../PostSingle'
 import LinkItem from '../profile/LinkItem'
 import FilePreview from '../FilePreview'
 import TextInput from '../TextInput'
@@ -447,7 +447,7 @@ import { mapGetters, mapActions } from 'vuex'
             TextInput,
             FilePreview,
             LinkItem,
-            PostShow,
+            PostSingle,
             SyncLoader,
             PostCreate,
             BlackWhiteBadge,

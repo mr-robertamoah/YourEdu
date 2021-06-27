@@ -17,7 +17,9 @@ class DiscussionJoinNotification extends Notification
      *
      * @return void
      */
-    public function __construct(private $discussionDTO){}
+    public function __construct(private $discussionDTO)
+    {
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -39,9 +41,9 @@ class DiscussionJoinNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->line('The introduction to the notification.')
-                    ->action('Notification Action', url('/'))
-                    ->line('Thank you for using our application!');
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
     }
 
     /**
@@ -54,7 +56,7 @@ class DiscussionJoinNotification extends Notification
     {
         return [
             'message' => "has joined your discussion with title: {$this->discussionDTO->discussion->title}",
-            'account' => new UserAccountResource($this->discussionDTO->InvitationDTO->joiner)
+            'account' => new UserAccountResource($this->discussionDTO->invitationDTO->joiner)
         ];
     }
 }

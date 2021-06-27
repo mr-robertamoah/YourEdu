@@ -7,13 +7,16 @@
         <div class="loading" v-if="loading">
             <pulse-loader :loading="loading" :size="'10px'"></pulse-loader>
         </div>
-        <div class="alert"
-            v-if="alertMessage.length"
-            :class="{success:alertSuccess, danger:alertDanger}"
-        >
-            {{alertMessage}}
+        <div class="alert">
+            <auto-alert
+                :message="alertMessage"
+                :success="alertSuccess"
+                :danger="alertDanger"
+                :sticky="true"
+                @hideAlert="clearAlert"
+            ></auto-alert>
         </div>
-        <div class="edit"
+        <div class="edit absolute right-2"
             @click="clickedShowOptions"
             v-if="computedProfiles.length"
         >
@@ -21,13 +24,13 @@
                 :icon="['fa','chevron-down']"
             ></font-awesome-icon>
         </div>
-        <div class="options" v-if="showOptions && computedSaves">
+        <div class="options" v-if="showOptions">
             <optional-actions
                 :show="showOptions"
-                :hasSave="!computedOwner"
-                :isSaved="isSaved"
-                :hasEdit="computedOwner"
+                :hasSave="simple ? false : true"
+                :hasEdit="computedOwner && !simple"
                 :hasDelete="computedOwner"
+                :hasAttachment="simple ? false : true"
                 @clickedOption="clickedOption"
             ></optional-actions>
         </div>
@@ -82,104 +85,51 @@
                 </div>
             </div>
         </div>
-        <div class="bottom"
-            @dblclick.self="clickedViewComments"
+        
+        <reaction-component
             v-if="!simple"
-        >
-            <number-of>
-                {{likes === 1 ? `${likes} like` : `${likes} likes`}}
-            </number-of>
-            <div class="comment-number" 
-                v-if="computedCommentNumber"
-                @click="clickedViewComments"
-                :title="commentTitle"
-            >
-                {{`${comments}`}} <font-awesome-icon
-                    :icon="['fa','comment-alt']"
-                ></font-awesome-icon>
-            </div>
-            <div class="other">
-                <div class="like"
-                    @click="clickedLike"
-                    v-if="computedLikes"
-                    :class="{liked:isLiked}"
-                    :title="likeTitle"
-                >
-                    <font-awesome-icon
-                        :icon="['fa','thumbs-up']"
-                    ></font-awesome-icon>
-                </div>
-                <div class="profiles"
-                    v-if="showProfiles"
-                >
-                    <span>
-                        {{showProfilesText}}
-                    </span>
-                    <div :key="key" v-for="(profile,key) in computedProfiles">
-                        <profile-bar
-                            :smallType="true"
-                            :profile="profile"
-                            :navigate="false"
-                            @clickedProfile="clickedProfile"
-                        ></profile-bar>
-                    </div>
-                </div>
-                <div class="comment" 
-                    v-if="!showAddComment"
-                    @click="clickedAddComment"
-                    :class="{success:commentSuccess,fail:commentFail}"
-                >
-                    <font-awesome-icon
-                        :icon="['fa','comment']"
-                    ></font-awesome-icon>
-                </div>
-                <div class="comment" 
-                    v-if="computedFlags && !computedOwner"
-                    @click="clickedFlag"
-                    :class="{flagged:isFlagged}"
-                >
-                    <font-awesome-icon
-                        :icon="['fa','flag']"
-                    ></font-awesome-icon>
-                </div>
-            </div>
-            <div class="reason">
-                <flag-reason
-                    :show="showFlagReason"
-                    :hasBackground="true"
-                    @continueFlagProcess="continueFlagProcess"
-                    @reasonGiven="reasonGiven"
-                    @cancelFlagProcess="cancelFlagProcess"
-                ></flag-reason>
-            </div>
-        </div>
-            <div class="comment-section" 
-                v-if="!simple"
-            >
-                <add-comment
-                    what="comment"
-                    :id="comment.id"
-                    :onPostModal="!showCommentNumber"
-                    :schoolAdmin="schoolAdmin"
-                    :showAddComment="showAddComment"
-                    @hideAddComment="showAddComment = false"
-                    @postAddComplete="postAddComplete"
-                    @postModalCommentCreated="postModalCommentCreated"
-                    @postModalCommentEdited="postModalCommentEdited"
-                    :editableData="comment"
-                    :account="account"
-                    :edit="editComment"
-                ></add-comment>
-            </div>
+            :schoolAdmin="schoolAdmin"
+            :editableComment="comment"
+            :commentingAccount="account"
+            :editComment="editComment"
+            :comments="computedComments"
+            :commentCountData="{count: commentCount, title: commentTitle}"
+            :item="computedItem"
+            :isOwner="computedIsOwner"
+            :full="!showCommentNumber"
+            :showAddComment="showAddComment"
+            :showFlagReason="showFlagReason"
+            :flagData="flagData"
+            :likeData="likeData"
+            :classes="computedClasses"
+            :showProfilesText="showProfilesText"
+            :showOnlyProfiles="computedClasses.length ? true : false"
+            :showProfiles="showProfiles"
+            :profiles="computedProfiles"
+            @hideAddComment="showAddComment = false"
+            @postAddComplete="postAddComplete"
+            @askLoginRegister="askLoginRegister"
+            @clickedMedia="clickedMedia"
+            @clickedProfile="clickedProfile"
+            @clickedLike="clickedLike"
+            @clickedAddComment="clickedAddComment"
+            @cancelFlagProcess="cancelFlagProcess"
+            @reasonGiven="reasonGiven"
+            @clickedFlag="clickedFlag"
+            @continueFlagProcess="continueFlagProcess"
+            @clickedShowPostComments="clickedViewComments"
+            @postModalCommentCreated="postModalCommentCreated"
+            @postModalCommentEdited="postModalCommentEdited"
+        ></reaction-component>
         <fade-up>
             <template slot="transition" v-if="showSmallModal">
                 <small-modal
-                    :title="smallModalTitle"
+                    :title="smallModalMessage"
                     :show="showSmallModal"
                     :message="alertMessage"
                     :success="alertSuccess"
                     :danger="alertDanger"
-                    :loading="smallModalLoading"
+                    :loading="loading"
                     :alerting="smallModalAlerting"
                     @disappear="showSmallModal = false"
                 >
@@ -230,6 +180,13 @@ import JustFade from './transitions/JustFade'
 import PulseLoader from 'vue-spinner/src/PulseLoader'
 import FlagReason from './FlagReason'
 import FadeUp from './transitions/FadeUp'
+import Like from '../mixins/Like.mixin';
+import Flag from '../mixins/Flag.mixin';
+import Save from '../mixins/Save.mixin';
+import Alert from '../mixins/Alert.mixin';
+import Profiles from '../mixins/Profiles.mixin';
+import Comments from '../mixins/Comments.mixin';
+import SmallModal from '../mixins/SmallModal.mixin';
 import {dates, strings} from '../services/helpers'
 import { mapGetters, mapActions } from 'vuex'
 
@@ -289,50 +246,28 @@ import { mapGetters, mapActions } from 'vuex'
                 default: false
             },
         },
+        mixins: [
+            Like, Flag, Save, Alert, SmallModal, Comments,
+            Profiles, 
+        ],
         data() {
             return {
                 id: null,
                 profile: null,
                 showOptions: null,
-                showSmallModal: false,
-                smallModalLoading: false,
-                smallModalAlerting: false,
-                alertSuccess: false,
-                alertMessage: '',
-                likeTitle: '',
-                alertDanger: false,
+
                 inputComment: '',
                 showEdit: false,
                 showAlert: false,
-                showAddComment: false,
-                isLiked: false,
                 editComment: false,
-                likes: 0,
-                comments: 0,
+
+                commentCount: 0,
                 commentTitle: '',
-                myLike: null,
-                showProfiles: false,
                 showViewComments: false,
                 commentSuccess: false,
                 commentFail: false,
                 showCommentSingle: true,
-                smallModalTitle: '',
-                smallModalDelete: false,
-                smallModalInfo: false,
                 loading: false,
-                //flags
-                showFlagReason: false,//it also pushes reaction section down to show flag reason
-                flagReason: '',
-                isFlagged: false,
-                myFlag: null,
-                flagTitle: '',
-                //profiles
-                showProfilesAction: '',
-                showProfilesText: '',
-                //save
-                isSaved: false,
-                mySave: null,
-                saves: 0,
             }
         },
         watch: {
@@ -345,26 +280,14 @@ import { mapGetters, mapActions } from 'vuex'
             },
             comment: {
                 immediate: true,
+                required: true,
                 handler(newValue, oldValue){
                     if (newValue) {
-                        this.comments = newValue.comments ? newValue.comments : 0
-                        this.commentTitle =  this.comments ? 'click to view comments' : ''
+                        this.commentCount = newValue.comments ? newValue.comments : 0
+                        this.commentTitle =  this.commentCount ? 'click to view comments' : ''
                     }
                 },
                 deep: true
-            },
-            isLiked(newValue){
-                if (newValue) {
-                    this.likeTitle = 'unlike this comment'
-                } else {
-                    this.likeTitle = 'like this comment'
-                }
-            },
-            likes(newValue){
-                if (!newValue) {
-                    this.myLike = null
-                    this.isLiked = false
-                }
             },
             showEdit(newValue){
                 if (newValue) {
@@ -374,116 +297,102 @@ import { mapGetters, mapActions } from 'vuex'
                     this.editComment = false
                 }
             },
-            isFlagged(newValue){
-                if (newValue) {
-                    this.flagTitle = 'unflag this answer'
-                } else {
-                    this.flagTitle = 'flag this answer'
+            "comment.likes": {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        
+                        this.likeData.likes = newValue.length
+                    }
                 }
             },
-            saves(newValue){
-                if (!newValue) {
-                    this.mySave = null
-                    this.isSaved = false
+            "comment.saves": {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        
+                        this.saveData.saves = newValue.length
+                    }
                 }
             },
         },
         mounted () {
+            this.setMyFlag()
+            this.setMyLike()
+            this.setMySave()
             this.listen();
+            this.listenForComments()
+            this.listenForLikes()
+            this.listenForFlags()
+            this.listenForSaves()
         },
         computed: {
             ...mapGetters(['getUser','getProfiles','profile/getMsg']),
             computedCommentOwnerAccount(){
                 let postOwner = this.post ? {
-                    account: strings.getAccount(this.comment.commentedby_type),
-                    accountId: `${this.comment.commentedby_id}`
+                    account: this.comment.commentedby.account,
+                    accountId: `${this.comment.commentedby.accountId}`
                 } : null
 
                 return postOwner
             },
-            computedSaves(){
-                if (this.getUser) {
-                    if (this.comment && this.comment.hasOwnProperty('saves')){
-                        let saves = this.comment.saves
-                        this.saves = this.comment.saves.length
-                        let index = null
-                        index = saves.findIndex(save=>{
-                                return save.user_id === this.getUser.id
-                            })
-                        if (index > -1) {
-                            this.mySave = saves[index]
-                            this.isSaved = true
-                        }
-                    }
+            computedClasses(){
+                let classes = ''
+
+                if (this.showProfilesAction === 'save' || 
+                    this.showProfilesAction === 'attach') {
+                    classes += 'absolute top-5 left-2/3 -ml-1/4 top-10 max-w-content'
                 }
-                return true
+                
+                if (this.steps === 0) {
+                    classes += ' bottom-8'
+                }
+
+                return classes
+            },
+            computedItem() {
+                return {
+                    item: 'comment',
+                    itemId: this.comment.id
+                }
+            },
+            computedItemable() {
+                return this.comment
+            },
+            computedIsOwner() {
+                return this.comment.commentedby.userId === this.getUser?.id
             },
             computedProfileUrl() {
-                return this.comment && this.comment.hasOwnProperty('profile_url') ?
-                    this.comment.profile_url : ''
+                return this.comment?.commentedby.url ?
+                    this.comment.commentedby.url : ''
             },
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
             },
             computedName() {
-                return this.comment && this.comment.hasOwnProperty('commentedby') ?
-                    this.comment.commentedby : ''
+                return this.comment.commentedby.name
             },
             computedCreatedAt() {
-                return this.comment ? dates.createdAt(this.comment.created_at) : '' 
+                return this.comment.createdAt
             },
             computedImageUrl() {
-                return this.comment && this.comment.images && this.comment.images.length ? 
+                return this.comment.images && this.comment.images.length ? 
                     this.comment.images[0].url : ''
             },
             computedAudioUrl() {
-                return this.comment && this.comment.audios && this.comment.audios.length ? 
+                return this.comment.audios && this.comment.audios.length ? 
                     this.comment.audios[0].url : ''
             },
             computedVideoUrl() {
-                return this.comment && this.comment.videos && this.comment.videos.length ? 
+                return this.comment.videos && this.comment.videos.length ? 
                     this.comment.videos[0].url : ''
             },
             computedBody() {
-                return this.comment && this.comment.hasOwnProperty('body') ? 
-                    strings.content(this.comment.body,200) : null
+                return this.comment.hasOwnProperty('body') ? 
+                    strings.trim(this.comment.body, 200) : null
             },
             computedCommentNumber(){
-                return this.showCommentNumber && this.comments > -1 ? true : false
-            },
-            computedFlags(){ //check flagging
-                if (this.getUser) {
-                    if (this.comment && this.comment.hasOwnProperty('flags')){
-                        let flags = this.comment.flags
-                        let index = null
-                        index = flags.findIndex(flag=>{
-                                return flag.user_id === this.getUser.id
-                            })
-                        if (index > -1) {
-                            this.myFlag = flags[index]
-                            this.isFlagged = true
-                        }
-                    }
-                }
-                return true
-            },
-            computedLikes(){
-                //do not show like if any of your profiles has liked the item
-                if (this.getUser) {
-                    if (this.comment && this.comment.hasOwnProperty('likes')){
-                        let likes = this.comment.likes
-                        this.likes = this.comment.likes.length
-                        let index = null
-                        index = likes.findIndex(like=>{
-                                return like.user_id === this.getUser.id
-                            })
-                        if (index > -1) {
-                            this.myLike = likes[index]
-                            this.isLiked = true
-                        }
-                    }
-                }
-                return true
+                return this.showCommentNumber && this.commentCount > -1 ? true : false
             },
             computedOwner(){
                 let profiles = this.getProfiles
@@ -491,9 +400,9 @@ import { mapGetters, mapActions } from 'vuex'
 
                 if (profiles) {
                     
-                    profile =  profiles.findIndex(el=>{
-                        return this.comment.commentedby_id === el.accountId && 
-                            this.comment.commentedby_type === el.profile
+                    profile =  profiles.findIndex(profile=>{
+                        return this.comment.commentedby.accountId === profile.accountId && 
+                            this.comment.commentedby.account === profile.account
                     })
 
                     if (profile > -1) {
@@ -505,14 +414,12 @@ import { mapGetters, mapActions } from 'vuex'
             },
         },
         methods: {
-            ...mapActions(['profile/deleteComment','profile/createLike','profile/createFlag',
-                'profile/deleteLike','profile/deleteFlag','profile/deleteSave',
-                'profile/createSave','home/newLike','profile/newLike',
-                'dashboard/newLike','home/removeLike','profile/removeLike',
-                'dashboard/removeLike','home/newAttachment','profile/newAttachment',
-                'dashboard/newAttachment','home/removeAttachment','profile/removeAttachment',
-                'dashboard/removeAttachment','home/newComment','profile/newComment',
-                'dashboard/newComment']),
+            ...mapActions([
+                'profile/deleteComment',
+                'home/removePost','home/replacePost',
+                'profile/removePost','profile/replacePost',
+                'dashboard/removePost','dashboard/replacePost',
+            ]),
             clickedMedia(url,mediaType){
                 this.$emit('clickedMedia',{url,mediaType})
             },
@@ -540,37 +447,11 @@ import { mapGetters, mapActions } from 'vuex'
             },
             listen(){
                 Echo.channel(`youredu.comment.${this.comment.id}`)
-                    .listen('.updateComment', commentData=>{
-                        console.log(commentData)
-                        this[`${this.$route.name}/replaceComment`](commentData)
+                    .listen('.updateComment', data=>{
+                        this[`${this.$route.name}/replaceComment`](data.comment)
                     })
-                    .listen('.deleteComment', commentInfo=>{
-                        console.log(commentInfo)
-                        this[`${this.$route.name}/removeComment`](commentInfo)
-                    })
-                    .listen('.newComment', comment=>{ // for replies
-                        console.log(comment)
-                        this[`${this.$route.name}/newComment`](comment)
-                    })
-                    .listen('.newLike', data=>{
-                        console.log('data :>> ', data);
-                        this[`${this.$route.name}/newLike`](data)
-                    })
-                    .listen('.deleteLike', data=>{
-                        console.log('data :>> ', data);
-                        this[`${this.$route.name}/removeLike`](data)
-                    })
-                    .listen('.newAttachment', (attachmentData)=>{
-                        console.log(attachmentData)
-                        this[`${this.$route.name}/newAttachment`](attachmentData)
-                    })
-                    .listen('.deleteAttachment', attachmentInfo=>{
-                        console.log(attachmentInfo)
-                        this[`${this.$route.name}/removeAttachment`](attachmentInfo)
-                    })
-                    .listen('.newFlag', (flag)=>{
-                        console.log(flag)
-                        this[`${this.$route.name}/newFlag`](flag)
+                    .listen('.deleteComment', data=>{
+                        this[`${this.$route.name}/removeComment`](data)
                     })
             },
             clickedProfilePicture(){
@@ -583,7 +464,9 @@ import { mapGetters, mapActions } from 'vuex'
                             accountId: this.computedCommentOwnerAccount.accountId,
                         }
                     })
-                } else if (this.computedCommentOwnerAccount) {
+                }
+                
+                if (this.computedCommentOwnerAccount) {
                     if (this.$route.params.account !== this.computedCommentOwnerAccount.account &&
                         this.$route.params.accountId !== this.computedCommentOwnerAccount.accountId) {
                         this.$router.push({
@@ -608,7 +491,7 @@ import { mapGetters, mapActions } from 'vuex'
             postAddComplete(data){
                 if (data === 'successful') {
                     this.showAddComment = false
-                    this.comments += 1
+                    this.commentCount += 1
                     this.commentSuccess = true
                     setTimeout(() => {
                         this.commentSuccess = false
@@ -619,121 +502,9 @@ import { mapGetters, mapActions } from 'vuex'
                         this.commentFail = false
                     }, 2000);
                 }
-            },  
-            clearSmallModal(){
-                this.showSmallModal = false
-                this.smallModalDelete = false
-                this.smallModalInfo = false
-                this.showProfilesAction = ''
-                this.smallModalTitle = ''
-                this.alertSuccess = false
-                this.alertDanger = false
-                // this.smallModalAlerting = false
-            },
-            profilesAppear(){
-                if (this.account) {
-                    this.clickedProfile(this.account)
-                    return
-                }
-                this.showProfiles = true
-                setTimeout(() => {
-                    this.showProfiles = false
-                }, 4000);
-            },
-            reasonGiven(data){
-                this.showFlagReason = false
-                this.flagReason = data
-                this.profilesAppear()
-            },
-            continueFlagProcess(){
-                this.flagReason = null
-                this.showFlagReason = false
-                this.profilesAppear()
-            },
-            cancelFlagProcess(){
-                this.flagReason = ''
-                this.showFlagReason = false
-            },      
-            clickedFlag(){
-                if (this.disabled) {
-                    return
-                }
-                if (this.isFlagged) {
-                    this.flag(null)
-                    return
-                }
-                this.showProfilesText = 'flag as'
-                this.showProfilesAction = 'flag'
-                if (!this.getUser) {
-                    this.$emit('askLoginRegister','commentSingle')
-                } else if (this.getProfiles && !this.getProfiles.length) {
-                    this.smallModalInfo= false
-                    this.smallModalDelete = false
-                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can flag.'
-                    this.showSmallModal = true
-                    setTimeout(() => {
-                        this.clearSmallModal()
-                    }, 4000);
-                } else {
-                    this.smallModalInfo = false
-                    this.smallModalDelete = true
-                    this.showFlagReason = true
-                }
-            },
-            async flag(who){
-                this.loading = true
-                let data = {}
-                data.comment = true
-                data.commentable_type = this.comment.commentable_type
-                data.commentable_id = this.comment.commentable_id
-                data.itemId = this.comment.id
-                data.where = this.$route.name
-                if (this.schoolAdmin) {
-                    data.adminId = this.schoolAdmin.id
-                }
-                
-                let response = null
-                if (who) {
-                    data.account = who.account
-                    data.accountId = who.accountId
-                    data.item = 'comment'
-                    data.reason = this.flagReason
-
-                    response = await this['profile/createFlag'](data)
-                } else {
-                    data.flagId = this.myFlag.id
-
-                    response = await this['profile/deleteFlag'](data)
-                }
-
-                this.loading =false
-                if (response.status) {
-                    this.alertSuccess = true
-                    if (this.isFlagged) {
-                        this.isFlagged = false
-                        // this.$emit('commentUnflaggedSuccess', {
-                        //     flag: response.flag,
-                        //     commentId: this.comment.id
-                        // })
-                    } else {
-                        this.alertModalMessage = 'successfully flagged'
-                        this.$emit('commentDeleteSuccess', {
-                            commentId: this.comment.id
-                        })
-                    }
-                    this.smallModalAlerting = true
-                } else {
-                    this.alertDanger = true
-                    this.alertModalMessage = 'flagging successful'
-                }
-                this.flagReason = ''
-                this.smallModalData = null
-                setTimeout(() => {
-                    this.clearSmallModal()
-                }, 3000);
             },
             clickedViewComments(){
-                if (this.comments) {
+                if (this.commentCount) {
                     this.showViewComments = true
                 } else if (this.simple) {
                     this.$emit('clickedShowPostComments')
@@ -741,43 +512,23 @@ import { mapGetters, mapActions } from 'vuex'
             },
             async clickedProfile(who){
                 if (this.showProfilesAction === 'like') {
-                    this.showProfiles = false
-                    this.isLiked = true
-                    this.likes += 1
-                    let data = {
-                        item: 'comment',
-                        itemId: this.comment.id,
-                        account: who.account,
-                        accountId: who.accountId,
-                        owner: this.comment.commentable_type,
-                        ownerId: this.comment.commentable_id,
-                    }
-
-                    data.where = this.$route.name
-                    if (this.schoolAdmin) {
-                        data.adminId = this.schoolAdmin.id
-                    }
-                    let response = await this['profile/createLike'](data)
-
-                    if (response === 'unsuccessful') {
-                        this.isLiked = false
-                        this.likes -= 1
-                    } else {
-                        this.$emit('commentLikeSuccessful',{
-                            itemId: data.itemId,
-                            like: response
-                        })
-                    }
-                } else if (this.showProfilesAction === 'save') {
+                    this.like(who)
+                    return
+                }
+                
+                if (this.showProfilesAction === 'save') {
                     this.save(who)
-                } else if (this.showProfilesAction === 'flag') {
-                    this.smallModalTitle = 'are you sure you want to flag this?'
-                    this.smallModalDelete = true
-                    this.showSmallModal = true
-                    this.smallModalData = who
-                    setTimeout(() => {
-                        this.clearSmallModal()
-                    }, 4000);
+                    return
+                }
+                
+                if (this.showProfilesAction === 'flag') {
+                    this.issueCustomMessage({
+                        message: 'are you sure you want to flag this?',
+                        type: 'delete',
+                        data: who
+                    })
+
+                    this.clearSmallModal(false)
                 }
             },
             viewModalDisappear(){
@@ -790,143 +541,44 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showAddComment = false
                 this.showOptions = !this.showOptions
             },
-            alertDisappear() {
-                
-            },
-            async save(who){
-                this.showProfiles = false
-                this.loading = true
-                let data = {
-                    item: 'comment',
-                    itemId: this.comment.id,
-                    owner: this.comment.commentedby_type,
-                    ownerId: this.comment.commentedby_id,
-                },
-                    response = null,
-                    state = ''
-
-                data.where = this.$route.name
-                if (this.schoolAdmin) {
-                    data.adminId = this.schoolAdmin.id
-                }
-                if (who) {
-                    data.account = who.account
-                    data.accountId = who.accountId
-                    state = 'saving'
-                    response = await this['profile/createSave'](data)
-                } else {
-                    data.saveId = this.mySave.id
-                    state = 'unsaving'
-                    response = await this['profile/deleteSave'](data)
-                }
-
-                this.loading = false
-                if (response.status) {
-                    if (who) {
-                        this.saves += 1
-                        this.$emit('commentSaveSuccessful',{ //emit to post modal or comment view
-                            itemId: this.comment.id,
-                            save: response.save,
-                        })
-                    } else {
-                        this.saves -= 1
-                        this.$emit('commentUnsaveSuccessful',{ //emit to post modal or comment view
-                            itemId: this.comment.id,
-                            saveId: data.saveId,
-                        })
-                    }
-                    this.isSaved = !this.isSaved
-                    this.alertSuccess = true
-                    this.alertMessage = `${state} successful`
-                } else {
-                    this.alertDanger = true
-                    this.alertMessage = `${state} unsuccessful`
-                }
-                setTimeout(() => {
-                    this.alertSuccess = false
-                    this.alertDanger = false
-                    this.alertMessage = ''
-                }, 3000);
-            },
-            async clickedLike(){
-                if (this.disabled) {
-                    return
-                }
-                if (!this.getUser) {
-                    this.$emit('askLoginRegister','commentSingle')
-                } else if (!this.getProfiles.length) {
-                    this.smallModalInfo= true
-                    this.smallModalDelete = false
-                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can like.'
-                    this.showSmallModal = true
-                    setTimeout(() => {
-                        this.showSmallModal = false
-                    }, 4000);
-                } else {
-                    this.showProfilesText = 'like as'
-                    this.showProfilesAction = 'like'
-                    if (this.isLiked) {
-                        this.likes -= 1
-                        this.isLiked = false
-                        
-                        if (this.myLike && this.myLike.hasOwnProperty('id')) {
-                            let newData = {
-                                likeId: this.myLike.id,
-                                item: 'comment',
-                                itemId: this.comment.id,
-                                owner: this.comment.commentable_type,
-                                ownerId: this.comment.commentable_id,
-                            }
-
-                            newData.where = this.$route.name
-                            if (this.schoolAdmin) {
-                                newData.adminId = this.schoolAdmin.id
-                            }
-                            let response = await this['profile/deleteLike'](newData)
-                            if (response === 'unsuccessful') {
-                                this.isLiked = true
-                                this.likes += 1
-                            } else {
-                                this.$emit('commentUnlikeSuccessful',newData)
-                            }
-                        } else {
-                            this.likes += 1
-                            this.isLiked = true
-                        }
-                    } else {
-                        this.profilesAppear() //here
-                    }
-                }
+            askLoginRegister() {
+                this.$emit('askLoginRegister','comment')
             },
             clickedAddComment(){
                 if (this.disabled) {
                     return
                 }
                 if (!this.getUser) {
-                    this.$emit('askLoginRegister','commentSingle')
-                } else if (!this.getProfiles.length) {
-                    this.smallModalInfo= true
-                    this.smallModalDelete = false
-                    this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can comment.'
-                    this.showSmallModal = true
-                    setTimeout(() => {
-                        this.showSmallModal = false
-                    }, 4000);
-                } else {
-                    this.editComment = false
-                    this.showAddComment = true
+                    this.askLoginRegister()
                 }
+                
+                if (!this.getProfiles.length) {
+                    this.issueCustomMessage({
+                        message: 'you must have an account (eg. learner, parent, etc) before you can comment.',
+                        type: 'info'
+                    })
+                    
+                    this.clearSmallModal(false)
+                    return
+                }
+
+                this.editComment = false
+                this.showAddComment = true
             },
-            async clickedYes(){
+            clickedYes(){
                 if (this.showProfilesAction === 'flag') {
                     this.flag(this.smallModalData)
                     return
                 }
-                this.smallModalLoading = true
+
+                this.deleteComment()
+            },
+            async deleteComment() {
+                this.loading = true
                 let data = {
                     commentId: this.comment.id,
-                    owner: this.comment.commentable_type,
-                    ownerId: this.comment.commentable_id,
+                    item: strings.getAccount(this.comment.commentable_type),
+                    itemId: this.comment.commentable_id,
                     account: this.profile.account,
                     accountId: this.profile.accountId,
                     where: this.$route.name
@@ -937,7 +589,7 @@ import { mapGetters, mapActions } from 'vuex'
                 }
                 let response = await this['profile/deleteComment'](data)
                 
-                this.smallModalLoading = false
+                this.loading = false
                 if (response !== 'unsuccessful') {
                     this.$emit('commentDeleteSuccess', {
                         commentId: data.commentId
@@ -946,15 +598,7 @@ import { mapGetters, mapActions } from 'vuex'
                 } else {
                     this.alertDanger = true
                     this.alertMessage = 'comment deletion unsuccessful'
-                    this.clearAlert()
                 }
-            },
-            clearAlert(){
-                setTimeout(() => {
-                    this.alertMessage = ''
-                    this.alertDanger = false
-                    this.alertSuccess = false
-                }, 2000);
             },
             clickedNo(){
                 this.clearSmallModal()
@@ -963,22 +607,23 @@ import { mapGetters, mapActions } from 'vuex'
                 this.showOptions = false
                 if (data === 'edit') {
                     this.showEdit = true
-                } else if (data === 'save') {
-                    if (this.isSaved) {
+                    return
+                }
+                
+                if (data === 'save') {
+                    if (this.saveData.isSaved) {
                         this.save(null)
                         return
                     }
-                    this.showProfilesText = 'save as'
-                    this.showProfilesAction = 'save'
-                    this.profilesAppear() //
-                } else if (data === 'delete') {
-                    this.smallModalTitle = 'are you sure you want to delete this'
-                    this.smallModalDelete = true
-                    this.smallModalInfo = false
-                    this.showSmallModal = true
-                    setTimeout(() => {
-                        this.clearSmallModal()
-                    }, 4000);
+
+                    this.clickedSave()
+                    return
+                }
+                
+                if (data === 'delete') {
+                    this.issueSmallModalDeletionMessage()
+                    
+                    this.clearSmallModal(false)
                 }
             }
         },
@@ -1097,80 +742,6 @@ $comment-font-size: 13px;
                     max-height: none;
                 }
             }
-        }
-
-        .bottom{
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 5px;
-            padding-left: 5px; 
-            width: 100%;  
-
-            .comment-number{
-                font-size: 12px;
-                padding: 5px;
-                cursor: pointer;
-                background-color: whitesmoke;
-                border-radius: 10%;
-            }
-
-            .other{
-                display: inline-flex;
-                align-items: center;
-                position: relative;
-
-                .like,
-                .comment{
-                    padding: 5px;
-                    margin-right: 5px;
-                    font-size: 14px;
-                    cursor: pointer;
-                }
-
-                .liked{
-                    color: green;
-                }                
-
-                .profiles{
-                    position: absolute;
-                    width: 200px;
-                    right: 0;
-                    z-index: 1000;
-                    text-align: start;
-                    top: 15px;
-
-                    span{
-                        font-size: 12px;
-                        font-weight: 500;
-                    }
-                }
-
-                .flagged{
-                    color: red;
-                }
-
-                .success{
-                    color: green;
-                    box-shadow: 0 0 3px gray;
-                }
-
-                .fail{
-                    color: red;
-                    box-shadow: 0 0 3px gray;
-                }
-            }
-
-            .reason{
-                position: absolute;
-                top: 90%;
-                right: 10px;
-                z-index: 2;
-            }
-        }
-
-        .comment-section{
-            margin: 5px 5px 5px 0;
         }
     }
 

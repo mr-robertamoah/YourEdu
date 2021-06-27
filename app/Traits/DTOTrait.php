@@ -2,10 +2,15 @@
 
 namespace App\Traits;
 
+use App\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 trait DTOTrait
 {
+    public ?string $methodType = null;
+    public ?string $userId = null;
+    
     public static function new()
     {
         return new static;
@@ -31,7 +36,22 @@ trait DTOTrait
         
         $clone = clone $this;
 
-        $clone->$attribute = $parameters[0];
+        if ($attribute !== 'users') {
+    
+            $clone->$attribute = $parameters[0];
+    
+            return $clone;
+        }
+
+        if ($parameters[0] instanceof User) {
+            $clone->users = new Collection();
+
+            $clone->users->push($parameters[0]);
+
+            return $clone;
+        }
+
+        $clone->users = $parameters[0];
 
         return $clone;
     }

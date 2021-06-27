@@ -2,15 +2,17 @@
 
 namespace App\DTOs;
 
+use App\Traits\DTOTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class SaveDTO
 {
+    use DTOTrait;
+
     public ?Model $saveable = null;
     public ?Model $savedby = null;
     public ?Model $save = null;
-    public ?string $userId = null;
     public ?string $item = null;
     public ?string $itemId = null;
     public ?string $account = null;
@@ -33,32 +35,5 @@ class SaveDTO
         $self->userId = $request->user()?->id;
 
         return $self;
-    }
-
-    public function withSavedby($savedby)
-    {
-        $clone = clone $this;
-
-        $clone->savedby = $savedby;
-
-        return $clone;
-    }
-
-    public function withSaveable($saveable)
-    {
-        $clone = clone $this;
-
-        $clone->saveable = $saveable;
-
-        return $clone;
-    }
-
-    public function withSave($save)
-    {
-        $clone = clone $this;
-
-        $clone->save = $save;
-
-        return $clone;
     }
 }

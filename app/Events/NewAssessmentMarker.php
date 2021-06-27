@@ -20,7 +20,9 @@ class NewAssessmentMarker implements ShouldBroadcast
      *
      * @return void
      */
-    public function __construct(private $assessmentDTO){}
+    public function __construct(private $assessmentDTO)
+    {
+    }
 
     /**
      * Get the channels the event should broadcast on.
@@ -29,7 +31,7 @@ class NewAssessmentMarker implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel("youredu.assessment.{$this->assessmentDTO->assesment->id}");
+        return new Channel("youredu.assessment.{$this->assessmentDTO->assessment->id}");
     }
 
     public function broadcastAs()

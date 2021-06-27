@@ -16,22 +16,23 @@ class CommentService
 
     public function createComment(CommentDTO $commentDTO)
     {
+        ray($commentDTO)->green();
         $this->checkCommentData($commentDTO);
-        
+
         $commentDTO = $this->setCommentedby($commentDTO);
-        
+
         $this->checkAccountOwnership($commentDTO);
 
         $commentDTO = $this->setCommentable($commentDTO);
-        
+
         $comment = $this->makeComment($commentDTO);
-        
+
         $this->checkComment($comment);
 
         $commentDTO = $commentDTO->withComment($comment);
 
         $comment = $this->associateCommentToItem($commentDTO);
-        
+
         $comment = $this->addFiles($commentDTO);
 
         $commentDTO->method = __METHOD__;
@@ -41,14 +42,14 @@ class CommentService
 
         $commentDTO->methodType = 'created';
         $this->broadcastComment($commentDTO);
-        
+
         return $comment->refresh();
     }
 
     private function broadcastComment($commentDTO)
     {
         $event = $this->getEvent($commentDTO);
-        
+
         broadcast($event)->toOthers();
     }
 
@@ -94,7 +95,7 @@ class CommentService
         }
 
         return $commentDTO->withCommentedby(
-            $this->getModel($commentDTO->account,$commentDTO->accountId)
+            $this->getModel($commentDTO->account, $commentDTO->accountId)
         );
     }
 
@@ -109,13 +110,13 @@ class CommentService
         }
 
         return $commentDTO->withCommentable(
-            $this->getModel($commentDTO->item,$commentDTO->itemId)
+            $this->getModel($commentDTO->item, $commentDTO->itemId)
         );
     }
 
     private function checkCommentData($commentDTO)
     {
-        if(is_not_null($commentDTO->body) && count($commentDTO->files)) {
+        if (is_not_null($commentDTO->body) || count($commentDTO->files)) {
             return;
         }
 
@@ -136,7 +137,7 @@ class CommentService
             return;
         }
 
-        $admin = $this->getModel('admin',$commentDTO->adminId);
+        $admin = $this->getModel('admin', $commentDTO->adminId);
 
         (new ActivityTrackService)->trackActivity(
             ActivityTrackDTO::createFromData(
@@ -151,7 +152,7 @@ class CommentService
     private function checkAccountOwnership($commentDTO)
     {
         if (in_array($commentDTO->userId, $commentDTO->commentedby->getAuthorizedIds())) {
-            return;              
+            return;
         }
 
         $this->throwCommentException("unsuccessful. you are not authorised to perform this action using this account.");
@@ -162,16 +163,16 @@ class CommentService
         if (is_not_null($comment)) {
             return;
         }
-        
+
         $this->throwCommentException("failed to create or find the comment.");
     }
-    
+
     public function updateComment(CommentDTO $commentDTO)
     {
         $this->checkCommentData($commentDTO);
 
         $commentDTO = $this->setCommentedby($commentDTO);
-        
+
         $this->checkAccountOwnership($commentDTO);
 
         $comment = $this->editComment($commentDTO);
@@ -183,7 +184,7 @@ class CommentService
         $commentDTO = $this->setCommentable($commentDTO);
 
         $comment = $this->addFiles($commentDTO);
-        
+
         $commentDTO->method = __METHOD__;
         $this->trackSchoolAdmin($commentDTO);
 
@@ -195,7 +196,7 @@ class CommentService
         return $comment;
     }
 
-    private function getAccountCommentingMethod($commentDTO) : string
+    private function getAccountCommentingMethod($commentDTO): string
     {
         if ($commentDTO->commentedby->accountType === 'school') {
             return 'commentsMade';
@@ -210,24 +211,24 @@ class CommentService
 
         $comment = $commentDTO->commentedby
             ->$method()->where('id', $commentDTO->commentId)->first();
-        
+
         $comment->update([
             'body' => $commentDTO->body
         ]);
 
         return $comment;
     }
-    
+
     public function deleteComment(CommentDTO $commentDTO)
     {
-        $comment = $this->getModel('comment',$commentDTO->commentId);
-        
+        $comment = $this->getModel('comment', $commentDTO->commentId);
+
         $commentDTO = $commentDTO->withComment($comment);
 
         $commentDTO = $this->setAccountAndItemForBroadcast($commentDTO);
 
         $comment->delete();
-        
+
         $commentDTO->method = __METHOD__;
         $this->trackSchoolAdmin($commentDTO);
 
@@ -258,11 +259,11 @@ class CommentService
 
         return $commentDTO;
     }
-    
+
     public function getComments(CommentDTO $commentDTO)
     {
-        $commentable = $this->getModel($commentDTO->item,$commentDTO->itemId);
-        
+        $commentable = $this->getModel($commentDTO->item, $commentDTO->itemId);
+
         return $commentable->comments()->latest()->get();
     }
 
@@ -270,7 +271,7 @@ class CommentService
     {
         $commentDTO->comment->commentable()->associate($commentDTO->commentable);
         $commentDTO->comment->save();
-            
+
         return $commentDTO->comment;
     }
 
@@ -295,27 +296,19 @@ class CommentService
         } else if ($item === 'comment') {
             return $comment->commentable->commentedby;
         } else if ($item === 'request') {
-
         } else if ($item === 'admission') {
-
         } else if ($item === 'ban') {
-
         } else if ($item === 'flag') {
-
         } else if ($item === 'answer') {
-
         } else if ($item === 'keyword') {
-
         } else if ($item === 'word') {
-
         } else if ($item === 'expression') {
-            
         } else if ($item === 'character') {
-
         } else if ($item === 'school') {
-
-        } else if ($item === 'class' || $item === 'course' ||
-            $item === 'extracurriculum' || $item === 'lesson') {
+        } else if (
+            $item === 'class' || $item === 'course' ||
+            $item === 'extracurriculum' || $item === 'lesson'
+        ) {
             return $comment->commentable->ownedby;
         }
 

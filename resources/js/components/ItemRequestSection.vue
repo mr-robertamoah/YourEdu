@@ -72,12 +72,10 @@
                         <div class="loading" v-if="searchLoading">
                             <pulse-loader :loading="searchLoading" size="10px"></pulse-loader>
                         </div>
-                        <div class="show-more"
+                        <infinite-loader
                             v-if="!searchLoading && showMoreSearchParticipants"
-                            @click="search"
-                        >
-                            show more
-                        </div>
+                            @infinite="infiniteHandler"
+                        ></infinite-loader>
                     </div>
                 </div>
             </div>
@@ -86,8 +84,10 @@
 </template>
 
 <script>
+import InfiniteLoader from 'vue-infinite-loading';
 import SearchInput from './SearchInput';
 import GreyButton from './GreyButton';
+import PulseLoader from 'vue-spinner/src/PulseLoader';
 import ParticipantBadge from './discussion/ParticipantBadge';
 import { mapActions } from 'vuex';
     export default {
@@ -95,6 +95,8 @@ import { mapActions } from 'vuex';
             SearchInput,
             GreyButton,
             ParticipantBadge,
+            PulseLoader,
+            InfiniteLoader,
         },
         props: {
             show: {
@@ -106,6 +108,10 @@ import { mapActions } from 'vuex';
                 default: false
             },
             allowed: {
+                type: String,
+                default: ''
+            },
+            for: {
                 type: String,
                 default: ''
             },
@@ -164,34 +170,17 @@ import { mapActions } from 'vuex';
                     this.removeSearchParticipant(newValue.userId)
                 }
             },
-            searchParticipants(newValue){
-                if (newValue.length) {
-                    this.noSearchParticipants = false
-                } else {
-                    this.noSearchParticipants = true
-                    this.showMoreSearchParticipants = false
-                }
-            },
             searchNextPage(newValue){
-                if (newValue === 1 && ! this.searchParticipants.length) {
-                    this.noSearchParticipants = true
-                    return
-                }
-
-                if (newValue === 1) {
-                    this.noSearchParticipants = false
-                    return
-                }
-                
-                if (! newValue) {
+                this.setOtherSearchVariables()
+                if (newValue == null || newValue == 1) {
                     this.showMoreSearchParticipants = false
                     return
                 }
 
-                if (newValue > 1) {
-                    this.showMoreSearchParticipants = true
-                    return
-                }
+                this.showMoreSearchParticipants = true
+            },
+            searchParticipants(newValue){
+                this.setOtherSearchVariables()
             },
         },
         computed: {
@@ -203,12 +192,25 @@ import { mapActions } from 'vuex';
             ...mapActions([
                 'profile/discussionSearch', 'profile/itemSearch'
             ]),
+            clickedParticpantAction(data) {
+                this.$emit('clickedParticpantAction', data)
+            },
             clickedCloseRequest() {
+                this.clearData()
                 this.$emit('clickedCloseRequest')
+            },
+            clearData() {
+                this.searchType = 'profiles'
+                this.searchLoading = false
+                this.searchText = ''
+                this.searchParticipants = []
+                this.searchNextPage = 1
+                this.noSearchParticipants = true
+                this.showMoreSearchParticipants = false
             },
             searhInvitableParticipants: _.debounce(function() {
                 this.searchNextPage = 1
-                this.search()
+                this.startSearch()
             }, 400),
             setSearchTypeBasedOnAllowed() {
                 if (! this.hasAllowed) {
@@ -222,6 +224,22 @@ import { mapActions } from 'vuex';
                 }
                 
                 this.setSearchType(this.allowed.toLowerCase())
+            },
+            setOtherSearchVariables() {
+                if (this.searchNextPage > 1 && this.searchParticipants.length) {
+                    this.noSearchParticipants = false
+                    return
+                }
+
+                if (this.searchNextPage && ! this.searchParticipants.length) {
+                    this.noSearchParticipants = true
+                    return
+                }
+
+                if (! this.searchNextPage && this.searchParticipants.length) {
+                    this.noSearchParticipants = false
+                    return
+                }
             },
             clickedSearchType(data){
                 this.setSearchType(data)
@@ -263,6 +281,10 @@ import { mapActions } from 'vuex';
                         searchType: this.searchType,
                     },
                     data = {}
+                
+                if (this.for.length) {
+                    params[`${this.for}s`] = true
+                }
 
                 data.nextPage = this.searchNextPage
                 data.item = this.computedItem.item
@@ -278,10 +300,12 @@ import { mapActions } from 'vuex';
 
                 if (response.next) {
                     this.searchNextPage += 1
-                    return response.data
                 }
 
-                this.searchNextPage = null
+                if (! response.next) {
+                    this.searchNextPage = null
+                }
+
                 return response.data
             },
         },

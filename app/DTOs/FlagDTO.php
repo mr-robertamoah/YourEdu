@@ -2,15 +2,18 @@
 
 namespace App\DTOs;
 
+use App\Traits\DTOTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class FlagDTO
 {
+    use DTOTrait;
+
     public ?Model $flaggable = null;
     public ?Model $flaggedby = null;
     public ?Model $flag = null;
-    public ?string $userId = null;
+    public array $flaggedbys = [];
     public ?string $reason = null;
     public ?string $state = null;
     public ?string $item = null;

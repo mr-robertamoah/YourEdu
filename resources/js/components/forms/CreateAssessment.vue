@@ -126,6 +126,36 @@
                                 class="class-input"
                             ></main-checkbox>
 
+                            <div class="section" v-if="!main">Assessment Attachments</div>
+                            <div class="attachments-section" v-if="!main && data.attachments.length">
+                                <attachment-badge
+                                    v-for="(attachment,index) in data.attachments"
+                                    :key="index"
+                                    :hasClose="true"
+                                    :attachment="attachment.data"
+                                    :type="attachment.type"
+                                    @removeAttachment="clickedRemoveAttachment"
+                                ></attachment-badge>
+                            </div>
+                            <div class="msg" v-if="edit && data.removedAttachments.length">attachments to be removed</div>
+                            <div class="attachments-section bg-red-400" v-if="!main && edit && data.removedAttachments.length">
+                                <attachment-badge
+                                    v-for="(attachment,index) in data.removedAttachments"
+                                    :key="index"
+                                    :hasClose="true"
+                                    :attachment="attachment.data"
+                                    :type="attachment.type"
+                                    @removeAttachment="clickedUndoRemoveAttachment"
+                                ></attachment-badge>
+                            </div>
+                            <post-attachment
+                                :show="true"
+                                :hasSelect="true"
+                                :hasClose="false"
+                                v-if="!main"
+                                @clickedAttachmentSelection="attachmentSelected"
+                                class="post-attachment"
+                            ></post-attachment>
                             <div class="section" v-if="main">Assessment Attachments</div>
                             <div class="no-data" v-if="data.attachedItems.length">
                                 this assessment is attached to these
@@ -289,8 +319,13 @@ import {bus} from '../../app';
 import { strings } from '../../services/helpers';
 import CreateDiscussion from './CreateDiscussion';
 import ProfileBar from '../profile/ProfileBar';
+import PostAttachment from '../PostAttachment';
+import AttachmentBadge from '../AttachmentBadge';
+import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
     export default {
         components: {
+            PostAttachment,
+            AttachmentBadge,
             CreateDiscussion,
             GreyButton,
             SearchInput,
@@ -339,6 +374,7 @@ import ProfileBar from '../profile/ProfileBar';
                 }
             },
         },
+        mixins: [CreateItemAttachments],
         data() {
             return {
                 data: {
@@ -364,6 +400,9 @@ import ProfileBar from '../profile/ProfileBar';
                     unattachedItems: [],
                     paymentData: [],
                     removedPaymentData: [],
+                    mainAttachments: [],
+                    attachments: [],
+                    removedAttachments: [],
                 },
                 showProfiles: false,
                 title: 'create assessment',
@@ -567,6 +606,9 @@ import ProfileBar from '../profile/ProfileBar';
                 this.data.attachedItems = _.cloneDeep(data.items)
                 this.data.mainAttachedItems = _.cloneDeep(data.items)
 
+                this.data.attachments = _.cloneDeep(data.items)
+                this.data.mainAttachments = _.cloneDeep(data.items)
+
                 this.data.mainAssessmentSections = []
                 this.data.mainAssessmentSections = _.cloneDeep(
                     data.assessmentSections.map(assessmentSection=>{
@@ -761,8 +803,12 @@ import ProfileBar from '../profile/ProfileBar';
                 this.data.hasDuration = false
                 this.data.random = false
                 this.data.totalMark = ''
+                this.data.mainAttachedItems = []
                 this.data.attachedItems = []
                 this.data.unattachedItems = []
+                this.data.mainAttachments = []
+                this.data.attachments = []
+                this.data.removedAttachments = []
                 this.data.assessmentSections = []
                 this.data.removedAssessmentSections = []
                 this.data.mainAssessmentSections = []
@@ -1063,11 +1109,13 @@ import ProfileBar from '../profile/ProfileBar';
                 this.formData.append('publishedAt', this.data.publishedAt)
                 this.formData.append('totalMark', JSON.stringify(this.data.totalMark)) 
                 this.formData.append('duration', JSON.stringify(this.data.duration))
+                this.formData.append('attachments', JSON.stringify(this.getOnlyNewAttachments()))
                 this.formData.append('type', this.data.type)
                 let assessmentSections = _.cloneDeep(this.data.assessmentSections)
 
                 if (this.edit) {
                     this.formData.append('assessmentId', this.data.assessmentId)
+                    this.formData.append('removedAttachments', JSON.stringify(this.data.removedAttachments))
                     this.data.editedAssessmentSections = []
                     this.data.mainAssessmentSections.forEach(mainSection=>{
                         assessmentSections.forEach((section, sectionIndex)=>{

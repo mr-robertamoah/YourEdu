@@ -771,7 +771,7 @@ import { dates, strings } from '../services/helpers'
                     return
                 }
                 if (!this.getUser) {
-                    this.$emit('askLoginRegister','postShow')
+                    this.$emit('askLoginRegister','PostSingle')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
                     this.$emit('askCreateAccount')
                 } else {
@@ -846,7 +846,7 @@ import { dates, strings } from '../services/helpers'
             clickedOption(data){
                 this.showOptions = false
                 if (!this.getUser) {
-                    this.$emit('askLoginRegister','postShow')
+                    this.$emit('askLoginRegister','PostSingle')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
                     this.$emit('askCreateAccount')
                 } else if (data === 'save') {
@@ -883,7 +883,7 @@ import { dates, strings } from '../services/helpers'
                     return
                 }
                 if (!this.getUser) {
-                    this.$emit('askLoginRegister','postShow')
+                    this.$emit('askLoginRegister','PostSingle')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
                     this.$emit('askCreateAccount')
                 } else {
@@ -901,7 +901,7 @@ import { dates, strings } from '../services/helpers'
                 this.showProfilesText = 'flag as'
                 this.showProfilesAction = 'flag'
                 if (!this.getUser) {
-                    this.$emit('askLoginRegister','postShow')
+                    this.$emit('askLoginRegister','PostSingle')
                 } else if (!this.getProfiles || !this.getProfiles.length) {
                     this.$emit('askCreateAccount')
                 } else {

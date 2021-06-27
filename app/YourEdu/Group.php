@@ -31,11 +31,6 @@ class Group extends Model
        return $this->morphOne(ActivityTrack::class,'for');
     }
     
-    public function works()
-    {
-        return $this->morphMany(Work::class,'workable');
-    }
-    
     public function requestsRecieved()
     {
         return $this->morphMany(Request::class,'requestable');

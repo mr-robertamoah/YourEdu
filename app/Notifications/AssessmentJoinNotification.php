@@ -17,7 +17,9 @@ class AssessmentJoinNotification extends Notification
      *
      * @return void
      */
-    public function __construct(private $assessmentDTO){}
+    public function __construct(private $assessmentDTO)
+    {
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -39,9 +41,9 @@ class AssessmentJoinNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->line('The introduction to the notification.')
-                    ->action('Notification Action', url('/'))
-                    ->line('Thank you for using our application!');
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
     }
 
     /**
@@ -52,12 +54,12 @@ class AssessmentJoinNotification extends Notification
      */
     public function toArray($notifiable)
     {
-        $as = $this->assessmentDTO->InvitationDTO->type == 'marker' ?
+        $as = $this->assessmentDTO->invitationDTO->type == 'marker' ?
             " , as marker" : "";
 
         return [
             'message' => "joined assessment with name: {$this->assessmentDTO->assessment->name}{$as}",
-            'account' => new UserAccountResource($this->assessmentDTO->InvitationDTO->joiner)
+            'account' => new UserAccountResource($this->assessmentDTO->invitationDTO->joiner)
         ];
     }
 }

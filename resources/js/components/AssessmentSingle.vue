@@ -1,9 +1,25 @@
 <template>
     <div
         v-if="assessment"
-        class="assessment-single-wrapper min-w-1/2 max-w-lg h-90vh relative"
+        class="assessment-single-wrapper min-w-1/2 min-h-90vh relative"
     >
+        <template>
+            <auto-alert
+                class="absolute w-full text-center top-1/2"
+                :message="alertMessage"
+                :success="alertSuccess"
+                :danger="alertDanger"
+                :sticky="true"
+                @hideAlert="clearAlert"
+            ></auto-alert>
+            <pulse-loader 
+                class="absolute w-full text-center top-1/2"
+                :loading="loading" 
+                :size="'10px'"
+            ></pulse-loader>
+        </template>
         <item-view-cover
+            class="min-h-90vh"
             v-if="steps === 0"
             :data="computedCoverData"
             additionalText="still open"
@@ -25,7 +41,7 @@
                     buttonText="want to take"
                     class="p-1 ml-5"
                     @click="clickedButton('want to take')"
-                    v-if="computedCanParticipate"
+                    v-if="computedCanJoin"
                 ></special-button>
                 <special-button 
                     buttonText="join markers"
@@ -47,18 +63,22 @@
                 ></special-button>
             </template>
         </item-view-cover>
-        <div class="border-2 rounded-lg flex flex-col h-full"
-            v-if="steps"
+        <div 
+            :class="[showProfiles ? '' : 'border-2 rounded-lg flex flex-col h-full']"
+            v-if="steps || showProfiles"
         >
             <div  
-                class="p-3 flex flex-col h-full overflow-y-auto justify-around"
+                class="p-3 flex flex-col h-90vh overflow-x-hidden overflow-y-auto justify-around"
                 v-if="steps === 1"
             >
-                <div  class="flex items-center text-gray-500 text-sm w-full mb-10">
+                <div  class="flex items-center text-gray-500 text-sm w-full mb-5">
                     <div class="">
                         created by
                     </div>
-                    <profile-picture class="h-5 w-5 flex-shrink-0 my-1">
+                    <profile-picture 
+                        class="flex-shrink-0 my-1"
+                        classes="h-7 w-7"
+                    >
                         <template slot="image">
                             <img :src="assessment.addedby.url" >
                         </template>
@@ -68,14 +88,14 @@
                     </div>
                 </div>
                 <div class="w-full bg-gray-50 p-2 mb-10">
-                    <div class="w-3/4 text-lg font-black">
+                    <div class="mx-1 text-lg font-bold">
                         {{assessment.name}}
                     </div>
-                    <div class="text-sm text-gray-500">
+                    <div class="mx-3 text-sm text-gray-500">
                         {{assessment.description}}
                     </div>
                 </div>
-                <div class="w-full bg-gray-50 text-gray-500 p-2 text-sm mb-10">
+                <div class="w-full bg-gray-50 text-gray-500 p-2 text-sm mb-3">
                     <div v-if="assessment.duration">
                         {{`duration of ${assessment.duration} mins`}}
                     </div>
@@ -84,24 +104,22 @@
                         {{`due ${assessment.dueAt}`}}
                     </div>
                     <div>
-                        {{`${assessment.assessmentSections.length} number of assessment sections`}}
+                        {{`${assessment.assessmentSections.length} assessment sections`}}
                     </div>
                     <div>
-                        {{`${computedQuestionsNumber} total number of questions`}}
+                        {{`${computedQuestionsNumber} total questions`}}
                     </div>
                     <div v-if="assessment.worksCount">
                         {{`${assessment.worksCount} persons have taken the assessment`}}
                     </div>
                 </div>
-                <div class="p-2 flex w-full flex-nowrap mb-10 overflow-x-auto bg-gray-50 p-2">
+                <div class="relative px-1 py-5 h-content max-h-1/3 flex w-full flex-nowrap mb-2 overflow-x-auto bg-gray-50 p-2">
+                    <span class="absolute text-gray-500 text-sm top-0">assessment sections</span>
                     <assessment-section-mini-badge
                         class="min-w-full mx-1 flex-grow-0"
-                    ></assessment-section-mini-badge>
-                    <assessment-section-mini-badge
-                        class="min-w-full mx-1 flex-grow-0"
-                    ></assessment-section-mini-badge>
-                    <assessment-section-mini-badge
-                        class="min-w-full mx-1 flex-grow-0"
+                        v-for="(assessmentSection, index) in assessment.assessmentSections"
+                        :key="index"
+                        :assessmentSection="assessmentSection"
                     ></assessment-section-mini-badge>
                 </div>
                 <div class="flex justify-end">
@@ -112,37 +130,19 @@
                     ></special-button>
                 </div>
             </div>
-            <div v-if="steps === 2" class="h-full w-full flex flex-col">
+            <div v-if="steps === 2" class="h-90vh w-full flex flex-col">
                 <div class="flex text-gray-500 text-sm">
                     <div class="mr-1">Time remaining:</div>
                     <div>40 minutes</div>
                 </div>
-                <div class="shadow-sm border-b-2 w-full flex-shrink-0 bg-gray-50 h-10 flex justify-center items-center mt-1 mb-3 relative">
-                    <div class="absolute left-0 top-0 text-gray-400 text-xs">current section</div>
-                    <div class="text-lg font-header capitalize">name of section</div>
-                </div>
-                <div class="w-full px-5 mb-2 flex-shrink-0">
-                    <div class="overflow-ellipsis text-center text-gray-500 text-sm">instruction Aliquip occaecat non adipisicing laborum non nisi culpa officia sunt cillum consequat.</div>
-                    <div class="text-xs text-right text-gray-400">10 questions</div>
-                    <div class="text-gray-400 text-right text-xs">the questions where selected randomly</div>
-                </div>
-                <div class="h-full max-h-3/4 flex-shrink mb-2 overflow-y-auto p-2">
-                    <question-answering-badge></question-answering-badge>
-                    <question-answering-badge></question-answering-badge>
-                    <question-answering-badge></question-answering-badge>
-                    <question-answering-badge></question-answering-badge>
-                </div>
-                <div class="flex-shrink-0 flex justify-around">
-                    <button class="text-gray-500 p-2 border-b cursor-pointer hover:shadow-sm hover:bg-gray-50 rounded-sm"
-                        @click="clickedSectionNavigator('previous')"
-                    >previous</button>
-                    <button class="text-gray-500 p-2 border-b cursor-pointer hover:shadow-sm hover:bg-gray-50 rounded-sm"
-                        @click="clickedSectionNavigator('next')"
-                    >next</button>
-                </div>
+                <assessment-section-answering-form
+                    class="h-full"
+                    :assessment="assessment"
+                ></assessment-section-answering-form>
             </div>
             <reaction-component
-                class="flex-grow-0 flex-shrink-0"
+                v-if="steps < 2"
+                class="flex-grow-0 flex-shrink-0 px-2"
                 :comments="computedComments"
                 :item="computedItem"
                 :isOwner="computedIsOwner"
@@ -152,6 +152,8 @@
                 :flagData="flagData"
                 :likeData="likeData"
                 :showProfilesText="showProfilesText"
+                :classes="showOnlyProfiles ? 'absolute bottom-8' : ''"
+                :showOnlyProfiles="showOnlyProfiles"
                 :showProfiles="showProfiles"
                 :profiles="computedProfiles"
                 @hideAddComment="showAddComment = false"
@@ -174,9 +176,12 @@
             :show="showRequest"
             :computedItem="computedItem"
             :hasAllowed="false"
-            :loading="searchLoading"
+            :loading="loading"
+            :for="joinOrInvitationType"
+            :removedParticipant="removedParticipant"
             @doneRemovingParticipant="doneRemovingParticipant"
             @clickedCloseRequest="closeItemRequestSection"
+            @clickedParticpantAction="clickedParticpantAction"
         ></item-request-section>
 
         <!-- small modal for alerts -->
@@ -229,16 +234,18 @@ import ProfilePicture from './profile/ProfilePicture';
 import AssessmentSectionMiniBadge from './dashboard/AssessmentSectionMiniBadge'
 import QuestionAnsweringBadge from './dashboard/QuestionAnsweringBadge'
 import ItemRequestSection from './ItemRequestSection';
+import AssessmentSectionAnsweringForm from './forms/AssessmentSectionAnsweringForm';
 import PulseLoader from 'vue-spinner/src/PulseLoader';
 import FadeUp from './transitions/FadeUp'
 import Alert from '../mixins/Alert.mixin';
 import Like from '../mixins/Like.mixin';
 import Flag from '../mixins/Flag.mixin';
 import Save from '../mixins/Save.mixin';
-import RemoveParticipant from '../mixins/RemoveParticipant.mixin';
+import Profiles from '../mixins/Profiles.mixin';
+import Participation from '../mixins/Participation.mixin';
 import SmallModal from '../mixins/SmallModal.mixin'
 import Comments from '../mixins/Comments.mixin'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
     export default {
         components: {
             QuestionAnsweringBadge,
@@ -247,6 +254,7 @@ import { mapGetters } from 'vuex'
             SpecialButton,
             FadeUp,
             ProfilePicture,
+            AssessmentSectionAnsweringForm,
             ItemRequestSection,
             PulseLoader
         },
@@ -257,31 +265,65 @@ import { mapGetters } from 'vuex'
                     return null
                 }
             },
+            schoolAdmin: {
+                type: Object,
+                default(){
+                    return null
+                },
+            },
         },
-        mixins: [Alert, Like, Flag, Save, SmallModal, Comments, RemoveParticipant],
+        mixins: [
+            Alert, Like, Flag, Save, SmallModal, Comments, Participation,
+            Profiles
+        ],
         data() {
             return {
                 steps: 0,
                 assessmentFull: false,
-                showProfiles: false,
-                showProfilesText: '',
                 showRequest: false,
-                searchLoading: false,
-                requestFor: '',
+                loading: false,
             }
         },
         watch: {
-            showProfiles(newValue){
+            computedItemable(newValue){
                 if (newValue) {
-                    setTimeout(() => {
-                        this.showProfiles = false
-                    }, 4000);
+                    
+                    // this.setMyFlag()
+                }
+            },
+            "assessment.likes": {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        
+                        this.likeData.likes = newValue.length
+                    }
+                }
+            },
+            "assessment.saves": {
+                immediate: true,
+                handler(newValue) {
+                    if (newValue) {
+                        
+                        this.saveData.saves = newValue.length
+                    }
                 }
             },
         },
+        mounted () {
+            this.setMyFlag()
+            this.setMyLike()
+            this.setMySave()
+            this.listen()
+            this.listenForComments()
+            this.listenForLikes()
+            this.listenForFlags()
+            this.listenForSaves()
+            this.listenForParticipation()
+        },
         computed: {
             ...mapGetters([
-                'getUser', 'getProfiles'
+                'getUser'
             ]),
             computedCoverData() {
                 return {
@@ -307,10 +349,7 @@ import { mapGetters } from 'vuex'
                 return this.assessment
             },
             computedIsOwner() {
-                return this.getUser && this.assessment.addedby.userId === this.getUser.id
-            },
-            computedProfiles() {
-                return this.getProfiles
+                return this.assessment.addedby.userId === this.getUser?.id
             },
             computedRestricted() {
                 return !this.computedParticipant ? false : 
@@ -349,6 +388,10 @@ import { mapGetters } from 'vuex'
                     return []
                 }
                 
+                if (this.computedMarker) {
+                    return []
+                }
+                
                 let profiles = this.getProfiles.filter(profile=>{
                     return ['facilitator', 'professional'].includes(profile.account)
                 })
@@ -364,7 +407,7 @@ import { mapGetters } from 'vuex'
                 return []
             },
             computedMarker() {
-                if (! this.getProfiles) {
+                if (! this.getUser) {
                     return null
                 }
                 
@@ -378,7 +421,11 @@ import { mapGetters } from 'vuex'
                 return null
             },
             computedParticipant(){
-                if (!this.getUser) {
+                if (this.computedIsOwner) {
+                    this.assessment.addedby
+                }
+
+                if (! this.getUser) {
                     return null
                 }
 
@@ -389,32 +436,38 @@ import { mapGetters } from 'vuex'
                     return this.assessment.participants[index]
                 }
 
-                if (this.computedIsOwner) {
-                    this.assessment.addedby
-                }
-
                 return null
-            },
-            computedPendingParticipant(){
-                return this.getUser && 
-                    this.assessment.pendingJoinParticipants.findIndex(pending=>{
-                        return pending.userId === this.getUser.id
-                    }) > -1
             },
             computedUserParticipant(){
                 return this.computedIsOwner || (this.computedParticipant && 
                     this.computedParticipant.id) ? true : false
             },
-            computedJoin(){
+            computedCanJoin(){
                 return !this.computedPendingParticipant && 
-                    !this.computedUserParticipant && this.computedCanJoin && 
+                    !this.computedUserParticipant && 
                     this.assessment.type === 'PUBLIC'
             },
         },
         methods: {
+            ...mapActions([
+                'home/removeAssessment','home/replaceAssessment',
+                'profile/removeAssessment','profile/replaceAssessment',
+                'dashboard/removeAssessment','dashboard/replaceAssessment',
+                'dashboard/deleteAssessment', 'dashboard/updateAssessment'
+            ]),
+            listen() {
+                
+                Echo.channel(`youredu.assessment.${this.assessment.id}`)
+                    .listen('.updateAssessment', data=>{
+                        this[`${this.$route.name}/replaceAssessment`](data.assessment)
+                    })
+                    .listen('.deleteAssessment', data=>{
+                        this[`${this.$route.name}/removeAssessment`](data)
+                    })
+            },
             closeItemRequestSection() {
                 this.showRequest = false
-                this.steps -= 1
+                this.joinOrInvitationType = ''
             },
             clickedButton(text) {
                 if (text === 'take it') {
@@ -433,23 +486,23 @@ import { mapGetters } from 'vuex'
                 }
 
                 if (text === 'invite marker') {
-                    this.steps += 1
                     this.requestMarker()
                     return
                 }
 
                 if (text === 'invite participant') {
-                    this.steps += 1
                     this.requestParticipant()
                     return
                 }
 
                 if (text === 'join markers') {
                     this.showProfilesText = 'mark assessment as'
+                    this.showOnlyProfiles = true
                 }
 
                 if (text === 'want to take') {
                     this.showProfilesText = 'take assessment as'
+                    this.showOnlyProfiles = true
                 }
 
                 this.showProfilesAction = text
@@ -463,12 +516,9 @@ import { mapGetters } from 'vuex'
             },
             displayRequestSection(type) {
                 this.showRequest = true
-                this.requestFor = type
+                this.joinOrInvitationType = type
             },
             startMarkingAssessment() {
-
-            },
-            clickedSectionNavigator(text) {
 
             },
             takeAssessment() {
@@ -514,43 +564,16 @@ import { mapGetters } from 'vuex'
                 
                 this.showAddComment = true
             },
-            async join(account) {
-                let response,
-                    data = {
-                        account: account.account,
-                        accountId: account.accountId,
-                    }
-                data[`${this.computedItem.item}Id`] = this.computedItem.itemId
-
-                this.loading = true
-
-                response = await this['profile/joinItem']({
-                    computedItem: this.computedItem, 
-                    item: this.computedItemable,
-                    data
-                })
-
-                this.loading = false
-                
-                if (! response.status) {
-                    this.responseErrorAlert(response, "oops 😕! something happened. please try again later")
-                    return
-                }
-
-                this.alertSuccess = true
-
-                if (this.computedItemable.type === 'PRIVATE') {
-                    this.alertMessage = "you have successfully requested to participate. have fun as you wait for owners response 😏."
-                    return
-                }
-
-                this.alertMessage = `you have been successfully added. you can now participate 😎.`
-
-            },
             clickedProfile(data){
                 this.showProfiles = false
                 
                 if (this.showProfilesAction === 'want to take') {
+                    this.join(data)
+                    return
+                }
+                
+                if (this.showProfilesAction === 'join markers') {
+                    this.joinOrInvitationType = 'marker'
                     this.join(data)
                     return
                 }

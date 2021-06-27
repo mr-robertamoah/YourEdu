@@ -11,6 +11,8 @@ use App\Events\RemoveAssessmentParticipant;
 use App\Events\RemoveAssessmentPendingParticipant;
 use App\Events\UpdateAssessmentEvent;
 use App\Events\UpdateAssessmentParticipant;
+use App\Notifications\AssessmentAnsweredNotification;
+use App\Notifications\AssessmentAnswerMarkedNotification;
 use App\Notifications\AssessmentInvitationNotification;
 use App\Notifications\AssessmentInvitationResponseNotification;
 use App\Notifications\AssessmentJoinNotification;
@@ -22,11 +24,13 @@ use App\Notifications\RemoveAssessmentParticipantNotification;
 use App\Notifications\UpdateAssessmentParticipantNotification;
 use App\User;
 use App\YourEdu\Admin;
+use App\YourEdu\Answer;
 use App\YourEdu\Assessment;
 use App\YourEdu\AssessmentSection;
 use App\YourEdu\Course;
 use App\YourEdu\Discussion;
 use App\YourEdu\Facilitator;
+use App\YourEdu\Image;
 use App\YourEdu\Learner;
 use App\YourEdu\Lesson;
 use App\YourEdu\Lessonable;
@@ -38,12 +42,15 @@ use App\YourEdu\Professional;
 use App\YourEdu\Question;
 use App\YourEdu\Request;
 use App\YourEdu\School;
+use App\YourEdu\Work;
+use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AssessmentTest extends TestCase
@@ -52,7 +59,7 @@ class AssessmentTest extends TestCase
 
     private $user;
 
-    public function setUp():void
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -63,7 +70,7 @@ class AssessmentTest extends TestCase
         DB::table('assessments')->delete();
         DB::table('assessment_sections')->delete();
         DB::table('questions')->truncate();
-        DB::table('possible_answers')->delete();
+        DB::table('possible_answers')->truncate();
         DB::table('learners')->delete();
         DB::table('facilitators')->delete();
         DB::table('parent_models')->delete();
@@ -73,13 +80,13 @@ class AssessmentTest extends TestCase
         DB::table('participants')->delete();
         DB::table('messages')->delete();
         DB::table('requests')->delete();
+        DB::table('images')->delete();
+        DB::table('answers')->delete();
     }
-    
+
     public function test_validation_of_required_data_for_creating_assessment()
     {
-        $data = [
-
-        ];
+        $data = [];
 
         $response = $this->postJson("/api/assessment", $data);
 
@@ -89,7 +96,7 @@ class AssessmentTest extends TestCase
                 'name', 'assessmentSections', 'account', 'accountId'
             ]);
     }
-    
+
     public function test_can_create_assessment()
     {
         Notification::fake();
@@ -100,7 +107,7 @@ class AssessmentTest extends TestCase
             ->for($this->user)
             ->create();
         $number = 0;
-        
+
         $data = [
             'name' => $this->faker->word,
             'account' => $account->accountType,
@@ -115,11 +122,11 @@ class AssessmentTest extends TestCase
                     'questions' => [
                         (object) [
                             'body' => $this->faker->sentence,
-                            'scoreOver' => $this->faker->numberBetween(5,100),
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
                         ],
                         (object) [
                             'body' => $this->faker->sentence,
-                            'scoreOver' => $this->faker->numberBetween(5,100),
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
                         ]
                     ]
                 ],
@@ -140,7 +147,7 @@ class AssessmentTest extends TestCase
                                     'position' => 2,
                                 ]
                             ],
-                            'scoreOver' => $this->faker->numberBetween(5,100),
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
                         ],
                         (object) [
                             'body' => $this->faker->sentence,
@@ -154,7 +161,7 @@ class AssessmentTest extends TestCase
                                     'position' => 2,
                                 ]
                             ],
-                            'scoreOver' => $this->faker->numberBetween(5,100),
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
                         ]
                     ]
                 ],
@@ -179,18 +186,262 @@ class AssessmentTest extends TestCase
                 ['message' => 'successful']
             );
 
-        $this->assertDatabaseCount('assessments',1);
-        $this->assertEquals(1,$response['assessment']['discussions']);
-        $this->assertDatabaseCount('assessment_sections',2);
-        $this->assertDatabaseCount('questions',4);
-        $this->assertDatabaseCount('possible_answers',4);
+        $this->assertDatabaseCount('assessments', 1);
+        $this->assertEquals(1, $response['assessment']['discussions']);
+        $this->assertDatabaseCount('assessment_sections', 2);
+        $this->assertDatabaseCount('questions', 4);
+        $this->assertDatabaseCount('possible_answers', 4);
     }
-    
+
+    public function test_cannot_create_assessment_with_inappropriate_combination_of_random_and_max_questions_data()
+    {
+        $account = Professional::factory()
+            ->state(['name' => $this->faker->name])
+            ->for($this->user)
+            ->create();
+        $number = 0;
+
+        $data = [
+            'name' => $this->faker->word,
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+            'assessmentSections' => json_encode([
+                (object) [
+                    'name' => $this->faker->word,
+                    'random' => true,
+                    'maxQuestions' => null,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'questions' => [
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ],
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ]
+                    ]
+                ],
+                (object) [
+                    'name' => $this->faker->word,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'questions' => [
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'possibleAnswers' => [
+                                (object) [
+                                    'option' => true,
+                                    'position' => 1,
+                                ],
+                                (object) [
+                                    'option' => false,
+                                    'position' => 2,
+                                ]
+                            ],
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ],
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'possibleAnswers' => [
+                                (object) [
+                                    'option' => true,
+                                    'position' => 1,
+                                ],
+                                (object) [
+                                    'option' => false,
+                                    'position' => 2,
+                                ]
+                            ],
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ]
+                    ]
+                ],
+            ]),
+            'discussionData' => json_encode(
+                (object) [
+                    'title' => $this->faker->sentence,
+                    'preamble' => $this->faker->sentence,
+                ]
+            ),
+            'discussionFiles' => [
+                UploadedFile::fake()->image('new_image.png')
+            ],
+        ];
+
+        $response = $this->postJson("/api/assessment", $data);
+
+        $response
+            ->dump()
+            ->assertStatus(422)
+            ->assertJson([
+                'message' => "sorry 😞, please fill the max questions field, with a number greater than 0, since it is required for a randomized assessment section.",
+            ]);
+
+        $this->assertDatabaseCount('assessments', 0);
+        $this->assertDatabaseCount('assessment_sections', 0);
+        $this->assertDatabaseCount('questions', 0);
+        $this->assertDatabaseCount('possible_answers', 0);
+    }
+
+    public function test_cannot_create_assessment_with_randomized_section_questions_less_than_max_questions()
+    {
+        $account = Professional::factory()
+            ->state(['name' => $this->faker->name])
+            ->for($this->user)
+            ->create();
+        $number = 0;
+
+        $data = [
+            'name' => $this->faker->word,
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+            'assessmentSections' => json_encode([
+                (object) [
+                    'name' => $this->faker->word,
+                    'random' => true,
+                    'maxQuestions' => 3,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'questions' => [
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ],
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ]
+                    ]
+                ],
+                (object) [
+                    'name' => $this->faker->word,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'questions' => [
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'possibleAnswers' => [
+                                (object) [
+                                    'option' => true,
+                                    'position' => 1,
+                                ],
+                                (object) [
+                                    'option' => false,
+                                    'position' => 2,
+                                ]
+                            ],
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ],
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'possibleAnswers' => [
+                                (object) [
+                                    'option' => true,
+                                    'position' => 1,
+                                ],
+                                (object) [
+                                    'option' => false,
+                                    'position' => 2,
+                                ]
+                            ],
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ]
+                    ]
+                ],
+            ]),
+            'discussionData' => json_encode(
+                (object) [
+                    'title' => $this->faker->sentence,
+                    'preamble' => $this->faker->sentence,
+                ]
+            ),
+            'discussionFiles' => [
+                UploadedFile::fake()->image('new_image.png')
+            ],
+        ];
+
+        $response = $this->postJson("/api/assessment", $data);
+
+        $response
+            ->dump()
+            ->assertStatus(422)
+            ->assertJson([
+                'message' => "sorry 😞, to create an assessment section, ensure it has at least the max number of questions"
+            ]);
+
+        $this->assertDatabaseCount('assessments', 0);
+        $this->assertDatabaseCount('assessment_sections', 0);
+        $this->assertDatabaseCount('questions', 0);
+        $this->assertDatabaseCount('possible_answers', 0);
+    }
+
+    public function test_cannot_create_assessment_with_non_randomized_section_questions_less_than_one()
+    {
+        $account = Professional::factory()
+            ->state(['name' => $this->faker->name])
+            ->for($this->user)
+            ->create();
+        $number = 0;
+
+        $data = [
+            'name' => $this->faker->word,
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+            'assessmentSections' => json_encode([
+                (object) [
+                    'name' => $this->faker->word,
+                    'random' => false,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'questions' => [
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ],
+                        (object) [
+                            'body' => $this->faker->sentence,
+                            'scoreOver' => $this->faker->numberBetween(5, 100),
+                        ]
+                    ]
+                ],
+                (object) [
+                    'name' => $this->faker->word,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'questions' => []
+                ],
+            ]),
+            'discussionData' => json_encode(
+                (object) [
+                    'title' => $this->faker->sentence,
+                    'preamble' => $this->faker->sentence,
+                ]
+            ),
+            'discussionFiles' => [
+                UploadedFile::fake()->image('new_image.png')
+            ],
+        ];
+
+        $response = $this->postJson("/api/assessment", $data);
+
+        $response
+            ->dump()
+            ->assertStatus(422)
+            ->assertJson([
+                'message' => "sorry 😞, to create an assessment section, ensure it has at least one question",
+            ]);
+
+        $this->assertDatabaseCount('assessments', 0);
+        $this->assertDatabaseCount('assessment_sections', 0);
+        $this->assertDatabaseCount('questions', 0);
+        $this->assertDatabaseCount('possible_answers', 0);
+    }
+
     public function test_validation_of_required_data_for_updating_assessment()
     {
-        $data = [
-
-        ];
+        $data = [];
 
         $response = $this->putJson("/api/assessment/1", $data);
 
@@ -203,7 +454,7 @@ class AssessmentTest extends TestCase
                 'assessmentSections',
             ]);
     }
-    
+
     public function test_can_update_assessment_with_notification()
     {
         Event::fake();
@@ -213,14 +464,15 @@ class AssessmentTest extends TestCase
             ->state(['company_name' => $this->faker->company])
             ->for($this->user, 'owner')
             ->create();
-        
+
         $assessment = Assessment::factory()
             ->for($account, 'addedby')
-            ->has(AssessmentSection::factory()
-                ->count(2)
-                ->has(Question::factory()
-                    ->for($account, 'addedby')
-                    ->count(3))
+            ->has(
+                AssessmentSection::factory()
+                    ->count(2)
+                    ->has(Question::factory()
+                        ->for($account, 'addedby')
+                        ->count(3))
             )
             ->create();
 
@@ -232,7 +484,7 @@ class AssessmentTest extends TestCase
             ->create();
 
         $questions = Question::factory()->count(2)->create();
-        
+
         $assessmentSections->first()->questions()->saveMany($questions);
 
         $assessment->assessmentSections()
@@ -250,7 +502,7 @@ class AssessmentTest extends TestCase
         $assessment->save();
 
         $number = 0;
-        
+
         $data = [
             'name' => 'edited',
             'account' => $account->accountType,
@@ -305,25 +557,348 @@ class AssessmentTest extends TestCase
                 ['message' => 'successful']
             );
 
-        $this->assertDatabaseCount('assessments',1);
-        $this->assertDatabaseCount('assessment_sections',4);
-        $this->assertSoftDeleted('assessment_sections',[
+        $this->assertDatabaseCount('assessments', 1);
+        $this->assertDatabaseCount('assessment_sections', 4);
+        $this->assertSoftDeleted('assessment_sections', [
             'id' => $assessmentSections->last()->id
         ]);
-        $this->assertSoftDeleted('questions',[
+        $this->assertSoftDeleted('questions', [
             'id' => $questions->last()->id
         ]);
-        $this->assertDatabaseCount('questions',14);
+        $this->assertDatabaseCount('questions', 14);
 
         Notification::assertTimesSent(1, AssessmentNotification::class);
         Event::assertDispatched(UpdateAssessmentEvent::class);
     }
-    
+
+    public function test_can_update_assessment_with_inappropriate_combination_of_random_and_max_questions_data()
+    {
+        Event::fake();
+        Notification::fake();
+
+        $account = School::factory()
+            ->state(['company_name' => $this->faker->company])
+            ->for($this->user, 'owner')
+            ->create();
+
+        $assessment = Assessment::factory()
+            ->for($account, 'addedby')
+            ->has(
+                AssessmentSection::factory()
+                    ->count(2)
+                    ->has(Question::factory()
+                        ->for($account, 'addedby')
+                        ->count(3))
+            )
+            ->create();
+
+        $assessmentSections = AssessmentSection::factory()
+            ->count(2)
+            ->has(Question::factory()
+                ->for($account, 'addedby')->count(3))
+            ->for($assessment)
+            ->create();
+
+        $questions = Question::factory()->count(2)->create();
+
+        $assessmentSections->first()->questions()->saveMany($questions);
+
+        $assessment->assessmentSections()
+            ->saveMany($assessmentSections);
+
+        $courses = Course::factory()->count(2)->create();
+        $professional = Professional::factory()
+            ->state(['name' => $this->faker->name])
+            ->for(User::factory()->create())
+            ->create();
+        $professional->addedCourses()->saveMany($courses);
+        $account->ownedCourses()->saveMany($courses);
+
+        $assessment->courses()->attach($courses->first());
+        $assessment->save();
+
+        $number = 0;
+
+        $data = [
+            'name' => 'edited',
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+            'editedAssessmentSections' => json_encode([
+                (object) [
+                    'assessmentSectionId' => $assessmentSections->first()->id,
+                    'name' => 'edited assessment section',
+                    'random' => true,
+                    'maxQuestions' => null,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'editedQuestions' => [
+                        (object) [
+                            'body' => "how are you?",
+                            'scoreOver' => 10,
+                            'questionId' => $questions->first()->id
+                        ],
+                    ],
+                    'removedQuestions' => [
+                        (object) [
+                            'questionId' => $questions->last()->id
+                        ],
+                    ]
+                ],
+            ]),
+            'removedAssessmentSections' => json_encode([
+                (object) [
+                    'assessmentSectionId' => $assessmentSections->last()->id,
+                ]
+            ]),
+            'unattachedItems' => json_encode([
+                (object) [
+                    'item' => 'course',
+                    'itemId' => $courses->first()->id,
+                ]
+            ]),
+            'attachedItems' => json_encode([
+                (object) [
+                    'item' => 'course',
+                    'itemId' => $courses->last()->id,
+                ]
+            ])
+        ];
+
+        $response = $this->putJson("/api/assessment/{$assessment->id}", $data);
+
+        $response
+            ->dump()
+            ->assertStatus(422)
+            ->assertJson(
+                ['message' => "sorry 😞, please fill the max questions field, with a number greater than 0, since it is required for a randomized assessment section.",]
+            );
+
+        $this->assertDatabaseCount('assessments', 1);
+        $this->assertDatabaseCount('assessment_sections', 4);
+        $this->assertNull($assessmentSections->last()->deleted_at);
+        $this->assertNull($questions->last()->deleted_at);
+        $this->assertDatabaseCount('questions', 14);
+
+        Notification::assertTimesSent(0, AssessmentNotification::class);
+        Event::assertNotDispatched(UpdateAssessmentEvent::class);
+    }
+
+    public function test_can_update_assessment_with_randomized_section_questions_less_than_max_questions()
+    {
+        Event::fake();
+        Notification::fake();
+
+        $account = School::factory()
+            ->state(['company_name' => $this->faker->company])
+            ->for($this->user, 'owner')
+            ->create();
+
+        $assessment = Assessment::factory()
+            ->for($account, 'addedby')
+            ->has(
+                AssessmentSection::factory()
+                    ->count(2)
+                    ->has(Question::factory()
+                        ->for($account, 'addedby')
+                        ->count(3))
+            )
+            ->create();
+
+        $assessmentSections = AssessmentSection::factory()
+            ->count(2)
+            ->has(Question::factory()
+                ->for($account, 'addedby')->count(3))
+            ->for($assessment)
+            ->create();
+
+        $questions = Question::factory()->count(2)->create();
+
+        $assessmentSections->first()->questions()->saveMany($questions);
+
+        $assessment->assessmentSections()
+            ->saveMany($assessmentSections);
+
+        $courses = Course::factory()->count(2)->create();
+        $professional = Professional::factory()
+            ->state(['name' => $this->faker->name])
+            ->for(User::factory()->create())
+            ->create();
+        $professional->addedCourses()->saveMany($courses);
+        $account->ownedCourses()->saveMany($courses);
+
+        $assessment->courses()->attach($courses->first());
+        $assessment->save();
+
+        $number = 0;
+
+        $data = [
+            'name' => 'edited',
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+            'editedAssessmentSections' => json_encode([
+                (object) [
+                    'assessmentSectionId' => $assessmentSections->first()->id,
+                    'name' => 'edited assessment section',
+                    'random' => true,
+                    'maxQuestions' => 6,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'editedQuestions' => [
+                        (object) [
+                            'body' => "how are you?",
+                            'scoreOver' => 10,
+                            'questionId' => $questions->first()->id
+                        ],
+                    ],
+                    'removedQuestions' => [
+                        (object) [
+                            'questionId' => $questions->last()->id
+                        ],
+                    ]
+                ],
+            ]),
+            'removedAssessmentSections' => json_encode([
+                (object) [
+                    'assessmentSectionId' => $assessmentSections->last()->id,
+                ]
+            ]),
+            'unattachedItems' => json_encode([
+                (object) [
+                    'item' => 'course',
+                    'itemId' => $courses->first()->id,
+                ]
+            ]),
+            'attachedItems' => json_encode([
+                (object) [
+                    'item' => 'course',
+                    'itemId' => $courses->last()->id,
+                ]
+            ])
+        ];
+
+        $response = $this->putJson("/api/assessment/{$assessment->id}", $data);
+
+        $response
+            ->dump()
+            ->assertStatus(422)
+            ->assertJson(
+                ['message' => "sorry 😞, to update an assessment section, ensure it has at least the max number of questions",]
+            );
+
+        $this->assertDatabaseCount('assessments', 1);
+        $this->assertDatabaseCount('assessment_sections', 4);
+        $this->assertNull($assessmentSections->last()->deleted_at);
+        $this->assertNull($questions->last()->deleted_at);
+        $this->assertDatabaseCount('questions', 14);
+
+        Notification::assertTimesSent(0, AssessmentNotification::class);
+        Event::assertNotDispatched(UpdateAssessmentEvent::class);
+    }
+
+    public function test_can_update_assessment_with_non_randomized_section_questions_less_than_one()
+    {
+        Event::fake();
+        Notification::fake();
+
+        $account = School::factory()
+            ->state(['company_name' => $this->faker->company])
+            ->for($this->user, 'owner')
+            ->create();
+
+        $assessment = Assessment::factory()
+            ->for($account, 'addedby')
+            ->has(
+                AssessmentSection::factory()
+                    ->count(2)
+            )
+            ->create();
+
+        $assessmentSections = AssessmentSection::factory()
+            ->count(2)
+            ->for($assessment)
+            ->create();
+
+        $questions = Question::factory()->count(2)->create();
+
+        $assessmentSections->first()->questions()->saveMany($questions);
+
+        $assessment->assessmentSections()
+            ->saveMany($assessmentSections);
+
+        $courses = Course::factory()->count(2)->create();
+        $professional = Professional::factory()
+            ->state(['name' => $this->faker->name])
+            ->for(User::factory()->create())
+            ->create();
+        $professional->addedCourses()->saveMany($courses);
+        $account->ownedCourses()->saveMany($courses);
+
+        $assessment->courses()->attach($courses->first());
+        $assessment->save();
+
+        $number = 0;
+
+        $data = [
+            'name' => 'edited',
+            'account' => $account->accountType,
+            'accountId' => $account->id,
+            'editedAssessmentSections' => json_encode([
+                (object) [
+                    'assessmentSectionId' => $assessmentSections->first()->id,
+                    'name' => 'edited assessment section',
+                    'random' => false,
+                    'instruction' => $this->faker->word,
+                    'position' => $number++,
+                    'removedQuestions' => [
+                        (object) [
+                            'questionId' => $questions->first()->id
+                        ],
+                        (object) [
+                            'questionId' => $questions->last()->id
+                        ],
+                    ]
+                ],
+            ]),
+            'removedAssessmentSections' => json_encode([
+                (object) [
+                    'assessmentSectionId' => $assessmentSections->last()->id,
+                ],
+            ]),
+            'unattachedItems' => json_encode([
+                (object) [
+                    'item' => 'course',
+                    'itemId' => $courses->first()->id,
+                ]
+            ]),
+            'attachedItems' => json_encode([
+                (object) [
+                    'item' => 'course',
+                    'itemId' => $courses->last()->id,
+                ]
+            ])
+        ];
+
+        $response = $this->putJson("/api/assessment/{$assessment->id}", $data);
+
+        $response
+            ->dump()
+            ->assertStatus(422)
+            ->assertJson(
+                ['message' => "sorry 😞, to update an assessment section, ensure it has at least one question"]
+            );
+
+        $this->assertDatabaseCount('assessments', 1);
+        $this->assertDatabaseCount('assessment_sections', 4);
+        $this->assertNull($assessmentSections->last()->deleted_at);
+        $this->assertNull($questions->last()->deleted_at);
+
+        Notification::assertTimesSent(0, AssessmentNotification::class);
+        Event::assertNotDispatched(UpdateAssessmentEvent::class);
+    }
+
     public function test_validation_of_required_data_for_deleting_assessment()
     {
-        $data = [
-
-        ];
+        $data = [];
 
         $response = $this->deleteJson("/api/assessment/1", $data);
 
@@ -336,7 +911,7 @@ class AssessmentTest extends TestCase
                 'assessmentSections', 'name'
             ]);
     }
-    
+
     public function test_can_delete_assessment_by_changing_state_by_usedByAnother()
     {
         Notification::fake();
@@ -346,14 +921,15 @@ class AssessmentTest extends TestCase
             ->state(['company_name' => $this->faker->company])
             ->for($this->user, 'owner')
             ->create();
-        
+
         $assessment = Assessment::factory()
             ->for($account, 'addedby')
-            ->has(AssessmentSection::factory()
-                ->count(2)
-                ->has(Question::factory()
-                    ->for($account, 'addedby')
-                    ->count(3))
+            ->has(
+                AssessmentSection::factory()
+                    ->count(2)
+                    ->has(Question::factory()
+                        ->for($account, 'addedby')
+                        ->count(3))
             )
             ->create();
 
@@ -367,7 +943,7 @@ class AssessmentTest extends TestCase
 
         $assessment->courses()->attach($courses->first());
         $assessment->save();
-        
+
         $data = [
             'account' => $account->accountType,
             'accountId' => $account->id,
@@ -384,7 +960,7 @@ class AssessmentTest extends TestCase
 
         Event::assertDispatched(UpdateAssessmentEvent::class);
     }
-    
+
     public function test_can_delete_assessment_by_changing_state_by_paymentMadeFor()
     {
         Notification::fake();
@@ -394,14 +970,15 @@ class AssessmentTest extends TestCase
             ->state(['company_name' => $this->faker->company])
             ->for($this->user, 'owner')
             ->create();
-        
+
         $assessment = Assessment::factory()
             ->for($account, 'addedby')
-            ->has(AssessmentSection::factory()
-                ->count(2)
-                ->has(Question::factory()
-                    ->for($account, 'addedby')
-                    ->count(3))
+            ->has(
+                AssessmentSection::factory()
+                    ->count(2)
+                    ->has(Question::factory()
+                        ->for($account, 'addedby')
+                        ->count(3))
             )
             ->create();
 
@@ -409,7 +986,7 @@ class AssessmentTest extends TestCase
 
         $assessment->payments()->saveMany($payments);
         $assessment->save();
-        
+
         $data = [
             'account' => $account->accountType,
             'accountId' => $account->id,
@@ -426,7 +1003,7 @@ class AssessmentTest extends TestCase
 
         Event::assertDispatched(UpdateAssessmentEvent::class);
     }
-    
+
     public function test_can_delete_assessment()
     {
         Notification::fake();
@@ -436,17 +1013,18 @@ class AssessmentTest extends TestCase
             ->state(['company_name' => $this->faker->company])
             ->for($this->user, 'owner')
             ->create();
-        
+
         $assessment = Assessment::factory()
             ->for($account, 'addedby')
-            ->has(AssessmentSection::factory()
-                ->count(2)
-                ->has(Question::factory()
-                    ->for($account, 'addedby')
-                    ->count(3))
+            ->has(
+                AssessmentSection::factory()
+                    ->count(2)
+                    ->has(Question::factory()
+                        ->for($account, 'addedby')
+                        ->count(3))
             )
             ->create();
-        
+
         $discussion = Discussion::factory()
             ->state([
                 'raisedby_type' => $account::class,
@@ -470,14 +1048,14 @@ class AssessmentTest extends TestCase
             );
 
         $this->assertEquals(null, Discussion::find($discussion->id));
-        $this->assertSoftDeleted('assessments',[
+        $this->assertSoftDeleted('assessments', [
             'id' => $assessment->id
         ]);
     }
 
     // public function test_validate_can_take_assessment()
     // {
-        
+
     // }
 
     public function test_can_take_assessment_through_course()
@@ -488,14 +1066,14 @@ class AssessmentTest extends TestCase
             ])
             ->for(User::factory())
             ->create();
-        
+
         $learner = Learner::factory()
             ->state([
                 'name' => $this->faker->name,
                 'user_id' => $this->user->id,
             ])
             ->create();
-            
+
         //facilitator create course
         $course = Course::factory()->create();
         $account->ownedCourses()->save($course);
@@ -548,7 +1126,7 @@ class AssessmentTest extends TestCase
 
         $facilitators = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function ($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -602,7 +1180,7 @@ class AssessmentTest extends TestCase
         $this->assertEquals('ACTIVE', $participant->refresh()->state);
         Event::assertDispatched(NewAssessmentParticipant::class);
         Notification::assertSentTo(
-            $facilitators->first()->user, 
+            $facilitators->first()->user,
             AssessmentInvitationResponseNotification::class
         );
     }
@@ -622,7 +1200,7 @@ class AssessmentTest extends TestCase
 
         $facilitators = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function ($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -665,7 +1243,7 @@ class AssessmentTest extends TestCase
         $this->assertEquals('ACCEPTED', Request::find($request->id)->state);
         Event::assertDispatched(NewAssessmentMarker::class);
         Notification::assertSentTo(
-            $facilitators->first()->user, 
+            $facilitators->first()->user,
             AssessmentInvitationResponseNotification::class
         );
     }
@@ -675,7 +1253,7 @@ class AssessmentTest extends TestCase
         Event::fake();
         Notification::fake();
 
-        $facilitator = Facilitator::factory() 
+        $facilitator = Facilitator::factory()
             ->state([
                 'user_id' => $this->user->id
             ])
@@ -685,7 +1263,7 @@ class AssessmentTest extends TestCase
 
         $facilitators = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function ($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -739,7 +1317,7 @@ class AssessmentTest extends TestCase
         $this->assertEquals('DECLINED', Request::find($request->id)->state);
         Event::assertNotDispatched(NewAssessmentParticipant::class);
         Notification::assertSentTo(
-            $facilitators->first()->user, 
+            $facilitators->first()->user,
             AssessmentInvitationResponseNotification::class
         );
     }
@@ -749,7 +1327,7 @@ class AssessmentTest extends TestCase
         Event::fake();
         Notification::fake();
 
-        $facilitator = Facilitator::factory() 
+        $facilitator = Facilitator::factory()
             ->state([
                 'user_id' => $this->user->id
             ])
@@ -759,7 +1337,7 @@ class AssessmentTest extends TestCase
 
         $facilitators = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function ($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -825,7 +1403,7 @@ class AssessmentTest extends TestCase
 
         $facilitators = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function ($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -884,7 +1462,7 @@ class AssessmentTest extends TestCase
 
         $facilitators = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function ($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -952,7 +1530,7 @@ class AssessmentTest extends TestCase
                 'state' => 'PENDING',
                 'user_id' => $learner->user_id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $facilitator::class,
@@ -1005,7 +1583,7 @@ class AssessmentTest extends TestCase
                 'addedby_type' => $learner::class,
                 'addedby_id' => $learner->id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $learner::class,
@@ -1065,7 +1643,7 @@ class AssessmentTest extends TestCase
                 'state' => 'PENDING',
                 'user_id' => $learner->user_id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $facilitator::class,
@@ -1118,7 +1696,7 @@ class AssessmentTest extends TestCase
                 'addedby_type' => $learner::class,
                 'addedby_id' => $learner->id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $learner::class,
@@ -1180,7 +1758,7 @@ class AssessmentTest extends TestCase
                 'state' => 'PENDING',
                 'user_id' => $learner->user_id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $facilitator::class,
@@ -1235,7 +1813,7 @@ class AssessmentTest extends TestCase
                 'messageable_type' => $facilitator::class,
                 'messageable_id' => $facilitator->id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $facilitator::class,
@@ -1273,7 +1851,7 @@ class AssessmentTest extends TestCase
 
         $facilitator = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -1293,7 +1871,7 @@ class AssessmentTest extends TestCase
                 'state' => 'PENDING',
                 'user_id' => $learner->user_id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $facilitator::class,
@@ -1346,7 +1924,7 @@ class AssessmentTest extends TestCase
                 'addedby_type' => $facilitator::class,
                 'addedby_id' => $facilitator->id,
             ])->create();
-        
+
         $request = Request::factory()
             ->state([
                 'requestto_type' => $facilitator::class,
@@ -1544,8 +2122,10 @@ class AssessmentTest extends TestCase
                 'message' => 'successful', 'participant' => null, 'marker' => null
             ]);
 
-        $this->assertCount(1, Request::query()
-            ->whereMarkerRequest()->whereSentBy($facilitator)->get()
+        $this->assertCount(
+            1,
+            Request::query()
+                ->whereMarkerRequest()->whereSentBy($facilitator)->get()
         );
         $this->assertNull($assessment->getParticipantUsingAccount($facilitator));
         Event::assertNotDispatched(NewAssessmentPendingParticipant::class);
@@ -1583,7 +2163,7 @@ class AssessmentTest extends TestCase
 
         $response = $this->postJson("api/assessment/{$assessment->id}/join", $data);
 
-        
+
         $types = implode(' or ', Assessment::MARKERS_ACCOUNT_TYPES);
         $response
             ->dump()
@@ -1592,8 +2172,10 @@ class AssessmentTest extends TestCase
                 'message' => "sorry 😞, {$learner1->accountType} account is not valid for a marker. please use {$types} account.",
             ]);
 
-        $this->assertCount(0, Request::query()
-            ->whereMarkerRequest()->whereSentBy($learner1)->get()
+        $this->assertCount(
+            0,
+            Request::query()
+                ->whereMarkerRequest()->whereSentBy($learner1)->get()
         );
         $this->assertNull($assessment->getParticipantUsingAccount($learner1));
         Event::assertNotDispatched(NewAssessmentPendingParticipant::class);
@@ -1632,7 +2214,7 @@ class AssessmentTest extends TestCase
         $assessmentable = $assessment->assessmentables()->create();
         $assessmentable->assessmentable()->associate($professional);
         $assessmentable->save();
-        
+
         $data = [
             'account' => "$facilitator",
             'accountId' => $facilitator->id,
@@ -1648,8 +2230,10 @@ class AssessmentTest extends TestCase
                 'message' => "sorry 😞, you are already a marker for assessment with name: {$assessment->name}",
             ]);
 
-        $this->assertCount(0, Request::query()
-            ->whereMarkerRequest()->whereSentBy($facilitator)->get()
+        $this->assertCount(
+            0,
+            Request::query()
+                ->whereMarkerRequest()->whereSentBy($facilitator)->get()
         );
         $this->assertNull($assessment->getParticipantUsingAccount($facilitator));
         Event::assertNotDispatched(NewAssessmentPendingParticipant::class);
@@ -1798,7 +2382,7 @@ class AssessmentTest extends TestCase
         Event::assertNotDispatched(NewAssessmentPendingParticipant::class);
         Notification::assertNotSentTo($assessment->addedby->user, AssessmentJoinRequestNotification::class);
     }
-    
+
     public function test_can_invite_participant()
     {
         Event::fake();
@@ -1825,10 +2409,9 @@ class AssessmentTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'assessmentId' => $assessment->id
         ];
 
-        $response = $this->postJson("api/assessment/invitation", $data);
+        $response = $this->postJson("api/assessment/{$assessment->id}/invite", $data);
 
         $response
             ->dump()
@@ -1841,7 +2424,7 @@ class AssessmentTest extends TestCase
         Event::assertDispatched(NewAssessmentPendingParticipant::class);
         Notification::assertSentTo($learner->user, AssessmentInvitationNotification::class);
     }
-    
+
     public function test_can_invite_marker()
     {
         Event::fake();
@@ -1868,11 +2451,10 @@ class AssessmentTest extends TestCase
         $data = [
             'account' => "$facilitator1",
             'accountId' => $facilitator1->id,
-            'assessmentId' => $assessment->id,
             'type' => 'marker'
         ];
 
-        $response = $this->postJson("api/assessment/invitation", $data);
+        $response = $this->postJson("api/assessment/{$assessment->id}/invite", $data);
 
         $response
             ->dump()
@@ -1881,15 +2463,17 @@ class AssessmentTest extends TestCase
                 'message', 'pendingParticipant'
             ]);
 
+        ray(Request::query()->whereMarkerRequest()->whereSentTo($facilitator1)->get())->green();
         $this->assertNull($response['pendingParticipant']);
         $this->assertNull($assessment->refresh()->getPendingParticipantUsingAccount($facilitator1));
-        $this->assertCount(1, 
+        $this->assertCount(
+            1,
             Request::query()->whereMarkerRequest()->whereSentTo($facilitator1)->get()
         );
         Event::assertNotDispatched(NewAssessmentPendingParticipant::class);
         Notification::assertSentTo($facilitator1->user, AssessmentInvitationNotification::class);
     }
-    
+
     public function test_cannot_invite_participant_if_not_owner()
     {
         Event::fake();
@@ -1897,7 +2481,7 @@ class AssessmentTest extends TestCase
 
         $facilitator = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -1916,10 +2500,9 @@ class AssessmentTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'assessmentId' => $assessment->id
         ];
 
-        $response = $this->postJson("api/assessment/invitation", $data);
+        $response = $this->postJson("api/assessment/{$assessment->id}/invite", $data);
 
         $response
             ->dump()
@@ -1932,7 +2515,7 @@ class AssessmentTest extends TestCase
         Event::assertNotDispatched(NewAssessmentPendingParticipant::class);
         Notification::assertNotSentTo($learner->user, AssessmentInvitationNotification::class);
     }
-    
+
     public function test_cannot_invite_marker_with_invalid_account_type()
     {
         Event::fake();
@@ -1942,7 +2525,7 @@ class AssessmentTest extends TestCase
             ->state([
                 'user_id' => $this->user->id
             ])
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -1961,11 +2544,10 @@ class AssessmentTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'assessmentId' => $assessment->id,
             'type' => 'marker'
         ];
 
-        $response = $this->postJson("api/assessment/invitation", $data);
+        $response = $this->postJson("api/assessment/{$assessment->id}/invite", $data);
 
         $types = implode(' or ', Assessment::MARKERS_ACCOUNT_TYPES);
         $response
@@ -1980,7 +2562,7 @@ class AssessmentTest extends TestCase
         Event::assertNotDispatched(NewAssessmentPendingParticipant::class);
         Notification::assertNotSentTo($learner->user, AssessmentInvitationNotification::class);
     }
-    
+
     public function test_cannot_invite_participant_already_participating_with_different_account()
     {
         Event::fake();
@@ -1988,9 +2570,9 @@ class AssessmentTest extends TestCase
 
         $facilitator = Facilitator::factory()
             ->state([
-                'user_id'=> $this->user->id
+                'user_id' => $this->user->id
             ])
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2001,9 +2583,9 @@ class AssessmentTest extends TestCase
 
         $facilitator1 = Facilitator::factory()
             ->state([
-                'user_id'=> $learner->user_id
+                'user_id' => $learner->user_id
             ])
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2024,10 +2606,9 @@ class AssessmentTest extends TestCase
         $data = [
             'account' => "$learner",
             'accountId' => $learner->id,
-            'assessmentId' => $assessment->id
         ];
 
-        $response = $this->postJson("api/assessment/invitation", $data);
+        $response = $this->postJson("api/assessment/{$assessment->id}/invite", $data);
 
         $response
             ->dump()
@@ -2061,7 +2642,7 @@ class AssessmentTest extends TestCase
                 'type' => 'PRIVATE'
             ])->create();
 
-        for ($i=0; $i < 6; $i++) { 
+        for ($i = 0; $i < 6; $i++) {
             $learner = Learner::factory()
                 ->forUser()->create();
 
@@ -2116,7 +2697,7 @@ class AssessmentTest extends TestCase
                 'type' => 'PRIVATE'
             ])->create();
 
-        for ($i=0; $i < 6; $i++) { 
+        for ($i = 0; $i < 6; $i++) {
             $learner = Learner::factory()
                 ->forUser()->create();
 
@@ -2164,7 +2745,7 @@ class AssessmentTest extends TestCase
             ])->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2212,7 +2793,7 @@ class AssessmentTest extends TestCase
             ->forUser()->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2263,7 +2844,7 @@ class AssessmentTest extends TestCase
             ->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2314,7 +2895,7 @@ class AssessmentTest extends TestCase
             ->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2359,7 +2940,7 @@ class AssessmentTest extends TestCase
             ->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2404,7 +2985,7 @@ class AssessmentTest extends TestCase
             ->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2447,7 +3028,7 @@ class AssessmentTest extends TestCase
             ->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2476,7 +3057,7 @@ class AssessmentTest extends TestCase
         Notification::assertNotSentTo($facilitator1->user, RemoveAssessmentParticipantNotification::class);
     }
 
-    public function test_can_delete_own_participant()
+    public function test_can_delete_own_participant_of_an_assessment()
     {
         Event::fake();
         Notification::fake();
@@ -2488,7 +3069,7 @@ class AssessmentTest extends TestCase
             ->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2523,7 +3104,7 @@ class AssessmentTest extends TestCase
         Notification::assertSentTo($assessment->addedby->user, RemoveAssessmentParticipantNotification::class);
     }
 
-    public function test_can_delete_own_marker()
+    public function test_can_delete_own_marker_of_an_assessment()
     {
         Event::fake();
         Notification::fake();
@@ -2535,7 +3116,7 @@ class AssessmentTest extends TestCase
             ->create();
         $facilitator1 = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2580,7 +3161,7 @@ class AssessmentTest extends TestCase
             ->create();
         $learner = Learner::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2590,7 +3171,7 @@ class AssessmentTest extends TestCase
 
         $facilitator = Facilitator::factory()
             ->forUser()
-            ->hasProfile(function($a, $b){
+            ->hasProfile(function ($a, $b) {
                 return [
                     'user_id' => $b['user_id']
                 ];
@@ -2623,5 +3204,772 @@ class AssessmentTest extends TestCase
         $this->assertNull($assessment->getParticipantUsingAccount($facilitator));
         Event::assertDispatched(RemoveAssessmentParticipant::class);
         Notification::assertSentTo($assessment->addedby->user, RemoveAssessmentParticipantNotification::class);
+    }
+
+    public function testCanAnswerAllAssessmentQuestionAsParticipant()
+    {
+        Event::fake();
+        Notification::fake();
+        Storage::fake('public');
+
+        $facilitator = Facilitator::factory()
+            ->state([
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $facilitator1 = Facilitator::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+        $professional = Professional::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+
+        $assessment = Assessment::factory()
+            ->state([
+                'addedby_type' => $facilitator1::class,
+                'addedby_id' => $facilitator1->id,
+                'type' => 'PRIVATE'
+            ])
+            ->hasParticipants([
+                'accountable_type' => $facilitator::class,
+                'accountable_id' => $facilitator->id,
+                'user_id' => $facilitator->user_id,
+                'state' => 'ACTIVE'
+            ])
+            ->hasAssessmentables([
+                'assessmentable_type' => $professional::class,
+                'assessmentable_id' => $professional->id,
+            ])->create();
+
+        for ($i = 0; $i < 2; $i++) {
+            $assessmentSection = $assessment->assessmentSections()->create([
+                'name' => $this->faker->sentence
+            ]);
+
+            if ($i === 0) {
+                $questionsFirst = Question::factory()
+                    ->state([
+                        'addedby_type' => $facilitator1::class,
+                        'addedby_id' => $facilitator1->id,
+                        'questionable_type' => $assessmentSection::class,
+                        'questionable_id' => $assessmentSection->id,
+                        'body' => $this->faker->sentence
+                    ])->count(2)
+                    ->sequence(
+                        ['answer_type' => 'IMAGE'],
+                        ['answer_type' => 'LONG_ANSWER']
+                    )
+                    ->create();
+
+                continue;
+            }
+
+            $questionsSecond = Question::factory()
+                ->state([
+                    'addedby_type' => $facilitator1::class,
+                    'addedby_id' => $facilitator1->id,
+                    'questionable_type' => $assessmentSection::class,
+                    'questionable_id' => $assessmentSection->id,
+                    'body' => $this->faker->sentence
+                ])->count(2)
+                ->sequence(
+                    ['answer_type' => 'OPTION'],
+                    ['answer_type' => 'ARRANGE']
+                )
+                ->hasPossibleAnswers(3)
+                ->create();
+
+            $questionsSecond->first()->correct_possible_answers = [
+                $questionsSecond->first()->possibleAnswers->random(1)[0]->id
+            ];
+
+            $questionsSecond->first()->correct_possible_answers = $questionsSecond
+                ->first()->possibleAnswers->random(3)->pluck('id');
+        }
+
+        $data = [
+            'account' => $facilitator->accountType,
+            'accountId' => $facilitator->id,
+            'type' => 'all',
+            'answers' => json_encode([
+                (object) [
+                    'questionId' => $questionsFirst->first()->id,
+                ],
+                (object) [
+                    'questionId' => $questionsFirst->last()->id,
+                    'answer' => $this->faker->sentence,
+                ],
+                (object) [
+                    'questionId' => $questionsSecond->first()->id,
+                    'possibleAnswerIds' => [$questionsSecond->first()->possibleAnswers->random(1)[0]->id]
+                ],
+                (object) [
+                    'questionId' => $questionsSecond->last()->id,
+                    'possibleAnswerIds' => $questionsSecond->last()->possibleAnswers->random(3)->pluck('id')
+                ],
+            ]),
+            "answerFile{$questionsFirst->first()->id}" => UploadedFile::fake()->image('new_image.png'),
+        ];
+
+        $response = $this->postJson("api/assessment/{$assessment->id}/answer", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'successful'
+            ]);
+
+        $facilitator = $facilitator->refresh();
+
+        $this->assertTrue($facilitator->hasWorkForAssessment($assessment->id));
+        $this->assertTrue($facilitator->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertCount(4, $facilitator->getAnswersForAssessment($assessment->id));
+        Storage::assertExists(Image::where('name', 'new_image.png')->first()->path);
+        Notification::assertSentTo($facilitator1->user, AssessmentAnsweredNotification::class);
+        Notification::assertSentTo($professional->user, AssessmentAnsweredNotification::class);
+    }
+
+    public function testCanAnswerOneAssessmentQuestionAsParticipant()
+    {
+        Notification::fake();
+        Storage::fake('public');
+
+        $facilitator = Facilitator::factory()
+            ->state([
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $facilitator1 = Facilitator::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+        $professional = Professional::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+
+        $assessment = Assessment::factory()
+            ->state([
+                'addedby_type' => $facilitator1::class,
+                'addedby_id' => $facilitator1->id,
+                'type' => 'PRIVATE'
+            ])
+            ->hasParticipants([
+                'accountable_type' => $facilitator::class,
+                'accountable_id' => $facilitator->id,
+                'user_id' => $facilitator->user_id,
+                'state' => 'ACTIVE'
+            ])
+            ->hasAssessmentables([
+                'assessmentable_type' => $professional::class,
+                'assessmentable_id' => $professional->id,
+            ])->create();
+
+        for ($i = 0; $i < 2; $i++) {
+            $assessmentSection = $assessment->assessmentSections()->create([
+                'name' => $this->faker->sentence
+            ]);
+
+            if ($i === 0) {
+                $questionsFirst = Question::factory()
+                    ->state([
+                        'addedby_type' => $facilitator1::class,
+                        'addedby_id' => $facilitator1->id,
+                        'questionable_type' => $assessmentSection::class,
+                        'questionable_id' => $assessmentSection->id,
+                        'body' => $this->faker->sentence
+                    ])->count(2)
+                    ->sequence(
+                        ['answer_type' => 'IMAGE'],
+                        ['answer_type' => 'LONG_ANSWER']
+                    )
+                    ->create();
+
+                continue;
+            }
+
+            $questionsSecond = Question::factory()
+                ->state([
+                    'addedby_type' => $facilitator1::class,
+                    'addedby_id' => $facilitator1->id,
+                    'questionable_type' => $assessmentSection::class,
+                    'questionable_id' => $assessmentSection->id,
+                    'body' => $this->faker->sentence
+                ])->count(2)
+                ->sequence(
+                    ['answer_type' => 'OPTION'],
+                    ['answer_type' => 'ARRANGE']
+                )
+                ->hasPossibleAnswers(3)
+                ->create();
+
+            $questionsSecond->first()->correct_possible_answers = [
+                $questionsSecond->first()->possibleAnswers->random(1)[0]->id
+            ];
+
+            $questionsSecond->first()->correct_possible_answers = $questionsSecond
+                ->first()->possibleAnswers->random(3)->pluck('id');
+        }
+
+        $data = [
+            'account' => $facilitator->accountType,
+            'accountId' => $facilitator->id,
+            'type' => 'one',
+            'answer' => json_encode([
+                'questionId' => $questionsFirst->first()->id,
+            ]),
+            "answerFile{$questionsFirst->first()->id}" => UploadedFile::fake()->image('new_image.png'),
+        ];
+
+        $response = $this->postJson("api/assessment/{$assessment->id}/answer", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'successful'
+            ]);
+
+        $facilitator = $facilitator->refresh();
+        $this->assertTrue($facilitator->hasWorkForAssessment($assessment->id));
+        $this->assertTrue($facilitator->doesntHaveASubmittedWorkForAssessment($assessment->id));
+        $this->assertCount(1, $facilitator->getAnswersForAssessment($assessment->id));
+        Storage::assertExists(Image::where('name', 'new_image.png')->first()->path);
+        Notification::assertNotSentTo($facilitator1->user, AssessmentAnsweredNotification::class);
+        Notification::assertNotSentTo($professional->user, AssessmentAnsweredNotification::class);
+    }
+
+    public function testCannotAnswerOneAssessmentQuestionAsParticipantWhenDoneSubmitting()
+    {
+        Notification::fake();
+        Storage::fake('public');
+
+        $facilitator = Facilitator::factory()
+            ->state([
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $facilitator1 = Facilitator::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+        $professional = Professional::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+
+        $assessment = Assessment::factory()
+            ->state([
+                'addedby_type' => $facilitator1::class,
+                'addedby_id' => $facilitator1->id,
+                'type' => 'PRIVATE'
+            ])
+            ->hasParticipants([
+                'accountable_type' => $facilitator::class,
+                'accountable_id' => $facilitator->id,
+                'user_id' => $facilitator->user_id,
+                'state' => 'ACTIVE'
+            ])
+            ->hasAssessmentables([
+                'assessmentable_type' => $professional::class,
+                'assessmentable_id' => $professional->id,
+            ])
+            ->hasWorks([
+                'status' => Work::DONE,
+                'addedby_type' => $facilitator::class,
+                'addedby_id' => $facilitator->id,
+            ])->create();
+
+        for ($i = 0; $i < 2; $i++) {
+            $assessmentSection = $assessment->assessmentSections()->create([
+                'name' => $this->faker->sentence
+            ]);
+
+            if ($i === 0) {
+                $questionsFirst = Question::factory()
+                    ->state([
+                        'addedby_type' => $facilitator1::class,
+                        'addedby_id' => $facilitator1->id,
+                        'questionable_type' => $assessmentSection::class,
+                        'questionable_id' => $assessmentSection->id,
+                        'body' => $this->faker->sentence
+                    ])->count(2)
+                    ->sequence(
+                        ['answer_type' => 'IMAGE'],
+                        ['answer_type' => 'LONG_ANSWER']
+                    )
+                    ->create();
+
+                continue;
+            }
+
+            $questionsSecond = Question::factory()
+                ->state([
+                    'addedby_type' => $facilitator1::class,
+                    'addedby_id' => $facilitator1->id,
+                    'questionable_type' => $assessmentSection::class,
+                    'questionable_id' => $assessmentSection->id,
+                    'body' => $this->faker->sentence
+                ])->count(2)
+                ->sequence(
+                    ['answer_type' => 'OPTION'],
+                    ['answer_type' => 'ARRANGE']
+                )
+                ->hasPossibleAnswers(3)
+                ->create();
+
+            $questionsSecond->first()->correct_possible_answers = [
+                $questionsSecond->first()->possibleAnswers->random(1)[0]->id
+            ];
+
+            $questionsSecond->first()->correct_possible_answers = $questionsSecond
+                ->first()->possibleAnswers->random(3)->pluck('id');
+        }
+
+        $data = [
+            'account' => $facilitator->accountType,
+            'accountId' => $facilitator->id,
+            'type' => 'one',
+            'answer' => json_encode([
+                'questionId' => $questionsFirst->first()->id,
+            ]),
+            "answerFile{$questionsFirst->first()->id}" => UploadedFile::fake()->image('new_image.png'),
+        ];
+
+        $response = $this->postJson("api/assessment/{$assessment->id}/answer", $data);
+
+        $response
+            ->dump()
+            ->assertStatus(422)
+            ->assertJson([
+                'message' =>  "sorry 😞, you are done submitting this work and cannot do anything else.",
+            ]);
+
+        $facilitator = $facilitator->refresh();
+        $this->assertTrue($facilitator->hasWorkForAssessment($assessment->id));
+        $this->assertTrue($facilitator->hasSubmittedWorkForAssessment($assessment->id));
+        Notification::assertNotSentTo($facilitator1->user, AssessmentAnsweredNotification::class);
+        Notification::assertNotSentTo($professional->user, AssessmentAnsweredNotification::class);
+    }
+
+    public function testCanFinishAnsweringAssessmentQuestionAsParticipantWhenAnsweredOneByOne()
+    {
+        Event::fake();
+        Notification::fake();
+        Storage::fake('public');
+
+        $facilitator = Facilitator::factory()
+            ->state([
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $facilitator1 = Facilitator::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+        $professional = Professional::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+
+        $assessment = Assessment::factory()
+            ->state([
+                'addedby_type' => $facilitator1::class,
+                'addedby_id' => $facilitator1->id,
+                'type' => 'PRIVATE'
+            ])
+            ->hasParticipants([
+                'accountable_type' => $facilitator::class,
+                'accountable_id' => $facilitator->id,
+                'user_id' => $facilitator->user_id,
+                'state' => 'ACTIVE'
+            ])
+            ->hasAssessmentables([
+                'assessmentable_type' => $professional::class,
+                'assessmentable_id' => $professional->id,
+            ])
+            ->hasWorks([
+                'addedby_type' => $facilitator::class,
+                'addedby_id' => $facilitator->id,
+            ])->create();
+
+        $data = [
+            'account' => $facilitator->accountType,
+            'accountId' => $facilitator->id,
+        ];
+
+        $response = $this->postJson("api/assessment/{$assessment->id}/answer/done", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'successful'
+            ]);
+
+        $facilitator = $facilitator->refresh();
+
+        $this->assertTrue($facilitator->hasWorkForAssessment($assessment->id));
+        $this->assertTrue($facilitator->hasSubmittedWorkForAssessment($assessment->id));
+        Notification::assertSentTo($facilitator1->user, AssessmentAnsweredNotification::class);
+        Notification::assertSentTo($professional->user, AssessmentAnsweredNotification::class);
+    }
+
+    public function testCanMarkAllAnswersOfWorkAsMarker()
+    {
+        Notification::fake();
+
+        $facilitator = Facilitator::factory()
+            ->state([
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $facilitator1 = Facilitator::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+        $professional = Professional::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+
+        $assessment = Assessment::factory()
+            ->has(
+                AssessmentSection::factory()
+                    ->has(
+                        Question::factory()
+                            ->state([
+                                'addedby_type' => $facilitator1::class,
+                                'addedby_id' => $facilitator1->id,
+                                'body' => $this->faker->sentence,
+                                'answer_type' => 'LONG_ANSWER',
+                                'score_over' => 5
+                            ])
+                            ->has(
+                                Answer::factory()
+                                    ->state([
+                                        'answeredby_type' => $professional::class,
+                                        'answeredby_id' => $professional->id,
+                                    ])
+                            )->count(2)
+                    )
+                    ->count(2)
+            )
+            ->state([
+                'addedby_type' => $facilitator1::class,
+                'addedby_id' => $facilitator1->id,
+                'type' => 'PRIVATE'
+            ])
+            ->hasParticipants([
+                'accountable_type' => $professional::class,
+                'accountable_id' => $professional->id,
+                'user_id' => $professional->user_id,
+                'state' => 'ACTIVE'
+            ])
+            ->hasWorks([
+                'addedby_type' => $professional::class,
+                'addedby_id' => $professional->id,
+                'status' => Work::DONE,
+            ])
+            ->hasAssessmentables([
+                'assessmentable_type' => $facilitator::class,
+                'assessmentable_id' => $facilitator->id,
+            ])->create();
+
+        $answers = $professional->getAnswersForAssessment($assessment->id);
+        $work = $assessment->getWorkFor($professional);
+
+        $data = [
+            'account' => $facilitator->accountType,
+            'accountId' => $facilitator->id,
+            'workId' => $work->id,
+            'type' => 'all',
+            'marks' => json_encode([
+                (object) [
+                    'answerId' => $answers[0]->id,
+                    'remarks' => $this->faker->sentence,
+                    'mark' => 5,
+                ],
+                (object) [
+                    'answerId' => $answers[1]->id,
+                    'remarks' => $this->faker->sentence,
+                    'mark' => 5,
+                ],
+                (object) [
+                    'answerId' => $answers[2]->id,
+                    'remarks' => $this->faker->sentence,
+                    'mark' => 5,
+                ],
+                (object) [
+                    'answerId' => $answers[3]->id,
+                    'remarks' => $this->faker->sentence,
+                    'mark' => 5,
+                ],
+            ]),
+        ];
+
+        $response = $this->postJson("api/assessment/{$assessment->id}/mark", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'successful'
+            ]);
+
+        $professional = $professional->refresh();
+
+        $this->assertTrue($professional->hasWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessment->id, $facilitator));
+        $this->assertTrue($facilitator->hasMarkedSubmittedWorkForAssessment($assessment->id, $facilitator));
+        $this->assertCount(4, $professional->getAnswersForAssessment($assessment->id));
+        Notification::assertSentTo($professional->user, AssessmentAnswerMarkedNotification::class);
+    }
+
+    public function testCanMarkOneAnswersOfWorkAsMarker()
+    {
+        Notification::fake();
+
+        $facilitator = Facilitator::factory()
+            ->state([
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $facilitator1 = Facilitator::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+        $professional = Professional::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+
+        $assessment = Assessment::factory()
+            ->has(
+                AssessmentSection::factory()
+                    ->has(
+                        Question::factory()
+                            ->state([
+                                'addedby_type' => $facilitator1::class,
+                                'addedby_id' => $facilitator1->id,
+                                'body' => $this->faker->sentence,
+                                'answer_type' => 'LONG_ANSWER',
+                                'score_over' => 5
+                            ])
+                            ->has(
+                                Answer::factory()
+                                    ->state([
+                                        'answeredby_type' => $professional::class,
+                                        'answeredby_id' => $professional->id,
+                                    ])
+                            )->count(2)
+                    )
+                    ->count(2)
+            )
+            ->state([
+                'addedby_type' => $facilitator1::class,
+                'addedby_id' => $facilitator1->id,
+                'type' => 'PRIVATE'
+            ])
+            ->hasParticipants([
+                'accountable_type' => $professional::class,
+                'accountable_id' => $professional->id,
+                'user_id' => $professional->user_id,
+                'state' => 'ACTIVE'
+            ])
+            ->hasWorks([
+                'addedby_type' => $professional::class,
+                'addedby_id' => $professional->id,
+                'status' => Work::DONE,
+            ])
+            ->hasAssessmentables([
+                'assessmentable_type' => $facilitator::class,
+                'assessmentable_id' => $facilitator->id,
+            ])->create();
+
+        $answers = $professional->getAnswersForAssessment($assessment->id);
+        $work = $professional->getWorkForAssessment($assessment->id);
+
+        $data = [
+            'account' => $facilitator->accountType,
+            'accountId' => $facilitator->id,
+            'workId' => $work->id,
+            'type' => 'one',
+            'mark' => json_encode([
+                'answerId' => $answers[0]->id,
+                'remarks' => $this->faker->sentence,
+                'mark' => 5,
+            ]),
+        ];
+
+        $response = $this->postJson("api/assessment/{$assessment->id}/mark", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'successful'
+            ]);
+
+        $professional = $professional->refresh();
+
+        $this->assertTrue($professional->hasWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->doesntHaveAMarkedSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->doesntHaveAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessment->id, $facilitator));
+        $this->assertTrue($facilitator->doesntHaveMarkedSubmittedWorkForAssessment($assessment->id, $facilitator));
+        $this->assertCount(4, $professional->getAnswersForAssessment($assessment->id));
+        Notification::assertNotSentTo($professional->user, AssessmentAnswerMarkedNotification::class);
+    }
+
+    public function testCanFinishMarkingAnswersOfWorkAsMarkerWhenMarkedOneByOne()
+    {
+        Notification::fake();
+
+        $facilitator = Facilitator::factory()
+            ->state([
+                'user_id' => $this->user->id
+            ])
+            ->create();
+        $facilitator1 = Facilitator::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+        $professional = Professional::factory()
+            ->forUser()
+            ->hasProfile(function ($a, $b) {
+                return [
+                    'user_id' => $b['user_id']
+                ];
+            })->create();
+
+        $assessment = Assessment::factory()
+            ->has(
+                AssessmentSection::factory()
+                    ->has(
+                        Question::factory()
+                            ->state([
+                                'addedby_type' => $facilitator1::class,
+                                'addedby_id' => $facilitator1->id,
+                                'body' => $this->faker->sentence,
+                                'answer_type' => 'LONG_ANSWER',
+                                'score_over' => 5
+                            ])
+                            ->has(
+                                Answer::factory()
+                                    ->state([
+                                        'answeredby_type' => $professional::class,
+                                        'answeredby_id' => $professional->id,
+                                    ])
+                                    ->hasMarks([
+                                        'score' => 5,
+                                        'score_over' => 5,
+                                        'markedby_type' => $facilitator::class,
+                                        'markedby_id' => $facilitator->id,
+                                    ])
+                            )->count(2)
+                    )
+                    ->count(2)
+            )
+            ->state([
+                'addedby_type' => $facilitator1::class,
+                'addedby_id' => $facilitator1->id,
+                'type' => 'PRIVATE'
+            ])
+            ->hasParticipants([
+                'accountable_type' => $professional::class,
+                'accountable_id' => $professional->id,
+                'user_id' => $professional->user_id,
+                'state' => 'ACTIVE'
+            ])
+            ->has(
+                Work::factory()->state([
+                    'addedby_type' => $professional::class,
+                    'addedby_id' => $professional->id,
+                    'status' => Work::DONE,
+                ])
+                    ->hasMarks([
+                        'score' => 20,
+                        'score_over' => 20,
+                        'markedby_type' => $facilitator::class,
+                        'markedby_id' => $facilitator->id,
+                    ])
+            )
+            ->hasAssessmentables([
+                'assessmentable_type' => $facilitator::class,
+                'assessmentable_id' => $facilitator->id,
+            ])->create();
+
+        $answers = $professional->getAnswersForAssessment($assessment->id);
+        $work = $professional->getWorkForAssessment($assessment->id);
+
+        $data = [
+            'account' => $facilitator->accountType,
+            'accountId' => $facilitator->id,
+            'workId' => $work->id,
+        ];
+
+        $response = $this->postJson("api/assessment/{$assessment->id}/mark/done", $data);
+
+        $response
+            ->dump()
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'successful'
+            ]);
+
+        $professional = $professional->refresh();
+
+        $this->assertTrue($professional->hasWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessment->id, $facilitator));
+        $this->assertTrue($facilitator->hasMarkedSubmittedWorkForAssessment($assessment->id, $facilitator));
+        $this->assertCount(4, $professional->getAnswersForAssessment($assessment->id));
+        Notification::assertSentTo($professional->user, AssessmentAnswerMarkedNotification::class);
     }
 }

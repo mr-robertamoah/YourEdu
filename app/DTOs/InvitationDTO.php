@@ -2,6 +2,7 @@
 
 namespace App\DTOs;
 
+use App\Traits\DTOTrait;
 use App\User;
 use App\YourEdu\Request as YourEduRequest;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Support\Collection;
 
 class InvitationDTO
 {
+    use DTOTrait;
+
     public ?string $account = null;
     public ?string $accountId = null;
     public ?string $type = null;
@@ -19,7 +22,6 @@ class InvitationDTO
     public ?string $itemId = null;
     public ?string $requestId = null;
     public ?string $action = null;
-    public ?string $userId = null;
     public ?string $methodType = null;
     public ?YourEduRequest $request = null;
     public ?Model $joiner = null;
@@ -41,7 +43,7 @@ class InvitationDTO
         $self->account = $request->account;
         $self->accountId = $request->accountId;
         $self->userId = $request->user()?->id;
-        
+
         return $self;
     }
 
@@ -88,36 +90,5 @@ class InvitationDTO
         $clone->itemModel = $itemModel;
 
         return $clone;
-    }
-
-    public function withUsers(Collection | User $users)
-    {
-        $clone = clone $this;
-
-        if ($users instanceof User) {
-            $clone->users = new Collection();
-
-            $clone->users->push($users);
-
-            return $clone;
-        }
-
-        $clone->users = $users;
-
-        return $clone;
-    }
-
-    public function addData
-    (
-        $type = null,
-        $methodType = null,
-        $participantId = null,
-    )
-    {
-        $this->participantId = $participantId;
-        $this->methodType = $methodType;
-        $this->type = $type;
-
-        return $this;
     }
 }

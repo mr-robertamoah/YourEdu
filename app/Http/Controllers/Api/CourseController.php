@@ -17,12 +17,12 @@ use Illuminate\Support\Facades\DB;
 
 class CourseController extends Controller
 {
-    
+
     public function createCourseAsAttachment(CourseCreateRequest $request)
     {
         try {
             DB::beginTransaction();
-            
+
             $course = (new CourseService())->createCourseAsAttachment(
                 CourseDTO::createFromRequest($request)
             );
@@ -39,7 +39,6 @@ class CourseController extends Controller
             //     'message' => "unsuccessful, something happened."
             // ],422);
         }
-
     }
 
     public function createCourseAttachmentAlias(Request $request)
@@ -63,7 +62,6 @@ class CourseController extends Controller
             //     'message' => "unsuccessful, something happened."
             // ],422);
         }
-
     }
 
     public function coursesGet()
@@ -73,9 +71,9 @@ class CourseController extends Controller
 
     public function coursesSearch($search)
     {
-        $courses = Course::where('name','like',"%{$search}%")
-            ->orWhereHas('aliases',function(Builder $query) use ($search){
-                $query->where('name','like',"%{$search}%");
+        $courses = Course::where('name', 'like', "%{$search}%")
+            ->orWhereHas('aliases', function (Builder $query) use ($search) {
+                $query->where('name', 'like', "%{$search}%");
             })->hasNoOwner()->get();
 
         return response()->json([
@@ -88,7 +86,11 @@ class CourseController extends Controller
     {
         try {
             (new CourseService())->deleteCourseAsAttachment(
-                CourseDTO::createFromRequest($request)
+                CourseDTO::new()
+                    ->addData(
+                        userId: $request->user()?->id,
+                        courseId: $request->courseId,
+                    )
             );
 
             return response()->json([

@@ -2,13 +2,17 @@
 
 namespace App\YourEdu;
 
+use App\Traits\HasLikeableTrait;
+use App\Traits\HasSaveableTrait;
 use Database\Factories\CommentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Comment extends Model
 {
-    use HasFactory;
+    use HasFactory,
+        HasSaveableTrait,
+        HasLikeableTrait;
 
     protected $fillable = [
         'body'
@@ -18,60 +22,53 @@ class Comment extends Model
         'commentable'
     ];
 
-    public function likes(){
-        return $this->morphMany(Like::class,'likeable');
-    }
-
-    public function commentedby(){
+    public function commentedby()
+    {
         return $this->morphTo();
     }
 
-    public function commentable(){
+    public function commentable()
+    {
         return $this->morphTo();
     }
 
     public function comments()
     {
-        return $this->morphMany(Comment::class,'commentable');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     public function files()
     {
-        return $this->morphToMany(File::class,'fileable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(File::class, 'fileable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function audios()
     {
-        return $this->morphToMany(Audio::class,'audioable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Audio::class, 'audioable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function videos()
     {
-        return $this->morphToMany(Video::class,'videoable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Video::class, 'videoable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function images()
     {
-        return $this->morphToMany(Image::class,'imageable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Image::class, 'imageable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function flags()
     {
-        return $this->morphMany(Flag::class,'flaggable');
-    }
-
-    public function beenSaved()
-    {
-       return $this->morphMany(Save::class,'saveable');
+        return $this->morphMany(Flag::class, 'flaggable');
     }
 
     public function activityTrack()
     {
-       return $this->morphOne(ActivityTrack::class,'what');
+        return $this->morphOne(ActivityTrack::class, 'what');
     }
 
     protected static function newFactory()

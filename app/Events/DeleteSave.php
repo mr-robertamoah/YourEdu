@@ -21,9 +21,8 @@ class DeleteSave implements ShouldBroadcastNow
      *
      * @return void
      */
-    public function __construct($saveInfo)
+    public function __construct(private $saveDTO)
     {
-        $this->saveInfo = $saveInfo;
     }
 
     /**
@@ -33,22 +32,20 @@ class DeleteSave implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        $account = class_basename_lower($this->saveInfo->account);
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$account}.{$this->saveInfo->accountId}")
+            new Channel("youredu.{$this->saveDTO->item}.{$this->saveDTO->itemId}")
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'deleteSave';
     }
-    
+
     public function broadcastWith()
     {
         return [
-            'saveInfo' => $this->saveInfo
+            'saveId' => $this->saveDTO->saveId
         ];
     }
 }

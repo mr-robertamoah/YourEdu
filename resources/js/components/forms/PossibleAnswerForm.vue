@@ -114,12 +114,11 @@
 import PossibleAnswerBadge from '../dashboard/PossibleAnswerBadge';
 import DroppableComponent from '../specials/DroppableComponent'
 import TextInput from '../TextInput';
-import PopUp from '../specials/PopUp';
+import PopUp from '../../mixins/PopUp.mixin';
 import {bus} from '../../app';
 import GreyButton from '../GreyButton.vue';
     export default {
         components: {
-            PopUp,
             TextInput,
             PossibleAnswerBadge,
             DroppableComponent,
@@ -153,6 +152,7 @@ import GreyButton from '../GreyButton.vue';
                 }
             },
         },
+        mixins: [PopUp],
         data() {
             return {
                 data: {
@@ -160,7 +160,6 @@ import GreyButton from '../GreyButton.vue';
                     option: '',
                     position: '',
                 },
-                showPopUp: false,
                 showCorrectAnswer: false,
             }
         },
@@ -274,17 +273,6 @@ import GreyButton from '../GreyButton.vue';
                         this.$refs.possibleanswersform.scrollIntoView()                        
                     }, 100);
                 }
-            },
-            askIfTrueOrFalse() {
-                this.showPopUp = true
-            },
-            popUpResponse(data) {
-                if (data === 'yes') {
-                    this.$emit('itIsTrueOrFalse')
-                }
-            },
-            closePopUp() {
-                this.showPopUp = false
             },
             movePossibleAnswer(data) {
                 this.$emit('movePossibleAnswer', data)

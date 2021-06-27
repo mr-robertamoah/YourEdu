@@ -211,11 +211,11 @@ import { mapGetters, mapActions } from 'vuex'
             ...mapGetters(['profile/getProfile','profile/getAccount','getProfiles',
                 'getUser']),
             computedName(){
-                return this['profile/getProfile'] && this['profile/getProfile'].name ? 
-                    this['profile/getProfile'].name :
-                    this['profile/getProfile'] && this['profile/getProfile'].owner_name ? 
-                    this['profile/getProfile'].owner_name :
-                    this['profile/getProfile'].user_full_name
+                if (! this['profile/getProfile']) {
+                    return ''
+                }
+
+                return this['profile/getProfile'].name
             },
             computedUsername(){
                 return this['profile/getProfile'] ? 
@@ -284,12 +284,13 @@ import { mapGetters, mapActions } from 'vuex'
             computedVerification(){
                 if (this['profile/getAccount'] === 'learner') {
                     return ''
-                } else if (typeof this['profile/getProfile'].owner != undefined &&
-                    this['profile/getProfile'].owner.verification.status === 'VERIFIED') {
-                    return 'verified'
-                } else {
-                    return 'not verified'
                 }
+                
+                if (this['profile/getProfile']?.owner?.verification.status === 'VERIFIED') {
+                    return 'verified'
+                }
+
+                return 'not verified'
             },
             computedDate(){
                 return dates.dateReadable(this['profile/getProfile'].created_at)

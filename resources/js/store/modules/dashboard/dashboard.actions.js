@@ -435,7 +435,6 @@ const actions = {
             return {status: false, response}
         }
 
-        console.log(router)
         if (router.history.current.name === 'dashboard') {       
             commit('ADD_NEW_ASSESSMENT',response.data.assessment)
         }
@@ -469,6 +468,14 @@ const actions = {
             commit('REMOVE_ASSESSMENT',data.assessmentId)
         }
 
+        if (router.history.current.name === 'home') {       
+            commit('home/ASSESSMENT_DELETE_SUCCESS', data, {root: true})
+        }
+
+        if (router.history.current.name === 'profile') {       
+            commit('profile/ASSESSMENT_DELETE_SUCCESS', data, {root: true})
+        }
+
         return {status: true, data: response.data.assessment, action: 'delete'}
     },
     async editAssessment({commit},data){
@@ -480,6 +487,14 @@ const actions = {
         
         if (router.history.current.name === 'dashboard') {
             commit('UPDATE_ASSESSMENT',response.data.assessment)
+        }
+
+        if (router.history.current.name === 'home') {       
+            commit('home/ASSESSMENT_DELETE_SUCCESS', {assessment: response.data.assessment}, {root: true})
+        }
+
+        if (router.history.current.name === 'profile') {       
+            commit('profile/ASSESSMENT_DELETE_SUCCESS', {assessment: response.data.assessment}, {root: true})
         }
 
         return {

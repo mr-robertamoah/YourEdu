@@ -128,9 +128,7 @@ import { mapGetters, mapActions } from 'vuex';
                 handler(newValue){
                     if (this.itemData) {
                         this.getComment()
-                    } else {
-                        this.dataLoading = true
-                    }
+                    } 
                 },
             },
             item: {
@@ -162,7 +160,7 @@ import { mapGetters, mapActions } from 'vuex';
                 return true
             },
             computedComment(){
-                return this.comment.body ? this.comment : this.item ? this.item : null
+                return this.comment ? this.comment : this.item ? this.item : null
             },
         },
         methods: {

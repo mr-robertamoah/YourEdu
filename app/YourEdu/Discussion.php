@@ -3,9 +3,12 @@
 namespace App\YourEdu;
 
 use App\Traits\FlaggableTrait;
+use App\Traits\HasAttachableTrait;
 use App\Traits\HasCommentsTrait;
 use App\Traits\HasParticipantsTrait;
-use App\Traits\ItemFilesTrait;
+use App\Traits\HasFilesTrait;
+use App\Traits\HasLikeableTrait;
+use App\Traits\HasSaveableTrait;
 use App\Traits\HasSocialMediaTrait;
 use Database\Factories\DiscussionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,18 +17,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Discussion extends Model
 {
-    use SoftDeletes, 
+    use SoftDeletes,
         HasFactory,
-        ItemFilesTrait,
+        HasFilesTrait,
         FlaggableTrait,
         HasSocialMediaTrait,
         HasParticipantsTrait,
-        HasCommentsTrait;
+        HasCommentsTrait,
+        HasLikeableTrait,
+        HasSaveableTrait,
+        HasAttachableTrait;
 
     const PAGINATION = 10;
 
     protected $fillable = [
-        'title', 'preamble', 'restricted', 'type','allowed',
+        'title', 'preamble', 'restricted', 'type', 'allowed',
     ];
 
     protected $casts = [
@@ -53,45 +59,31 @@ class Discussion extends Model
 
     public function messages()
     {
-        return $this->morphMany(Message::class,'messageable');
-    }
-
-    public function likes(){
-        return $this->morphMany(Like::class,'likeable');
+        return $this->morphMany(Message::class, 'messageable');
     }
 
     public function files()
     {
-        return $this->morphToMany(File::class,'fileable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(File::class, 'fileable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function audios()
     {
-        return $this->morphToMany(Audio::class,'audioable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Audio::class, 'audioable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function videos()
     {
-        return $this->morphToMany(Video::class,'videoable')
-        ->withPivot(['state'])->withTimestamps();
+        return $this->morphToMany(Video::class, 'videoable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function images()
     {
-        return $this->morphToMany(Image::class,'imageable')
-        ->withPivot(['state'])->withTimestamps();
-    }
-
-    public function beenSaved()
-    {
-        return $this->morphMany(Save::class,'saveable');
-    }
-
-    public function attachments()
-    {
-        return $this->morphMany(PostAttachment::class,'attachable');
+        return $this->morphToMany(Image::class, 'imageable')
+            ->withPivot(['state'])->withTimestamps();
     }
 
     public function getAdmin($userId)
@@ -126,7 +118,7 @@ class Discussion extends Model
 
     public function isNotAdmin($userId)
     {
-        return ! $this->isAdmin($userId);
+        return !$this->isAdmin($userId);
     }
 
     public function isAdminParticipant($userId)
@@ -203,8 +195,24 @@ class Discussion extends Model
     public function scopeWithRelations($query)
     {
         return $query->with([
-            'images','videos','audios','files','comments','flags','attachments',
-            'beenSaved','messages','raisedby.profile','requests.requestfrom']);
+            'images', 'videos', 'audios', 'files', 'comments', 'flags', 'attachments',
+            'beenSaved', 'messages', 'raisedby.profile', 'requests.requestfrom'
+        ]);
+    }
+
+    public function scopeWhenAddedby($query, $addedby)
+    {
+        return $query
+            ->when($addedby, function ($query) use ($addedby) {
+                $query->whereAddedby($addedby);
+            });
+    }
+
+    public function scopeWhereAddedby($query, $addedby)
+    {
+        return $query
+            ->where('raisedby_type', $addedby::class)
+            ->where('raisedby_id', $addedby->id);
     }
 
     protected static function newFactory()

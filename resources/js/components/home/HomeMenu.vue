@@ -1,25 +1,13 @@
 <template>
     <div class="home-menu-wrapper">
         <div class="home-menu-item">
-            <div class="input">
-                <input type="radio" value="all" v-model="value" id="all">
-                <label for="all">all</label>
-            </div>
-            <div class="input">
-                <input type="radio" value="mine" v-model="value" id="mine">
-                <label for="mine">mine</label>
-            </div>
-            <div class="input">
-                <input type="radio" value="followers" v-model="value" id="followers">
-                <label for="followers">followers</label>
-            </div>
-            <div class="input">
-                <input type="radio" value="followings" v-model="value" id="followings">
-                <label for="followings">followings</label>
-            </div>
-            <div class="input" @click="showAttachment = true">
-                <input type="radio" value="attachments" v-model="value" id="attachments">
-                <label for="attachments">attachments</label>
+            <div 
+                class="input"
+                v-for="(item, index) in items"
+                :key="index"
+            >
+                <input type="radio" :value="item" v-model="value" :id="item">
+                <label :for="item">{{item}}</label>
             </div>
         </div>
         <div class="attachments" v-if="showAttachment">
@@ -30,9 +18,6 @@
                 @clickedAttachmentSelection="clickedAttachmentSelection"
                 @hidePostAttachment="hidePostAttachment"
             ></post-attachment>
-            <!-- <div class="no-attachments" v-else>
-                no attachments
-            </div> -->
         </div>
     </div>
 </template>
@@ -45,6 +30,18 @@ import PostAttachment from '../PostAttachment';
                 type: String,
                 default: ''
             },
+            items: {
+                type: Array,
+                default() {
+                    return [
+                        'all',
+                        'mine',
+                        'followers',
+                        'followings',
+                        'attachments'
+                    ]
+                }
+            }
         },
         components: {
             PostAttachment,

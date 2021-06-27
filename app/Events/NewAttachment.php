@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Http\Resources\PostAttachmentResource;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -11,19 +12,17 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewAttachment implements ShouldBroadcastNow
+class NewAttachment implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $attachmentArray;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($attachmentArray)
+    public function __construct(private $attachmentDTO)
     {
-        $this->attachmentArray = $attachmentArray;
     }
 
     /**
@@ -34,18 +33,19 @@ class NewAttachment implements ShouldBroadcastNow
     public function broadcastOn()
     {
         return [
-            new Channel('youredu.home'),
-            new Channel("youredu.{$this->attachmentArray['item']}.{$this->attachmentArray['itemId']}")
+            new Channel("youredu.{$this->attachmentDTO->item}.{$this->attachmentDTO->itemId}")
         ];
     }
-    
+
     public function broadcastAs()
     {
         return 'newAttachment';
     }
-    
+
     public function broadcastWith()
     {
-        return $this->attachmentArray;
+        return [
+            'attachment' => new PostAttachmentResource($this->attachmentDTO->attachment)
+        ];
     }
 }

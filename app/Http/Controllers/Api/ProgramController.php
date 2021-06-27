@@ -34,14 +34,14 @@ class ProgramController extends Controller
 
     public function createProgramAttachmentAlias(ProgramAliasCreateRequest $request)
     {
-        $mainProgram = (new ProgramService())->createProgramAttachmentAlias(
+        $program = (new ProgramService())->createProgramAttachmentAlias(
             ProgramDTO::createFromRequest($request)
         );
 
         DB::commit();
         return response()->json([
             'message' => "successful",
-            'program' => new ProgramResource($mainProgram)
+            'program' => new ProgramResource($program)
         ]);
     }
 
@@ -52,9 +52,9 @@ class ProgramController extends Controller
 
     public function programsSearch($search)
     {
-        $programs = Program::where('name','like',"%{$search}%")
-            ->orWhereHas('aliases',function(Builder $query) use ($search){
-                $query->where('name','like',"%{$search}%");
+        $programs = Program::where('name', 'like', "%{$search}%")
+            ->orWhereHas('aliases', function (Builder $query) use ($search) {
+                $query->where('name', 'like', "%{$search}%");
             })->hasNoOwner()->get();
 
         return response()->json([
@@ -74,7 +74,7 @@ class ProgramController extends Controller
             'message' => 'successful'
         ]);
     }
-    
+
     public function createProgram(CreateProgramRequest $request)
     {
         try {

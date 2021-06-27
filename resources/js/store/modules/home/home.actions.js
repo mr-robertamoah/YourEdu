@@ -27,64 +27,88 @@ const actions = {
         commit('LOADING_START')
         let response = await HomeService.postsGet(data)
         commit('LOADING_END')
-        if (response.data.data) {
-            commit('POSTS_SUCCESS',{
-                params: data.params, 
-                data: response.data,
-                nextPage: data.nextPage
-            })
-            return response.data.hasOwnProperty('links') ? 
-                response.data.links.next : null
-        }else {
+        if (! response.data.data) {
             return 'unsuccessful'
         }
+
+        commit('POSTS_SUCCESS',{
+            params: data.params, 
+            data: response.data.data,
+            nextPage: data.nextPage
+        })
+        return response.data?.links?.next
     },
     async getUserPosts({commit},data){
         commit('LOADING_START')
         let response = await HomeService.userPostsGet(data)
         commit('LOADING_END')
-        if (response.data.data) {
-            commit('POSTS_SUCCESS',{
-                params: data.params, 
-                data: response.data,
-                nextPage: data.nextPage
-            })
-            return response.data.hasOwnProperty('links') ? 
-                response.data.links.next : null
-        }else {
+        if (! response.data.data) {
             return 'unsuccessful'
         }
+
+        commit('POSTS_SUCCESS',{
+            params: data.params,
+            data: response.data.data,
+            nextPage: data.nextPage
+        })
+        return response.data?.links?.next
     },
     async getPostTypes({commit},data){
         commit('LOADING_START')
         let response = await HomeService.postTypesGet(data)
         commit('LOADING_END')
-        if (response.data.data) {
-            commit('POST_TYPES_SUCCESS',{params: data.params, data: response.data})
-            return response.data.hasOwnProperty('links') ? 
-                response.data.links.next : null
-        }else {
+
+        if (! response.data.data) {
             return 'unsuccessful'
         }
+
+        commit('POST_TYPES_SUCCESS', {
+            params: data.params,
+            data: response.data.data,
+            nextPage: data.nextPage
+        })
+        return response.data?.links?.next
     },
     async getUserPostTypes({commit},data){
         commit('LOADING_START')
         let response = await HomeService.userPostTypesGet(data)
         commit('LOADING_END')
-        if (response.data.data) {
-            commit('POST_TYPES_SUCCESS',{params: data.params, data: response.data})
-            return response.data.hasOwnProperty('links') ? 
-                response.data.links.next : null
-        }else {
+
+        if (! response.data.data) {
             return 'unsuccessful'
         }
+
+        commit('POST_TYPES_SUCCESS', {
+            params: data.params,
+            data: response.data.data,
+            nextPage: data.nextPage
+        })
+        return response.data?.links?.next
     },
     newPost({commit,rootGetters}, post){
-        console.log(rootGetters);
         commit('NEW_POST', {
             post,
             userFollowers: rootGetters.getUserFollowers,
             userFollowings: rootGetters.getUserFollowings,
+        })
+    },
+    newItem({commit,rootGetters}, data){
+        commit('NEW_ITEM', {
+            ...data,
+            userFollowers: rootGetters.getUserFollowers,
+            userFollowings: rootGetters.getUserFollowings,
+        })
+    },
+    newFollowerItem({commit}, data){
+        commit('NEW_ACCOUNT_ITEM', {
+            ...data,
+            isAFollower: true,
+        })
+    },
+    newFollowingItem({commit}, data){
+        commit('NEW_ACCOUNT_ITEM', {
+            ...data,
+            isAFollowing: true,
         })
     },
     replacePost({commit,rootGetters}, post){
@@ -100,20 +124,20 @@ const actions = {
 
     //////////////////////////////////////////discussions
     
-    newDiscussionParticipant({commit}, discussion){
-        commit('NEW_DISCUSSION_PARTICIPANT', discussion)
+    newItemParticipant({commit}, data){
+        commit('NEW_ITEM_PARTICIPANT', data)
     },
-    removeDiscussionParticipant({commit}, discussion){
-        commit('REMOVE_DISCUSSION_PARTICIPANT', discussion)
+    removeItemParticipant({commit}, data){
+        commit('REMOVE_ITEM_PARTICIPANT', data)
     },
-    updateDiscussionParticipant({commit}, discussion){
-        commit('UPDATE_DISCUSSION_PARTICIPANT', discussion)
+    updateItemParticipant({commit}, data){
+        commit('UPDATE_ITEM_PARTICIPANT', data)
     },
-    newDiscussionPendingParticipant({commit}, data){
-        commit('NEW_DISCUSSION_PENDING_PARTICIPANT', data)
+    newItemPendingParticipant({commit}, data){
+        commit('NEW_ITEM_PENDING_PARTICIPANT', data)
     },
-    removeDiscussionPendingParticipant({commit}, data){
-        commit('REMOVE_DISCUSSION_PENDING_PARTICIPANT', data)
+    removeItemPendingParticipant({commit}, data){
+        commit('REMOVE_ITEM_PENDING_PARTICIPANT', data)
     },
     newDiscussion({commit,rootGetters}, discussion){
         commit('NEW_DISCUSSION', {

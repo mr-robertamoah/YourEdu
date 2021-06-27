@@ -8,6 +8,7 @@ use App\Events\DeleteFlag;
 use App\Events\NewFlag;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\FlagException;
+use App\Jobs\CreateFlagsForOthersJob;
 use App\Traits\ServiceTrait;
 use App\YourEdu\Answer;
 use App\YourEdu\Comment;
@@ -25,14 +26,14 @@ class FlagService
 
     public function deleteFlag(FlagDTO $flagDTO)
     {
-        $flag = $this->getModel('flag',$flagDTO->flagId);
+        $flag = $this->getModel('flag', $flagDTO->flagId);
 
         $flagDTO = $flagDTO->withFlag($flag);
-        
+
         $this->checkOwnerShip($flagDTO);
 
         $flag->delete();
-        
+
         $flagDTO->method = __METHOD__;
         $this->trackSchoolAdmin($flagDTO);
 
@@ -75,6 +76,7 @@ class FlagService
     {
         return $flagDTO->flaggedby->flagsRaised()->create([
             'user_id' => $flagDTO->userId,
+            'flag_id' => $flagDTO->flagId,
             'reason' => $flagDTO->reason,
             'status' => "PENDING",
         ]);
@@ -87,7 +89,7 @@ class FlagService
         }
 
         return $flagDTO->withFlaggedby(
-            $this->getModel($flagDTO->account,$flagDTO->accountId)
+            $this->getModel($flagDTO->account, $flagDTO->accountId)
         );
     }
 
@@ -102,7 +104,7 @@ class FlagService
         }
 
         return $flagDTO->withFlaggable(
-            $this->getModel($flagDTO->item,$flagDTO->itemId)
+            $this->getModel($flagDTO->item, $flagDTO->itemId)
         );
     }
 
@@ -112,7 +114,7 @@ class FlagService
             return;
         }
 
-        $admin = $this->getModel('admin',$flagDTO->adminId);
+        $admin = $this->getModel('admin', $flagDTO->adminId);
 
         (new ActivityTrackService())->trackActivity(
             ActivityTrackDTO::createFromData(
@@ -171,7 +173,7 @@ class FlagService
 
     private function preventDoubleFlagging($flagDTO)
     {
-        if (! Arr::has($flagDTO->flaggable->flags->pluck('user_id'), $flagDTO->userId)) {
+        if (!Arr::has($flagDTO->flaggable->flags->pluck('user_id'), $flagDTO->userId)) {
             return;
         }
 
@@ -186,7 +188,7 @@ class FlagService
         $flagDTO = $this->setFlaggedby($flagDTO);
 
         $flagDTO = $this->setFlaggable($flagDTO);
-        
+
         $this->dontFlagOwnedItem($flagDTO);
 
         $this->preventDoubleFlagging($flagDTO);
@@ -196,7 +198,9 @@ class FlagService
         $flagDTO = $flagDTO->withFlag($flag);
 
         $flag = $this->associateFlagToItem($flagDTO);
-        
+
+        $this->flagForOthers($flagDTO);
+
         $flagDTO->method = __METHOD__;
         $this->trackSchoolAdmin($flagDTO);
 
@@ -206,6 +210,23 @@ class FlagService
         $this->broadcastFlag($flagDTO);
 
         return $flag;
+    }
+
+    private function flagForOthers($flagDTO)
+    {
+        if (!in_array($flagDTO->flaggedby->accountType, ['parent', 'school'])) {
+            return;
+        }
+
+        if ($flagDTO->flaggedby->accountType === 'parent') {
+            array_push($flagDTO->flaggedbys, ...$flagDTO->flaggedby->wards);
+        }
+
+        if ($flagDTO->flaggedby->accountType === 'school') {
+            array_push($flagDTO->flaggedbys, ...$flagDTO->flaggedby->learners);
+        }
+
+        CreateFlagsForOthersJob::dispatch($flagDTO);
     }
 
     public function userFlaggedGet($type)
@@ -234,47 +255,55 @@ class FlagService
 
     private function getFlaggedProfiles()
     {
-        return Profile::with(['profileable.flags','user','images'])
-            ->whereHasMorph('profileable','*',function(Builder $query){
-            $query->whereHas('flags',function(Builder $query){
-                $query->where('user_id', auth()->id());
-            });
-        })->latest()->get();
+        return Profile::with(['profileable.flags', 'user', 'images'])
+            ->whereHasMorph('profileable', '*', function (Builder $query) {
+                $query->whereHas('flags', function (Builder $query) {
+                    $query->where('user_id', auth()->id());
+                });
+            })->latest()->get();
     }
 
     private function getFlaggedPosts()
     {
-        return Post::with(['questions','activities','riddles','addedby.flags',
-            'poems.poemSections','books','addedby.profile.images',
-            'files','audios','videos'])
-            ->whereHas('flags',function(Builder $query){
+        return Post::with([
+            'questions', 'activities', 'riddles', 'addedby.flags',
+            'poems.poemSections', 'books', 'addedby.profile.images',
+            'files', 'audios', 'videos'
+        ])
+            ->whereHas('flags', function (Builder $query) {
                 $query->where('user_id', auth()->id());
             })->latest()->get();
     }
 
     private function getFlaggedDiscussions()
     {
-        return Discussion::with(['raisedby.profile.images',
-            'files','audios','videos','images','likes'])
-            ->whereHas('flags',function(Builder $query){
+        return Discussion::with([
+            'raisedby.profile.images',
+            'files', 'audios', 'videos', 'images', 'likes'
+        ])
+            ->whereHas('flags', function (Builder $query) {
                 $query->where('user_id', auth()->id());
             })->latest()->get();
     }
 
     private function getFlaggedComments()
     {
-        return Comment::with(['commentedby.flags','images','commentedby.profile.images',
-            'files','audios','videos'])
-            ->whereHas('flags',function(Builder $query){
+        return Comment::with([
+            'commentedby.flags', 'images', 'commentedby.profile.images',
+            'files', 'audios', 'videos'
+        ])
+            ->whereHas('flags', function (Builder $query) {
                 $query->where('user_id', auth()->id());
             })->latest()->get();
     }
 
     private function getFlaggedAnswers()
     {
-        return Answer::with(['answeredby.flags','images','answeredby.profile.images',
-            'files','audios','videos'])
-            ->whereHas('flags',function(Builder $query){
+        return Answer::with([
+            'answeredby.flags', 'images', 'answeredby.profile.images',
+            'files', 'audios', 'videos'
+        ])
+            ->whereHas('flags', function (Builder $query) {
                 $query->where('user_id', auth()->id());
             })->latest()->get();
     }

@@ -20,7 +20,9 @@ class UpdatedDiscussionParticipant implements ShouldBroadcast
      *
      * @return void
      */
-    public function __construct(private $discussionDTO){}
+    public function __construct(private $discussionDTO)
+    {
+    }
 
     /**
      * Get the channels the event should broadcast on.
@@ -34,7 +36,7 @@ class UpdatedDiscussionParticipant implements ShouldBroadcast
 
     public function broadcastAs()
     {
-        return 'updatedParticipant';
+        return 'updateParticipant';
     }
 
     public function broadcastWith()

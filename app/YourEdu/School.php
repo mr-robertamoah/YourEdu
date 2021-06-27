@@ -8,6 +8,7 @@ use App\Traits\AccountTrait;
 use App\Traits\AdmissionTrait;
 use App\Traits\DashboardItemTrait;
 use App\Traits\FacilitatingAccountsTrait;
+use App\Traits\HasFollowsTrait;
 use App\User;
 use Database\Factories\SchoolFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,19 +17,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class School extends Model
 {
-    use SoftDeletes, 
-        AccountTrait, 
-        DashboardItemTrait, 
-        HasFactory, 
+    use SoftDeletes,
+        AccountTrait,
+        DashboardItemTrait,
+        HasFactory,
         AdmissionTrait,
         FacilitatingAccountsTrait,
         AccountFilesTrait,
-        AccountQuestionsTrait;
+        AccountQuestionsTrait,
+        HasFollowsTrait;
 
-    const TYPES = ['traditional','virtual'];
+    const TYPES = ['traditional', 'virtual'];
 
     protected $fillable = [
-        'owner_id','company_name', 'type', 'class_structure', 'types', 'about'
+        'owner_id', 'company_name', 'type', 'class_structure', 'types', 'about'
     ];
 
     protected $casts = [
@@ -41,10 +43,10 @@ class School extends Model
 
     protected static function booted()
     {
-        static::created(function ($school){
+        static::created(function ($school) {
             $school->profile()->create([
                 'user_id' => $school->owner_id,
-                'name' => $school->company_name ,
+                'name' => $school->company_name,
             ]);
             $school->verification()->create();
 
@@ -69,32 +71,29 @@ class School extends Model
         return $this->owner;
     }
 
-    public function follows(){
-        return $this->morphMany(Follow::class,'followable');
+    public function likings()
+    {
+        return $this->morphMany(Like::class, 'likedby');
     }
 
-    public function followings(){
-        return $this->morphMany(Follow::class,'followedby');
+    public function likes()
+    {
+        return $this->morphMany(Like::class, 'likeable');
     }
 
-    public function likings(){
-        return $this->morphMany(Like::class,'likedby');
+    public function verification()
+    {
+        return $this->morphOne(Verification::class, 'verifiable');
     }
 
-    public function likes(){
-        return $this->morphMany(Like::class,'likeable');
+    public function profile()
+    {
+        return $this->morphOne(Profile::class, 'profileable');
     }
 
-    public function verification(){
-        return $this->morphOne(Verification::class,'verifiable');
-    }
-
-    public function profile(){
-        return $this->morphOne(Profile::class,'profileable');
-    }
-
-    public function owner(){
-        return $this->belongsTo(User::class,'owner_id');
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     public function admins()
@@ -106,81 +105,82 @@ class School extends Model
 
     public function paymentsMade()
     {
-        return $this->morphMany(Payment::class,'paidby');
+        return $this->morphMany(Payment::class, 'paidby');
     }
 
     public function paymentsMadeTo()
     {
-        return $this->morphMany(Payment::class,'paidto');
+        return $this->morphMany(Payment::class, 'paidto');
     }
 
     public function paidFor()
     {
-        return $this->morphMany(Payment::class,'for');
+        return $this->morphMany(Payment::class, 'for');
     }
 
     public function bans()
     {
-       return $this->morphMany(Ban::class,'bannable');
+        return $this->morphMany(Ban::class, 'bannable');
     }
-    
+
     public function answers()
     {
-        return $this->morphMany(Answer::class,'answeredby');
+        return $this->morphMany(Answer::class, 'answeredby');
     }
 
     public function savesMade()
     {
-       return $this->morphMany(Save::class,'savedby');
+        return $this->morphMany(Save::class, 'savedby');
     }
 
     public function point()
     {
-        return $this->morphOne(Point::class,'pointable');
+        return $this->morphOne(Point::class, 'pointable');
     }
 
     public function phoneNumbers()
     {
-        return $this->morphMany(PhoneNumber::class,'phoneable');
+        return $this->morphMany(PhoneNumber::class, 'phoneable');
     }
 
-    public function emails(){
-        return $this->morphMany(Email::class,'emailable');
+    public function emails()
+    {
+        return $this->morphMany(Email::class, 'emailable');
     }
 
     public function ownedClasses()
     {
-        return $this->morphMany(ClassModel::class,'ownedby');
+        return $this->morphMany(ClassModel::class, 'ownedby');
     }
 
     public function prices()
     {
-        return $this->morphMany(Price::class,'ownedby');
+        return $this->morphMany(Price::class, 'ownedby');
     }
 
     public function objectives()
     {
-        return $this->morphMany(Objective::class,'objectiveby');
+        return $this->morphMany(Objective::class, 'objectiveby');
     }
 
     public function ownedLessons()
     {
-        return $this->morphMany(Lesson::class,'ownedby');
+        return $this->morphMany(Lesson::class, 'ownedby');
     }
 
     public function activityTrack()
     {
-       return $this->morphOne(ActivityTrack::class,'for');
+        return $this->morphOne(ActivityTrack::class, 'for');
     }
 
     public function addedClasses()
     {
-        return $this->morphMany(ClassModel::class,'addedby');
+        return $this->morphMany(ClassModel::class, 'addedby');
     }
 
     public function addedCourses()
     {
-        return $this->morphMany(Course::class,'addedby');
+        return $this->morphMany(Course::class, 'addedby');
     }
 
     public function academicYears()
@@ -195,119 +195,120 @@ class School extends Model
 
     public function learners()
     {
-        return $this->morphedByMany(Learner::class,'schoolable','schoolables')
+        return $this->morphedByMany(Learner::class, 'schoolable', 'schoolables')
             ->withPivot(['type'])->withTimestamps();
     }
 
     public function parents()
     {
-        return $this->morphedByMany(ParentModel::class,'schoolable','schoolables')
+        return $this->morphedByMany(ParentModel::class, 'schoolable', 'schoolables')
             ->withTimestamps();
     }
 
     public function facilitators()
     {
-        return $this->morphedByMany(Facilitator::class,'schoolable','schoolables')
+        return $this->morphedByMany(Facilitator::class, 'schoolable', 'schoolables')
             ->withTimestamps();
     }
 
     public function professionals()
     {
-        return $this->morphedByMany(Professional::class,'schoolable','schoolables')
+        return $this->morphedByMany(Professional::class, 'schoolable', 'schoolables')
             ->withTimestamps();
     }
 
     public function addedCurricula()
     {
-        return $this->morphMany(Curriculum::class,'curriculable');
+        return $this->morphMany(Curriculum::class, 'curriculable');
     }
 
     public function ownedPrograms()
     {
-        return $this->morphMany(Program::class,'ownedby');
+        return $this->morphMany(Program::class, 'ownedby');
     }
 
     public function addedPrograms()
     {
-        return $this->morphMany(Program::class,'addedby');
+        return $this->morphMany(Program::class, 'addedby');
     }
 
     public function groupsOwned()
     {
-        return $this->morphMany(Group::class,'ownedby');
+        return $this->morphMany(Group::class, 'ownedby');
     }
 
     public function uniqueProgramsAdded()
     {
-        return $this->morphMany(Program::class,'addedby');
+        return $this->morphMany(Program::class, 'addedby');
     }
 
     public function uniqueCoursesAdded()
     {
-        return $this->morphMany(Course::class,'addedby');
+        return $this->morphMany(Course::class, 'addedby');
     }
 
     public function ownedCourses()
     {
-        return $this->morphMany(Course::class,'ownedby');
+        return $this->morphMany(Course::class, 'ownedby');
     }
 
     public function uniqueSubjectsAdded()
     {
-        return $this->morphMany(Subject::class,'addedby');
+        return $this->morphMany(Subject::class, 'addedby');
     }
-    
+
     public function uniqueGradesAdded()
     {
-        return $this->morphMany(Grade::class,'addedby');
+        return $this->morphMany(Grade::class, 'addedby');
     }
 
     public function aliasesAdded()
     {
-        return $this->morphMany(Alias::class,'addedby');
+        return $this->morphMany(Alias::class, 'addedby');
     }
 
     public function addedExtracurriculums()
     {
-        return $this->morphMany(Extracurriculum::class,'addedby');
+        return $this->morphMany(Extracurriculum::class, 'addedby');
     }
 
     public function ownedExtracurriculums()
     {
-        return $this->morphMany(Extracurriculum::class,'ownedby');
+        return $this->morphMany(Extracurriculum::class, 'ownedby');
     }
 
     public function extracurriculums()
     {
-        return $this->morphToMany(Extracurriculum::class,'extracurriculumable','extra')
-            ->withPivot(['resource','activity'])->withTimestamps();
+        return $this->morphToMany(Extracurriculum::class, 'extracurriculumable', 'extra')
+            ->withPivot(['resource', 'activity'])->withTimestamps();
     }
 
     public function programs()
     {
-        return $this->morphToMany(Program::class,'programmable','programmables')
-            ->withPivot(['activity','resource'])->withTimestamps();
+        return $this->morphToMany(Program::class, 'programmable', 'programmables')
+            ->withPivot(['activity', 'resource'])->withTimestamps();
     }
 
-    public function classes(){
-        return $this->morphToMany(ClassModel::class,'classable','classables', null, 'class_id')
+    public function classes()
+    {
+        return $this->morphToMany(ClassModel::class, 'classable', 'classables', null, 'class_id')
             ->withPivot(['resource'])->withTimestamps();
     }
 
     public function curricula()
     {
-        return $this->morphToMany(Curriculum::class,'curriculumable','curriculumables');
+        return $this->morphToMany(Curriculum::class, 'curriculumable', 'curriculumables');
     }
 
     public function courses()
     {
-        return $this->morphToMany(Course::class,'coursable','coursables')
-            ->withPivot(['activity','resource'])->withTimestamps();
+        return $this->morphToMany(Course::class, 'coursable', 'coursables')
+            ->withPivot(['activity', 'resource'])->withTimestamps();
     }
 
     public function subjects()
     {
-        return $this->morphToMany(subject::class,'subjectable','subjectables')
+        return $this->morphToMany(subject::class, 'subjectable', 'subjectables')
             ->withPivot(['activity'])->withTimestamps();
     }
 
@@ -321,8 +322,9 @@ class School extends Model
         return $this->morphMany(Fee::class, 'ownedby');
     }
 
-    public function grades(){
-        return $this->morphToMany(Grade::class,'gradeable','gradeables');
+    public function grades()
+    {
+        return $this->morphToMany(Grade::class, 'gradeable', 'gradeables');
     }
 
     public function gradingSystems()
@@ -332,12 +334,12 @@ class School extends Model
 
     public function marks()
     {
-        return $this->morphMany(Mark::class,'markedby');
+        return $this->morphMany(Mark::class, 'markedby');
     }
 
     public function addedAssessments()
     {
-        return $this->morphMany(Assessment::class,'addedby');
+        return $this->morphMany(Assessment::class, 'addedby');
     }
 
     public function reports()
@@ -349,150 +351,150 @@ class School extends Model
     {
         return $this->hasMany(ReportSection::class);
     }
-    
+
     public function requestsSent()
     {
-        return $this->morphMany(Request::class,'requestfrom');
+        return $this->morphMany(Request::class, 'requestfrom');
     }
-    
+
     public function requestsReceived()
     {
-        return $this->morphMany(Request::class,'requestto');
+        return $this->morphMany(Request::class, 'requestto');
     }
 
     public function links()
     {
-        return $this->morphMany(Link::class,'addedby');
+        return $this->morphMany(Link::class, 'addedby');
     }
 
     public function sharesOwned()
     {
-        return $this->morphMany(Share::class,'ownedby');
+        return $this->morphMany(Share::class, 'ownedby');
     }
 
     public function addedCommissions()
     {
-        return $this->morphMany(Commission::class,'addedby');
+        return $this->morphMany(Commission::class, 'addedby');
     }
 
     public function comments()
     {
-        return $this->morphMany(Comment::class,'commentable');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     public function commentsMade()
     {
-        return $this->morphMany(Comment::class,'commentedby');
+        return $this->morphMany(Comment::class, 'commentedby');
     }
 
     public function flagsRaised()
     {
-        return $this->morphMany(Flag::class,'flaggedby');
+        return $this->morphMany(Flag::class, 'flaggedby');
     }
 
     public function flags()
     {
-        return $this->morphMany(Flag::class,'flaggable');
+        return $this->morphMany(Flag::class, 'flaggable');
     }
 
     public function permissions()
     {
-        return $this->morphMany(Permission::class,'permitting');
+        return $this->morphMany(Permission::class, 'permitting');
     }
 
     public function booksAdded()
     {
-        return $this->morphMany(Book::class,'addedby');
+        return $this->morphMany(Book::class, 'addedby');
     }
 
     public function readsStarted()
     {
-        return $this->morphMany(Read::class,'startedby');
+        return $this->morphMany(Read::class, 'startedby');
     }
 
     public function wordsAdded()
     {
-        return $this->morphMany(Word::class,'wordable');
+        return $this->morphMany(Word::class, 'wordable');
     }
 
     public function poemsAdded()
     {
-        return $this->morphMany(Poem::class,'addedby');
+        return $this->morphMany(Poem::class, 'addedby');
     }
 
     public function activitiesAdded()
     {
-        return $this->morphMany(Activity::class,'addedby');
+        return $this->morphMany(Activity::class, 'addedby');
     }
 
     public function riddlesAdded()
     {
-        return $this->morphMany(Riddle::class,'addedby');
+        return $this->morphMany(Riddle::class, 'addedby');
     }
 
     public function discussions()
     {
-        return $this->morphMany(Discussion::class,'raisedby');
+        return $this->morphMany(Discussion::class, 'raisedby');
     }
 
     public function posts()
     {
-        return $this->morphMany(Post::class,'addedby');
+        return $this->morphMany(Post::class, 'addedby');
     }
 
     public function attachments()
     {
-        return $this->morphMany(PostAttachment::class,'attachedby');
+        return $this->morphMany(PostAttachment::class, 'attachedby');
     }
-    
+
     public function contributionsMarked()
     {
-        return $this->morphMany(Discussion::class,'markedby');
+        return $this->morphMany(Discussion::class, 'markedby');
     }
 
     public function expressionsAdded()
     {
-        return $this->morphMany(Expression::class,'expressionable');
+        return $this->morphMany(Expression::class, 'expressionable');
     }
 
     public function charactersAdded()
     {
-        return $this->morphMany(Character::class,'characterable');
+        return $this->morphMany(Character::class, 'characterable');
     }
 
     public function activitiesOwned()
     {
-        return $this->morphMany(Activity::class,'owned');
+        return $this->morphMany(Activity::class, 'owned');
     }
 
     public function conversations()
     {
-        return $this->morphToMany(Conversation::class,'accountable','conversationables');
+        return $this->morphToMany(Conversation::class, 'accountable', 'conversationables');
     }
 
     public function conversationAccounts()
     {
-        return $this->morphMany(ConversationAccount::class,'accountable');
+        return $this->morphMany(ConversationAccount::class, 'accountable');
     }
 
     public function employments()
     {
-        return $this->morphMany(Employment::class,'employer');
+        return $this->morphMany(Employment::class, 'employer');
     }
 
     public function messagesSent()
     {
-        return $this->morphMany(Message::class,'fromable');
+        return $this->morphMany(Message::class, 'fromable');
     }
 
     public function messagesReceived()
     {
-        return $this->morphMany(Message::class,'toable');
+        return $this->morphMany(Message::class, 'toable');
     }
 
     public function addedCollaborations()
     {
-        return $this->morphMany(Collaboration::class,'addedby');
+        return $this->morphMany(Collaboration::class, 'addedby');
     }
 
     public function ownedDiscounts()
@@ -513,29 +515,28 @@ class School extends Model
     public function currentAcademicYears()
     {
         return $this->academicYears()
-            ->whereDate('start_date','<',now())
-            ->whereDate('end_date','>',now());
+            ->whereDate('start_date', '<', now())
+            ->whereDate('end_date', '>', now());
     }
 
-    public function scopeWhereAdminByUserId($query,$id)
+    public function scopeWhereAdminByUserId($query, $id)
     {
-        return $query->whereHas('admins',function($query) use ($id){
-            $query->where('user_id',$id);
-        })->with(['admins'=> function($query) use ($id){
-            $query->where('user_id',$id);
+        return $query->whereHas('admins', function ($query) use ($id) {
+            $query->where('user_id', $id);
+        })->with(['admins' => function ($query) use ($id) {
+            $query->where('user_id', $id);
         }]);
     }
 
-    public function scopeWhereAdmin($query,$admin)
+    public function scopeWhereAdmin($query, $admin)
     {
-        return $query->whereHas('admins',function($query) use ($admin){
-            $query->where('id',$admin->id);
+        return $query->whereHas('admins', function ($query) use ($admin) {
+            $query->where('id', $admin->id);
         });
     }
-    
+
     protected static function newFactory()
     {
         return SchoolFactory::new();
     }
-    
 }

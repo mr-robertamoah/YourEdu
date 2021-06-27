@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\HasAliasesTrait;
 use Database\Factories\GradeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,27 +10,31 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Grade extends Model
 {
-    //
     use SoftDeletes,
-        HasFactory;
+        HasFactory,
+        HasAliasesTrait;
 
     protected $fillable = [
-        'name','description','age_group'
+        'name', 'description', 'age_group'
     ];
 
-    public function classes(){
+    public function classes()
+    {
         return $this->hasMany(ClassModel::class);
     }
 
-    public function gradable(){
+    public function gradable()
+    {
         return $this->morphTo();
     }
 
-    public function subjects(){
+    public function subjects()
+    {
         return $this->belongsToMany(Subject::class)->withTimestamps();
     }
 
-    public function facilitators(){
+    public function facilitators()
+    {
         return $this->belongsToMany(Facilitator::class)->withTimestamps();
     }
 
@@ -37,20 +42,20 @@ class Grade extends Model
     {
         return $this->hasMany(Admission::class);
     }
-    
-    public function aliases()
-    {
-        return $this->morphMany(Alias::class,'aliasable');
-    }
 
     public function attachments()
     {
-        return $this->morphMany(PostAttachment::class,'attachedwith');
+        return $this->morphMany(PostAttachment::class, 'attachedwith');
     }
-    
+
     public function requests()
     {
-        return $this->morphMany(Request::class,'requestable');
+        return $this->morphMany(Request::class, 'requestable');
+    }
+
+    public function scopeWhereName($query, $name)
+    {
+        return $query->where('name', $name);
     }
 
     protected static function newFactory()

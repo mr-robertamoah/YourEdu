@@ -2,17 +2,19 @@
 
 namespace App\DTOs;
 
+use App\Traits\DTOTrait;
 use Illuminate\Database\Eloquent\Model;
 
 class MarkDTO
 {
+    use DTOTrait;
+
     public ?string $itemId = null;
     public ?string $item = null;
     public ?string $accountId = null;
     public ?string $account = null;
     public ?string $score = null;
     public ?string $scoreOver = null;
-    public ?string $userId = null;
     public ?string $remark = null;
     public ?string $state = null;
     public bool $chat = false;
@@ -24,9 +26,8 @@ class MarkDTO
         return new static;
     }
 
-    public static function createFromData
-    (
-        $remark = null, 
+    public static function createFromData(
+        $remark = null,
         $chat = false,
         $scoreOver = null,
         $score = null,
@@ -36,8 +37,7 @@ class MarkDTO
         $itemId = null,
         $userId = null,
         $state = null,
-    )
-    {
+    ) {
         $static = new static();
 
         $static->remark = $remark;

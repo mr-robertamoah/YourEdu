@@ -1,3 +1,4 @@
+import { mapActions, mapGetters } from 'vuex';
 import FlagCover from '../components/FlagCover';
 
 export default {
@@ -17,18 +18,6 @@ export default {
         }
     },
     watch: {
-        computedItemable(newValue){
-            if (newValue) {
-                
-                this.setMyFlag()
-            }
-        },
-        getUser(newValue){
-            if (newValue) {
-                
-                this.setMyFlag()
-            }
-        },
         "flagData.isFlagged"(newValue){
             if (newValue) {
                 this.flagData.flagTitle = 'unflag this discussion'
@@ -47,14 +36,36 @@ export default {
             this.flagData.isFlagged = false
         },
     },
-    created () {
-        this.setMyFlag()
-
-        if (this.flagData.myFlag) {
-            this.flagData.isFlagged = true
-        }
+    computed: {
+        ...mapGetters(['isAdult'])
     },
     methods: {
+        ...mapActions([
+            'profile/createFlag', 'profile/deleteFlag',
+            'profile/newFlag', 'profile/removeFlag',
+            'home/newFlag', 'home/removeFlag',
+        ]),
+        listenForFlags() {
+            
+            Echo.channel(`youredu.${this.computedItem.item}.${this.computedItem.itemId}`)
+                .listen('.newFlag', data=>{
+                    this[`${this.$route.name}/newFlag`]({
+                        ...this.computedItem,
+                        flag: data.flag
+                    })
+                })
+                .listen('.deleteFlag', data => {
+                    
+                    if (this.computedItem.item === 'comment') {
+                        
+                        return
+                    }
+                    this[`${this.$route.name}/removeFlag`]({
+                        ...this.computedItem,
+                        flagId: data.flagId
+                    })
+                })
+        },
         reasonGiven(data){
             this.showFlagReason = false
             this.flagData.flagReason = data
@@ -79,26 +90,24 @@ export default {
                 this.flag(null)
                 return
             }
-            this.showProfilesText = 'flag as'
-            this.showProfilesAction = 'flag'
 
             if (!this.getUser) {
-                this.$emit('askLoginRegister','discussionsingle')
+                this.$emit('askLoginRegister', this.computedIem.item)
                 return
             }
             
             if (!this.getProfiles.length) {
-                this.smallModalInfo= true
-                this.smallModalDelete = false
-                this.smallModalTitle = 'you must have an account (eg. learner, parent, etc) before you can flag.'
-                this.showSmallModal = true
-                setTimeout(() => {
-                    this.clearSmallModal()
-                }, 4000);
-
+                this.issueCustomMessage({
+                    type: 'info',
+                    message: 'you must have an account (eg. learner, parent, etc) before you can flag.',
+                })
+                
+                this.clearSmallModal(false)
                 return
             }
             
+            this.showProfilesText = 'flag as'
+            this.showProfilesAction = 'flag'
             this.showFlagReason = true
         },
         async flag(who){
@@ -110,6 +119,10 @@ export default {
             data.where = this.$route.name
             data.itemId = this.computedItem.itemId
             data.item = this.computedItem.item
+            
+            if (this.schoolAdmin) {
+                data.adminId = this.schoolAdmin.id
+            }
 
             if (who) {
                 data.account = who.account
@@ -117,46 +130,55 @@ export default {
                 data.reason = this.flagData.flagReason
 
                 response = await this['profile/createFlag'](data)
-            } else {
+            } 
+            
+            if (this.flagData.myFlag?.flagId && !this.isAdult) {
+                this.alertDanger = true
+                this.alertMessage = "sorry 😞, you cannot unflag because it was flagged by a parent or school"
+                return
+            }
+
+            if (! who && this.flagData.myFlag) {
+
                 data.flagId = this.flagData.myFlag.id
 
                 response = await this['profile/deleteFlag'](data)
             }
 
-            this.loading =false
-            if (response.status) {
-                this.alertSuccess = true
-                if (who) {
-                    this.alertMessage = 'successfully flagged'
-                    this.$emit('postDeleteSuccess',{postId: data.itemId,type:'discussion'})
-                } else {
-                    this.alertMessage = 'successfully unflagged'
-                    this.$emit('postUnflaggedSuccess', {
-                        flag: response.flag,
-                        answerId: this.discussion.id
-                    })
-                }
-            } else {
-                this.flagData.isFlagged = !this.flagData.isFlagged
+            this.loading = false
+            this.flagData.flagReason = ''
+
+            if (! response.status) {
 
                 this.alertDanger = true
                 this.alertMessage = 'oops! something unfortunate happened. try again later 😏'
+                return
             }
-            
-            this.setMyFlag()
 
-            this.flagData.flagReason = ''
-            this.smallModalData = null
             this.clearSmallModal()
+            this.setMyFlag()
+            this.alertSuccess = true
+
+            if (who) {
+                this.alertMessage = 'successfully flagged'
+                this.$emit('flaggedSuccessful', this.computedItem) //postDeleteSuccess
+                return
+            }
+
+            this.alertMessage = 'successfully unflagged'
+            this.$emit('unflaggedSuccessful', { //postUnflaggedSuccess
+                flag: response.flag,
+                ...this.computedItem
+            })
         },
-        setMyFlag(){
+        setMyFlag() {
             if (! this.getUser || ! this.computedItemable) {
                 this.flagData.myFlag = null
                 return
             }
             
             let index = this.computedItemable.flags.findIndex(flag=>{
-                return flag.user_id === this.getUser.id
+                return flag.userId == this.getUser.id
             })
 
             if (index > -1) {

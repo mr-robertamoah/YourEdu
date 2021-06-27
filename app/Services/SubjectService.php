@@ -2,82 +2,133 @@
 
 namespace App\Services;
 
+use App\DTOs\SubjectDTO;
 use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\SubjectException;
+use App\Traits\AliasesServiceTrait;
+use App\Traits\ServiceTrait;
 use App\YourEdu\Subject;
 use Illuminate\Support\Str;
 
 class SubjectService
 {
-    public function subjectCreate($account,$accountId,$name,$description,$rationale,$aliases)
+    use ServiceTrait,
+        AliasesServiceTrait;
+
+    public function createSubjectAsAttachment(SubjectDTO $subjectDTO)
     {
-        if ($account === 'learner' || $account === 'parent') {
-            throw new SubjectException('learner or parent can only create an alias of a subject');
-        }
+        $this->checkAccountType($subjectDTO);
 
-        $subject = (new AttachmentService())->createAttachment($account,
-            $accountId,'subject',$name,$description,
-            $rationale,$aliases);
+        $this->ensureSubjectDoesntExist($subjectDTO);
 
-        if (is_null($subject)) {
-            throw new SubjectException('subject was not created');
-        }
+        $subjectDTO = $this->setAddedby($subjectDTO);
 
-        return $subject;
+        $subject = $this->makeSubject($subjectDTO);
+
+        $this->createAliases($subjectDTO->withAliasable($subject));
+
+        return $subject->refresh();
     }
 
-    public function subjectAliasCreate($subjectId,$account,$accountId,$name,$description)
+    private function ensureSubjectDoesntExist($subjectDTO)
     {
-        $mainSubject = getYourEduModel('subject',$subjectId);
-        if (is_null($mainSubject)) {
-            throw new AccountNotFoundException("subject not found with id {$subjectId}");
-        }
-        $mainAccount = getYourEduModel($account,$accountId);
-        if (is_null($mainAccount)) {
-            throw new AccountNotFoundException("{$account} not found with id {$accountId}");
+        if (!Subject::query()->whereName($subjectDTO->name)->exists()) {
+            return;
         }
 
-        $alias = (new AttachmentService())->createAttachmentAlias($mainAccount,$mainSubject,
-            $name,$description);
-
-        if (!$alias) {
-            throw new SubjectException('alias was not created');
-        }
-
-        return $mainSubject;
+        $this->throwSubjectException(
+            message: "sorry 😞, there is already a subject with the name {$subjectDTO->name}",
+            data: $subjectDTO
+        );
     }
 
-    public function subjectDelete($subjectId,$id)
+    private function makeSubject($subjectDTO)
     {
-        $subject = getYourEduModel('subject',$subjectId);
-        if (is_null($subject)) {
-            throw new AccountNotFoundException("subject not found with id {$subjectId}");
-        }
-
-        if ($subject->addedby->user_id !== $id) {
-            throw new SubjectException('you cannot delete subject you did not create');
-        }
-
-        $subject->delete();
-
-        return 'successful';
+        return $subjectDTO->addedby->uniqueSubjectsAdded()->create([
+            'name' => $subjectDTO->name,
+            'description' => $subjectDTO->description,
+            'rationale' => $subjectDTO->rationale,
+        ]);
     }
 
-    public static function subjectAttachItem($subjectId,$item,$activity)
+    private function setAddedby($subjectDTO)
+    {
+        if ($subjectDTO->addedby) {
+            return $subjectDTO;
+        }
+
+        return $subjectDTO->withAddedby(
+            $this->getModel($subjectDTO->account, $subjectDTO->accountId)
+        );
+    }
+
+    private function checkAccountType($subjectDTO)
+    {
+        if (!in_array($subjectDTO->account, ['learner', 'parent'])) {
+            return;
+        }
+
+        $this->throwSubjectException(
+            message: 'sorry 😞, learners or parents can only create an alias of a subject',
+            data: $subjectDTO
+        );
+    }
+
+    public function createSubjectAttachmentAlias(SubjectDTO $subjectDTO)
+    {
+        $mainSubject = $this->getModel('subject', $subjectDTO->subjectId);
+
+        $subjectDTO = $this->setAddedby($subjectDTO);
+
+        $alias = $this->createAlias(
+            $subjectDTO
+                ->withAliasable($subject)
+                ->setAlias()
+        );
+
+        if (is_not_null($alias)) {
+            return $subject->refresh();
+        }
+
+        $this->throwSubjectException(
+            message: 'alias was not created',
+            data: $subjectDTO
+        );
+    }
+
+    public function deleteSubjectAsAttachment(SubjectDTO $subjectDTO)
+    {
+        $subject = $this->getModel('subject', $subjectDTO->subjectId);
+
+        $this->checkAttachmentAuthorization($subject, $subjectDTO);
+
+        $deletionStatus = $subject->delete();
+
+        if ($deletionStatus) {
+            return;
+        }
+
+        $this->throwSubjectException(
+            message: "deletion of the subject, with name: {$subject->name}, failed",
+            data: $subjectDTO
+        );
+    }
+
+    public static function subjectAttachItem($subjectId, $item, $activity)
     {
         if (is_null(
-            $item->subjects->where('id',$subjectId)->first()
+            $item->subjects->where('id', $subjectId)->first()
         )) {
             $pivotArray = is_string($activity) ? ['activity' => Str::upper($activity)] : [];
-            $item->subjects()->attach($subjectId,$pivotArray);
+            $item->subjects()->attach($subjectId, $pivotArray);
             $item->save();
         }
     }
 
-    public static function subjectUnattachItem($subjectId,$item)
+    public static function subjectUnattachItem($subjectId, $item)
     {
         if (!is_null(
-            $item->subjects->where('id',$subjectId)->first()
+            $item->subjects->where('id', $subjectId)->first()
         )) {
             $item->subjects()->detach($subjectId);
             $item->save();
@@ -87,5 +138,13 @@ class SubjectService
     public static function getSubjects()
     {
         return Subject::all();
+    }
+
+    private function throwSubjectException($message, $data = null)
+    {
+        throw new SubjectException(
+            message: $message,
+            data: $data
+        );
     }
 }

@@ -15,9 +15,7 @@ export default {
                 return
             }
 
-            setTimeout(() => {
-                this.clearSmallModal()
-            }, 4000);
+            this.clearSmallModal(false)
         }
     },
     methods: {
@@ -27,18 +25,21 @@ export default {
             this.smallModalDelete = true
             this.showSmallModal = true
         },
-        clearSmallModal(){
-            this.showSmallModal = false,
-            this.smallModalInfo = false
-            this.smallModalDelete = false
-            this.smallModalAlerting = false
-            this.smallModalMessage = ''
+        clearSmallModal(immediate = true) {
+            setTimeout(() => {
+                this.showSmallModal = false,
+                this.smallModalInfo = false
+                this.smallModalDelete = false
+                this.smallModalAlerting = false
+                this.smallModalData = null
+                this.smallModalMessage = ''
+            }, immediate ? 0 : 4000);
         },
         issueCustomMessage(data) {
             this.smallModalInfo= data.type === 'info' ? true : false
             this.smallModalDelete= data.type === 'delete' ? true : false
             this.smallModalData = data.data
-            this.smallModalMessage = message
+            this.smallModalMessage = data.message
             this.showSmallModal = true
         },
         issueSmallModalInfoMessage(data) {

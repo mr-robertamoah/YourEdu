@@ -13,6 +13,7 @@ use App\Http\Resources\DashboardProgramResource;
 use App\Http\Resources\ProgramResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\ProgramCreatedNotification;
+use App\Traits\AliasesServiceTrait;
 use App\Traits\DashboardItemServiceTrait;
 use App\User;
 use App\YourEdu\Programmable;
@@ -22,35 +23,25 @@ use Illuminate\Support\Str;
 
 class ProgramService
 {
-    use DashboardItemServiceTrait;
-    
+    use DashboardItemServiceTrait,
+        AliasesServiceTrait;
+
     public function createProgramAsAttachment(ProgramDTO $programDTO)
     {
-        try { 
+        try {
             DB::beginTransaction();
 
-            $this->checkAttachmentCreatorAccountType($programDTO);
-            
-            $account = $this->getModel($programDTO->account, $programDTO->accountId);
+            $this->checkAttachedbyAccount($programDTO);
 
-            $program = (new AttachmentService())->createAttachmentWithAccount(
-                AttachmentDTO::createFromData(
-                    type: 'program',
-                    name: $programDTO->name,
-                    description: $programDTO->description,
-                    rationale: $programDTO->rationale,
-                    aliases: $programDTO->aliases
-                )->withAddedby($account)
-            );
+            $programDTO->isAttachment = true;
 
-            if (is_null($program)) {
-                $this->throwProgramException(
-                    message: 'program was not created',
-                    data: $programDTO
-                );
-            }
+            $program = $this->createProgram($programDTO);
 
-            return $program;
+            $programDTO = $programDTO->withAddedby($program->addedby);
+
+            $this->createAliases($programDTO->withAliasable($program));
+
+            return $program->refresh();
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
@@ -59,29 +50,28 @@ class ProgramService
 
     public function createProgramAttachmentAlias(ProgramDTO $programDTO)
     {
-        try { 
+        try {
             DB::beginTransaction();
-            $program = $this->getModel('program',$programDTO->programId);
-            
+            $program = $this->getModel('program', $programDTO->programId);
+
             $programDTO = $programDTO->withAddedby(
-                $this->getModel($programDTO->account,$programDTO->accountId)
-            );
-            
-            $alias = (new AttachmentService())->createAttachmentAlias(
-                $programDTO->addedby,
-                $program,
-                $programDTO->name,
-                $programDTO->description
+                $this->getModel($programDTO->account, $programDTO->accountId)
             );
 
-            if (is_null($alias)) {
-                $this->throwProgramException(
-                    message: 'alias was not created',
-                    data: $programDTO
-                );
+            $alias = $this->createAlias(
+                $programDTO
+                    ->withAliasable($program)
+                    ->setAlias()
+            );
+
+            if (is_not_null($alias)) {
+                return $program->refresh();
             }
 
-            return $program;
+            $this->throwProgramException(
+                message: 'alias was not created',
+                data: $programDTO
+            );
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
@@ -90,7 +80,7 @@ class ProgramService
 
     public function deleteProgramAsAttachment(ProgramDTO $programDTO)
     {
-        $program = $this->getModel('program',$programDTO->programId);
+        $program = $this->getModel('program', $programDTO->programId);
 
         $this->checkAttachmentAuthorization($program, $programDTO);
 
@@ -99,29 +89,26 @@ class ProgramService
         if ($deletionStatus) {
             return;
         }
-        
+
         $this->throwProgramException(
-            message:"deletion of the program, with name: {$program->name}, failed",
+            message: "deletion of the program, with name: {$program->name}, failed",
             data: $programDTO
         );
     }
 
-    public static function programAttachItem($programId,$item,$activity)
+    public static function programAttachItem($programId, $item, $activity)
     {
-        ray($item)->green();
-        if (is_null(
-            $item->programs->where('id',$programId)->first()
-        )) {
-            $item->programs()->attach($programId,['activity' => Str::upper($activity)]);
-            $item->save();
+        if ($item->programs->where('id', $programId)->exists()) {
+            return;
         }
+
+        $item->programs()->attach($programId, ['activity' => Str::upper($activity)]);
+        $item->save();
     }
 
-    public static function programUnattachItem($programId,$item)
+    public static function programUnattachItem($programId, $item)
     {
-        if (!is_null(
-            $item->programs->where('id',$programId)->first()
-        )) {
+        if ($item->programs->where('id', $programId)->exists()) {
             $item->programs()->detach($programId);
             $item->save();
         }
@@ -130,15 +117,15 @@ class ProgramService
     public function createProgram(ProgramDTO $programDTO)
     {
         $programDTO = $programDTO->withAddedby(
-            $this->getModel($programDTO->account,$programDTO->accountId)
+            $this->getModel($programDTO->account, $programDTO->accountId)
         );
-        
-        $this->checkAccountOwnership($programDTO->addedby,$programDTO);
+
+        $this->checkAccountOwnership($programDTO->addedby, $programDTO);
 
         $program = $programDTO->addedby->addedPrograms()->create([
             'name' => $programDTO->name,
-            'state' => $programDTO->owner === 'school' && 
-                ($programDTO->account !== 'admin' && $programDTO->account !== 'school') 
+            'state' => $programDTO->owner === 'school' &&
+                ($programDTO->account !== 'admin' && $programDTO->account !== 'school')
                 ? 'PENDING' : 'ACCEPTED',
             'description' => $programDTO->description,
         ]);
@@ -147,9 +134,13 @@ class ProgramService
             $this->throwProgramException("program creation failed");
         }
 
+        if ($programDTO->isAttachment) {
+            return $program;
+        }
+
         $programDTO = $programDTO->withOwnedby(
             $this->getProgramOwnedby($program, $programDTO)
-        );   
+        );
 
         $program->ownedby()->associate($programDTO->ownedby);
         $program->save();
@@ -159,7 +150,7 @@ class ProgramService
             $program,
             $programDTO,
         );
-        
+
         $programDTO->methodType = 'created';
 
         $this->notifySchoolAdmins($program, $programDTO);
@@ -169,12 +160,10 @@ class ProgramService
         return $program;
     }
 
-    private function getProgramOwnedby
-    (
+    private function getProgramOwnedby(
         $program,
         $programDTO
-    )
-    {
+    ) {
         if ($program->ownedby) {
             return $program->ownedby;
         }
@@ -182,47 +171,44 @@ class ProgramService
         if ($programDTO->account === $programDTO->owner && $programDTO->accountId === $programDTO->ownerId) {
             return $programDTO->addedby;
         }
-        
-        return $this->getModel($programDTO->owner,$programDTO->ownerId);
+
+        return $this->getModel($programDTO->owner, $programDTO->ownerId);
     }
 
-    private function notifySchoolAdmins
-    (
+    private function notifySchoolAdmins(
         $program,
         $programDTO,
-    )
-    {
-        if ($programDTO->ownedby->accountType !== 'school') { 
+    ) {
+        if ($programDTO->ownedby->accountType !== 'school') {
             return;
         }
 
         $userIds = array_filter(
             $programDTO->ownedby->getAdminIds(),
-            function($id) use ($programDTO){
+            function ($id) use ($programDTO) {
                 return $id !== $programDTO->userId;
             }
         );
 
         $notification = $this->getNotification(
-            $program, $programDTO
-        );        
+            $program,
+            $programDTO
+        );
 
         if (is_null($notification)) {
             return;
         }
 
         Notification::send(
-            User::whereIn('id',$userIds)->get(), 
+            User::whereIn('id', $userIds)->get(),
             $notification
         );
     }
 
-    private function getNotification
-    (
+    private function getNotification(
         $program,
         $programDTO,
-    )
-    {
+    ) {
         if ($programDTO->methodType === 'created') {
             return new ProgramCreatedNotification(
                 new UserAccountResource($programDTO->addedby),
@@ -234,12 +220,10 @@ class ProgramService
         return null;
     }
 
-    private function getEvent
-    (
+    private function getEvent(
         $program,
         $programDTO,
-    )
-    {
+    ) {
         if ($programDTO->methodType === 'created') {
             return new NewProgramEvent([
                 'account' => $programDTO->owner,
@@ -269,12 +253,10 @@ class ProgramService
         return null;
     }
 
-    private function broadCastProgram
-    (
+    private function broadCastProgram(
         $program,
         $programDTO,
-    )
-    {
+    ) {
         $event = $this->getEvent($program, $programDTO);
 
         if (is_null($event)) {
@@ -284,24 +266,20 @@ class ProgramService
         broadcast($event)->toOthers();
     }
 
-    private function throwProgramException
-    (
+    private function throwProgramException(
         $message,
         $data = null
-    )
-    {
+    ) {
         throw new ProgramException(
             message: $message,
             data: $data
         );
     }
 
-    private function addMainProgramDetails
-    (
+    private function addMainProgramDetails(
         $program,
         ProgramDTO $programDTO
-    )
-    {
+    ) {
         $this->createAttachments(
             $program,
             $programDTO->addedby,
@@ -327,68 +305,70 @@ class ProgramService
         );
 
         $this->trackSchoolAdmin($program, $programDTO);
-        
+
         $this->updateAccountProgramFacilitation(
-            program: $program, 
-            programDTO: $programDTO, 
+            program: $program,
+            programDTO: $programDTO,
             attachedItems: $attachedItems
         );
 
         if ($programDTO->account === 'facilitator' || $programDTO->account === 'professional') {
-            
+
             if ($programDTO->facilitate) {
-                self::programAttachItem($program->id,$programDTO->addedby,'facilitate');
+                self::programAttachItem($program->id, $programDTO->addedby, 'facilitate');
             } else {
-                self::programUnattachItem($program->id,$programDTO->addedby);
+                self::programUnattachItem($program->id, $programDTO->addedby);
             }
         }
     }
 
-    private function updateAccountProgramFacilitation
-    (
-        $program, 
+    private function updateAccountProgramFacilitation(
+        $program,
         $programDTO,
         $attachedItems = [],
         $detachedItems = []
-    )
-    {
-        if ($programDTO->addedby->accountType !== 'facilitator' && 
-            $programDTO->addedby->accountType !== 'professional') {
+    ) {
+        if (
+            $programDTO->addedby->accountType !== 'facilitator' &&
+            $programDTO->addedby->accountType !== 'professional'
+        ) {
             return;
         }
-        
+
         if ($programDTO->facilitate) {
-            self::programAttachItem($program->id,$programDTO->addedby,'facilitate');
-            
+            self::programAttachItem($program->id, $programDTO->addedby, 'facilitate');
+
             $this->attachFacilitatingAccountToItems(
-                $program, $programDTO, $attachedItems
+                $program,
+                $programDTO,
+                $attachedItems
             );
-            
+
             return $program->refresh();
         }
 
-        self::programUnattachItem($program->id,$programDTO->addedby);
-        
+        self::programUnattachItem($program->id, $programDTO->addedby);
+
         $this->detachFacilitatingAccountToItems(
-            $program, $programDTO, $detachedItems
+            $program,
+            $programDTO,
+            $detachedItems
         );
 
         return $program->refresh();
     }
 
-    private function attachFacilitatingAccountToItems
-    (
+    private function attachFacilitatingAccountToItems(
         $program,
         $programDTO,
         $attachedItems,
-    )
-    {
+    ) {
         foreach ($attachedItems as $facilitatable) {
 
             if ($facilitatable->doesntUseFacilitationDetail()) {
                 continue;
             }
-            
+
             FacilitationService::addFacilitationDetailsWithModels(
                 $program,
                 $facilitatable,
@@ -397,13 +377,11 @@ class ProgramService
         }
     }
 
-    private function detachFacilitatingAccountToItems
-    (
+    private function detachFacilitatingAccountToItems(
         $program,
         $programDTO,
         $detachedItems
-    )
-    {
+    ) {
         foreach ($detachedItems as $facilitatable) {
 
             if ($facilitatable->doesntUseFacilitationDetail()) {
@@ -417,30 +395,29 @@ class ProgramService
             );
         }
     }
-    
+
     public function getProgram($programId)
     {
-        $program = $this->getModel('program',$programId);
+        $program = $this->getModel('program', $programId);
 
         return $program;
     }
-    
+
     public function getPrograms()
     {
-        
     }
-    
+
     public function updateProgram(ProgramDTO $programDTO)
     {
         $programDTO = $programDTO->withAddedby(
-            $this->getModel($programDTO->account,$programDTO->accountId)
+            $this->getModel($programDTO->account, $programDTO->accountId)
         );
-        
-        $this->checkAccountOwnership($programDTO->addedby,$programDTO);
 
-        $program = $this->getModel('program',$programDTO->programId);
-        
-        $this->checkProgramAuthorization($program,$programDTO);
+        $this->checkAccountOwnership($programDTO->addedby, $programDTO);
+
+        $program = $this->getModel('program', $programDTO->programId);
+
+        $this->checkProgramAuthorization($program, $programDTO);
 
         $program->update([
             'name' => $programDTO->name,
@@ -453,15 +430,15 @@ class ProgramService
             $program,
             $programDTO,
         );
-        
+
         $this->detachFromItems(
             attachments: $programDTO->removedItems,
             attachable: $program,
         );
 
-        $this->removeAttachments( 
+        $this->removeAttachments(
             item: $program,
-            account: ($programDTO->account === 'facilitator' || $programDTO->account === 'professional') ? 
+            account: ($programDTO->account === 'facilitator' || $programDTO->account === 'professional') ?
                 $programDTO->addedby : null,
             facilitate: $programDTO->facilitate,
             attachments: $programDTO->removedAttachments,
@@ -478,12 +455,12 @@ class ProgramService
         return $program;
     }
 
-    public function checkProgramAuthorization($program,$programDTO)
+    public function checkProgramAuthorization($program, $programDTO)
     {
-        if ($this->hasAuthorization($program,$programDTO->userId)) {
+        if ($this->hasAuthorization($program, $programDTO->userId)) {
             return;
         }
-        
+
         $this->throwProgramException(
             message: "You are not authorized to edit or delete the program with id {$program->id}",
             data: $programDTO
@@ -492,25 +469,25 @@ class ProgramService
 
     public function deleteProgram(ProgramDTO $programDTO)
     {
-        $program = $this->getModel('program',$programDTO->programId);
-        
-        $this->checkProgramAuthorization($program,$programDTO);
+        $program = $this->getModel('program', $programDTO->programId);
+
+        $this->checkProgramAuthorization($program, $programDTO);
 
         $this->trackSchoolAdmin($program, $programDTO);
 
         if ($programDTO->action === 'undo') {
-            return $this->changeState($program,'accepted');
-        } 
-        
-        if ($this->paymentMadeFor($program) || $this->usedByAnotherItem($program)) {
-            return $this->changeState($program,'deleted');
+            return $this->changeState($program, 'accepted');
         }
-        
+
+        if ($this->paymentMadeFor($program) || $this->usedByAnotherItem($program)) {
+            return $this->changeState($program, 'deleted');
+        }
+
         $programDTO->methodType = 'deleted';
         $this->broadcastProgram($program, $programDTO);
 
         $program->delete();
-        return null;            
+        return null;
     }
 
     private function broadcastUpdate($program)
@@ -526,10 +503,10 @@ class ProgramService
     {
         if (
             $program->whereHas('payments')
-                ->orWhereHas('courses',function($query) {
-                    $query->whereHas('payments');
-                })
-                ->first()
+            ->orWhereHas('courses', function ($query) {
+                $query->whereHas('payments');
+            })
+            ->first()
         ) {
             return true;
         }
@@ -538,8 +515,9 @@ class ProgramService
 
     private function usedByAnotherItem($program)
     {
-        if (Programmable::where('program_id',$program->id)
-            ->where('resource',true)->count()) {
+        if (Programmable::where('program_id', $program->id)
+            ->where('resource', true)->count()
+        ) {
             return true;
         }
         return false;

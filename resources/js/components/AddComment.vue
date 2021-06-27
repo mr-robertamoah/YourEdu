@@ -106,14 +106,13 @@ import FilePreview from './FilePreview'
 import AutoAlert from './AutoAlert'
 import JustFade from './transitions/JustFade'
 import FadeLeftFast from './transitions/FadeLeftFast'
-import ProfileBar from './profile/ProfileBar'
+import Profiles from '../mixins/Profiles.mixin';
 import { mapGetters, mapActions } from 'vuex'
 import { strings } from '../services/helpers'
 
     export default {
         components: {
             DotLoader,
-            ProfileBar,
             FadeLeftFast,
             JustFade,
             AutoAlert,
@@ -164,11 +163,11 @@ import { strings } from '../services/helpers'
                 default:false
             }
         },
+        mixins: [Profiles],
         data() {
             return {
                 commentText: '',
                 error: '',
-                showProfiles: false,
                 showPreview: false,
                 clickedButton: '',
                 imageType: 'image/apng,image/bmp,image/gif,image/x-icon,image/jpeg,image/png,image/svg+xml,image/webp',
@@ -213,11 +212,8 @@ import { strings } from '../services/helpers'
             }
         },
         computed: {
-            ...mapGetters(['getProfiles','getActiveProfile', 'profile/getCommentingStatus'
+            ...mapGetters(['getActiveProfile', 'profile/getCommentingStatus'
                 ,'profile/getActiveProfile', 'profile/getMsg']),
-            computedProfiles(){
-                return this.getProfiles ? this.getProfiles : []
-            },
             computedCommenting(){
                 return this['profile/getCommentingStatus'] &&  this.commentText && this.commentText.length ?
                     true : false
@@ -296,26 +292,26 @@ import { strings } from '../services/helpers'
             addComment() {
                 if (this.edit) {
                     let who = {}
-                    who['account'] = strings.getAccount(this.editableData.commentedby_type)
-                    who['accountId'] = this.editableData.commentedby_id
+                    who['account'] = this.editableData.commentedby.account
+                    who['accountId'] = this.editableData.commentedby.accountId
                     if (who.account === 'school') {                        
                         who['admin'] = this.schoolAdmin
                     }
 
                     this.clickedProfile(who)
-                } else {
-                    if (this.commentText.length) {
-                        if (this.account.account) {
-                            this.clickedProfile(this.account)
-                        } else {
-                            this.showProfiles = true
-
-                            setTimeout(() => {
-                                this.showProfiles = false
-                            }, 4000);
-                        }
-                    }
+                    return
                 }
+
+                if (! this.commentText.length) {
+                    return    
+                }
+
+                if (this.account?.account) {
+                    this.clickedProfile(this.account)
+                    return
+                }
+
+                this.showProfiles = true
             },
             async clickedProfile(who){
                 this.showProfiles = false
@@ -342,6 +338,8 @@ import { strings } from '../services/helpers'
                     data = {
                         commmentId: this.editableData.id,
                         where: this.$route.name,
+                        item: strings.getAccount(this.editableData.commentable_type),
+                        itemId: this.editableData.commentable_id
                     }
                     
                     response = await this['profile/updateComment']({data,formData})

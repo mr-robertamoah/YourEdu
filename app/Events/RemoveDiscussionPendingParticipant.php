@@ -21,7 +21,9 @@ class RemoveDiscussionPendingParticipant implements ShouldBroadcast
      *
      * @return void
      */
-    public function __construct(private $invitationDTO){}
+    public function __construct(private $invitationDTO)
+    {
+    }
 
     /**
      * Get the channels the event should broadcast on.
@@ -41,7 +43,7 @@ class RemoveDiscussionPendingParticipant implements ShouldBroadcast
     public function broadcastWith()
     {
         return [
-            'pendingParticipantId' => $this->invitationDTO->participantId
+            'userId' => $this->invitationDTO->userId
         ];
     }
 }

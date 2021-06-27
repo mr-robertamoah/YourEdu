@@ -15,6 +15,7 @@ const home = {
         discussionsFollowers: [],
         discussionsFollowings: [],
         discussionsAttachments: [],
+        lessons: [],
         lessonsMine: [],
         lessonsFollowers: [],
         lessonsFollowings: [],
@@ -54,6 +55,7 @@ const home = {
         assessmentsFollowers: [],
         assessmentsFollowings: [],
         loading: false,
+        vistedSections: []
     }),
 
     mutations: mutations,

@@ -15,7 +15,7 @@ class CreateMarksTable extends Migration
     {
         Schema::create('marks', function (Blueprint $table) {
             $table->id();
-            $table->nullableMorphs('markable'); // answer
+            $table->nullableMorphs('markable'); // answer work
             $table->nullableMorphs('markedby'); // professional facilitator parent school
             $table->integer('score')->nullable();
             $table->integer('score_over')->nullable();

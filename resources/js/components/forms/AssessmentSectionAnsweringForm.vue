@@ -1,35 +1,25 @@
 <template>
     <div class="assessment-section-answering-form">
-        <div class="timimg">
-            <div class="assessment-timimg time">
-                <div class="item">
-                    Assessment:
-                </div>
-                <div class="item-time">
-                    12 min
-                </div>
-            </div>
-            <div class="assessment-section-timimg time">
-                <div class="item">
-                    Current Assessment Section
-                </div>
-                <div class="item-time">
-                    6 min
-                </div>
-            </div>
+        <assessment-section-answering-badge
+            class="h-full"
+            :assessmentSection="currentAssessmentSection"
+        ></assessment-section-answering-badge>
+
+        <div v-if="! currentAssessmentSection">
+            sorry😞, there is no section for this assessment
         </div>
 
-        <div class="assessment-sections">
-            <assessment-section-answering-badge
-                class="assessment-section"
-                v-for="assessmentSection in assessment.asseessmentSections"
-                :key="assessmentSection.id"
-                :assessmentSection="assessmentSection"
-            ></assessment-section-answering-badge>
-        </div>
-
-        <div class="links">
-
+        <div class="flex-shrink-0 flex justify-around">
+            <button 
+                class="text-gray-500 disabled:bg-gray-800 disabled:text-gray-200 p-2 border-b cursor-pointer hover:shadow-sm hover:bg-gray-50 rounded"
+                @click="clickedSectionNavigator('previous')"
+                :disabled="firstAssessmentSectionId === currentAssessmentSection.id"
+            >previous</button>
+            <button 
+                class="text-gray-500 disabled:bg-gray-800 disabled:text-gray-200 p-2 border-b cursor-pointer hover:shadow-sm hover:bg-gray-50 rounded"
+                @click="clickedSectionNavigator('next')"
+                :disabled="lastAssessmentSectionId === currentAssessmentSection.id"
+            >next</button>
         </div>
     </div>
 </template>
@@ -46,6 +36,59 @@ import AssessmentSectionAnsweringBadge from '../dashboard/AssessmentSectionAnswe
                 default() {
                     return null
                 }
+            },
+        },
+        watch: {
+            assessment: {
+                immediate: true,
+                handler(newValue, oldValue) {
+                    if (! newValue) {
+                        return
+                    }
+                    
+                    if (! newValue.assessmentSections.length) {
+                        return
+                    }
+
+                    this.currentAssessmentSection = newValue.assessmentSections[0]
+                    this.firstAssessmentSectionId = newValue.assessmentSections[0].id
+                    this.lastAssessmentSectionId = newValue
+                        .assessmentSections[newValue.assessmentSections.length - 1].id
+                }
+            }
+        },
+        data() {
+            return {
+                currentAssessmentSection: null,
+                firstAssessmentSectionId: null,
+                lastAssessmentSectionId: null,
+            }
+        },
+        computed: {
+            computedCurrentAssessmentSectionIndex() {
+                return this.assessment.assessmentSections.indexOf(
+                    this.currentAssessmentSection
+                )
+            }
+        },
+        methods: {
+            clickedSectionNavigator(text) {
+                if (text === 'next') {
+                    this.goToNext()
+                    return
+                }
+
+                this.goToPrevious()
+            },
+            goTo(number) {
+                this.currentAssessmentSection = this.assessment
+                    .assessmentSections[this.computedCurrentAssessmentSectionIndex + number]
+            },
+            goToNext() {
+                this.goTo(1)
+            },
+            goToPrevious() {
+                this.goTo(-1)
             },
         },
     }

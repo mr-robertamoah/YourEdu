@@ -3,8 +3,12 @@
 namespace App\YourEdu;
 
 use App\Traits\FlaggableTrait;
+use App\Traits\HasAddedbyTrait;
+use App\Traits\HasAttachableTrait;
 use App\Traits\HasCommentsTrait;
+use App\Traits\HasLikeableTrait;
 use App\Traits\HasParticipantsTrait;
+use App\Traits\HasSaveableTrait;
 use App\Traits\HasSocialMediaTrait;
 use Database\Factories\AssessmentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,18 +17,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Assessment extends Model
 {
-    use SoftDeletes, 
+    use SoftDeletes,
         HasFactory,
         FlaggableTrait,
         HasSocialMediaTrait,
         HasParticipantsTrait,
-        HasCommentsTrait;
+        HasCommentsTrait,
+        HasAddedbyTrait,
+        HasLikeableTrait,
+        HasSaveableTrait,
+        HasAttachableTrait;
 
     const MARKERS_ACCOUNT_TYPES = ['professional', 'facilitator'];
 
     protected $fillable = [
-        'name', 'description', 'total_mark','duration',
-        'published_at','due_at', 'type', 'social'
+        'name', 'description', 'total_mark', 'duration',
+        'published_at', 'due_at', 'type', 'social'
     ];
 
     protected $casts = [
@@ -35,11 +43,6 @@ class Assessment extends Model
     public function works()
     {
         return $this->hasMany(Work::class);
-    }
-
-    public function hasBeenTaken()
-    {
-        return $this->works->count() > 0;
     }
 
     public function assessmentSections()
@@ -118,10 +121,10 @@ class Assessment extends Model
             table: 'assessmentables'
         )->withTimestamps();
     }
-    
+
     public function payments()
     {
-        return $this->morphMany(Payment::class,'what');
+        return $this->morphMany(Payment::class, 'what');
     }
 
     public function assessmentable()
@@ -134,39 +137,41 @@ class Assessment extends Model
         return $this->hasMany(Assessmentable::class);
     }
 
-    public function addedby()
-    {
-        return $this->morphTo();
-    }
-
     public function reportDetail()
     {
         return $this->belongsTo(ReportDetail::class);
     }
-    
+
     public function discussions()
     {
-        return $this->morphMany(Discussion::class,'discussionfor');
+        return $this->morphMany(Discussion::class, 'discussionfor');
     }
 
-    public function attachments()
+    public function hasBeenTaken()
     {
-        return $this->morphMany(PostAttachment::class,'attachable');
+        return $this->works()->count() > 0;
     }
 
     public function discussion()
     {
-        return $this->discussions->first();
+        return $this->discussions()->first();
     }
 
     public function hasDiscussion()
     {
-        return $this->discussions->count() > 0;
+        return $this->discussions()->count() > 0;
     }
 
     public function doesntHaveDiscussion()
     {
         return !$this->hasDiscussion();
+    }
+
+    public function getWorkFor($account)
+    {
+        return $this->works()
+            ->whereAddedby($account)
+            ->first();
     }
 
     public function allItems()
@@ -193,11 +198,19 @@ class Assessment extends Model
 
     public function markers()
     {
+        return $this->markersAssessmentable()->pluck('assessmentable');
+    }
+
+    public function markersAssessmentable()
+    {
         return Assessmentable::query()
             ->where('assessment_id', $this->id)
+            ->with('assessmentable')
             ->whereMarker()
-            ->get()
-            ->pluck('assessmentable');
+            ->orWhere(function ($query) {
+                $query->whereAssessmentableAccount($this->addedby);
+            })
+            ->get();
     }
 
     public function doesntHaveSpecificAssessmentable($assessmentable, $itemable)
@@ -220,19 +233,19 @@ class Assessment extends Model
     public function hasPayments()
     {
         return $this->has('payments')
-            ->orWhereHas('programs',function($query) {
+            ->orWhereHas('programs', function ($query) {
                 $query->has('payments');
             })
-            ->orWhereHas('classes',function($query) {
+            ->orWhereHas('classes', function ($query) {
                 $query->has('payments');
             })
-            ->orWhereHas('lessons',function($query) {
+            ->orWhereHas('lessons', function ($query) {
                 $query->has('payments');
             })
-            ->orWhereHas('courses',function($query) {
+            ->orWhereHas('courses', function ($query) {
                 $query->has('payments');
             })
-            ->orWhereHas('extracurriculums',function($query) {
+            ->orWhereHas('extracurriculums', function ($query) {
                 $query->has('payments');
             })
             ->count() > 0;
@@ -264,7 +277,7 @@ class Assessment extends Model
         $assessmentSectionIds = $this->assessmentSections->pluck('id')->toArray();
 
         return count(
-            array_filter($sections, function($section) use ($assessmentSectionIds) {
+            array_filter($sections, function ($section) use ($assessmentSectionIds) {
                 return in_array(
                     $section->assessmentSectionId,
                     $assessmentSectionIds
@@ -280,7 +293,7 @@ class Assessment extends Model
 
     public function isNotSocial()
     {
-        return ! $this->isSocial();
+        return !$this->isSocial();
     }
 
     public function isMarker($userId)
@@ -293,30 +306,142 @@ class Assessment extends Model
 
     public function isNotMarker($userId)
     {
-        return ! $this->isMarker($userId);
+        return !$this->isMarker($userId);
+    }
+
+    public function getOwnerAndMarkersUsers()
+    {
+        $users = $this->assessmentables()
+            ->whereMarker()
+            ->with(['assessmentable' => function ($query) {
+                $query->with('user');
+            }])
+            ->get()
+            ->map(fn ($assessmentable) => $assessmentable->assessmentable->user);
+
+        $users->push($this->addedby->user);
+
+        return $users;
+    }
+
+    public function hasAccess($userId, $onlyMain = false)
+    {
+        if ($this->isntUsedByAnotherItem()) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($this->lessons, $userId, $onlyMain)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($this->courses, $userId, $onlyMain)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($this->extracurriculums, $userId, $onlyMain)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($this->classes, $userId, $onlyMain)) {
+            return true;
+        }
+
+        if ($this->hasAccessToItems($this->programs, $userId, $onlyMain)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function doesntHaveAccess($userId, $onlyMain = false)
+    {
+        return !$this->hasAccess($userId, $onlyMain);
+    }
+
+    private function hasAccessToItems($items, $userId, $onlyMain)
+    {
+        if (is_null($items)) {
+            return true;
+        }
+
+        if (!count($items)) {
+            return true;
+        }
+
+        foreach ($items as $item) {
+            if (!in_array($userId, $item->getAuthorizedUserIds(onlyMain: $onlyMain))) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getQuestions()
+    {
+        return Question::query()
+            ->whereAssessment($this->id)
+            ->get();
+    }
+
+    public function maxQuestionsCount()
+    {
+        $count = 0;
+
+        foreach ($this->assessmentSections as $section) {
+            if ($section->random) {
+                $count += $section->max_questions;
+                continue;
+            }
+
+            $count += $section->questions()->count();
+        };
+
+        return $count;
+    }
+
+    public function getTotalScoreOver()
+    {
+        return Question::query()
+            ->whereAssessment($this->id)
+            ->sum('score_over');
+    }
+
+    public function getMarkerAccountUsingUserId($userId)
+    {
+        return $this->getMarkerUsingUserId($userId)?->accountable;
+    }
+
+    public function getMarkerUsingUserId($userId)
+    {
+        return $this->assessmentables()
+            ->whereAssessmentableUser($userId)
+            ->first();
     }
 
     public function scopeWherePublished($query)
     {
-        return $query->where(function($query) {
+        return $query->where(function ($query) {
             $query
                 ->whereNull('published_at')
-                ->orWhereDate('published_at', '<=' , now());
+                ->orWhereDate('published_at', '<=', now());
         });
     }
 
     public function scopeSearchItems($query, $search)
     {
-        return $query->where(function($q) use ($search){
-            $q->where('name','like',"%$search%")
-                ->orWhere('description','like',"%$search%");
+        return $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%$search%")
+                ->orWhere('description', 'like', "%$search%");
         });
     }
 
     public function scopeWhereNotOwnedbyBasedOnUserId($query, $userId)
     {
-        return $query->where(function($query) use ($userId) {
-            $query->whereHasMorph('addedby', '*', function($query, $type) use ($userId) {
+        return $query->where(function ($query) use ($userId) {
+            $query->whereHasMorph('addedby', '*', function ($query, $type) use ($userId) {
                 $query->whereNotUser($userId);
             });
         });
@@ -325,10 +450,10 @@ class Assessment extends Model
     public function scopeWithRelations($query)
     {
         return $query->with([
-            'addedby', 'attachments', 
-            'assessmentSections' => function($query) {
+            'addedby', 'attachments',
+            'assessmentSections' => function ($query) {
                 $query->with([
-                    'questions' => function($query) {
+                    'questions' => function ($query) {
                         $query->with([
                             'images', 'videos', 'audios', 'files', 'possibleAnswers'
                         ]);
@@ -340,12 +465,12 @@ class Assessment extends Model
 
     public function scopeWhereNotSocial($query)
     {
-        return $query->wherehas('assessmentables');
+        return $query->where('social', 0);
     }
 
     public function scopeWhereSocial($query)
     {
-        return $query->whereDoesntHave('assessmentables');
+        return $query->where('social', 1);
     }
 
     protected static function newFactory()

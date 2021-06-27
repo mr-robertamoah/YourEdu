@@ -2,6 +2,9 @@ module.exports = {
   purge: [],
   theme: {
     extend: {
+      colors: {
+        'whitesmoke': '#f5f5f5'
+      },
       minWidth: {
         '0': '0',
         '1/4': '25%',
@@ -23,15 +26,18 @@ module.exports = {
       minHeight: {
         '0': '0',
         '1/4': '25%',
+        '1/3': '33.333333333%',
         '1/2': '50%',
         '3/4': '75%',
         'full': '100%',
+        '90vh': '90vh',
         'screen': '100vh',
         'content': 'fit-content',
       },
       maxHeight: {
         '0': '0',
         '1/4': '25%',
+        '1/3': '33.333333333%',
         '1/2': '50%',
         '3/4': '75%',
         'full': '100%',
@@ -39,13 +45,32 @@ module.exports = {
         'content': 'fit-content',
       },
       height: {
-        "90vh": "90vh"
-      }
+        "90vh": "90vh",
+        '10/12': '83.333333333333%',
+        'content': 'fit-content',
+      },
+      width: {
+        "content": "fit-content"
+      },
+      margin: {
+        "1/4": "25%",
+        '1/2': '50%',
+        '3/4': '75%',
+        "-1/4": "-25%",
+        '-1/2': '-50%',
+        '-3/4': '-75%',
+      },
     },
   },
   variants: {
-    borderWidth: ['hover', 'responsive', 'active', 'focus'],
-    transitionProperty: ['responsive', 'hover', 'focus'],
+    extend: {
+      borderWidth: ['hover', 'responsive', 'active', 'focus'],
+      width: ['hover',],
+      height: ['hover',],
+      backgroundColor: ['disabled',],
+      textColor: ['disabled',],
+      transitionProperty: ['responsive', 'hover', 'focus'],
+    },
   },
   plugins: [],
 }

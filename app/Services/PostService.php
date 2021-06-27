@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\DTOs\ActivityDTO;
 use App\DTOs\ActivityTrackDTO;
+use App\DTOs\AttachmentDTO;
 use App\DTOs\BookDTO;
 use App\DTOs\LessonDTO;
 use App\DTOs\PoemDTO;
@@ -14,11 +15,7 @@ use App\DTOs\RiddleDTO;
 use App\Events\DeletePost;
 use App\Events\NewPost;
 use App\Events\UpdatePost;
-use App\Exceptions\AccountNotFoundException;
 use App\Exceptions\PostException;
-use App\Jobs\DeletePostJob;
-use App\Jobs\NewPostJob;
-use App\Jobs\UpdatePostJob;
 use App\Traits\ServiceTrait;
 use App\YourEdu\Assessment;
 use App\YourEdu\Discussion;
@@ -33,7 +30,7 @@ class PostService
     public function createPost(PostDTO $postDTO)
     {
         try {
-            
+
             $postDTO = $this->getAddedby($postDTO);
 
             $this->checkAccountAuthorization($postDTO);
@@ -45,7 +42,7 @@ class PostService
             $post = $this->createOrUpdatePost($postDTO, 'create');
 
             $post = $this->addPostFiles($post, $postDTO);
-            
+
             $post = $this->addPostAttachments($post, $postDTO);
 
             $postDTO = $postDTO->withPost($post);
@@ -57,7 +54,6 @@ class PostService
             $this->broadcastPost($post, $postDTO, 'create');
 
             return $this->postWith($post);
-
         } catch (\Throwable $th) {
 
             throw $th;
@@ -66,7 +62,7 @@ class PostService
                 data: $postDTO,
                 deleteFiles: (bool) $postDTO->post
             );
-        }        
+        }
     }
 
     private function checkRequiredData(Post $post = null, PostDTO $postDTO)
@@ -103,13 +99,11 @@ class PostService
         }
     }
 
-    private function throwPostException
-    (
+    private function throwPostException(
         string $message,
         $data = null,
         $deleteFiles = false
-    )
-    {
+    ) {
         throw new PostException(
             message: $message,
             data: $data,
@@ -117,57 +111,53 @@ class PostService
         );
     }
 
-    private function postWith(Post $post) : Post
+    private function postWith(Post $post): Post
     {
         return $post->load([
-            'questions.images','questions.videos',
-            'questions.audios','questions.files','activities.images','activities.videos',
-            'activities.files','activities.audios','riddles.images','riddles.videos',
-            'riddles.files','riddles.audios','poems.images','poems.videos',
-            'poems.files','poems.audios','books.images','books.videos','books.files',
-            'books.audios','addedby.profile'
+            'questions.images', 'questions.videos',
+            'questions.audios', 'questions.files', 'activities.images', 'activities.videos',
+            'activities.files', 'activities.audios', 'riddles.images', 'riddles.videos',
+            'riddles.files', 'riddles.audios', 'poems.images', 'poems.videos',
+            'poems.files', 'poems.audios', 'books.images', 'books.videos', 'books.files',
+            'books.audios', 'addedby.profile'
         ]);
     }
 
-    private function broadcastPost
-    (
+    private function broadcastPost(
         Post $post = null,
         PostDTO $postDTO,
         string $method
-    )
-    {
+    ) {
         $postDTO = $postDTO->resetFiles();
 
         $postDTO->typeDTO = $postDTO->typeDTO?->resetFiles();
 
         if ($method === 'create') {
-            
+
             broadcast(
                 new NewPost($post)
             )->toOthers();
         }
 
         if ($method === 'udpate') {
-            
+
             broadcast(
-                new UpdatePost($post)
+                new UpdatePost($postDTO)
             )->toOthers();
         }
 
         if ($method === 'delete') {
-            
+
             broadcast(
                 new DeletePost($postDTO)
             )->toOthers();
         }
     }
 
-    private function createOrUpdatePost
-    (
+    private function createOrUpdatePost(
         PostDTO $postDTO,
         string $method
-    ) : Post
-    {
+    ): Post {
         $data = [
             'content' => $postDTO->content,
         ];
@@ -179,8 +169,8 @@ class PostService
         }
 
         if ($method === 'update') {
-            $post = getYourEduModel('post',$postDTO->postId);
-                
+            $post = getYourEduModel('post', $postDTO->postId);
+
             $post?->update($data);
         }
 
@@ -194,12 +184,10 @@ class PostService
         return $post->refresh();
     }
 
-    private function addPostFiles
-    (
-        Post $post, 
+    private function addPostFiles(
+        Post $post,
         PostDTO $postDTO
-    ) : Post
-    {
+    ): Post {
         foreach ($postDTO->files as $file) {
             FileService::createAndAttachFiles(
                 account: $postDTO->addedby,
@@ -211,12 +199,10 @@ class PostService
         return $post->refresh();
     }
 
-    private function removePostFiles
-    (
-        Post $post, 
+    private function removePostFiles(
+        Post $post,
         PostDTO $postDTO
-    ) : Post
-    {
+    ): Post {
         foreach ($postDTO->removedFiles as $file) {
             FileService::deleteAndUnattachFiles(
                 file: $file,
@@ -229,8 +215,8 @@ class PostService
 
     private function getAddedby($postDTO)
     {
-        $account = $this->getModel($postDTO->account,$postDTO->accountId);
-        
+        $account = $this->getModel($postDTO->account, $postDTO->accountId);
+
         if (!in_array($postDTO->userId, $account->getAuthorizedIds())) {
             $this->throwPostException(
                 message: "The {$postDTO->account} account with id {$postDTO->account_id} doesn't belong to you.",
@@ -243,12 +229,10 @@ class PostService
         return $postDTO;
     }
 
-    private function addPostType
-    (
+    private function addPostType(
         Post $post,
         PostDTO $postDTO
-    ) : Post
-    {
+    ): Post {
         if (!in_array($postDTO->type, $postDTO->types)) {
             return $post;
         }
@@ -263,23 +247,23 @@ class PostService
             case 'riddle':
                 $this->addRiddleToPost($post, $postDTO);
                 break;
-            
+
             case 'poem':
                 $this->addPoemToPost($post, $postDTO);
                 break;
-            
+
             case 'lesson':
                 $this->addLessonToPost($post, $postDTO);
                 break;
-            
+
             case 'activity':
                 $this->addActivityToPost($post, $postDTO);
                 break;
-            
+
             case 'question':
                 $this->addQuestionToPost($post, $postDTO);
                 break;
-            
+
             default:
                 return $post;
         }
@@ -336,47 +320,47 @@ class PostService
         );
     }
 
-    private function addPostAttachments
-    (
-        Post $post, 
+    private function addPostAttachments(
+        Post $post,
         PostDTO $postDTO
-    ) : Post
-    {
+    ): Post {
+
+        $attachmentDTO = AttachmentDTO::new()
+            ->withAddedby($postDTO->addedby)
+            ->withAttachable($post);
+
         foreach ($postDTO->attachments as $attachment) {
-            
+
             (new AttachmentService)->attach(
-                $postDTO->addedby,
-                $post,
-                getYourEduModel($attachment->item,$attachment->itemId)
+                $attachmentDTO
+                    ->addData(note: $attachment->note ?? null)
+                    ->withAttachedwith($this->getModel($attachment->item, $attachment->itemId))
             );
         }
 
         return $post->refresh();
     }
 
-    private function removePostAttachments
-    (
-        Post $post, 
+    private function removePostAttachments(
+        Post $post,
         PostDTO $postDTO
-    ) : Post
-    {
+    ): Post {
         foreach ($postDTO->removedAttachments as $attachment) {
-            
+
             (new AttachmentService)->detach(
-                $post,
-                getYourEduModel($attachment->item,$attachment->itemId)
+                AttachmentDTO::new()
+                    ->withAttachable($post)
+                    ->withAttachedwith($this->getModel($attachment->item, $attachment->itemId))
             );
         }
 
         return $post->refresh();
     }
 
-    private function trackAdminActivity
-    (
+    private function trackAdminActivity(
         PostDTO $postDTO,
         $method
-    )
-    {
+    ) {
         if (!$postDTO->adminId) {
             return;
         }
@@ -419,9 +403,9 @@ class PostService
             $post = $this->removePostFiles($post, $postDTO);
 
             $post = $this->updatePostType($post, $postDTO);
-            
+
             $post = $this->addPostAttachments($post, $postDTO);
-            
+
             $post = $this->removePostAttachments($post, $postDTO);
 
             $this->trackAdminActivity($postDTO, __METHOD__);
@@ -429,8 +413,7 @@ class PostService
             $this->broadcastPost($post, $postDTO, 'update');
 
             return $this->postWith($post);
-
-        } catch (\Throwable $th) {  
+        } catch (\Throwable $th) {
             throw $th;
             $this->throwPostException(
                 message: "oops! something happened.",
@@ -489,12 +472,10 @@ class PostService
         );
     }
 
-    private function updatePostType
-    (
+    private function updatePostType(
         Post $post,
         PostDTO $postDTO
-    ) : Post
-    {
+    ): Post {
         if (!in_array($postDTO->type, $postDTO->types)) {
             return $post;
         }
@@ -509,27 +490,27 @@ class PostService
             case 'riddle':
                 $this->updatePostsRiddle($post, $postDTO);
                 break;
-            
+
             case 'poem':
                 $this->updatePostsPoem($post, $postDTO);
                 break;
-            
+
             case 'lesson':
                 $this->updatePostsLesson($post, $postDTO);
                 break;
-            
+
             case 'activity':
                 $this->updatePostsActivity($post, $postDTO);
                 break;
-            
+
             case 'question':
                 $this->updatePostsQuestion($post, $postDTO);
                 break;
-            
+
             default:
                 return $post;
         }
-        
+
         return $post->refresh();
     }
 
@@ -544,18 +525,16 @@ class PostService
 
             $postDTO = $postDTO->withPost($post);
 
-            $postDeletionStatus = $post->delete();
-            
-            $post = $this->deletePostType($post, $postDTO);
-
-            $this->deletePostFiles($post);
-
-            if (!$postDeletionStatus) {
+            if ($post->delete()) {
                 $this->throwPostException(
                     message: "deletion of the post failed.",
                     data: $postDTO
                 );
             }
+
+            $post = $this->deletePostType($post, $postDTO);
+
+            $this->deletePostFiles($post);
 
             $this->trackAdminActivity($postDTO, __METHOD__);
 
@@ -573,11 +552,9 @@ class PostService
         }
     }
 
-    private function deletePostFiles
-    (
+    private function deletePostFiles(
         Post $post,
-    ) : Post
-    {
+    ): Post {
         FileService::deleteYourEduItemFiles(
             item: $post,
         );
@@ -585,12 +562,10 @@ class PostService
         return $post->refresh();
     }
 
-    private function deletePostType
-    (
+    private function deletePostType(
         Post $post,
         PostDTO $postDTO
-    ) : Post
-    {
+    ): Post {
         if ($post->hasNoTypes()) {
             return $post;
         }
@@ -618,7 +593,7 @@ class PostService
         if ($post->activities?->count()) {
             $this->deletePostsActivity($post, $postDTO);
         }
-        
+
         return $post->refresh();
     }
 
@@ -670,7 +645,7 @@ class PostService
         );
     }
 
-    public function getPost(PostDTO $postDTO) : Post
+    public function getPost(PostDTO $postDTO): Post
     {
         return $this->getModel('post', $postDTO->postId);
     }
@@ -699,6 +674,17 @@ class PostService
         );
     }
 
+    public function setPostsDTOAddedby($postsDTO)
+    {
+        if (!$postsDTO->account || !$postsDTO->accountId) {
+            return $postsDTO;
+        }
+
+        return $postsDTO->withAddedby(
+            $this->getModel($postsDTO->account, $postsDTO->accountId)
+        );
+    }
+
     public function getItems(PostsDTO $postsDTO)
     {
         $flagUserIds = $postsDTO->user ? [$postsDTO->user?->id] : null;
@@ -707,34 +693,39 @@ class PostService
             $flagUserIds = $postsDTO->user->learner->getAuthorizedIds();
         }
 
-        $items = Post::query()
-        ->wherePostTypes($postsDTO->postType)
-        ->whereFiltered($postsDTO)
-        ->wherePublished()
-        ->whereDoesntHaveApprovedFlags()
-        ->whereDoesntHaveFlagsFrom($flagUserIds)
-        ->withRelations()
-        ->get();
+        $postsDTO = $this->setPostsDTOAddedby($postsDTO);
 
-        $items = $items->merge(
-            Discussion::query()
-            ->whereSocial()
+        $items = Post::query()
+            ->whenAddedby($postsDTO->addedby)
+            ->wherePostTypes($postsDTO->postType)
             ->whereFiltered($postsDTO)
+            ->wherePublished()
             ->whereDoesntHaveApprovedFlags()
             ->whereDoesntHaveFlagsFrom($flagUserIds)
             ->withRelations()
-            ->get()
+            ->get();
+
+        $items = $items->merge(
+            Discussion::query()
+                ->whenAddedby($postsDTO->addedby)
+                ->whereSocial()
+                ->whereFiltered($postsDTO)
+                ->whereDoesntHaveApprovedFlags()
+                ->whereDoesntHaveFlagsFrom($flagUserIds)
+                ->withRelations()
+                ->get()
         );
 
         $items = $items->merge(
             Assessment::query()
-            ->whereSocial()
-            ->wherePublished()
-            ->whereFiltered($postsDTO)
-            ->whereDoesntHaveApprovedFlags()
-            ->whereDoesntHaveFlagsFrom($flagUserIds)
-            ->withRelations()
-            ->get()
+                ->whenAddedby($postsDTO->addedby)
+                ->whereSocial()
+                ->wherePublished()
+                ->whereFiltered($postsDTO)
+                ->whereDoesntHaveApprovedFlags()
+                ->whereDoesntHaveFlagsFrom($flagUserIds)
+                ->withRelations()
+                ->get()
         );
 
         return paginate($items->sortByDesc('updated_at'), self::PAGINATION);

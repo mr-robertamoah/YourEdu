@@ -27,17 +27,15 @@ trait DashboardItemServiceTrait
 {
     use ServiceTrait;
 
-    private function setDtoOwnedby
-    (
+    private function setDtoOwnedby(
         $dto,
         Model $model = null
-    )
-    {
+    ) {
         if ($dto->account === $dto->owner && $dto->accountId === $dto->ownerId) {
             return $dto->withOwnedby(
                 $dto->addedby
             );
-        } 
+        }
 
         if ($model) {
             return $dto->withOwnedby(
@@ -53,19 +51,17 @@ trait DashboardItemServiceTrait
         );
     }
 
-    private function updateOwnedby
-    (
+    private function updateOwnedby(
         $model,
         $dto
-    )
-    {
+    ) {
         $model->ownedby()->associate($dto->ownedby);
         $model->save();
 
         return $model;
     }
 
-    private function doesntHaveAuthorization($item,$userId)
+    private function doesntHaveAuthorization($item, $userId)
     {
         $ids = $item->ownedby ? $item->ownedby->getAuthorizedIds() : [];
 
@@ -87,18 +83,16 @@ trait DashboardItemServiceTrait
         return !$this->doesntHaveAuthorization($item, $userId);
     }
 
-    private function trackSchoolAdmin
-    (
+    private function trackSchoolAdmin(
         $item,
         $dto,
-    )
-    {
+    ) {
         if (!$dto->adminId) {
             return;
         }
 
-        $admin = $this->getModel('admin',$dto->adminId);
-        
+        $admin = $this->getModel('admin', $dto->adminId);
+
         (new ActivityTrackService())->trackActivity(
             ActivityTrackDTO::createFromData(
                 activity: $item,
@@ -112,11 +106,9 @@ trait DashboardItemServiceTrait
     /**
      * this sets payment for items like courses, classes, extracurriculum, lessons, etc
      */
-    private function setPayment
-    (
+    private function setPayment(
         PaymentDTO $paymentDTO
-    )
-    {
+    ) {
         if (is_null($paymentDTO)) {
             return;
         }
@@ -134,33 +126,31 @@ trait DashboardItemServiceTrait
      * for attaching things like courses, programs, subjects, etc 
      * to items like course, classes, extracurriculum
      */
-    private function createAttachments
-    (
+    private function createAttachments(
         $item,
         $account,
         $attachments,
         $facilitate
-    )
-    {
+    ) {
         if (!$attachments || !is_array($attachments)) {
             return;
         }
         foreach ($attachments as $attachment) {
             switch ($attachment->type) {
                 case 'grade':
-                    GradeService::gradeAttachItem($attachment->id,$item);
+                    GradeService::gradeAttachItem($attachment->id, $item);
                     if ($facilitate) {
-                        GradeService::gradeAttachItem($attachment->id,$account);
+                        GradeService::gradeAttachItem($attachment->id, $account);
                     }
                     break;
-                
+
                 case 'program':
-                    ProgramService::programAttachItem($attachment->id,$item,'for');
+                    ProgramService::programAttachItem($attachment->id, $item, 'for');
                     if ($facilitate) {
-                        ProgramService::programAttachItem($attachment->id,$account,'facilitate');
+                        ProgramService::programAttachItem($attachment->id, $account, 'facilitate');
                     }
                     break;
-                
+
                 case 'course':
                     CourseService::courseAttachItem(
                         $attachment->id,
@@ -168,10 +158,10 @@ trait DashboardItemServiceTrait
                         $item::class === 'App\\YourEdu\\Lesson' ? null : 'offer'
                     );
                     if ($facilitate) {
-                        CourseService::courseAttachItem($attachment->id,$account,'facilitate');
+                        CourseService::courseAttachItem($attachment->id, $account, 'facilitate');
                     }
                     break;
-                
+
                 case 'subject':
 
                     SubjectService::subjectAttachItem(
@@ -180,12 +170,12 @@ trait DashboardItemServiceTrait
                         $item::class === 'App\\YourEdu\\Lesson' ? null : 'offer'
                     );
                     if ($facilitate) {
-                        SubjectService::subjectAttachItem($attachment->id,$account,'facilitate');
+                        SubjectService::subjectAttachItem($attachment->id, $account, 'facilitate');
                     }
                     break;
-                
+
                 default:
-                    
+
                     break;
             }
         }
@@ -195,42 +185,40 @@ trait DashboardItemServiceTrait
      * for unattaching things like courses, programs, subjects, etc 
      * from items like course, classes, extracurriculum
      */
-    private function removeAttachments
-    (
+    private function removeAttachments(
         $item, //course, class, extracurriculum, lesson
         $account, //facilitator, professional
         $attachments,
         $facilitate
-    )
-    {
+    ) {
         if (!$attachments || !is_array($attachments)) {
             return;
         }
         foreach ($attachments as $attachment) {
             switch ($attachment->type) {
                 case 'grade':
-                    GradeService::gradeUnattachItem($attachment->id,$item);
+                    GradeService::gradeUnattachItem($attachment->id, $item);
                     if (!is_null($account) && !$facilitate) {
-                        GradeService::gradeUnattachItem($attachment->id,$account);
+                        GradeService::gradeUnattachItem($attachment->id, $account);
                     }
                     break;
-                
+
                 case 'program':
-                    ProgramService::programUnattachItem($attachment->id,$item,'for');
+                    ProgramService::programUnattachItem($attachment->id, $item, 'for');
                     if (!is_null($account) && !$facilitate) {
-                        ProgramService::programUnattachItem($attachment->id,$account,'facilitate');
+                        ProgramService::programUnattachItem($attachment->id, $account, 'facilitate');
                     }
                     break;
-                
+
                 case 'course':
-                    CourseService::courseUnattachItem($attachment->id,$item,'offer');
+                    CourseService::courseUnattachItem($attachment->id, $item, 'offer');
                     if (!is_null($account) && !$facilitate) {
-                        CourseService::courseUnattachItem($attachment->id,$account,'facilitate');
+                        CourseService::courseUnattachItem($attachment->id, $account, 'facilitate');
                     }
                     break;
-                
+
                 default:
-                    
+
                     break;
             }
         }
@@ -239,12 +227,10 @@ trait DashboardItemServiceTrait
     /**
      * automatically create discussion for a course, class, extracurriculum, lesson, etc
      */
-    private function createAutoDiscussion
-    (
+    private function createAutoDiscussion(
         $item,
         ItemDataContract $itemData,
-    )
-    {
+    ) {
         if ($item->hasDiscussion()) {
             return $item;
         }
@@ -254,17 +240,19 @@ trait DashboardItemServiceTrait
         }
 
         $discussion = (new DiscussionService())->createDiscussion(
-            $itemData->account,
-            $itemData->accountId,
-            $itemData->discussionData->title,
-            $itemData->discussionData->preamble,
-            $itemData->discussionData->restricted ?? false,
-            $itemData->discussionData->type ?? 'PRIVATE',
-            $itemData->discussionData->allowed ?? 'ALL',
-            $itemData->discussionFiles,
-            null
+            DiscussionDTO::new()
+                ->addData(
+                    account: $itemData->account,
+                    accountId: $itemData->accountId,
+                    title: $itemData->discussionData->title,
+                    preamble: $itemData->discussionData->preamble,
+                    restricted: $itemData->discussionData->restricted ?? true,
+                    type: $itemData->discussionData->type ?? 'PRIVATE',
+                    allowed: $itemData->discussionData->allowed ?? 'ALL',
+                )
+                ->withFiles($itemData->discussionFiles)
         );
-        
+
         $item->discussions()->save($discussion);
 
         return $item->refresh();
@@ -286,18 +274,18 @@ trait DashboardItemServiceTrait
         return $item->refresh();
     }
 
-    private function changeState($item,$state)
+    private function changeState($item, $state)
     {
         $item->update(['state' => Str::upper($state)]);
-                
+
         $this->broadcastUpdate($item);
 
         return $item;
     }
-    
+
     abstract private function paymentMadeFor($item);
 
-    private function checkAccountOwnership($account,$dto)
+    private function checkAccountOwnership($account, $dto)
     {
         if ($account->accountType === 'school') {
             $accountUserId = $account->owner_id;
@@ -313,17 +301,15 @@ trait DashboardItemServiceTrait
         }
     }
 
-    private function checkItemOwnership
-    (
+    private function checkItemOwnership(
         $attachment,
         $ownedby,
         $userId
-    )
-    {
-        if (isOwnedBy($ownedby,$userId)) { 
+    ) {
+        if (isOwnedBy($ownedby, $userId)) {
             return;
         }
-        
+
         $this->throwDashboardItemServiceTraitException("{$attachment->type} with id {$attachment->id} does not belong to you.");
     }
 
@@ -331,30 +317,30 @@ trait DashboardItemServiceTrait
      *this is to help attach courses, extracurriculum to main items such as  
      *classes and programs
      */
-    private function attachToItems
-    (
+    private function attachToItems(
         $attachments,
         $attachable,
         $dto,
         $activity = null,
-    )
-    {
+    ) {
         if (!is_array($attachments)) {
             return;
         }
-        
+
         $method = $this->getAttachOrDetachMethod($attachable);
         $attachedItems = new Collection();
 
         foreach ($attachments as $attachment) {
-            $actualItem = $this->getModel($attachment->type,$attachment->id);
+            $actualItem = $this->getModel($attachment->type, $attachment->id);
 
-            if ($actualItem->$method->where('id',$attachable->id)->count()) {
+            if ($actualItem->$method->where('id', $attachable->id)->count()) {
                 return;
-            } 
+            }
 
-            if (method_exists($actualItem, 'getAuthorizedUserIds') && 
-                !in_array($dto->userId, $actualItem->getAuthorizedUserIds(onlyMain: true))) {
+            if (
+                method_exists($actualItem, 'getAuthorizedUserIds') &&
+                !in_array($dto->userId, $actualItem->getAuthorizedUserIds(onlyMain: true))
+            ) {
                 $this->throwDashboardItemServiceTraitException(
                     message: "you are not authorized to attach {$attachment->type} with id {$attachment->id} does not belong to you.",
                     data: $dto
@@ -372,9 +358,9 @@ trait DashboardItemServiceTrait
         return $attachedItems;
     }
 
-    private function checkAttachmentCreatorAccountType($dto)
+    private function checkAttachedbyAccount($dto)
     {
-        if (in_array($dto->account, PostAttachment::ATTACHMENTCREATORACCOUNTTYPE)) {
+        if (in_array($dto->account, PostAttachment::ATTACHEDBY_ACCOUNT_TYPES)) {
             return;
         }
 
@@ -400,12 +386,10 @@ trait DashboardItemServiceTrait
         );
     }
 
-    private function throwDashboardItemServiceTraitException
-    (
+    private function throwDashboardItemServiceTraitException(
         $message,
         $data = null
-    )
-    {
+    ) {
         throw new DashboardItemServiceTraitException(
             message: $message,
             data: $data
@@ -429,7 +413,7 @@ trait DashboardItemServiceTrait
      * this is to help remove courses or extracuriculum from items like
      * classes and programs
      */
-    private function detachFromItems($attachments,$attachable)
+    private function detachFromItems($attachments, $attachable)
     {
         if (!is_array($attachments)) {
             return;
@@ -439,10 +423,10 @@ trait DashboardItemServiceTrait
         $detachedItems = new Collection();
 
         foreach ($attachments as $attachment) {
-            $actualItem = getYourEduModel($attachment->type,$attachment->id); //work in this,must be programs and classes
-            
-            if (is_null($actualItem)) { 
-                continue;               
+            $actualItem = getYourEduModel($attachment->type, $attachment->id); //work in this,must be programs and classes
+
+            if (is_null($actualItem)) {
+                continue;
             }
 
             $detachedItems->push($this->detachItem(
@@ -458,29 +442,33 @@ trait DashboardItemServiceTrait
     private function attachItem($actualItem, $attachable, $method, $activity)
     {
         $pivotArray = [];
-        if ($method === 'classes' &&
-            class_basename_lower($actualItem) === 'subject') {
+        if (
+            $method === 'classes' &&
+            class_basename_lower($actualItem) === 'subject'
+        ) {
             $method = 'subjectClasses';
             $pivotArray['activity'] = 'OFFER';
-        } 
-        
+        }
+
         if (!is_null($activity)) {
             $pivotArray['activity'] = Str::upper($activity);
         }
 
-        $actualItem->$method()->attach($attachable->id,$pivotArray);
+        $actualItem->$method()->attach($attachable->id, $pivotArray);
         $actualItem->save();
         return $actualItem->refresh();
     }
 
     private function detachItem($actualItem, $attachable, $method)
     {
-        if ($actualItem->$method->where('id',$attachable->id)->count() === 0) {
+        if ($actualItem->$method->where('id', $attachable->id)->count() === 0) {
             return;
         }
 
-        if ($method === 'classes' &&
-            class_basename_lower($actualItem) === 'subject') {
+        if (
+            $method === 'classes' &&
+            class_basename_lower($actualItem) === 'subject'
+        ) {
             $method = 'subjectClasses';
         }
 

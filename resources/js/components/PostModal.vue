@@ -22,7 +22,7 @@
                     v-if="(type === 'post' ||
                         computedPostTypeName === 'post') && !postLoading"
                 >
-                    <post-show
+                    <post-single
                         :post="computedData"
                         :postMediaFull="true"
                         :disabled="item ? true : false"
@@ -31,7 +31,7 @@
                         @clickedShowPostPreview="clickedShowPostPreview"
                         @clickedMedia="clickedMedia"
                         @postDeleteSuccess="postMainDeleteSuccess"
-                    ></post-show>
+                    ></post-single>
                 </div>
                 <div class="answer"
                     v-if="computedShowAnswer"
@@ -235,7 +235,7 @@
 
 <script>
 import PulseLoader from 'vue-spinner/src/PulseLoader';
-import PostShow from './PostShow';
+import PostSingle from './PostSingle';
 import PostPreview from './PostPreview';
 import CommentSingle from './CommentSingle';
 import AnswerSingle from './AnswerSingle';
@@ -286,7 +286,7 @@ import { strings } from '../services/helpers';
             ProfileBar,
             AddAnswer,
             PostPreview,
-            PostShow,
+            PostSingle,
         },
         data() {
             return {

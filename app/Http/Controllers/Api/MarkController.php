@@ -6,20 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\MarkResource;
 use App\Http\Resources\RemarkResource;
 use App\Services\MarkService;
-use App\YourEdu\Admin;
 use App\YourEdu\Answer;
-use App\YourEdu\Facilitator;
-use App\YourEdu\Learner;
-use App\YourEdu\ParentModel;
-use App\YourEdu\Professional;
-use App\YourEdu\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MarkController extends Controller
 {
-    //
-
     public function markCreate(Request $request,$answer, $answerId)
     {
         $mainAccount = getYourEduModel($request->account,$request->accountId);
