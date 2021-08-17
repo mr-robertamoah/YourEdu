@@ -17,13 +17,14 @@ import { faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpload, faTrash,
         faGrin,faMicrophone,faVideo, faCamera, faPaperPlane, faImage, faMusic, faFilm,
         faArrowCircleRight, faQuestionCircle, faCameraRetro, faInfoCircle, faPencilAlt, 
         faBell, faUsers, faChevronUp, faCircle, faPause, faTrashRestore, faLongArrowAltDown, 
-        faFile, faHandRock,
+        faFile, faHandRock, faToggleOff, faToggleOn, faWrench, 
 } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { BootstrapVue } from 'bootstrap-vue'
 import AppNav from './components/Nav.vue'
 import VuePageTransition from 'vue-page-transition'
 import { faMicrophoneAltSlash } from '@fortawesome/fontawesome-free-solid'
+import StorageService from './services/storage.service'
 
 
 require('./bootstrap');
@@ -42,7 +43,7 @@ library.add(faUserCircle, faSignInAlt, faBars, faTimes, faEye, faEyeSlash, faUpl
     faPaperclip, faHome,faEllipsisH, faEllipsisV,faLongArrowAltLeft,faGrin,faPaperPlane,
     faImage,faMusic,faFilm,faArrowCircleRight, faQuestionCircle,faCameraRetro,faInfoCircle,
     faPencilAlt,faBell,faUsers,faChevronUp,faCircle,faMicrophoneAltSlash,faPause,faTrashRestore,
-    faLongArrowAltDown, faFile,faHandRock
+    faLongArrowAltDown, faFile,faHandRock, faToggleOff, faToggleOn, faWrench,
 );
 
 
@@ -89,7 +90,7 @@ const app = new Vue({
     el: '#app',
     router,
     store,
-    created(){
+    created() {
         const token = TokenService.getToken()
         if (token) {
             

@@ -483,10 +483,29 @@ const ProfileService = {
 
     //////////////////////////////////// marks
 
-    async markCreate(main){
+    async createMark(main){
         try {
             let {item, itemId} = main
             let response = await ApiService.post(`/api/${item}/${itemId}/mark`,main)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async updateMark(main){
+        try {
+            let {data, markId} = main
+            let response = await ApiService.put(`/api/mark/${markId}`, data)
+    
+            return response
+        } catch (error) {
+            return error.response
+        }
+    },
+    async deleteMark(data){
+        try {
+            let response = await ApiService.delete(`/api/mark/${data.markId}`)
     
             return response
         } catch (error) {
@@ -520,17 +539,17 @@ const ProfileService = {
             return error.response
         }
     },
-    async answerDelete(data){
-        let {answerId,adminId} = data
+    async deleteAnswer(main){
+        let {answerId, data} = main
         try {
-            let response = await ApiService.delete(`/api/answer/${answerId}/delete`,{adminId})
+            let response = await ApiService.delete(`/api/answer/${answerId}`, data)
     
             return response
         } catch (error) {
             return error.response
         }
     },
-    async answerCreate(main){
+    async createAnswer(main){
         
         try {
             let {data, formData} = main
@@ -542,11 +561,12 @@ const ProfileService = {
             return error.response
         }
     },
-    async answerUpdate(main){
+    async updateAnswer(main){
         
         try {
-            let {data, formData} = main
-            let response = await ApiService.post(`/api/answer/${data.itemId}`,
+            let { answerId, formData } = main
+            
+            let response = await ApiService.put(`/api/answer/${answerId}`,
                 formData,true)
     
             return response

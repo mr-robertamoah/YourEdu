@@ -3331,7 +3331,7 @@ class AssessmentTest extends TestCase
         $facilitator = $facilitator->refresh();
 
         $this->assertTrue($facilitator->hasWorkForAssessment($assessment->id));
-        $this->assertTrue($facilitator->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($facilitator->hasASubmittedWorkForAssessment($assessment->id));
         $this->assertCount(4, $facilitator->getAnswersForAssessment($assessment->id));
         Storage::assertExists(Image::where('name', 'new_image.png')->first()->path);
         Notification::assertSentTo($facilitator1->user, AssessmentAnsweredNotification::class);
@@ -3568,7 +3568,7 @@ class AssessmentTest extends TestCase
 
         $facilitator = $facilitator->refresh();
         $this->assertTrue($facilitator->hasWorkForAssessment($assessment->id));
-        $this->assertTrue($facilitator->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($facilitator->hasASubmittedWorkForAssessment($assessment->id));
         Notification::assertNotSentTo($facilitator1->user, AssessmentAnsweredNotification::class);
         Notification::assertNotSentTo($professional->user, AssessmentAnsweredNotification::class);
     }
@@ -3637,7 +3637,7 @@ class AssessmentTest extends TestCase
         $facilitator = $facilitator->refresh();
 
         $this->assertTrue($facilitator->hasWorkForAssessment($assessment->id));
-        $this->assertTrue($facilitator->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($facilitator->hasASubmittedWorkForAssessment($assessment->id));
         Notification::assertSentTo($facilitator1->user, AssessmentAnsweredNotification::class);
         Notification::assertSentTo($professional->user, AssessmentAnsweredNotification::class);
     }
@@ -3753,7 +3753,7 @@ class AssessmentTest extends TestCase
         $professional = $professional->refresh();
 
         $this->assertTrue($professional->hasWorkForAssessment($assessment->id));
-        $this->assertTrue($professional->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasASubmittedWorkForAssessment($assessment->id));
         $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessment($assessment->id));
         $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessment->id, $facilitator));
         $this->assertTrue($facilitator->hasMarkedSubmittedWorkForAssessment($assessment->id, $facilitator));
@@ -3855,7 +3855,7 @@ class AssessmentTest extends TestCase
         $professional = $professional->refresh();
 
         $this->assertTrue($professional->hasWorkForAssessment($assessment->id));
-        $this->assertTrue($professional->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasASubmittedWorkForAssessment($assessment->id));
         $this->assertTrue($professional->doesntHaveAMarkedSubmittedWorkForAssessment($assessment->id));
         $this->assertTrue($professional->doesntHaveAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessment->id, $facilitator));
         $this->assertTrue($facilitator->doesntHaveMarkedSubmittedWorkForAssessment($assessment->id, $facilitator));
@@ -3965,7 +3965,7 @@ class AssessmentTest extends TestCase
         $professional = $professional->refresh();
 
         $this->assertTrue($professional->hasWorkForAssessment($assessment->id));
-        $this->assertTrue($professional->hasSubmittedWorkForAssessment($assessment->id));
+        $this->assertTrue($professional->hasASubmittedWorkForAssessment($assessment->id));
         $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessment($assessment->id));
         $this->assertTrue($professional->hasAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessment->id, $facilitator));
         $this->assertTrue($facilitator->hasMarkedSubmittedWorkForAssessment($assessment->id, $facilitator));

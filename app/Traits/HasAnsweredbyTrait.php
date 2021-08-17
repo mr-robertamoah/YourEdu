@@ -10,7 +10,7 @@ trait HasAnsweredbyTrait
 {
     public function answers()
     {
-        return $this->morphMany(Answer::class,'answeredby');
+        return $this->morphMany(Answer::class, 'answeredby');
     }
 
     public function getAnswerById($answerId)
@@ -19,11 +19,12 @@ trait HasAnsweredbyTrait
             ->where('id', $answerId)->first();
     }
 
-    public function getTotalScoreOfAnswers($assessmentId)
+    public function getTotalScoreOfAnswersForAssessment($assessmentId)
     {
-        return Mark::query()
-            ->whereAssessment($assessmentId)
-            ->sum('score');
+        return $this
+            ->getAnswersForAssessment($assessmentId)
+            ->loadAvg('marks', 'score')
+            ->sum('marks_avg_score');
     }
 
     public function getAnswersForAssessment($assessmentId)
@@ -42,10 +43,10 @@ trait HasAnsweredbyTrait
 
     public function hasNotAnsweredAllAssessmentQuestions($assessmentId)
     {
-        return ! $this->hasAnsweredAllAssessmentQuestions($assessmentId);
+        return !$this->hasAnsweredAllAssessmentQuestions($assessmentId);
     }
 
-    public function hasAnUnmarkedAnswerForAssessmentAndByMarker($assessmentId,$account)
+    public function hasAnUnmarkedAnswerForAssessmentAndByMarker($assessmentId, $account)
     {
         return $this->answers()
             ->whereAssessment($assessmentId)
@@ -55,6 +56,6 @@ trait HasAnsweredbyTrait
 
     public function doesntHaveAnUnmarkedAnswerForAssessmentAndByMarker($assessmentId, $account)
     {
-        return ! $this->hasAnUnmarkedAnswerForAssessmentAndByMarker($assessmentId, $account);
+        return !$this->hasAnUnmarkedAnswerForAssessmentAndByMarker($assessmentId, $account);
     }
 }

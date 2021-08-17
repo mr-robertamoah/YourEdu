@@ -247,12 +247,14 @@ import { mapGetters } from 'vuex';
 </script>
 
 <style lang="scss" scoped>
+@use "sass:math";
+
 $wrapper-background: rgba(102, 51, 153, .2);
 $modal-background: aliceblue;
 $modal-width: 60%;
 $modal-height: 70vh;
-$modal-margin-width: (100% - $modal-width)/2;
-$modal-margin-height: (100vh - $modal-height)/2;
+$modal-margin-width: math.div(100% - $modal-width, 2);
+$modal-margin-height: math.div(100vh - $modal-height, 2);
 
     .modal-wrapper{
         position: fixed;
@@ -394,8 +396,8 @@ $modal-margin-height: (100vh - $modal-height)/2;
 @media screen and (min-width:800px) and (max-width:1100px){
 $modal-width: 70%;
 $modal-height: 80vh;
-$modal-margin-width: (100% - $modal-width)/2;
-$modal-margin-height: (100vh - $modal-height)/2;
+$modal-margin-width: math.div(100% - $modal-width, 2);
+$modal-margin-height: math.div(100vh - $modal-height, 2);
 
     .modal-wrapper{
 
@@ -416,8 +418,8 @@ $modal-margin-height: (100vh - $modal-height)/2;
 @media screen and (max-width:800px){
 $modal-width: 90%;
 $modal-height: 90vh;
-$modal-margin-width: (100% - $modal-width)/2;
-$modal-margin-height: (100vh - $modal-height)/2;
+$modal-margin-width: math.div(100% - $modal-width, 2);
+$modal-margin-height: math.div(100vh - $modal-height, 2);
 
     .modal-wrapper{
 

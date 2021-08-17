@@ -4,7 +4,7 @@ namespace App\Traits;
 
 use App\YourEdu\Flag;
 
-trait FlaggableTrait
+trait HasFlaggableTrait
 {
     public function flags()
     {

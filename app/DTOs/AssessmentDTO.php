@@ -115,4 +115,27 @@ class AssessmentDTO
 
         return $self;
     }
+
+    public function getAssessmentSectionDurations()
+    {
+        $durations = array_sum(
+            array_map(function ($assessmentSectionDTO) {
+                return (int) $assessmentSectionDTO->duration;
+            }, $this->assessmentSections)
+        );
+
+        $durations += array_sum(
+            array_map(function ($assessmentSectionDTO) {
+                return $assessmentSectionDTO->duration ?
+                    (int) $assessmentSectionDTO->duration :
+                    getYourEduModel('assessmentSection', $assessmentSectionDTO->id)->duration;
+            }, $this->editedAssessmentSections)
+        );
+
+        $durations -= array_sum(
+            array_map(function ($assessmentSectionDTO) {
+                return getYourEduModel('assessmentSection', $assessmentSectionDTO->id)->duration;
+            }, $this->deletedAssessmentSections)
+        );
+    }
 }

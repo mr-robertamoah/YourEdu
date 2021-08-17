@@ -6,7 +6,10 @@ module.exports = {
         'vue'
     ],
     'transform': {
-        '^.+\\.js$': 'D:/web projects/YourEdu/node_modules/babel-jest',
-        '.*\\.(vue)$': 'D:/web projects/YourEdu/node_modules/vue-jest'
+        ".*\\.(js)$": "babel-jest",
+        ".*\\.(vue)$": "vue-jest",
     },
+    "moduleNameMapper": {
+        "^@/(.*)$": "D:/web projects/YourEdu/resources/$1"
+    }
 }

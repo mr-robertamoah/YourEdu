@@ -82,6 +82,20 @@ const mutations = {
             fn: (item) => item.id == data.discussionId && item.isDiscussion,
         })
     },
+    ADD_TIMER_TO_ITEM(state, data)
+    {
+        addDataToHomeItemProperty({
+            state,
+            property: 'timer',
+            data: data.timer,
+            itemType: 'assessment',
+            hasMine: true,
+            equate: true,
+            fn: (item) => (item.id == data.item.id || item.id == data.item.assessmentId) && item.isAssessment,
+            sub: data.item.isAssessment ? null : 'assessmentSections',
+            subId: data.item.isAssessment ? null : data.item.id,
+        })
+    },
     ////////////////////////////////////////////////////discussions
     DISCUSSION_CREATE_SUCCESS(state, data){ //for now, discussions will be shown in main posts
         
@@ -134,6 +148,18 @@ const mutations = {
             itemType: data.item, 
             fn: (item) => item.id == data.itemId && item[getItemType(data.item)], 
             data: data.participant ? data.participant : data.marker,
+            methodType: 'push',
+            hasMine: true
+        })
+    },
+    ADD_DATA_TO_ITEM_PROPERTY(state,data){
+
+        addDataToHomeItemProperty({
+            state, 
+            property: data.property,
+            itemType: data.item, 
+            fn: (item) => item.id == data.itemId && item[getItemType(data.item)], 
+            data: data.data,
             methodType: 'push',
             hasMine: true
         })

@@ -1,5 +1,9 @@
 <template>
-    <div class="question-badge-wrapper" v-if="question">
+    <div 
+        class="question-badge-wrapper relative" 
+        :class="{'mx-2.5': ! computedClasses.includes('mx')}"
+        v-if="question"
+    >
         <div class="other">
             <font-awesome-icon
                 v-if="close"
@@ -18,26 +22,30 @@
                 ></font-awesome-icon>
             </div>
         </div>
-        <div class="main" @dblclick="dbclickedQuestion">
+        <div 
+            class="main"
+            :class="[backgroundClass ? backgroundClass : 'bg-wheat']"
+            @dblclick="dbclickedQuestion"
+        >
             <div class="body">
                 {{question.body}}
             </div>
             <div class="file"
-                v-if="question.files.length"
+                v-if="!noFiles && computedFiles.length"
             >
                 <file-preview
-                    :file="question.files[0]"
+                    :file="computedFiles[0]"
                     :showRemove="false"
                 ></file-preview>
             </div>
-            <div class="hint">
-                {{question.hint}}
+            <div class="hint" v-if="question.hint.length">
+                hint: {{question.hint}}
             </div>
             <div class="score" v-if="question.scoreOver.length">
                 {{`score over: ${question.scoreOver}`}}
             </div>
             <div class="possible-answers" v-if="question.possibleAnswers.length">
-                Options:
+                <span>Options:</span>
                 <possible-answer-badge
                     v-for="(possibleAnswer, index) in question.possibleAnswers"
                     :key="index"
@@ -53,6 +61,7 @@
 <script>
 import FilePreview from '../FilePreview';
 import PossibleAnswerBadge from './PossibleAnswerBadge';
+import Files from '../../mixins/Files.mixin';
     export default {
         components: {
             PossibleAnswerBadge,
@@ -69,6 +78,14 @@ import PossibleAnswerBadge from './PossibleAnswerBadge';
                 type: Boolean,
                 default: false
             },
+            backgroundClass: {
+                type: String,
+                default: null
+            },
+            noFiles: {
+                type: Boolean,
+                default: false
+            },
             close: {
                 type: Boolean,
                 default: true
@@ -77,6 +94,15 @@ import PossibleAnswerBadge from './PossibleAnswerBadge';
                 type: Boolean,
                 default: false
             },
+        },
+        mixins: [Files],
+        computed: {
+            computedItemable() {
+                return this.question
+            },
+            computedClasses() {
+                return this.$vnode.data.staticClass ? this.$vnode.data.staticClass : ''
+            }
         },
         methods: {
             clickedDrag() {
@@ -100,8 +126,6 @@ import PossibleAnswerBadge from './PossibleAnswerBadge';
 
     .question-badge-wrapper{
         min-width: 100%;
-        position: relative;
-        margin: 0 10px;
         display: flex;
         width: 100%;
         align-items: center;
@@ -132,7 +156,6 @@ import PossibleAnswerBadge from './PossibleAnswerBadge';
         }
 
         .main{
-            background: wheat;
             padding: 10px;
             border-radius: 10px;
             cursor: pointer;

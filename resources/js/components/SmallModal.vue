@@ -101,12 +101,14 @@ import AutoAlert from './AutoAlert'
 </script>
 
 <style lang="scss" scoped>
+@use "sass:math";
+
 $wrapper-background: transparent;
 $modal-background: whitesmoke;
 $modal-width: 35%;
 $modal-height: 35vh;
-$modal-margin-width: (100% - $modal-width)/2;
-$modal-margin-height: (100vh - $modal-height)/2;
+$modal-margin-width: math.div(100% - $modal-width, 2);
+$modal-margin-height: math.div(100vh - $modal-height, 2);
 
     .modal-wrapper{
         background-color: $wrapper-background;
@@ -247,8 +249,8 @@ $modal-margin-height: (100vh - $modal-height)/2;
 
 @media screen and (min-width:800px) and (max-width:1100px){
 $modal-width: 50%;
-$modal-margin-width: (100% - $modal-width)/2;
-$modal-margin-height: (100vh - $modal-height)/2;
+$modal-margin-width: math.div(100% - $modal-width, 2);
+$modal-margin-height: math.div(100vh - $modal-height, 2);
 
     .modal-wrapper{
 
@@ -264,8 +266,8 @@ $modal-margin-height: (100vh - $modal-height)/2;
 
 @media screen and (max-width:800px){
 $modal-width: 80%;
-$modal-margin-width: (100% - $modal-width)/2;
-$modal-margin-height: (100vh - $modal-height)/2;
+$modal-margin-width: math.div(100% - $modal-width, 2);
+$modal-margin-height: math.div(100vh - $modal-height, 2);
 
     .modal-wrapper{
 

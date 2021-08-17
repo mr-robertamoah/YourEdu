@@ -18,7 +18,7 @@ trait HasWorkbyTrait
             ->first();
     }
 
-    public function hasSubmittedWorkForAssessment($assessmentId)
+    public function hasASubmittedWorkForAssessment($assessmentId)
     {
         return $this->works()
             ->whereDone()
@@ -37,7 +37,7 @@ trait HasWorkbyTrait
 
     public function doesntHaveAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessmentId, $account)
     {
-        return ! $this->hasAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessmentId, $account);
+        return !$this->hasAMarkedSubmittedWorkForAssessmentAndMarkedbyAccount($assessmentId, $account);
     }
 
     public function hasAMarkedSubmittedWorkForAssessment($assessmentId)
@@ -51,12 +51,12 @@ trait HasWorkbyTrait
 
     public function doesntHaveAMarkedSubmittedWorkForAssessment($assessmentId)
     {
-        return ! $this->hasAMarkedSubmittedWorkForAssessment($assessmentId);
+        return !$this->hasAMarkedSubmittedWorkForAssessment($assessmentId);
     }
 
     public function doesntHaveASubmittedWorkForAssessment($assessmentId)
     {
-        return ! $this->hasSubmittedWorkForAssessment($assessmentId);
+        return !$this->hasASubmittedWorkForAssessment($assessmentId);
     }
 
     public function hasWorkForAssessment($assessmentId)
@@ -68,6 +68,6 @@ trait HasWorkbyTrait
 
     public function doesntHaveWorkForAssessment($assessmentId)
     {
-        return ! $this->hasWorkForAssessment($assessmentId);
+        return !$this->hasWorkForAssessment($assessmentId);
     }
 }

@@ -110,12 +110,14 @@ import GoBack from "./GoBack";
 </script>
 
 <style lang="scss" scoped>
+@use "sass:math";
+
 $wrapper-background: whitesmoke;
 $modal-background: aliceblue;
 $modal-width: 60%;
 $modal-height: 70vh;
-$modal-margin-width: (100% - $modal-width)/2;
-$modal-margin-height: (100vh - $modal-height)/2;
+$modal-margin-width: math.div(100% - $modal-width, 2);
+$modal-margin-height: math.div(100vh - $modal-height, 2);
 
     .modal-wrapper{
         position: fixed;

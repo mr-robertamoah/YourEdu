@@ -192,6 +192,16 @@ const mutations = {
             methodType: 'push'
         })
     },
+    ADD_DATA_TO_ITEM_PROPERTY(state,data){
+
+        addDataToProfileItemProperty({
+            state,
+            property: data.property,
+            fn: (item) => item.id == data.itemId && item[getItemType(data.item)],
+            data: data.data,
+            methodType: 'push'
+        })
+    },
     CREATE_PENDING_ITEM_PARTICIPANT(state,data){
 
         addDataToProfileItemProperty({
@@ -200,6 +210,21 @@ const mutations = {
             fn: (item) => item.id == data.itemId && item[getItemType(data.item)],
             data: data.pendingParticipant,
             methodType: 'push'
+        })
+    },
+    ADD_TIMER_TO_ITEM(state, data)
+    {
+        if (data.item.isAssessment) {
+            data.item.timer = data.timer
+            return
+        }
+
+        addDataToProfileItemProperty({
+            state,
+            property: 'timer',
+            sub: 'assessmentSections',
+            subId: data.item.id,
+            data: data.timer
         })
     },
     NEW_DISCUSSION(state,discussion){

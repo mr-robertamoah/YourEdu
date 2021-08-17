@@ -22,7 +22,7 @@ class QuestionDTO
     public ?string $method = null;
     public bool $autoMark = false;
     public ?int $position = null;
-    public ?int $scoreOver = null;
+    public ?float $scoreOver = null;
     public ?AnswerDTO $answerDTO = null;
     public ?Carbon $publishedAt = null;
     public ?Model $addedby = null;
@@ -101,7 +101,7 @@ class QuestionDTO
         $static->hint = $hint;
         $static->files = $files;
         $static->removedFiles = FileDTO::createFromArray($removedFiles);
-        $static->scoreOver = (int)$scoreOver;
+        $static->scoreOver = (float)$scoreOver;
         $static->answerType = $answerType ? strtoupper($answerType) : null;
         $static->possibleAnswers = PossibleAnswerDTO::createFromArray($possibleAnswers);
         $static->editedPossibleAnswers = PossibleAnswerDTO::createFromArray($editedPossibleAnswers);
@@ -124,7 +124,7 @@ class QuestionDTO
         $static->hint = $request->hint;
         $static->answerType = $request->answerType ?
             strtoupper($request->answerType) : null;
-        $static->scoreOver = (int)$request->scoreOver;
+        $static->scoreOver = (float)$request->scoreOver;
         if ($static->scoreOver > 100) {
             $static->scoreOver = 100;
         } else if ($static->scoreOver < 5) {

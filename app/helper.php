@@ -52,6 +52,7 @@ use App\YourEdu\Save;
 use App\YourEdu\School;
 use App\YourEdu\Subject;
 use App\YourEdu\Subscription;
+use App\YourEdu\Timer;
 use App\YourEdu\Video;
 use App\YourEdu\Word;
 use App\YourEdu\Work;
@@ -278,6 +279,8 @@ function getYourEduModel($accountText, $accountTextId): Model | null
         $account = Participant::find($accountTextId);
     } else if ($accountText === 'user') {
         $account = User::find($accountTextId);
+    } else if ($accountText === 'timer') {
+        $account = Timer::find($accountTextId);
     }
 
     return $account;
@@ -322,5 +325,3 @@ function paginator($items, $total, $perPage, $currentPage, $options){
     return Container::getInstance()->makeWith(LengthAwarePaginator::class,compact('items',
         'total', 'perPage','currentPage','options'));
 }
-
-?>

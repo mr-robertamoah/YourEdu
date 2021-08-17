@@ -1,19 +1,35 @@
 const postOnly =  ['post', 'book', 'poem', 'question', 'activitie', 'riddle']
 
-function addDataToProfileItemProperty({ state, property, fn, data, methodType }) {
+function addDataToProfileItemProperty({
+    state, property, fn, data, methodType , equate, sub, subId
+}) {
     
-    if (! state.posts[0][property]) {
-        return false
-    }
-
     let index = state.posts.findIndex(item => fn(item))
 
     if (index === -1) {
         return false
     }
+
+    if (sub) {
+        addDataToPropertyOfSub({item: state.posts[index], sub, subId, data, property})
+        return
+    }
+
+    if (! state.posts[index][property]) {
+        return false
+    }
     
+    if (equate) {
+        state.posts[index][property] = data
+        return true
+    }
+
     state.posts[index][property][methodType](data)
     return true
+}
+
+function findProfileItemAndAddData({}) {
+    
 }
 
 function addDataToProfileStatePropertysProperty({state, stateProperty, property, fn, data, methodType}){
@@ -115,79 +131,116 @@ function spliceDataFromProfileItem({state, fn, data}){
     })
 }
 
-function addDataToHomeItemProperty(
-    { state, property, itemType, fn, data, hasMine, methodType, postType }
-) {
-    
-    let index = state.posts.findIndex(item => fn(item))
-    if (index > -1) {
-        state.posts[index][property][methodType](data)
+function findHomeItemAndAddData({
+    items, fn, property, methodType, data, equate, sub, subId
+}) {
+    let index = items.findIndex(item => fn(item))
+
+    if (index === -1) {
+        return
     }
 
+    if (equate && !sub) {
+        items[index][property] = data
+        return
+    }
+
+    if (equate && sub) {
+        addDataToPropertyOfSub({item: items[index], sub, subId, data, property})
+        return
+    }
+
+    items[index][property][methodType](data)
+}
+
+function addDataToPropertyOfSub({item, sub, subId, data, property}) {
+    if (!sub || !subId || !item) {
+        return
+    }
+
+    let index = item[sub].findIndex(subItem => subItem.id == subId)
+    
+    if (index === -1) {
+        return
+    }
+
+    item[sub][index][property] = data
+}
+
+function addDataToHomeItemProperty({
+    state,
+    property,
+    itemType,
+    fn,
+    data,
+    hasMine,
+    methodType,
+    postType,
+    equate,
+    sub,
+    subId
+})
+{
+    findHomeItemAndAddData({
+        items: state.posts, fn, property, methodType, data, equate, sub, subId
+    })
+
     if (itemType == 'post' && postType) {
-        index = state[`${postType}s`].findIndex(item => fn(item))
-        if (index > -1) {
-            state[`${postType}s`][index][property][methodType](data)
-        }
+        
+        findHomeItemAndAddData({
+            items: state[`${postType}s`], fn, property, methodType, data, equate, sub, subId
+        })
 
         if (hasMine) {
-            index = state[`${postType}sMine`].findIndex(item => fn(item))
-            if (index > -1) {
-                state[`${postType}sMine`][index][property][methodType](data)
-            }
+            findHomeItemAndAddData({
+                items: state[`${postType}sMine`], fn, property, methodType, data, equate, sub, subId
+            })
         }
 
-        index = state[`${postType}sFollowers`].findIndex(item => fn(item))
-        if (index > -1) {
-            state[`${postType}sFollowers`][index][property][methodType](data)
-        }
+        findHomeItemAndAddData({
+            items: state[`${postType}sFollowers`], fn, property, methodType, data, equate, sub, subId
+        })
 
-        index = state[`${postType}sFollowings`].findIndex(item => fn(item))
-        if (index > -1) {
-            state[`${postType}sFollowings`][index][property][methodType](data)
-        }
+        findHomeItemAndAddData({
+            items: state[`${postType}sFollowings`], fn, property, methodType, data, equate, sub, subId
+        })
 
         if (state[`${postType}sAttachments`]) {
-            index = state[`${postType}sAttachments`].findIndex(item => fn(item))
-            if (index > -1) {
-                state[`${postType}sAttachments`][index][property][methodType](data)
-            }
+            findHomeItemAndAddData({
+                items: state[`${postType}sAttachments`], fn, property, methodType, data, equate, sub, subId
+            })
         }
     }
 
     if (itemType != 'post') {
         
-        index = state[`${itemType}s`].findIndex(item => fn(item))
-        if (index > -1) {
-            state[`${itemType}s`][index][property][methodType](data)
-        }
+        findHomeItemAndAddData({
+            items: state[`${itemType}s`], fn, property, methodType, data, equate, sub, subId
+        })
     }
     
     if (hasMine) {
-        index = state[`${itemType}sMine`].findIndex(item => fn(item))
-        if (index > -1) {
-            state[`${itemType}sMine`][index][property][methodType](data)
-        }
+        
+        findHomeItemAndAddData({
+            items: state[`${itemType}sMine`], fn, property, methodType, data, equate, sub, subId
+        })
     }
 
-    index = state[`${itemType}sFollowers`].findIndex(item => fn(item))
-    if (index > -1) {
-        state[`${itemType}sFollowers`][index][property][methodType](data)
-    }
+    findHomeItemAndAddData({
+        items: state[`${itemType}sFollowers`], fn, property, methodType, data, equate, sub, subId
+    })
 
-    index = state[`${itemType}sFollowings`].findIndex(item => fn(item))
-    if (index > -1) {
-        state[`${itemType}sFollowings`][index][property][methodType](data)
-    }
+    findHomeItemAndAddData({
+        items: state[`${itemType}sFollowings`], fn, property, methodType, data, equate, sub, subId
+    })
 
     if (! state[`${itemType}sAttachments`]) {
         return
     }
 
-    index = state[`${itemType}sAttachments`].findIndex(item => fn(item))
-    if (index > -1) {
-        state[`${itemType}sAttachments`][index][property][methodType](data)
-    }
+    findHomeItemAndAddData({
+        items: state[`${itemType}sAttachments`], fn, property, methodType, data, equate, sub, subId
+    })
 }
 
 function spliceDataFromHomeItemProperty(

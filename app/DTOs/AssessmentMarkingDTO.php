@@ -35,17 +35,17 @@ class AssessmentMarkingDTO
         $self->remarks = $request->remarks;
         $self->type = $request->type;
         $self->userId = $request->user()?->id;
-        
+
         if ($self->type === 'all') {
-            
+
             $self->markDTOs = self::getMarkDTOs($request);
         }
-        
+
         if ($self->type === 'one') {
-            
+
             $self->markDTO = self::getMarkDTO($request);
         }
-        
+
         return $self;
     }
 
@@ -54,7 +54,7 @@ class AssessmentMarkingDTO
         if (is_null($request->marks)) {
             return [];
         }
-        
+
         $marks = $request->marks;
 
         if (is_string($marks)) {
@@ -90,7 +90,7 @@ class AssessmentMarkingDTO
             ->addData(
                 item: 'answer',
                 itemId: $mark->answerId ?? null,
-                mark: $mark->mark ?? null,
+                score: property_exists($mark, 'mark') ? $mark->mark : (property_exists($mark, 'score') ? $mark->score : null),
                 remarks: $mark->remarks ?? null,
             );
     }
@@ -107,7 +107,7 @@ class AssessmentMarkingDTO
             return $clone;
         }
 
-        for ($i=0; $i < count($clone->markDTOs); $i++) {
+        for ($i = 0; $i < count($clone->markDTOs); $i++) {
             $clone->markDTOs[$i] = $clone->markDTOs[$i]
                 ->withMarkedby($clone->marker);
         }
@@ -120,7 +120,7 @@ class AssessmentMarkingDTO
         if ($this->type === 'one' && $this->markDTO) {
             return true;
         }
-        
+
         if ($this->type === 'all' && $this->markDTOs && count($this->markDTOs)) {
             return true;
         }

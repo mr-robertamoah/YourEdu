@@ -1,4 +1,7 @@
+import StorageService from "../services/storage.service";
 import { TokenService } from "../services/token.service"
+
+window.YoureduStorage = new StorageService('localStorage')
 
 const state = {
     loading : false,

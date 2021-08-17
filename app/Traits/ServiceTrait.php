@@ -13,7 +13,7 @@ trait ServiceTrait
         if ($account->isUser($userId)) {
             return;
         }
-        
+
         $this->throwAccountNotFoundException(
             message: "sorry 😞, you do not own the account {$account->accountType} with id {$account->id}",
         );
@@ -54,13 +54,13 @@ trait ServiceTrait
         if (is_null($dto->userId)) {
             return false;
         }
-        
+
         return User::where('id', $dto->userId)->exists();
     }
 
     private function increasePointsOfAccount($account)
     {
-        if (! in_array($account->accountType, AuthService::VALID_ACCOUNT_TYPES)) {
+        if (!in_array($account->accountType, AuthService::VALID_ACCOUNT_TYPES)) {
             return;
         }
 
@@ -69,6 +69,20 @@ trait ServiceTrait
         }
 
         $account->point->value = $account->point->value + 1;
+        $account->point->save();
+    }
+
+    private function decreasePointsOfAccount($account)
+    {
+        if (!in_array($account->accountType, AuthService::VALID_ACCOUNT_TYPES)) {
+            return;
+        }
+
+        if (is_null($account->point)) {
+            return;
+        }
+
+        $account->point->value = $account->point->value - 1;
         $account->point->save();
     }
 

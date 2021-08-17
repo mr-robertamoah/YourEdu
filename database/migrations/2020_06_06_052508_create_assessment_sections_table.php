@@ -21,10 +21,12 @@ class CreateAssessmentSectionsTable extends Migration
             $table->smallInteger('position')->nullable();
             $table->mediumInteger('max_questions')->nullable();
             $table->boolean('auto_mark')->default(false);
+            $table->integer('duration')->nullable();
             $table->boolean('random')->default(false);
-            $table->enum('answer_type',[
-                'TRUE_FALSE','LONG_ANSWER','SHORT_ANSWER','IMAGE','VIDEO','AUDIO',
-                'OPTION','NUMBER','FLOW','ARRANGE'])->nullable();
+            $table->enum('answer_type', [
+                'TRUE_FALSE', 'LONG_ANSWER', 'SHORT_ANSWER', 'IMAGE', 'VIDEO', 'AUDIO',
+                'OPTION', 'NUMBER', 'FLOW', 'ARRANGE'
+            ])->nullable();
             $table->softDeletes();
             $table->timestamps();
 

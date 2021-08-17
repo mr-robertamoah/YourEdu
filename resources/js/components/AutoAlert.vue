@@ -49,14 +49,7 @@ import { mapActions, mapGetters } from 'vuex'
         watch: {
             message(newValue) {
                 if (newValue && newValue.length) {
-                    this.show = true
-                    setTimeout(() => {
-                        this.show = false
-                        this.emit(newValue)
-                        if (this['profile/getMsg'] && this['profile/getMsg'].length) {
-                            this['profile/clearMsg']()
-                        }
-                    }, this.time);
+                    this.showMessage()
                 }
             },
             lengthy: {
@@ -75,11 +68,27 @@ import { mapActions, mapGetters } from 'vuex'
         },
         methods: {
             ...mapActions(['profile/clearMsg']),
-            emit(value) {
+            emit() {
                 if (this.success) {
-                    this.$emit('doneShowingSuccessMessage', value)
+                    this.$emit('doneShowingSuccessMessage', this.message)
                 }
-                this.$emit('hideAlert', value)
+                
+                if (this.danger) {
+                    this.$emit('doneShowingDangerMessage', this.message)
+                }
+
+                this.$emit('hideAlert', this.message)
+            },
+            showMessage() {
+                this.show = true
+
+                setTimeout(() => {
+                    this.show = false
+                    this.emit()
+                    if (this['profile/getMsg'] && this['profile/getMsg'].length) {
+                        this['profile/clearMsg']()
+                    }
+                }, this.time);
             }
         },
     }

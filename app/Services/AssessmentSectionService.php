@@ -13,11 +13,9 @@ class AssessmentSectionService
 {
     use ServiceTrait;
 
-    public function createAssessmentSection
-    (
+    public function createAssessmentSection(
         AssessmentSectionDTO $assessmentSectionDTO
-    ) : AssessmentSection
-    {
+    ): AssessmentSection {
         $assessmentSectionDTO = $assessmentSectionDTO->addData(method: 'create');
 
         $this->checkRequiredData(
@@ -29,20 +27,18 @@ class AssessmentSectionService
         );
 
         $assessmentSection = $this->addAssessmentSectionQuestions(
-            $assessmentSection, 
+            $assessmentSection,
             $assessmentSectionDTO
         );
 
         return $assessmentSection;
     }
 
-    public function updateAssessmentSection
-    (
+    public function updateAssessmentSection(
         AssessmentSectionDTO $assessmentSectionDTO
-    ) : AssessmentSection
-    {
+    ): AssessmentSection {
         $assessmentSectionDTO = $assessmentSectionDTO->addData(method: 'update');
-        
+
         $assessmentSection = $this->createOrUpdateAssessmentSection(
             assessmentSectionDTO: $assessmentSectionDTO
         );
@@ -70,11 +66,9 @@ class AssessmentSectionService
         return $assessmentSection;
     }
 
-    public function deleteAssessmentSection
-    (
+    public function deleteAssessmentSection(
         AssessmentSectionDTO $assessmentSectionDTO
-    ) : bool
-    {
+    ): bool {
         $assessmentSection = $this->getAssessmentSectionModel($assessmentSectionDTO);
 
         $assessmentSection = $this->deleteAssessmentSectionQuestions($assessmentSection);
@@ -82,12 +76,10 @@ class AssessmentSectionService
         return $this->removeAssessmentSection($assessmentSection, $assessmentSectionDTO);
     }
 
-    private function deleteAssessmentSectionQuestions
-    (
+    private function deleteAssessmentSectionQuestions(
         AssessmentSection $assessmentSection
-    )
-    {
-        $assessmentSection->questions->each(function($question) {
+    ) {
+        $assessmentSection->questions->each(function ($question) {
 
             FileService::deleteYourEduItemFiles($question);
 
@@ -97,12 +89,10 @@ class AssessmentSectionService
         return $assessmentSection->refresh();
     }
 
-    private function removeAssessmentSection
-    (
+    private function removeAssessmentSection(
         AssessmentSection $assessmentSection,
         AssessmentSectionDTO $assessmentSectionDTO
-    )
-    {
+    ) {
         $deletionStatus = $assessmentSection->delete();
 
         if (!$deletionStatus) {
@@ -114,14 +104,12 @@ class AssessmentSectionService
         return $deletionStatus;
     }
 
-    private function addAssessmentSectionQuestions
-    (
+    private function addAssessmentSectionQuestions(
         AssessmentSection $assessmentSection,
         AssessmentSectionDTO $assessmentSectionDTO,
-    )
-    {
+    ) {
         foreach ($assessmentSectionDTO->questions as $questionDTO) {
-            
+
             $questionDTO = $this->updateQuestionDTO(
                 questionDTO: $questionDTO->addData(mustHaveScoreOver: true),
                 assessmentSection: $assessmentSection,
@@ -134,14 +122,12 @@ class AssessmentSectionService
         return $assessmentSection->refresh();
     }
 
-    private function editAssessmentSectionQuestions
-    (
+    private function editAssessmentSectionQuestions(
         AssessmentSection $assessmentSection,
         AssessmentSectionDTO $assessmentSectionDTO,
-    )
-    {
+    ) {
         foreach ($assessmentSectionDTO->editedQuestions as $questionDTO) {
-            
+
             $questionDTO = $this->updateQuestionDTO(
                 questionDTO: $questionDTO,
                 assessmentSection: $assessmentSection,
@@ -152,12 +138,10 @@ class AssessmentSectionService
         }
     }
 
-    private function removeAssessmentSectionQuestions
-    (
+    private function removeAssessmentSectionQuestions(
         AssessmentSection $assessmentSection,
         AssessmentSectionDTO $assessmentSectionDTO,
-    )
-    {
+    ) {
         foreach ($assessmentSectionDTO->removedQuestions as $questionDTO) {
 
             $questionDTO = $this->updateQuestionDTO(
@@ -170,13 +154,11 @@ class AssessmentSectionService
         }
     }
 
-    private function updateQuestionDTO
-    (
+    private function updateQuestionDTO(
         QuestionDTO $questionDTO,
         AssessmentSectionDTO $assessmentSectionDTO,
         AssessmentSection $assessmentSection,
-    ) : QuestionDTO
-    {
+    ): QuestionDTO {
         $questionDTO->questionable = $assessmentSection;
         $questionDTO->addedby = $assessmentSectionDTO->addedby;
         $questionDTO->autoMark = $assessmentSection->auto_mark;
@@ -185,52 +167,86 @@ class AssessmentSectionService
         return $questionDTO;
     }
 
-    private function createOrUpdateAssessmentSection
-    (
+    private function createOrUpdateAssessmentSection(
         AssessmentSectionDTO $assessmentSectionDTO,
-    ) : AssessmentSection
-    {
-        $data = [
-            'name' => $assessmentSectionDTO->name,
-            'instruction' => $assessmentSectionDTO->instruction,
-            'position' => $assessmentSectionDTO->position,
-            'random' => $assessmentSectionDTO->random,
-            'max_questions' => $assessmentSectionDTO->maxQuestions,
-            'auto_mark' => $assessmentSectionDTO->autoMark,
-            'answer_type' => AssessmentService::getAnswerType($assessmentSectionDTO->answerType),
-        ];
-
+    ): AssessmentSection {
         $assessmentSection = null;
 
         if ($assessmentSectionDTO->method === 'create') {
             $assessmentSection = $assessmentSectionDTO
                 ->assessment->assessmentSections()
-                ->create($data); 
+                ->create([
+                    'name' => $assessmentSectionDTO->name,
+                    'instruction' => $assessmentSectionDTO->instruction,
+                    'position' => $assessmentSectionDTO->position,
+                    'random' => $assessmentSectionDTO->random,
+                    'duration' => $assessmentSectionDTO->duration,
+                    'max_questions' => $assessmentSectionDTO->maxQuestions,
+                    'auto_mark' => $assessmentSectionDTO->autoMark,
+                    'answer_type' => AssessmentService::getAnswerType($assessmentSectionDTO->answerType),
+                ]);
         }
-        
+
         if ($assessmentSectionDTO->method === 'update') {
             $assessmentSection = $this->getAssessmentSectionModel(
                 $assessmentSectionDTO
             );
-                
-            $assessmentSection?->update($data); 
+
+            $assessmentSection?->update($this->getUpdateData($assessmentSectionDTO));
         }
 
-        if (is_null($assessmentSection)) {
-            $this->throwAssessmentException(
-                message: "failed to {$method} assessment section",
-                data: $assessmentSectionDTO
-            );
+        if (is_not_null($assessmentSection)) {
+            return $assessmentSection->refresh();
         }
 
-        return $assessmentSection->refresh();
+        $this->throwAssessmentException(
+            message: "failed to {$method} assessment section",
+            data: $assessmentSectionDTO
+        );
     }
 
-    private function getAssessmentSectionModel
-    (
-        AssessmentSectionDTO $assessmentSectionDTO
-    )
+    public function getUpdateData($assessmentSectionDTO)
     {
+        $data = [];
+
+        if ($assessmentSectionDTO->name) {
+            $data['name'] = $assessmentSectionDTO->name;
+        }
+
+        if ($assessmentSectionDTO->instruction) {
+            $data['instruction'] = $assessmentSectionDTO->instruction;
+        }
+
+        if ($assessmentSectionDTO->position) {
+            $data['position'] = $assessmentSectionDTO->position;
+        }
+
+        if ($assessmentSectionDTO->random) {
+            $data['random'] = $assessmentSectionDTO->random;
+        }
+
+        if ($assessmentSectionDTO->duration) {
+            $data['duration'] = $assessmentSectionDTO->duration;
+        }
+
+        if ($assessmentSectionDTO->maxQuestions) {
+            $data['max_questions'] = $assessmentSectionDTO->maxQuestions;
+        }
+
+        if ($assessmentSectionDTO->autoMark) {
+            $data['auto_mark'] = $assessmentSectionDTO->autoMark;
+        }
+
+        if ($assessmentSectionDTO->answerType) {
+            $data['answer_type'] = AssessmentService::getAnswerType($assessmentSectionDTO->answerType);
+        }
+
+        return $data;
+    }
+
+    private function getAssessmentSectionModel(
+        AssessmentSectionDTO $assessmentSectionDTO
+    ) {
         if ($assessmentSectionDTO->assessmentSection) {
             return $assessmentSectionDTO->assessmentSection;
         }
@@ -238,27 +254,29 @@ class AssessmentSectionService
         return $this->getModel('assessmentSection', $assessmentSectionDTO->assessmentSectionId);
     }
 
-    private function checkRequiredData
-    (
+    private function checkRequiredData(
         AssessmentSection $assessmentSection = null,
         AssessmentSectionDTO $assessmentSectionDTO
-    )
-    {
+    ) {
         $this->ensureAppropriateRandomAndMaxQuestionsCombination($assessmentSectionDTO);
 
-        if ($assessmentSectionDTO->method === 'create' && 
-            $assessmentSectionDTO->hasEnoughQuestions()) {
+        if (
+            $assessmentSectionDTO->method === 'create' &&
+            $assessmentSectionDTO->hasEnoughQuestions()
+        ) {
             return;
         }
 
-        if ($assessmentSectionDTO->method === 'update' && 
-            $assessmentSection?->willHaveEnoughQuestions($assessmentSectionDTO)) {
+        if (
+            $assessmentSectionDTO->method === 'update' &&
+            $assessmentSection?->willHaveEnoughQuestions($assessmentSectionDTO)
+        ) {
             return;
         }
 
         $this->throwAssessmentSectionException(
-            message: $assessmentSectionDTO->maxQuestions ? 
-                "sorry 😞, to {$assessmentSectionDTO->method} an assessment section, ensure it has at least the max number of questions" : 
+            message: $assessmentSectionDTO->maxQuestions ?
+                "sorry 😞, to {$assessmentSectionDTO->method} an assessment section, ensure it has at least the max number of questions" :
                 "sorry 😞, to {$assessmentSectionDTO->method} an assessment section, ensure it has at least one question",
             data: $assessmentSectionDTO
         );
@@ -276,12 +294,10 @@ class AssessmentSectionService
         );
     }
 
-    private function throwAssessmentSectionException
-    (
+    private function throwAssessmentSectionException(
         string $message,
         $data = null
-    )
-    {
+    ) {
         throw new AssessmentSectionException(
             message: $message,
             data: $data

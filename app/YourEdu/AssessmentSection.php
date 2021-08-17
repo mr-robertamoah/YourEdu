@@ -2,6 +2,7 @@
 
 namespace App\YourEdu;
 
+use App\Traits\HasTimeableTrait;
 use Database\Factories\AssessmentSectionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,9 +10,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentSection extends Model
 {
-    //
-    use SoftDeletes, HasFactory;
-    
+    use SoftDeletes,
+        HasFactory,
+        HasTimeableTrait;
+
     const IMAGE = 'IMAGE';
     const VIDEO = 'VIDEO';
     const AUDIO = 'AUDIO';
@@ -25,8 +27,8 @@ class AssessmentSection extends Model
     const FILE = 'FILE';
 
     protected $fillable = [
-        'name','instruction','position','auto_mark','answer_type',
-        'assessment_id','max_questions', 'random'
+        'name', 'instruction', 'position', 'auto_mark', 'answer_type',
+        'assessment_id', 'max_questions', 'random', 'duration'
     ];
 
     protected $casts = [
@@ -41,13 +43,13 @@ class AssessmentSection extends Model
 
     public function questions()
     {
-        return $this->morphMany(Question::class,'questionable');
+        return $this->morphMany(Question::class, 'questionable');
     }
 
     public function willHaveEnoughQuestions($dto)
     {
         return $this->questions->count() - count(
-            array_filter($dto->removedQuestions, function($question) {
+            array_filter($dto->removedQuestions, function ($question) {
                 return in_array(
                     $question->questionId,
                     $this->questions->pluck('id')->toArray()

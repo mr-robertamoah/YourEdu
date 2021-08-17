@@ -651,7 +651,7 @@ import { bus } from '../../app';
                         this.clearData()
                     }
                 } else {
-                    this.responseErrorAlert(response.response)
+                    this.issueDangerAlertForResponse(response.response)
                     console.log('response :>> ', response);
                 }
                 this.clearExtraData()

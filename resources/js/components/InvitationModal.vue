@@ -166,7 +166,7 @@
                             :type="paymentType"
                             :showRadios="false"
                             @paymentType="getPaymentType"
-                            @paymentTypeError="setErrorAlert"
+                            @paymentTypeError="issueDangerAlert"
                             :radioValue="computedPaymentType"
                         ></payment-types>
 
@@ -954,7 +954,7 @@ import Alert from '../mixins/Alert.mixin';
                     let message = this.validateStepOne()
 
                     if (message.length) {
-                        this.setErrorAlert({message})
+                        this.issueDangerAlert({message})
                         return
                     }
                 }

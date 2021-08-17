@@ -498,8 +498,8 @@ import { strings } from '../services/helpers';
             },
             "discussion.participants"(newValue, oldValue) {
                 if (oldValue && 
-                    newValue.participants.length >
-                    oldValue.participants.length) {
+                    newValue.participants?.length >
+                    oldValue.participants?.length) {
                     this.alertSuccess = true
                     this.alertMessage = 'a new participant just joined'
                 }

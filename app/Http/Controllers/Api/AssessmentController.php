@@ -11,9 +11,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateAssessmentRequest;
 use App\Http\Requests\DeleteAssessmentRequest;
 use App\Http\Requests\UpdateAssessmentRequest;
+use App\Http\Resources\AnswerResource;
 use App\Http\Resources\AssessmentResource;
 use App\Http\Resources\DiscussionParticipantResource;
 use App\Http\Resources\DiscussionPendingParticipantsResource;
+use App\Http\Resources\MarkedAnswerResource;
+use App\Http\Resources\MarkedWorkResource;
 use App\Http\Resources\ParticipantProfileResource;
 use App\Http\Resources\ParticipantResource;
 use App\Http\Resources\UserAccountResource;
@@ -194,14 +197,18 @@ class AssessmentController extends Controller
         try {
             DB::beginTransaction();
 
-            (new AssessmentService())->markAssessment(
+            $item = (new AssessmentService())->markAssessment(
                 AssessmentmarkingDTO::createFromRequest($request)
             );
 
             DB::commit();
 
+            $itemType = class_basename_lower($item);
+
             return response()->json([
                 'message' => 'successful',
+                'answer' => $itemType === 'answer' ? new MarkedAnswerResource($item) : null,
+                'work' => $itemType === 'work' ? new MarkedWorkResource($item) : null,
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -214,7 +221,7 @@ class AssessmentController extends Controller
         try {
             DB::beginTransaction();
 
-            (new AssessmentService())->doneMarkingAssessment(
+            $work = (new AssessmentService())->doneMarkingAssessment(
                 AssessmentMarkingDTO::createFromRequest($request)
             );
 
@@ -222,6 +229,7 @@ class AssessmentController extends Controller
 
             return response()->json([
                 'message' => 'successful',
+                'work' => new MarkedWorkResource($work),
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -323,6 +331,28 @@ class AssessmentController extends Controller
             );
 
             return UserAccountResource::collection($accounts);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function getAssessmentWork(Request $request)
+    {
+        try {
+            $work = (new AssessmentService())->getAssessmentWork(
+                AssessmentDTO::new()
+                    ->addData(
+                        userId: $request->user()?->id,
+                        assessmentId: $request->assessmentId,
+                        account: $request->account,
+                        accountId: $request->accountId,
+                    )
+            );
+
+            return response()->json([
+                'message' => 'successful',
+                'work' => $work ? new MarkedWorkResource($work) : null
+            ]);
         } catch (\Throwable $th) {
             throw $th;
         }

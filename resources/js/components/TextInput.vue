@@ -125,6 +125,7 @@
             },
             sendText() {
                 this.$emit('keyupenter', this.inputValue)
+                this.$emit('keydown.enter', this.inputValue)
             },
         },
     }

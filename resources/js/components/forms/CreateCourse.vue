@@ -784,12 +784,12 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     }
                     bus.$emit('updateCourse',response.course)
                 } else {
-                    this.responseErrorAlert(response.response)
+                    this.issueDangerAlertForResponse(response.response)
                     console.log('response :>> ', response);
                 }
             },
         },
-        responseErrorAlert(response) {
+        issueDangerAlertForResponse(response) {
             this.alertDanger = true
             if (response?.data?.message) {
                 this.alertMessage = response?.data?.message

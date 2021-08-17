@@ -58,16 +58,18 @@
                                 <div class="attachment-heading">
                                     Note: setting a lesson as free or an introduction will be implemented in every course and/or class to which this lesson is added.
                                 </div>
-                                <main-checkbox
-                                    v-model="data.intro"
-                                    label="set it as an introduction"
-                                    class="class-input"
-                                ></main-checkbox>
-                                <main-checkbox
-                                    v-model="data.free"
-                                    label="should be free"
-                                    class="class-input"
-                                ></main-checkbox>
+                                <template v-if="main">
+                                    <main-checkbox
+                                        v-model="data.intro"
+                                        label="set it as an introduction"
+                                        class="class-input"
+                                    ></main-checkbox>
+                                    <main-checkbox
+                                        v-model="data.free"
+                                        label="should be free"
+                                        class="class-input"
+                                    ></main-checkbox>
+                                </template>
 
                                 <div class="section">Lesson Resources</div>
                                 <div class="info" v-if="main">add links to this lesson</div>
@@ -425,7 +427,7 @@
                                     new payment types
                                 </div>
                                 <payment-types
-                                    v-if="!data.free && !data.intro"
+                                    v-if="!data.free && !data.intro && main"
                                     @paymentType="getPaymentType"
                                     :type="paymentType"
                                     :radioValue="data.paymentType"
@@ -948,22 +950,31 @@ import { strings } from '../../services/helpers';
                 }
             },
             receiveMediaCapture(file){
+                if (! file) {
+                    return
+                }
+
                 if (file.type.includes('image')) {
                     this.activeFile = this.imageFile = new File([file],'my_picture.png',{
                         type: 'image/png',
                         lastModified: new Date()
                     })
-                } else if (file.type.includes('video')) {
+                }
+                
+                if (file.type.includes('video')) {
                     this.activeFile = this.videoFile = new File([file],'my_video.webm',{
                         type: 'video/webm',
                         lastModified: new Date()
                     })
-                } else if (file.type.includes('audio')) {
+                }
+                
+                if (file.type.includes('audio')) {
                     this.activeFile = this.audioFile = new File([file],'my_audio.mp3',{
                         type: 'audio/mp3',
                         lastModified: new Date()
                     })
                 }
+                
                 this.showFilePreview = true
             },
             closeMediaCapture(){
@@ -1131,7 +1142,7 @@ import { strings } from '../../services/helpers';
                     }
                     bus.$emit('updateLesson',response.lesson)
                 } else {
-                    this.responseErrorAlert(response.response)
+                    this.issueDangerAlertForResponse(response.response)
                     console.log('response :>> ', response);
                 }
             },

@@ -182,7 +182,7 @@ export default {
                 this.initiateGetItems()
             }, 200
         ),
-        responseErrorAlert(response) {
+        issueDangerAlertForResponse(response) {
             this.alertDanger = true
             if (response?.data?.message) {
                 this.alertMessage = response?.data?.message

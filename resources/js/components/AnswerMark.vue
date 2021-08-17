@@ -1,8 +1,9 @@
 <template>
     <fade-down>
         <template slot="transition" v-if="show">
-            <div class="answer-mark-wrapper"
+            <div class="answer-mark-wrapper z-30"
                 @click.self="clickedAction('cancel')"
+                :class="{'relative': ! computedClasses.includes('absolute')}"
             >
                 <div class="remark-wrapper">
                     <fade-right-fast>
@@ -16,19 +17,18 @@
                 </div>
                 <div class="mark-wrapper">
                     <div class="upper-section" v-if="!justRemark">
-                        <input type="number" autofocus 
+                        <input type="number" 
+                            autofocus 
                             :max="inputMax" 
                             :min="inputMin"
                             v-model="inputScore"
                             class="form-control"
-                            @keyup="checkInput"
-                            @focus="inputScoreFocused"
                             ref="score"
                             pattern="[0-9]*"
                             inputmode="numeric"
                         >
                     </div>
-                    <div class="middle-section" v-if="!justRemark">
+                    <div class="middle-section text-center" v-if="!justRemark">
                         {{scoreOver}}
                     </div>
                     <div class="lower-section">
@@ -50,6 +50,11 @@ import FadeRightFast from './transitions/FadeRightFast'
 import FadeDown from './transitions/FadeDown'
 
     export default {
+        components: {
+            FadeDown,
+            FadeRightFast,
+            MainTextarea,
+        },
         props: {
             show: {
                 type: Boolean,
@@ -71,11 +76,12 @@ import FadeDown from './transitions/FadeDown'
                 type: Number,
                 default: 0
             },
-        },
-        components: {
-            FadeDown,
-            FadeRightFast,
-            MainTextarea,
+            value: {
+                type: Object,
+                default() {
+                    return null
+                }
+            },
         },
         data() {
             return {
@@ -84,30 +90,72 @@ import FadeDown from './transitions/FadeDown'
                 showRemarks: false
             }
         },
+        watch: {
+            value: {
+                immediate: true,
+                handler(newValue) {
+                    if (! newValue) {
+                        return
+                    }
+
+                    this.inputScore = newValue.score
+                    this.inputRemark = newValue.remark
+                },
+                deep: true
+            },
+            inputScore(newValue) {
+                this.checkInput()
+            },
+        },
+        computed: {
+            computedClasses() {
+                return this.$vnode.data.staticClass ? this.$vnode.data.staticClass : ''
+            },
+        },
         methods: {
             inputScoreFocused(){
                 this.$refs.score.value = ''
             },
             checkInput() {
-                if (this.$refs.score.value < this.inputMin) {
-                    this.$refs.score.value = this.inputScore = this.inputMin
-                } else if (this.$refs.score.value > this.inputMax) {
-                    this.$refs.score.value = this.inputScore = this.inputMax
+                if (this.inputScore < this.inputMin) {
+                    this.inputScore = this.inputMin
+                    return
                 }
+                
+                if (this.inputScore > this.inputMax) {
+                    this.inputScore = this.inputMax
+                }
+            },
+            emitMark({score, remark}) {
+                this.$emit('answerMarkScore',{
+                    score: Number(score),
+                    remark
+                })
             },
             clickedAction(data){
                 if (data === 'mark') {
-                    this.$emit('answerMarkScore',{
-                        score: this.inputScore,
+                    this.emitMark({
+                        score: Number(this.inputScore),
                         remark: this.inputRemark
                     })
-                } else if (data === 'cancel') {
-                    this.inputScore = this.inputMin
-                    this.inputRemark = ''
-                    this.$emit('hideAnswerMark')
-                } else if (data === 'remarks') {
-                    this.showRemarks = !this.showRemarks
+
+                    return
                 }
+                
+                if (data === 'cancel') {
+                    this.inputScore = null
+                    this.inputRemark = ''
+
+                    this.emitMark({
+                        score: null, 
+                        remark: '',
+                    })
+                    
+                    this.$emit('hideAnswerMark')
+                    return
+                }
+                
+                this.showRemarks = !this.showRemarks
             },
         },
     }
@@ -122,8 +170,6 @@ import FadeDown from './transitions/FadeDown'
         align-items: flex-start;
         width: 100%;
         background-color: transparent;
-        position: relative;
-        z-index: 2;
         margin-top: 5px;
 
         .remark-wrapper{
@@ -180,7 +226,6 @@ import FadeDown from './transitions/FadeDown'
                 border-bottom: 1px solid gray;
                 border-top: 1px solid gray;
                 padding: 5px;
-                text-align: start;
                 font-weight: 500;
             }
 

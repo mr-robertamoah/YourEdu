@@ -1,5 +1,8 @@
 <template>
-    <button class="btn btn-size min-w-content max-h-content" :title="titleText"
+    <button 
+        class="btn min-w-content max-h-content" 
+        :class="{'btn-size': ! computedHasFontSizeClasses}"
+        :title="titleText"
         @click="onClick"
     >
         {{buttonText}}
@@ -18,6 +21,26 @@
                 type: String,
                 default: ''
             },
+        },
+        computed: {
+            computedClasses() {
+                return this.$vnode.data.staticClass ? this.$vnode.data.staticClass : ''
+            },
+            computedHasFontSizeClasses() {
+                if (! this.computedClasses.length) {
+                    return false
+                }
+
+                let classes = ['text-xs', 'text-sm', 'text-base']
+
+                classes.forEach(cl=>{
+                    if (this.computedClasses.includes(cl)) {
+                        return true
+                    }
+                })
+
+                return false
+            }
         },
         methods: {
             onClick() {

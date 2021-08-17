@@ -24,6 +24,7 @@ use App\Exceptions\AssessmentException;
 use App\Http\Resources\AssessmentMiniResource;
 use App\Http\Resources\AssessmentResource;
 use App\Http\Resources\DiscussionParticipantResource;
+use App\Http\Resources\ParticipantResource;
 use App\Http\Resources\UserAccountResource;
 use App\Notifications\AssessmentAnsweredNotification;
 use App\Notifications\AssessmentAnswerMarkedNotification;
@@ -100,6 +101,8 @@ class AssessmentService
             $this->checkRequiredData(
                 assessmentDTO: $assessmentDTO
             );
+
+            $this->ensureDurationIsEnough($assessmentDTO);
 
             $assessment = $this->createOrUpdateAssessment($assessmentDTO->addData(method: 'create'));
 
@@ -188,6 +191,22 @@ class AssessmentService
 
         $this->throwAssessmentException(
             message: "a assessment requires at least one section",
+            data: $assessmentDTO
+        );
+    }
+
+    public function ensureDurationIsEnough($assessmentDTO)
+    {
+        if (!$assessmentDTO->duration) {
+            return;
+        }
+
+        if ((int) $assessmentDTO->duration >= $assessmentDTO->getAssessmentSectionDurations()) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, the {$assessmentDTO->duration} for the assessment should be greater than or equal to the the total durations of {$assessmentDTO->getAssessmentSectionDurations()} for the sections ",
             data: $assessmentDTO
         );
     }
@@ -518,6 +537,8 @@ class AssessmentService
                 $assessmentDTO->account,
                 $assessmentDTO->accountId
             );
+
+            $this->ensureDurationIsEnough($assessmentDTO);
 
             $assessment = $this->getAssessmentWithId($assessmentDTO);
 
@@ -1315,7 +1336,7 @@ class AssessmentService
         }
 
         if (class_basename_lower($account) === 'participant') {
-            return new DiscussionParticipantResource($account);
+            return new ParticipantResource($account);
         }
 
         return null;
@@ -1604,6 +1625,10 @@ class AssessmentService
 
         $this->ensureWorkNotDone($assessmentAnsweringDTO);
 
+        $this->ensureIsNotDue($assessmentAnsweringDTO->assessment, $assessmentAnsweringDTO);
+
+        $this->ensureHasMoreTime($assessmentAnsweringDTO->assessment, $assessmentAnsweringDTO);
+
         $assessmentAnsweringDTO = $assessmentAnsweringDTO->setUpAnsweredby();
 
         if ($assessmentAnsweringDTO->type === 'one') {
@@ -1639,6 +1664,38 @@ class AssessmentService
         $this->throwAssessmentException(
             message: "sorry 😞, you are done submitting this work and cannot do anything else.",
             data: $assessmentAnsweringDTO
+        );
+    }
+
+    public function ensureIsNotDue($assessment, $dto = null)
+    {
+        if ($assessment->isNotDue()) {
+            return $this;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you cannot perform this action because the assessment is due.",
+            data: $dto
+        );
+    }
+
+    public function ensureHasMoreTime($assessment, $dto = null)
+    {
+        if ($assessment->doesntHaveDuration()) {
+            return $this;
+        }
+
+        if ($assessment->doesntHaveTimerAddedbyUser($dto->userId)) {
+            return $this;
+        }
+
+        if ($assessment->timerAddedbyUser($dto->userId)->hasMoreTime()) {
+            return $this;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you have no time left to perform this action.",
+            data: $dto
         );
     }
 
@@ -1680,7 +1737,7 @@ class AssessmentService
 
     private function createAnswer($answerDTO)
     {
-        return (new AnswerService)->createAnswer($answerDTO);
+        return (new AnswerService)->createOnlyNewAnswer($answerDTO);
     }
 
     private function submitWork($assessmentAnsweringDTO)
@@ -1783,9 +1840,7 @@ class AssessmentService
 
         if ($assessmentMarkingDTO->type === 'one') {
 
-            $this->markAnswer($assessmentMarkingDTO);
-
-            return null;
+            return $this->markAnswer($assessmentMarkingDTO);
         }
 
         $this->markAllAnswer($assessmentMarkingDTO);
@@ -1797,6 +1852,8 @@ class AssessmentService
                 ->withUsers($assessmentMarkingDTO->work->addedby->user)
                 ->addData(methodType: 'marked')
         );
+
+        return $assessmentMarkingDTO->work;
     }
 
     public function doneMarkingAssessment(AssessmentMarkingDTO $assessmentMarkingDTO)
@@ -1822,6 +1879,8 @@ class AssessmentService
                 ->withUsers($assessmentMarkingDTO->work->addedby->user)
                 ->addData(methodType: 'marked')
         );
+
+        return $assessmentMarkingDTO->work;
     }
 
     private function ensureIsNotDoneMarkingWork($assessmentMarkingDTO)
@@ -1878,8 +1937,9 @@ class AssessmentService
                 ->withMarkable($assessmentMarkingDTO->work)
                 ->addData(
                     remarks: $assessmentMarkingDTO->remarks,
-                    score: $assessmentMarkingDTO->work->addedby->getTotalScoreOfAnswers($assessmentMarkingDTO->assessment),
-                    scoreOver: $assessmentMarkingDTO->assessment->getTotalScoreOver(),
+                    score: (float) $assessmentMarkingDTO->work->addedby
+                        ->getTotalScoreOfAnswersForAssessment($assessmentMarkingDTO->assessment->id),
+                    scoreOver: (float) $assessmentMarkingDTO->assessment->getTotalScoreOver(),
                 )
         );
     }
@@ -1902,7 +1962,7 @@ class AssessmentService
 
     private function createMark(MarkDTO $markDTO)
     {
-        return (new MarkService)->createMark($markDTO);
+        return (new MarkService)->createOnlyNewMark($markDTO);
     }
 
     private function ensureCanMark($assessmentMarkingDTO)
@@ -1994,5 +2054,38 @@ class AssessmentService
     public function assessmentSearch(SearchDTO $searchDTO)
     {
         return $this->profileSearch($searchDTO);
+    }
+
+    public function getAssessmentWork(AssessmentDTO $assessmentDTO)
+    {
+        $assessmentDTO = $assessmentDTO->withAssessment(
+            $this->getAssessmentWithId($assessmentDTO)
+        );
+
+        $this->ensureIsParticipantOrMarker($assessmentDTO);
+
+        return $assessmentDTO->assessment->getWorkFor(
+            $this->getModel($assessmentDTO->account, $assessmentDTO->accountId)
+        );
+    }
+
+    private function ensureIsParticipantOrMarker($assessmentDTO)
+    {
+        if ($assessmentDTO->assessment->isOwner($assessmentDTO->userId)) {
+            return;
+        }
+
+        if ($assessmentDTO->assessment->isMarker($assessmentDTO->userId)) {
+            return;
+        }
+
+        if ($assessmentDTO->assessment->isParticipant($assessmentDTO->userId)) {
+            return;
+        }
+
+        $this->throwAssessmentException(
+            message: "sorry 😞, you do not take part in the assessment with name: {$assessmentDTO->assessment->name}",
+            data: $assessmentDTO
+        );
     }
 }

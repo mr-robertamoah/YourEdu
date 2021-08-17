@@ -17,10 +17,10 @@ class CreateMarksTable extends Migration
             $table->id();
             $table->nullableMorphs('markable'); // answer work
             $table->nullableMorphs('markedby'); // professional facilitator parent school
-            $table->integer('score')->nullable();
-            $table->integer('score_over')->nullable();
+            $table->float('score', 6, 2)->nullable();
+            $table->float('score_over', 6, 2)->nullable();
             $table->string('remark')->nullable();
-            $table->enum('state',['WRONG','PARTIAL','CORRECT'])->nullable();
+            $table->enum('state', ['WRONG', 'PARTIAL', 'CORRECT'])->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

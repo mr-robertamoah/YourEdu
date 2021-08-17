@@ -841,7 +841,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     }
                     bus.$emit('updateClass',response.class)
                 } else {
-                    this.responseErrorAlert(response.response)
+                    this.issueDangerAlertForResponse(response.response)
                     console.log('response :>> ', response);
                 }
             },

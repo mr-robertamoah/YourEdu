@@ -16,7 +16,24 @@
                     @search="homeSearch"
                 ></search-input>
             </div>
+            <div 
+                class="hover:text-whitesmoke text-gray-500 text-base p-1 cursor-pointer
+                    absolute right-1"
+                @click="clickedButton('details')"
+            >
+                <font-awesome-icon
+                    :icon="['fa', `${showDetails ? 'chevron-up' : 'chevron-down'}`]"
+                ></font-awesome-icon>
+            </div>
         </div>
+        <fade-down>
+            <template slot="transition" v-if="showDetails">
+                <home-menu-bar
+                    :activeItem="sideValue"
+                    @clickedMenuItem="emitSideValue"
+                ></home-menu-bar>
+            </template>
+        </fade-down>
         <div class="home-middle">
             <div class="menu">
                 <home-menu
@@ -30,15 +47,14 @@
                     @askLoginRegister="askLoginRegister"
                     @clickedMedia="clickedMedia"
                     :loading="loading"
-                    :type="sideValue"
-                    :params="params" 
+                    :posts="computedPosts"
                     @clickedShowPostComments="clickedShowPostComments"
                     @clickedShowPostPreview="clickedShowPostPreview"
                 ></home-main>
             </div>
             <div class="side">
                 <home-side
-                    @clickedItem="clickedSideMenuItem"
+                    @clickedItem="emitSideValue"
                     :sideValue="sideValue"
                 ></home-side>
             </div>
@@ -100,14 +116,14 @@
 
         <infinite-loading
             @infinite="infiniteHandler"
-            v-if="computedPosts"
+            v-if="computedPosts.length"
             force-use-infinite-wrapper
         ></infinite-loading>
     </div>
 </template>
 
 <script>
-import HomeMain from '../components/home/HomeMain'
+import HomeMain from '../components/home/HomeMain.vue'
 import HomeMenu from '../components/home/HomeMenu'
 import YourEduLogo from '../components/YourEduLogo'
 import HomeSide from '../components/home/HomeSide'
@@ -115,9 +131,10 @@ import FadeUp from '../components/transitions/FadeUp'
 import SmallModal from '../components/SmallModal'
 import SearchInput from '../components/SearchInput'
 import SearchOutput from '../components/SearchOutput'
-import _ from 'lodash'
 import InfiniteLoading from 'vue-infinite-loading'
 import { mapActions, mapGetters } from 'vuex'
+import FadeDown from '../components/transitions/FadeDown.vue'
+import HomeMenuBar from '../components/HomeMenuBar.vue'
 
     export default {
         components: {
@@ -130,10 +147,13 @@ import { mapActions, mapGetters } from 'vuex'
             FadeUp,
             HomeSide,
             InfiniteLoading,
+            FadeDown,
+            HomeMenuBar,
         },
         data() {
             return {
                 showLoginRegister: false,
+                showDetails: false,
                 //discussions
                 discussionsNextPage: 1,
                 discussionsMineNextPage: 1,
@@ -210,6 +230,7 @@ import { mapActions, mapGetters } from 'vuex'
                 searchNextPage: 1,
                 searchLoading: false,
                 searchHasMore: false, //this determines if load more should appear to user
+                views: [],
             }
         },
         beforeRouteEnter(to, from, next) {
@@ -294,27 +315,23 @@ import { mapActions, mapGetters } from 'vuex'
             },
         },
         computed: {
-            ...mapGetters(['home/getHomePosts','home/getHomePostsMine','home/getHomePostsFollowers',
-                'getAccessToken','home/getHomeReads','home/getHomePostsFollowings','home/getHomePostsAttachments',
-                'home/getHomeDiscussions','getUser',
-                'home/getHomeQuestions','home/getHomeQuestionsMine','home/getHomeQuestionsFollowers',
-                'home/getHomeQuestionsFollowings','home/getHomeQuestionsAttachments',
-                'home/getHomeRiddles','home/getHomeRiddlesMine','home/getHomeRiddlesFollowers',
-                'home/getHomeRiddlesFollowings','home/getHomeRiddlesAttachments',
-                'home/getHomePoems','home/getHomePoemsMine','home/getHomePoemsFollowers',
-                'home/getHomePoemsFollowings','home/getHomePoemsAttachments',
-                'home/getHomeBooks','home/getHomeBooksMine','home/getHomeBooksFollowers',
-                'home/getHomeBooksFollowings','home/getHomeBooksAttachments',
-                'home/getHomeActivities','home/getHomeActivitiesMine','home/getHomeActivitiesFollowers',
-                'home/getHomeActivitiesFollowings','home/getHomeActivitiesAttachments']),
+            ...mapGetters(['getAccessToken', 'getUser']),
             computedPosts() {
-                return this['home/getHomePosts'] ? this['home/getHomePosts'] : null
+                return [
+                    ...new Set(this.$store.getters[`home/getHome${_.capitalize(this.computedCurrentStates)}`])
+                ]
             },
             computedProfiles() {
                 return this.getProfiles ? this.getProfiles : []
             },
-            computedNextPageForMenuValue() {
+            computedMenuValue() {
                 return this.menuValue === 'all' ? '' : this.menuValue
+            },
+            computedCurrentStates() {
+                return `${this.sideValue}${_.capitalize(this.computedMenuValue)}`
+            },
+            computedNextPageForMenuValue() {
+                return this[`${this.computedCurrentStates}NextPage`]
             },
             computedIsPostType() {
                 return !this.computedIsNotPostType
@@ -332,23 +349,29 @@ import { mapActions, mapGetters } from 'vuex'
                 'home/search','home/newPost', 'home/newAssessment', 'home/newRead',
                 'home/newDiscussion','profile/getPost'
             ]),
-            setPostTypeOnParams() {
-                if (this.computedIsPostType) {
-                    this.params.postType = this.sideValue
-                    return this.params
+            clickedButton(data) {
+                if (data === 'details') {
+                    this.showDetails = !this.showDetails
+                    return
                 }
-
-                this.params.postType = 'posts'
-                return this.params
             },
-            setTypeOnParams() {
-                if (this.computedIsPostType || this.sideValue === 'posts') {
-                    this.params.type = 'posts'
-                    return this.params
+            setPostTypeOnParams(params) {
+                if (this.computedIsPostType) {
+                    params.postType = this.sideValue
+                    return params
                 }
 
-                this.params.type = this.sideValue
-                return this.params
+                params.postType = 'posts'
+                return params
+            },
+            setTypeOnParams(params) {
+                if (this.computedIsPostType || this.sideValue === 'posts') {
+                    params.type = 'posts'
+                    return params
+                }
+
+                params.type = this.sideValue
+                return params
             },
             clickedSearchOutputButton(data){
                 this.searchOutputType = data
@@ -450,7 +473,7 @@ import { mapActions, mapGetters } from 'vuex'
                 this.oldSearchText = this.searchText
                 this.searchLoading = false
             },
-            clickedSideMenuItem(data){
+            emitSideValue(data){
                 this.sideValue = data
             },
             clickedAttachmentSelection(data){
@@ -523,26 +546,69 @@ import { mapActions, mapGetters } from 'vuex'
 
                 this[`${this.sideValue}AttachmentAfter`] =  this.menuAttachment
             },
+            setUpParams() {
+                let params = this.setPostTypeOnParams(this.params)
+                params = this.setTypeOnParams(params)
+
+                return params
+            },
+            inView() {
+                return this.views.includes(this.computedCurrentStates)
+            },
+            thereIsEnoughPosts() {
+                return this.computedPosts?.length >= 10
+            },
+            thereIsntEnoughPosts() {
+                return !this.thereIsEnoughPosts()
+            },
+            addToView() {
+                if (! this.computedPosts?.length) {
+                    return
+                }
+
+                if (this.inView()) {
+                    return
+                }
+
+                this.views.push(this.computedCurrentStates)
+            },
             async getPosts() {
-                console.log('in get posts');
+                console.log({
+                    nextPage: this.computedNextPageForMenuValue,
+                    params: this.setUpParams(),
+                });
                 
                 if (this.checkNextPageCancel()) {
+                    return
+                }
+
+                if (this.inView() && this.thereIsEnoughPosts()) {
                     return
                 }
 
                 this.loading = true 
                 let response = await this[`home/get${this.getAccessToken ? 'User' : ''}Posts`]({
                     nextPage: this.computedNextPageForMenuValue,
-                    params: this.setTypeOnParams(),
+                    params: this.setUpParams(),
                 })
 
                 this.setNextPageAndAttachmentAfter(response)
                 
                 this.loading = false
+
+                this.addToView()
             },
             async getPostTypes(){
+                console.log({
+                    nextPage: this.computedNextPageForMenuValue,
+                    params: this.setUpParams(),
+                });
                 
                 if (this.checkNextPageCancel()) {
+                    return
+                }
+
+                if (this.inView()) {
                     return
                 }
 
@@ -550,7 +616,7 @@ import { mapActions, mapGetters } from 'vuex'
 
                 let response = await this[`home/get${this.getAccessToken ? 'User' : ''}PostTypes`]({
                     nextPage: this.computedNextPageForMenuValue,
-                    params: this.setPostTypeOnParams(),
+                    params: this.setUpParams(),
                 })
                     
                 this.setNextPageAndAttachmentAfter(response)

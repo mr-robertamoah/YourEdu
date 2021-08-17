@@ -169,18 +169,6 @@ const actions = {
             return {status: false, response}
         }
     },
-    async getWork({},data){
-        let response = await DashboardService.getWork(data)
-
-        if (response.data.message === 'successful') {
-            return {
-                status: true, 
-                assessment: response.data.assessment,
-            }
-        } else {
-            return {status: false, data: response.data}
-        }
-    },
     async sendRequest({},data){
         let response = await DashboardService.sendRequest(data)
 
@@ -502,6 +490,76 @@ const actions = {
             assessment: response.data.assessment,
             assessmentResource: response.data.assessmentResource
         }
+    },
+    async answerAssessment({ commit }, data) {
+        let response = await DashboardService.answerAssessment(data)
+
+        if (response.data.message !== 'successful') {
+            return { status: false, response }
+        }
+
+        if (router.history.current.name === 'home' && data.addUserId) {       
+            commit('home/ADD_DATA_TO_ITEM_PROPERTY', {
+                item: 'assessment',
+                itemId: data.assessmentId,
+                data: [data.userId],
+                property: 'answeredbyUserIds'
+            }, {root: true})
+        }
+
+        if (router.history.current.name === 'profile' && data.addUserId) {       
+            commit('profile/ADD_DATA_TO_ITEM_PROPERTY', {
+                item: 'assessment',
+                itemId: data.assessmentId,
+                data: [data.userId],
+                property: 'answeredbyUserIds'
+            }, {root: true})
+        }
+
+        return {status: true}
+    },
+    async markAssessment({ commit }, data) {
+        let response = await DashboardService.markAssessment(data)
+
+        if (response.data.message !== 'successful') {
+            return { status: false, response }
+        }
+
+        return {
+            status: true,
+            answer: response.data.answer,
+            work: response.data.work,
+        }
+    },
+    async getWork({ commit }, data) {
+        let response = await DashboardService.getWork(data)
+
+        if (response.data.message !== 'successful') {
+            return { status: false, response }
+        }
+
+        return {status: true, work: response.data.work}
+    },
+    async addTime({ commit }, main) {
+        let response = await DashboardService.addTime(main.data)
+
+        if (response.data.message !== 'successful') {
+            return { status: false, response }
+        }
+
+        if (router.currentRoute.name === 'home') {
+            commit('home/ADD_TIMER_TO_ITEM', {
+                item: main.item, timer: response.data.timer
+            }, {root: true})
+        }
+
+        if (router.currentRoute.name === 'profile') {
+            commit('profile/ADD_TIMER_TO_ITEM', {
+                item: main.item, timer: response.data.timer
+            }, {root: true})
+        }
+
+        return {status: true}
     },
     addAssessment({commit},data){
         commit('ADD_NEW_ASSESSMENT',data.assessment)

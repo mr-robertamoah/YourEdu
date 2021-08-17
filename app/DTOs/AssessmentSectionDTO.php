@@ -17,6 +17,7 @@ class AssessmentSectionDTO
     public ?string $instruction = null;
     public ?string $answerType = null;
     public ?int $position = null;
+    public ?int $duration = null;
     public ?int $maxQuestions = null;
     public ?AssessmentSection $assessmentSection = null;
     public ?Assessment $assessment = null;
@@ -27,33 +28,34 @@ class AssessmentSectionDTO
     public array $removedQuestions = [];
     public array $editedQuestions = [];
 
-    public static function createFromArray(array $dataArray, $request = null) : array
+    public static function createFromArray(array $dataArray, $request = null): array
     {
         $sections = [];
-        
+
         foreach ($dataArray as $data) {
             $sections[] = static::createFromData(
                 assessmentSectionId: $data->assessmentSectionId ?? null,
                 name: $data->name ?? null,
                 instruction: $data->instruction ?? null,
                 position: $data->position ?? null,
+                duration: $data->duration ?? null,
                 autoMark: $data->autoMark ?? false,
                 maxQuestions: $data->maxQuestions ?? null,
                 random: $data->random ?? false,
                 answerType: $data->answerType ?? '',
-                questions: property_exists($data, 'questions') ? 
+                questions: property_exists($data, 'questions') ?
                     array_map(
                         function ($question) use ($request) {
                             return static::mapQuestions($question, $request);
-                        }, 
+                        },
                         $data->questions
                     ) : [],
                 removedQuestions: $data->removedQuestions ?? [],
-                editedQuestions: property_exists($data, 'editedQuestions') ? 
+                editedQuestions: property_exists($data, 'editedQuestions') ?
                     array_map(
                         function ($question) use ($request) {
                             return static::mapQuestions($question, $request);
-                        }, 
+                        },
                         $data->editedQuestions
                     ) : [],
             );
@@ -62,11 +64,11 @@ class AssessmentSectionDTO
         return $sections;
     }
 
-    public static function createFromData
-    (
-        $assessmentSectionId = null, 
-        $name = null, 
+    public static function createFromData(
+        $assessmentSectionId = null,
+        $name = null,
         $position = null,
+        $duration = null,
         $maxQuestions = null,
         $instruction = null,
         $autoMark = false,
@@ -75,18 +77,18 @@ class AssessmentSectionDTO
         $questions = [],
         $removedQuestions = [],
         $editedQuestions = [],
-    )
-    {
+    ) {
         $static = new static();
 
         $static->assessmentSectionId = $assessmentSectionId;
         $static->name = $name;
+        $static->duration = (int)$duration;
         $static->position = (int)$position;
         $static->maxQuestions = (int)$maxQuestions;
         $static->instruction = $instruction;
         $static->autoMark = $autoMark;
         $static->random = $random;
-        $static->answerType = strlen($answerType) ? 
+        $static->answerType = strlen($answerType) ?
             strtoupper($answerType) : "SHORT_ANSWER";
         $static->questions = QuestionDTO::createFromArray($questions);
         $static->removedQuestions = QuestionDTO::createFromArray($removedQuestions);
@@ -118,8 +120,8 @@ class AssessmentSectionDTO
         if (is_null($request)) {
             return $question;
         }
-        
-        if (! property_exists($question, 'id')) {
+
+        if (!property_exists($question, 'id')) {
             $question->files = null;
             return $question;
         }
@@ -132,14 +134,14 @@ class AssessmentSectionDTO
 
     public function hasEnoughQuestions()
     {
-        return $this->random ? 
+        return $this->random ?
             count($this->questions) >= $this->maxQuestions :
             count($this->questions);
     }
 
     public function hasAppropriateRandomAndMaxQuestionsData()
     {
-        if (! $this->random) {
+        if (!$this->random) {
             return true;
         }
 

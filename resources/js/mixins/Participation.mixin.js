@@ -111,7 +111,7 @@ export default {
             this.joinOrInvitationType = ''
             
             if (! response.status) {
-                this.responseErrorAlert(response, "oops 😕! something happened. please try again later")
+                this.issueDangerAlertForResponse(response, "oops 😕! something happened. please try again later")
                 return
             }
 
@@ -149,7 +149,7 @@ export default {
                 return
             }
 
-            this.responseErrorAlert(response, `invitation request to ${account.name} was unsuccessfully`)
+            this.issueDangerAlertForResponse(response, `invitation request to ${account.name} was unsuccessfully`)
         },
         clickedParticpantAction(data) {
             if (data.action === 'invite') {

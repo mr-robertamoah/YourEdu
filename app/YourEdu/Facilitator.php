@@ -12,6 +12,7 @@ use App\Traits\HasAnsweredbyTrait;
 use App\Traits\HasFollowsTrait;
 use App\Traits\HasWorkbyTrait;
 use App\Traits\HasMarkedbyTrait;
+use App\Traits\HasTimerAddedbyTrait;
 use App\User;
 use Database\Factories\FacilitatorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,7 +32,8 @@ class Facilitator extends Model
         HasMarkedbyTrait,
         HasWorkbyTrait,
         HasAnsweredbyTrait,
-        HasFollowsTrait;
+        HasFollowsTrait,
+        HasTimerAddedbyTrait;
 
     protected $fillable = [
         'user_id', 'name'

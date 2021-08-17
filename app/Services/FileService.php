@@ -10,27 +10,27 @@ use Illuminate\Support\Str;
 
 class FileService
 {
-    public static function createAndAttachFiles($account,$file,$item)
+    public static function createAndAttachFiles($account, $file, $item)
     {
         if (is_null($file)) {
             return null;
         }
 
         return self::accountCreateFile(
-            $account, 
+            $account,
             self::getFileDetails($file),
             $item
         );
     }
 
-    public static function createFile($account,$file)
+    public static function createFile($account, $file)
     {
         if (is_null($file)) {
             return null;
         }
 
         return self::accountCreateFile(
-            $account, 
+            $account,
             self::getFileDetails($file),
         );
     }
@@ -50,11 +50,11 @@ class FileService
         if (str_contains($mime, 'image')) {
             return 'images';
         }
-        
+
         if (str_contains($mime, 'video')) {
             return 'videos';
         }
-        
+
         if (str_contains($mime, 'audio')) {
             return 'audios';
         }
@@ -62,9 +62,9 @@ class FileService
         return 'files';
     }
 
-    public static function deleteAndUnattachFiles($file,$item)
+    public static function deleteAndUnattachFiles($file, $item)
     {
-        $actualFile = getYourEduModel($file->type,$file->id);
+        $actualFile = getYourEduModel($file->type, $file->id);
         if (is_null($actualFile)) {
             return;
         }
@@ -86,7 +86,7 @@ class FileService
                 fileDetails: $fileArray
             );
         }
-    
+
         return $fileArray;
     }
 
@@ -114,7 +114,7 @@ class FileService
                 $item->videos->pluck('path')->toArray()
             );
         }
-        
+
         if ($item->images) {
             array_push(
                 $paths,
@@ -123,17 +123,15 @@ class FileService
         }
 
         foreach ($paths as $path) {
-            Storage::delete($path);    
+            Storage::delete($path);
         }
     }
 
-    public static function uploadYourEduFile
-    (
-        $file, 
+    public static function uploadYourEduFile(
+        $file,
         $hasThumbnail = false,
         $fileDetails = []
-    )
-    {
+    ) {
         if (is_null($file)) return;
 
         if (count($fileDetails) > 1) {
@@ -143,13 +141,13 @@ class FileService
             $originalFileName = $file->getClientOriginalName();
             $originalMime = $file->getClientMimeType();
         }
-        
+
         $originalFileExtension = $file->getClientOriginalExtension();
         $fileNameOnly = pathinfo($originalFileName, PATHINFO_FILENAME);
         $fileName = Str::slug($fileNameOnly . time()) . "." . $originalFileExtension;
         if ($hasThumbnail) {
-            $fileNameSmall = Str::slug($fileNameOnly. 'small' . time()) . "." . $originalFileExtension;
-            $fileNameMedium = Str::slug($fileNameOnly. 'medium' . time()) . "." . $originalFileExtension;
+            $fileNameSmall = Str::slug($fileNameOnly . 'small' . time()) . "." . $originalFileExtension;
+            $fileNameMedium = Str::slug($fileNameOnly . 'medium' . time()) . "." . $originalFileExtension;
         }
         if (Str::contains($originalMime, 'image')) {
             $dir = 'images';
@@ -160,19 +158,19 @@ class FileService
         } else {
             $dir = 'files';
         }
-        
+
         if ($hasThumbnail) {
 
             $paths = [];
-            
-            $paths['main'] = $file->storeAs($dir,$fileName);
-            $paths['small'] = $file->storeAs($dir,$fileNameSmall);
-            $paths['medium'] = $file->storeAs($dir,$fileNameMedium);
+
+            $paths['main'] = $file->storeAs($dir, $fileName);
+            $paths['small'] = $file->storeAs($dir, $fileNameSmall);
+            $paths['medium'] = $file->storeAs($dir, $fileNameMedium);
 
             return $paths;
         }
-            
-        $path = $file->storeAs($dir,$fileName);
+
+        $path = $file->storeAs($dir, $fileName);
 
         return $path;
     }
@@ -190,20 +188,17 @@ class FileService
         return $type === $fileType;
     }
 
-    private static function doesntExistInFiles
-    (
+    private static function doesntExistInFiles(
         $searchFile,
         $files
-    ) : bool
-    {
+    ): bool {
         if (!is_array($files)) {
             return true;
         }
 
-        ray($files, $searchFile)->green();
         $incidence = count(
-            array_filter($files, function($file) use ($searchFile) {
-                return $file->type === $searchFile->type && 
+            array_filter($files, function ($file) use ($searchFile) {
+                return $file->type === $searchFile->type &&
                     $file->id === $searchFile->id;
             })
         );
@@ -215,21 +210,17 @@ class FileService
         return false;
     }
 
-    private static function existInFiles
-    (
+    private static function existInFiles(
         $searchFile,
         $files
-    ) : bool
-    {
-        return ! self::doesntExistInFiles($searchFile, $files);
+    ): bool {
+        return !self::doesntExistInFiles($searchFile, $files);
     }
 
-    public static function increaseFilesCountUsingMimeType
-    (
-        $fileMime, 
+    public static function increaseFilesCountUsingMimeType(
+        $fileMime,
         $itemFileDTO
-    )
-    {
+    ) {
         if (self::isMimeType($fileMime, 'image')) {
             $itemFileDTO->imagesCount++;
             return;
@@ -248,12 +239,10 @@ class FileService
         $itemFileDTO->filesCount++;
     }
 
-    public static function decreaseFilesCountUsingFileType
-    (
-        $fileType, 
+    public static function decreaseFilesCountUsingFileType(
+        $fileType,
         $itemFileDTO
-    )
-    {
+    ) {
         if (self::isFileType($fileType, 'image')) {
             $itemFileDTO->imagesCount--;
             return;
@@ -274,15 +263,13 @@ class FileService
         }
     }
 
-    public static function countPossibleItemFiles
-    (
-        Model | null $item, 
+    public static function countPossibleItemFiles(
+        Model | null $item,
         $dto
-    ) : ItemFilesDTO
-    {
+    ): ItemFilesDTO {
         $itemFileDTO = new ItemFilesDTO;
 
-        if (property_exists($dto,'files')) {
+        if (property_exists($dto, 'files')) {
             foreach ($dto->files as $file) {
 
                 self::increaseFilesCountUsingMimeType(
@@ -292,9 +279,9 @@ class FileService
             }
         }
 
-        if (property_exists($dto,'removedFiles')) {
+        if (property_exists($dto, 'removedFiles')) {
             foreach ($dto->removedFiles as $file) {
-                
+
                 self::decreaseFilesCountUsingFileType(
                     $file->type,
                     $itemFileDTO
@@ -302,10 +289,10 @@ class FileService
             }
         }
 
-        if (! $item) {
+        if (!$item) {
             return $itemFileDTO;
         }
-        
+
         foreach ($item->allFiles() as $file) {
             if (self::existInFiles($file, $dto->removedFiles ?? [])) {
                 continue;
@@ -322,42 +309,42 @@ class FileService
 
     public static function uploadYourEduFiles($files)
     {
-       
+
         $uploadedFilePaths = [];
         foreach ($files as $file) {
             $uploadedFilePaths[] = self::uploadYourEduFile($file);
         }
         return $uploadedFilePaths;
     }
-    
+
     function imageResize($file, $save = true)
     {
         $width = imagesx($file);
         $height = imagesy($file);
         $newWidth = 100;
-        $newHeight = $newWidth/$width * $height;
-    
-        $newFile = imagescale($file,$newWidth,$newHeight);
-    
+        $newHeight = $newWidth / $width * $height;
+
+        $newFile = imagescale($file, $newWidth, $newHeight);
+
         $fileArray['mime'] = $file->getClientMimeType();
         $fileArray['size'] = $file->getSize();
         if ($save) {
             $fileArray['path'] = self::uploadYourEduFile($newFile);
         }
-    
+
         return $fileArray;
     }
-    
+
     public static function accountCreateFile($account, $fileDetails, $associate = null)
     {
         $file = null;
-        if(Str::contains($fileDetails['mime'], 'image')){
+        if (Str::contains($fileDetails['mime'], 'image')) {
             $file = $account->addedImages()->create($fileDetails);
             $method = 'images';
-        } else if(Str::contains($fileDetails['mime'], 'video')){
+        } else if (Str::contains($fileDetails['mime'], 'video')) {
             $file = $account->addedVideos()->create($fileDetails);
             $method = 'videos';
-        } else if(Str::contains($fileDetails['mime'], 'audio')){
+        } else if (Str::contains($fileDetails['mime'], 'audio')) {
             $file = $account->addedAudio()->create($fileDetails);
             $method = 'audios';
         } else {
@@ -365,10 +352,10 @@ class FileService
             $method = 'files';
         }
 
-        if(!is_null($associate)){
+        if (!is_null($associate)) {
             $associate->$method()->attach($file);
         }
-    
+
         return $file;
     }
 
@@ -397,18 +384,18 @@ class FileService
         if ($item->images) {
             $files = $files->merge($item->images);
         }
-        
+
         foreach ($files as $file) {
             self::deleteYourEduFile($file);
         }
     }
-    
+
     public static function deleteYourEduFile($file)
     {
         if (is_null($file)) {
             return;
         }
-        
+
         Storage::delete($file->path);
         $file->delete();
     }
@@ -416,16 +403,16 @@ class FileService
     public static function deleteFile($fileId, $fileType)
     {
         $file = null;
-        if (Str::contains($fileType,'image')) {
+        if (Str::contains($fileType, 'image')) {
             $file = getYourEduModel('image', $fileId);
-        } else if (Str::contains($fileType,'video')) {
+        } else if (Str::contains($fileType, 'video')) {
             $file = getYourEduModel('video', $fileId);
-        } else if (Str::contains($fileType,'audio')) {
+        } else if (Str::contains($fileType, 'audio')) {
             $file = getYourEduModel('audio', $fileId);
-        } else if (Str::contains($fileType,'file')) {
+        } else if (Str::contains($fileType, 'file')) {
             $file = getYourEduModel('file', $fileId);
         }
-    
+
         if (!is_null($file)) {
             Storage::delete($file->path);
             $file->delete();

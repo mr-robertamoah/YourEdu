@@ -1,7 +1,7 @@
 <template>
     <div class="check-input-wrapper" :class="{checked: value === radioValue}">
         <input type="radio"
-            :value="radioValue"
+            :value="computedValue"
             @change="inputRadioMethod"
             ref="radioinput"
             :name="name"
@@ -53,6 +53,11 @@
                         this.$refs.radioinput.checked = false
                     }
                 }
+            }
+        },
+        computed: {
+            computedValue() {
+                return this.radioValue && this.radioValue.length ? this.radioValue : this.label 
             }
         },
         methods: {

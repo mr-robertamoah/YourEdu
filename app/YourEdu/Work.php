@@ -39,6 +39,29 @@ class Work extends Model
         return $this->belongsTo(ReportDetail::class);
     }
 
+    public function toPending()
+    {
+        $this->status = self::PENDING;
+        $this->save();
+        return $this;
+    }
+
+    public function toDone()
+    {
+        $this->status = self::DONE;
+        $this->save();
+        return $this;
+    }
+
+    public function getAnswersAnsweredbyUser($userId)
+    {
+        return Answer::query()
+            ->whereAssessment($this->assessment_id)
+            ->whereAnsweredbyUser($userId)
+            ->with('answerable.questionable')
+            ->get();
+    }
+
     public function scopeWhereAssessment($query, $assessmentId)
     {
         return $query->where('assessment_id', $assessmentId);
@@ -46,7 +69,7 @@ class Work extends Model
 
     public function scopeWhereStatus($query, $status)
     {
-        return $query->where('status', $status);
+        return $query->where('status', strtoupper($status));
     }
 
     public function scopeWhereDone($query)

@@ -5,6 +5,8 @@ namespace App\YourEdu;
 use App\Traits\AccountQuestionsTrait;
 use App\Traits\AccountTrait;
 use App\Traits\HasFollowsTrait;
+use App\Traits\HasMarkedbyTrait;
+use App\Traits\HasTimerAddedbyTrait;
 use App\Traits\HasWorkbyTrait;
 use App\User;
 use Database\Factories\ParentFactory;
@@ -20,7 +22,9 @@ class ParentModel extends Model
         HasFactory,
         AccountQuestionsTrait,
         HasWorkbyTrait,
-        HasFollowsTrait;
+        HasFollowsTrait,
+        HasTimerAddedbyTrait,
+        HasMarkedbyTrait;
 
     const PARENTING_ROLE = ['father', 'mother', 'guardian'];
 

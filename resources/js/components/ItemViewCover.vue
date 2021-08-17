@@ -9,7 +9,7 @@
             </div>
         </div>
         <div 
-            class="mx-auto min-w-3/4 p-2 bg-gray-50"
+            class="mx-auto min-w-3/4 max-w-full p-2 bg-gray-50"
             :class="{'text-transparent': transparent}"
         >
             <div v-if="data.name" class="capitalize text-lg font-black">

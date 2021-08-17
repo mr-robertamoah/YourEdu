@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\AnswerDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateAnswerRequest;
 use App\Http\Resources\AnswerResource;
+use App\Http\Resources\MarkedAnswerResource;
 use App\Services\AnswerService;
 use App\YourEdu\Answer;
 use App\YourEdu\Facilitator;
@@ -19,156 +22,47 @@ use Illuminate\Support\Facades\Storage;
 
 class AnswerController extends Controller
 {
-    //
 
-    public function answerCreate(Request $request, $item, $itemId)
-    {  
-        $request->validate([
-            'answer' => 'nullable|string',
-            'account' => 'required|string',
-            'accountId' => 'required|string',
-            'file' => 'nullable|file',
-        ]);
-        
-        if(is_null($request->answer) && is_null($request->file)){
-            return response()->json([
-                'message' => "unsuccessful. there is nothing to add as answer."
-            ],422);
-        }
-
-        if ((is_null($request->answer) || $request->answer === '') &&
-            (is_null($request->possible_answer_id) || $request->possible_answer_id === '')) {
-                return response()->json([
-                    'message' => "unsuccessful. answer or possible_answer_id needed."
-                ],422);
-        }
-
-        $account = getYourEduModel($request->account,$request->accountId);
-
-        if (!$account) {
-            return response()->json([
-                'message' => "unsuccessful. there is no such {$request->account}."
-            ]);
-        }
-
-        if ($account->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => "unsuccessful. you do not own this account."
-            ]);
-        }
-
+    public function createAnswer(CreateAnswerRequest $request)
+    {
         try {
-            $file = null;
             DB::beginTransaction();
-    
-            $mainItem = null;
-            if ($item === 'riddle') {
-                $mainItem = Riddle::find($itemId);
-            } else if ($item === 'question') {
-                $mainItem = Question::find($itemId);
-            }
 
-            $answer = (new AnswerService())->createAnswer($request,$account,$mainItem);
-
-            if (is_null($answer)) {
-                DB::rollback();
-                return response()->json([
-                    'message' => "unsuccessful. answer was not created"
-                ]);
-            }
+            $answer = (new AnswerService())->createAnswer(
+                AnswerDTO::createFromRequest($request)
+            );
 
             DB::commit();
+
             return response()->json([
                 'message' => "successful",
                 'answer' => new AnswerResource($answer),
             ]);
         } catch (\Throwable $th) {
-            if($file){
-                Storage::delete($file->path);
-            }
             DB::rollback();
             // return response()->json([
             //     'message' => "Unsuccessful. Something might have gone wrong. Please try again later."
             // ]);
             throw $th;
         }
-        
-    }
-    
-    private function answerAssociate($answer, $item)
-    {
-        if ($answer && $item) {
-            $answer->answerable()->associate($item);
-            $answer->save();
-        } else {
-            return false;
-        }
-        return true;
     }
 
-    public function answerEdit(Request $request, $answer)
+    public function updateAnswer(Request $request)
     {
-        // return $answer;
-        $request->validate([
-            'answer' => 'nullable|string',
-            // 'file' => 'nullable|file',
-        ]);
-
-        if ((is_null($request->answer) || $request->answer === '') &&
-            (is_null($request->possible_answer_id) || $request->possible_answer_id === '')) {
-                return response()->json([
-                    'message' => "unsuccessful. answer or possible_answer_id needed."
-                ],422);
-        }
-        
-        // for now, answer must be required, on a later date, it wont be. but we will 
-        //check to ensure that the update doesnt lead to an empty answer (without answer and file)
-
-        $mainAccount = getYourEduModel($request->account,$request->accountId);
-
-        if (!$mainAccount) {
-            return response()->json([
-                'message' => "unsuccessful. there is no such {$request->account}."
-            ],422);
-        }
-
-        if ($mainAccount->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => "unsuccessful. you do not own this account."
-            ],422);
-        }
-
         try {
-                DB::beginTransaction();
-                $mainAnswer = $mainAccount->answers()->where('id', $answer)->first();
-                
-                if (is_null($mainAnswer)) {
-                    return response()->json([
-                        'message' => "unsuccessful. answer not found."
-                    ],422);
-                }
-                if ($mainAnswer->marks()->count() > 0) { //you cannot edit an answer that has been marked
-                    return response()->json([
-                        'message' => "unsuccessful. answer not found."
-                    ],422);
-                }
-                if ($request->answer !== '' && !is_null($request->answer)) {
-                    $mainAnswer->update([
-                        'answer' => $request->answer
-                    ]);
-                }  
+            DB::beginTransaction();
 
-                if ($request->has('possible_answer_id') &&
-                    $request->possible_answer_id !== $mainAnswer->possible_answer_id) {
-                    $mainAnswer->possible_answer_id = $request->possible_answer_id;
-                    $mainAnswer->save();
-                }
+            $answer = (new AnswerService)->updateAnswer(
+                AnswerDTO::createFromRequest($request)
+            );
 
-                DB::commit();
-                return response()->json([
-                    'message' => "successful",
-                    'answer' => new AnswerResource($mainAnswer),
-                ]);        
+            DB::commit();
+            return response()->json([
+                'message' => "successful",
+                'answer' => $answer->isForAssessment() ?
+                    new MarkedAnswerResource($answer) :
+                    new AnswerResource($answer),
+            ]);
         } catch (\Throwable $th) {
             DB::rollback();
             // return response()->json([
@@ -178,12 +72,15 @@ class AnswerController extends Controller
         }
     }
 
-    public function answerDelete($answer)
+    public function deleteAnswer(Request $request)
     {
-        $mainAnswer = Answer::find($answer);
-        
+
         try {
-            $mainAnswer->delete();
+
+            (new AnswerService)->deleteAnswer(
+                AnswerDTO::createFromRequest($request)
+            );
+
             return response()->json([
                 'message' => "successful"
             ]);
@@ -198,10 +95,10 @@ class AnswerController extends Controller
     public function answersGet($item, $itemId)
     {
         $mainItem = null;
-        
-        if($item === 'question'){
+
+        if ($item === 'question') {
             $mainItem = Question::find($itemId);
-        } else if($item === 'riddle'){
+        } else if ($item === 'riddle') {
             $mainItem = Riddle::find($itemId);
         } else {
             return response()->json([
@@ -209,7 +106,7 @@ class AnswerController extends Controller
             ]);
         }
 
-        if($mainItem){
+        if ($mainItem) {
             return AnswerResource::collection($mainItem->answers()->latest()->paginate(5));
         } else {
             return response()->json([
@@ -226,7 +123,7 @@ class AnswerController extends Controller
         if (!$item) {
             return response()->json([
                 'message' => 'unsuccessful, answer does not exist.'
-            ],422);
+            ], 422);
         }
         return response()->json([
             'message' => "successful",

@@ -731,12 +731,10 @@ import { dates, strings } from '../services/helpers'
                 formData.append('accountId', who.accountId)                
                 
                 let response = null
-                    let data = {
-                        itemId: who.itemId,
-                    }
-                    response = await this['profile/updateAnswer']({data,formData})
                 
-                if (response !== 'unsuccessful') {
+                response = await this['profile/updateAnswer']({answerId: who.itemid,formData})
+                
+                if (response.status) {
                     this.file = null
                     this.alertSuccess = true
                     this.alertDanger = false
@@ -826,7 +824,7 @@ import { dates, strings } from '../services/helpers'
                 
                 this.smallModalLoading = false
                 this.smallModalAlerting = true
-                if (response !== 'unsuccessful') {
+                if (response.status) {
                     this.alertSuccess = true
                     this.alertDanger = false
                     this.alertModalMessage = 'deletion successful'

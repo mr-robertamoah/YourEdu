@@ -4,13 +4,13 @@
             <div class="pop-up-wrapper" 
                 :class="type"
                 @click.self="clickedDefault"
-                v-if="message.length"
             >
                 <div class="main">
-                    <div class="message">
+                    <slot></slot>
+                    <div class="message" v-if="message.length">
                         {{message}}
                     </div>
-                    <div class="responses">
+                    <div class="responses" v-if="hasResponses">
                         <div class="response"
                             v-for="(response,index) in responses"
                             :key="index"
@@ -45,6 +45,10 @@
                 type: Boolean,
                 default: false
             },
+            hasResponses: {
+                type: Boolean,
+                default: true
+            },
             type: {
                 type: String,
                 default: 'mini'
@@ -52,7 +56,7 @@
         },
         watch: {
             show(newValue) {
-                if (newValue) {
+                if (newValue && this.hasResponses) {
                     setTimeout(() => {
                         this.clickedDefault()
                     }, 50000);
@@ -65,6 +69,10 @@
                 this.closePopUp()
             },
             clickedDefault() {
+                if (!this.show) {
+                    return
+                }
+                
                 this.$emit('clickedResponse', this.default)
                 this.closePopUp()
             },

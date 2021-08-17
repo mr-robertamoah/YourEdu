@@ -617,7 +617,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     }
                     bus.$emit('updateExtracurriculum',response.extracurriculum)
                 } else {
-                    this.responseErrorAlert(response.response)
+                    this.issueDangerAlertForResponse(response.response)
                     console.log('response :>> ', response);
                 }
             },

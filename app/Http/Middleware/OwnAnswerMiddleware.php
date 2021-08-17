@@ -17,15 +17,15 @@ class OwnAnswerMiddleware
     public function handle($request, Closure $next)
     {
         $mainAnswer = null;
-        $mainAnswer = Answer::find($request->route('answer'));
-        
-        if(!$mainAnswer){
+        $mainAnswer = Answer::find($request->route('answerId'));
+
+        if (!$mainAnswer) {
             return response()->json([
                 'message' => "unsuccessful. answer not found."
             ]);
         }
 
-        if($mainAnswer->answeredby->user_id !== auth()->id()){
+        if ($mainAnswer->answeredby->user_id !== auth()->id()) {
             return response()->json([
                 'message' => "unsuccessful. you do not own this answer."
             ]);

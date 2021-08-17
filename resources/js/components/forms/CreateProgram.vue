@@ -610,7 +610,7 @@ import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
                     }
                     bus.$emit('updateProgram',response.program)
                 } else {
-                    this.responseErrorAlert(response.response)
+                    this.issueDangerAlertForResponse(response.response)
                     console.log('response :>> ', response);
                 }
 

@@ -6,6 +6,8 @@ export default {
     data() {
         return {
             showPopUp: false,
+            popUpMessage: '',
+            popUpHasResponses: false,
         }
     },
     methods: {

@@ -43,6 +43,93 @@ class MarkService
         return $mark;
     }
 
+    public function createOnlyNewMark(MarkDTO $markDTO)
+    {
+        $markDTO = $this->setMarkedby($markDTO);
+
+        $markDTO = $this->setMarkable($markDTO);
+
+        $markDTO = $this->setMark($markDTO);
+
+        $markDTO = $markDTO->addData(
+            userId: $markDTO->markedby->user_id
+        );
+
+        if ($markDTO->mark) {
+            $this->deleteMark($markDTO);
+        }
+
+        return $this->createMark($markDTO);
+    }
+
+    public function updateMark(MarkDTO $markDTO)
+    {
+        $markDTO = $this->setMark($markDTO);
+
+        $this->ensureIsMarkedby($markDTO);
+
+        return $this->editMark($markDTO);
+    }
+
+    private function editMark(MarkDTO $markDTO)
+    {
+        $data = [];
+
+        if ($markDTO->score) {
+            $data['score'] = $markDTO->score;
+        }
+
+        if ($markDTO->remark) {
+            $data['remark'] = $markDTO->remark;
+        }
+
+        $markDTO->mark->update($data);
+
+        return $markDTO->mark->refresh();
+    }
+
+    public function deleteMark(MarkDTO $markDTO)
+    {
+        $markDTO = $this->setMark($markDTO);
+
+        $this->ensureIsMarkedby($markDTO);
+
+        $markDTO->mark->delete();
+    }
+
+    private function ensureIsMarkedby($markDTO)
+    {
+        if ($markDTO->mark->isMarkedbyUser($markDTO->userId)) {
+            return;
+        }
+
+        $this->throwMarkException(
+            message: "sorry 😞, you do not own this mark.",
+            data: $markDTO
+        );
+    }
+
+    private function setMark($markDTO)
+    {
+        if ($markDTO->mark) {
+            return $markDTO;
+        }
+
+        if ($markDTO->markId) {
+            return $markDTO->withMark(
+                $this->getModel('mark', $markDTO->markId)
+            );
+        }
+
+        if ($markDTO->markable) {
+            return $markDTO->withMark(
+                $markDTO->markable->getMarkUsingMarkedby($markDTO->markedby)
+            );
+        }
+
+        return $markDTO;
+    }
+
     private function ensureNotMarkedByAnsweredby($markDTO)
     {
         if (is_null($markDTO->markable->answeredby)) {
@@ -66,11 +153,13 @@ class MarkService
             $markDTO->state = 'correct';
         }
 
-        if ($markDTO->score < $markDTO->scoreOver &&
-            $markDTO->score > 0) {
+        if (
+            $markDTO->score < $markDTO->scoreOver &&
+            $markDTO->score > 0
+        ) {
             $markDTO->state = 'partial';
         }
-        
+
         if ($markDTO->score == 0) {
             $markDTO->state = 'wrong';
         }
@@ -89,7 +178,7 @@ class MarkService
             data: $markDTO
         );
     }
-    
+
     private function ensureNotAlreadyMarked(MarkDTO $markDTO)
     {
         if ($markDTO->markable->isNotMarkedbyUser($markDTO->userId)) {
@@ -214,14 +303,14 @@ class MarkService
     private function setAsCorrect(MarkDTO $markDTO)
     {
         $markDTO->score = $markDTO->scoreOver;
-        
+
         return $markDTO;
     }
 
     private function setAsWrong(MarkDTO $markDTO)
     {
         $markDTO->score = 0;
-        
+
         return $markDTO;
     }
 }

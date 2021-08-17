@@ -565,16 +565,34 @@ const actions = {
 
     ////////////////////////////////////// marks
 
-    async createMark({commit},data){
-        let response = await ProfileService.markCreate(data)
+    async createMark({},data){
+        let response = await ProfileService.createMark(data)
+        
         if (response.data.message === 'successful') {
-            return {status: true, data: response.data}
-        }else {
-            commit('PROFILE_FAILURE','marking unsuccessful')
-            return {status: false, message: response.data.message}
+            return {status: true, data: response.data.mark}
         }
+        
+        return {status: false, response}
     },
-    async getAnswerMarks({commit},data){
+    async updateMark({},data){
+        let response = await ProfileService.updateMark(data)
+        
+        if (response.data.message === 'successful') {
+            return {status: true, mark: response.data.mark}
+        }
+        
+        return {status: false, ...response}
+    },
+    async deleteMark({},data){
+        let response = await ProfileService.deleteMark(data)
+        
+        if (response.data.message === 'successful') {
+            return {status: true}
+        }
+        
+        return {status: false, ...response}
+    },
+    async getAnswerMarks({},data){
         let response = await ProfileService.getAnswerMarks(data)
 
         if (response.data.data) {
@@ -583,9 +601,9 @@ const actions = {
                 data: response.data.data,
                 next: response.data.links.next
             }
-        } else {
-            return {status: false, response}
         }
+
+        return {status: false, response}
     },
 
 
@@ -956,7 +974,7 @@ const actions = {
     
     async createAnswer({commit},mainData){
         commit('COMMENTING_START')
-        let response = await ProfileService.answerCreate(mainData)
+        let response = await ProfileService.createAnswer(mainData)
         // console.log('comment data', data)
         commit('COMMENTING_END')
         if (response.data.message === 'successful') {
@@ -969,32 +987,22 @@ const actions = {
         }
     },
     async deleteAnswer({commit},data){
-        commit('COMMENTING_START')
-        let response = await ProfileService.answerDelete(data)
-
-        commit('COMMENTING_END')
-        // console.log('deleted comment', response)
-        if (response.data.message === 'successful') {
-            // commit('COMMENT_DELETE_SUCCESS',data)
-            return response.data
-        }else {
-            commit('PROFILE_FAILURE','comment update unsuccessful')
-            return 'unsuccessful'
+        let response = await ProfileService.deleteAnswer(data)
+        
+        if (response.data.message !== 'successful') {
+            return {status: false, message: response.data.message}
         }
+
+        return {status: true}
     },
     async updateAnswer({commit},data){
-        commit('COMMENTING_START')
-        let response = await ProfileService.answerUpdate(data)
+        let response = await ProfileService.updateAnswer(data)
 
-        commit('COMMENTING_END')
-        // console.log('update post', response)
-        if (response.data.message === 'successful') {
-            // commit('COMMENT_UPDATE_SUCCESS',response.data)
-            return response.data
-        }else {
-            commit('PROFILE_FAILURE','answer update unsuccessful')
-            return response.data.message
+        if (response.data.message !== 'successful') {
+            return {status: false, message: response.data.message}
         }
+        
+        return {status: true, answer: response.data.answer}
     },
     async getAnswers({commit},data){
         commit('COMMENTING_START')

@@ -2,7 +2,7 @@
 
 namespace App\YourEdu;
 
-use App\Traits\FlaggableTrait;
+use App\Traits\HasFlaggableTrait;
 use App\Traits\HasAddedbyTrait;
 use App\Traits\HasAttachableTrait;
 use App\Traits\HasCommentsTrait;
@@ -10,6 +10,7 @@ use App\Traits\HasLikeableTrait;
 use App\Traits\HasParticipantsTrait;
 use App\Traits\HasSaveableTrait;
 use App\Traits\HasSocialMediaTrait;
+use App\Traits\HasTimeableTrait;
 use Database\Factories\AssessmentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,14 +20,15 @@ class Assessment extends Model
 {
     use SoftDeletes,
         HasFactory,
-        FlaggableTrait,
+        HasFlaggableTrait,
         HasSocialMediaTrait,
         HasParticipantsTrait,
         HasCommentsTrait,
         HasAddedbyTrait,
         HasLikeableTrait,
         HasSaveableTrait,
-        HasAttachableTrait;
+        HasAttachableTrait,
+        HasTimeableTrait;
 
     const MARKERS_ACCOUNT_TYPES = ['professional', 'facilitator'];
 
@@ -165,6 +167,34 @@ class Assessment extends Model
     public function doesntHaveDiscussion()
     {
         return !$this->hasDiscussion();
+    }
+
+    public function isDue()
+    {
+        if (is_null($this->due_date)) {
+            return false;
+        }
+
+        if (now()->diffInMilliseconds($this->due_date, false)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function isNotDue()
+    {
+        return !$this->isDue();
+    }
+
+    public function hasDuration()
+    {
+        return is_not_null($this->duration);
+    }
+
+    public function doesntHaveDuration()
+    {
+        return !$this->hasDuration();
     }
 
     public function getWorkFor($account)
@@ -377,6 +407,15 @@ class Assessment extends Model
         }
 
         return false;
+    }
+
+    public function answeredbyUserIds()
+    {
+        return $this->works()
+            ->whereDone()
+            ->with('addedby.user')
+            ->get()
+            ->pluck('addedby.user.id');
     }
 
     public function getQuestions()

@@ -3,7 +3,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'whitesmoke': '#f5f5f5'
+        'whitesmoke': '#f5f5f5',
+        'wheat': '#f5deb3',
+        'mainbrown': '#a62a2b'
       },
       minWidth: {
         '0': '0',
@@ -11,6 +13,8 @@ module.exports = {
         '1/2': '50%',
         '3/4': '75%',
         'full': '100%',
+        '10': '20px',
+        '20': '40px',
         'screen': '100vw',
         'content': 'fit-content',
       },
@@ -59,6 +63,12 @@ module.exports = {
         "-1/4": "-25%",
         '-1/2': '-50%',
         '-3/4': '-75%',
+        '1/6': '16.666667%',
+        '1/12': '8.333333%',
+      },
+      cursor: {
+        "nwse": "nwse-resize",
+        "nesw": "nesw-resize",
       },
     },
   },
@@ -67,8 +77,9 @@ module.exports = {
       borderWidth: ['hover', 'responsive', 'active', 'focus'],
       width: ['hover',],
       height: ['hover',],
-      backgroundColor: ['disabled',],
-      textColor: ['disabled',],
+      backgroundColor: ['disabled','hover'],
+      textColor: ['disabled','hover'],
+      cursor: ['disabled'],
       transitionProperty: ['responsive', 'hover', 'focus'],
     },
   },

@@ -18,15 +18,37 @@ export default {
             this.alertLengthy = false
             this.alertMessage = ''
         },
-        setErrorAlert(data) {
-            this.alertDanger = true
+        issueDangerAlert(data) {
+            data.type = 'danger'
+
+            this.issueAlert(data)
+        },
+        issueSuccessAlert(data) {
+            data.type = 'success'
+
+            this.issueAlert(data)
+        },
+        issueAlert(data) {
+            this.alertDanger = data.type === 'danger' ? true : false
+            this.alertSuccess = data.type === 'success' ? true : false
             this.alertLengthy = data.lengthy
             this.alertMessage = data.message
         },
-        responseErrorAlert(response, message = null) {
+        issueDangerAlertForResponse(response, message = null) {
             this.alertDanger = true
+            
             if (response?.data?.message) {
                 this.alertMessage = response.data.message
+                return
+            }
+            
+            if (response?.message) {
+                this.alertMessage = response.message
+                return
+            }
+            
+            if (response?.response?.data?.message) {
+                this.alertMessage = response.response.data.message
                 return
             }
 
@@ -35,7 +57,12 @@ export default {
                 return
             }
 
-            this.alertMessage = `${this.edit ? 'editing' : 'creation'} was unsuccessful 😞`
+            if ('edit' in this) {
+                this.alertMessage = `${this.edit ? 'editing' : 'creation'} was unsuccessful 😞`
+                return
+            }
+
+            this.alertMessage = 'oops! something happened 😕. please try again later.'
         },
     },
 }

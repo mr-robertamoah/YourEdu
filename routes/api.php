@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\SaveController;
 use App\Http\Controllers\Api\Search;
 use App\Http\Controllers\Api\SubjectController;
 use App\Http\Controllers\Api\YourEduController;
+use App\Http\Controllers\TimerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -137,10 +138,14 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::delete('/participant/{participantId}', [AssessmentController::class, 'deleteAssessmentParticipant']);
         Route::delete('/marker/{markerId}', [AssessmentController::class, 'deleteAssessmentMarker']);
         Route::post('/{assessmentId}/join', [AssessmentController::class, 'joinAssessment']);
+        Route::get('/{assessmentId}/work', [AssessmentController::class, 'getAssessmentWork']);
         Route::post('/join/response', [AssessmentController::class, 'joinResponse']);
         Route::post('/invitation/response', [AssessmentController::class, 'invitationResponse']);
         Route::get('/search', [AssessmentController::class, 'assessmentSearch']);
     });
+
+    Route::post('/timer', [TimerController::class, 'createTimer']);
+    Route::put('/timer/{timerId}', [TimerController::class, 'createTimer']);
 
     Route::post('/collaboration/create', [CollaborationController::class, 'createCollaboration']);
     Route::post('/collaboration/delete', [CollaborationController::class, 'deleteCollaboration']);
@@ -267,8 +272,10 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('/flag/{flagId}', [FlagController::class, 'deleteFlag']);
     Route::post('/flag', [FlagController::class, 'createFlag']);
 
-    Route::post('/{answer}/{answerId}/mark', [MarkController::class, 'markCreate'])
-        ->where('answer', 'answer');
+    Route::post('/{item}/{itemId}/mark', [MarkController::class, 'createMark'])
+        ->where('item', 'answer');
+    Route::put('/mark/{markId}', [MarkController::class, 'updateMark']);
+    Route::delete('/mark/{markId}', [MarkController::class, 'deleteMark']);
 
     Route::post('/{media}/{mediaId}/change', [ProfileController::class, 'profileMediaChange']);
     Route::post('/{media}/{mediaId}/delete', [ProfileController::class, 'profileMediaDelete'])
@@ -281,11 +288,9 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('/comment/{commentId}', [CommentController::class, 'deleteComment']);
     Route::post('/comment', [CommentController::class, 'createComment']);
 
-    Route::post('/answer/{answer}', [AnswerController::class, 'answerEdit'])
-        ->middleware(['OwnAnswer']);
-    Route::post('/answer/{answer}/delete', [AnswerController::class, 'answerDelete'])
-        ->middleware(['OwnAnswer']);
-    Route::post('/{item}/{itemId}/answer', [AnswerController::class, 'answerCreate'])
+    Route::put('/answer/{answerId}', [AnswerController::class, 'updateAnswer']);
+    Route::delete('/answer/{answerId}/', [AnswerController::class, 'deleteAnswer']);
+    Route::post('/{item}/{itemId}/answer', [AnswerController::class, 'createAnswer'])
         ->middleware(['CheckItem']);
 
     Route::group(['prefix' => 'follow'], function () {

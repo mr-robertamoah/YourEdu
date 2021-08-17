@@ -2,7 +2,7 @@
 
 namespace App\YourEdu;
 
-use App\Traits\FlaggableTrait;
+use App\Traits\HasFlaggableTrait;
 use App\Traits\HasAddedbyTrait;
 use App\Traits\HasAttachableTrait;
 use App\Traits\HasCommentsTrait;
@@ -20,7 +20,7 @@ class Post extends Model
 {
     use SoftDeletes,
         HasFactory,
-        FlaggableTrait,
+        HasFlaggableTrait,
         HasSocialMediaTrait,
         HasCommentsTrait,
         HasAddedbyTrait,

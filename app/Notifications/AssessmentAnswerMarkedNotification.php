@@ -17,7 +17,9 @@ class AssessmentAnswerMarkedNotification extends Notification
      *
      * @return void
      */
-    public function __construct(private $assessmentMarkingDTO){}
+    public function __construct(private $assessmentMarkingDTO)
+    {
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -39,9 +41,9 @@ class AssessmentAnswerMarkedNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->line('The introduction to the notification.')
-                    ->action('Notification Action', url('/'))
-                    ->line('Thank you for using our application!');
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
     }
 
     /**
@@ -53,7 +55,7 @@ class AssessmentAnswerMarkedNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            'message' => "has marked your answer to the assessment with name: {$this->assessmentMarkingDTO->assessment->name}",
+            'message' => "has marked your answers to the assessment with name: {$this->assessmentMarkingDTO->assessment->name}",
             'account' => new UserAccountResource($this->assessmentMarkingDTO->marker),
         ];
     }

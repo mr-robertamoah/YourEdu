@@ -439,7 +439,7 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
         mounted () {
             bus
             .$on('assessmentError',(data)=>{
-                this.setErrorAlert(data)
+                this.issueDangerAlert(data)
             })
             .$on('editAssessment',(data)=>{
                 this.setData(data)
@@ -892,7 +892,7 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
             },
             validateAssessment(data) {
                 if (!data.name.length) {
-                    this.setErrorAlert({message: 'name of assessment is required.'})
+                    this.issueDangerAlert({message: 'name of assessment is required.'})
                     return false
                 }
 
@@ -900,12 +900,12 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
             },
             validateAssessmentSection(data) {
                 if (!data.name.length) {
-                    this.setErrorAlert({message: `name of assessment section is required. please check your assessment sections.`})
+                    this.issueDangerAlert({message: `name of assessment section is required. please check your assessment sections.`})
                     return false
                 }
 
                 if (!data.questions.length) {
-                    this.setErrorAlert({
+                    this.issueDangerAlert({
                         message: `assessment with name: ${strings.trim(data.name, this.validationItemLength)} requires at least a question.`,
                         lengthy: true
                     })
@@ -916,13 +916,13 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
             },
             validateAssessmentSectionQuestion(data, assessmentSection) {
                 if (!data.body.length && !data.files.length) {
-                    this.setErrorAlert({message: `${strings.trim(assessmentSection.name, this.validationItemLength)} assessment section requires it's questions to have a body or file.`})
+                    this.issueDangerAlert({message: `${strings.trim(assessmentSection.name, this.validationItemLength)} assessment section requires it's questions to have a body or file.`})
                     return false
                 }
 
                 if (this.isTrueOrFalseOptionAnswerType(data.answerType)) {
                     if (data.possibleAnswers.length < 2) {
-                        this.setErrorAlert({
+                        this.issueDangerAlert({
                             message: `${strings.trim(data.body, this.validationItemLength)} question requires at least two possible answers.`,
                             lengthy: true
                         })
@@ -930,7 +930,7 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
                     }
                 } else if (this.isArrangeFlowAnswerType(data.answerType)) {
                     if (data.possibleAnswers.length < 2) {
-                        this.setErrorAlert({
+                        this.issueDangerAlert({
                             message: `${strings.trim(data.body, this.validationItemLength)} question requires at least two options to be re-ordered.`,
                             lengthy: true
                         })
@@ -942,7 +942,7 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
             },
             validateAssessmentSectionQuestionPossibleAnswer(data, question) {
                 if (!data.option.length) {
-                    this.setErrorAlert({
+                    this.issueDangerAlert({
                         message: `possible answers of ${strings.trim(question.body, this.validationItemLength)} question requires an option.`,
                         lengthy: true
                     })
@@ -1077,7 +1077,7 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
                 this.loading = false
                 
                 if (! response.status) {
-                    this.responseErrorAlert(response.response)
+                    this.issueDangerAlertForResponse(response.response)
                     console.log('response :>> ', response);
                     return
                 }

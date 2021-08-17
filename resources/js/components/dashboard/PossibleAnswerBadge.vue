@@ -21,15 +21,20 @@
                 }"
                 @dblclick="editPossibleAnswer"
             >
-                <div class="option" v-if="computedOption">
-                    <div class="list-identifier" v-if="!removed">
+                <div 
+                    class="option"
+                    :class="[nodeClassHas('p-') ? '' : 'p-2.5 pl-0']"
+                    v-if="computedOption"
+                    @click="clickedUpdateCorrect"
+                >
+                    <div class="list-identifier" v-if="!removed && !marking">
                         {{computedPosition}}
                     </div>
                     <div class="item">
                         {{possibleAnswer.option}}
                     </div>
                     <main-checkbox
-                        v-if="autoMark && !removed"
+                        v-if="computedCanUpdateCorrect"
                         :small="true"
                         v-model="correct"
                         label=""
@@ -37,13 +42,18 @@
                         class="checkbox"
                     ></main-checkbox>
                 </div>
-                <div class="true-false" v-if="computedTrueOrFalse">
-                    <div class="list-identifier"></div>
+                <div 
+                    class="true-false"
+                    :class="[nodeClassHas('p-') ? '' : 'p-2.5 pl-0']"
+                    v-if="computedTrueOrFalse"
+                    @click="clickedUpdateCorrect"
+                >
+                    <div class="list-identifier" v-if="!marking"></div>
                     <div class="item">
                         {{possibleAnswer.option}}
                     </div>
                     <main-checkbox
-                        v-if="autoMark && !removed"
+                        v-if="computedCanUpdateCorrect"
                         :small="true"
                         v-model="correct"
                         label=""
@@ -51,7 +61,10 @@
                         class="checkbox"
                     ></main-checkbox>
                 </div>
-                <div class="arrange" v-if="computedArrange">
+                <div 
+                    class="arrange p-2.5" 
+                    v-if="computedArrange"
+                >
                     <div class="list-identifier" v-if="!removed"></div>
                     <div class="item">
                         {{possibleAnswer.option}}
@@ -104,6 +117,10 @@ import { strings } from '../../services/helpers'
                 type: Boolean,
                 default: false
             },
+            marking: {
+                type: Boolean,
+                default: false
+            },
             drag: {
                 type: Boolean,
                 default: true
@@ -138,19 +155,24 @@ import { strings } from '../../services/helpers'
                     this.$emit('possibleAnswerIsWrong', this.possibleAnswer)
                 }
             },
-            correctPossibleAnswers(newValue) {
-                if (!(this.computedTrueOrFalse || this.computedOption)) {
-                    return
-                }
-                this.correct = false
+            correctPossibleAnswers: {
+                immediate: true,
+                handler(newValue) {
+                    if (!(this.computedTrueOrFalse || this.computedOption)) {
+                        return
+                    }
 
-                if (!newValue.length) {
-                    return
-                }
+                    if (!newValue.length) {
+                        return
+                    }
 
-                if (this.isCorrectTrueOrFalse(newValue) ||
-                    this.isCorrectOption(newValue)) {
-                    this.correct = true
+                    if (this.isCorrectTrueOrFalse(newValue) ||
+                        this.isCorrectOption(newValue)) {
+                        this.correct = true
+                        return
+                    }
+
+                    this.correct = false
                 }
             }
         },
@@ -170,6 +192,12 @@ import { strings } from '../../services/helpers'
             computedPosition() {
                 return strings.getNumberLetter(this.possibleAnswer.position)
             },
+            computedCanUpdateCorrect() {
+                return (this.autoMark && !this.removed) || this.answering
+            },
+            computedClasses() {
+                return this.$vnode.data.staticClass ? this.$vnode.data.staticClass : ''
+            },
         },
         methods: {
             movePossibleAnswer(data) {
@@ -185,6 +213,16 @@ import { strings } from '../../services/helpers'
             isCorrectOption(data) {
                 return this.computedOption && 
                     data[0].id === this.possibleAnswer.id
+            },
+            clickedUpdateCorrect() {
+                if (! this.answering) {
+                    return
+                }
+                
+                this.correct = !this.correct
+            },
+            nodeClassHas(text) {
+                return this.computedClasses.includes(text)
             },
         },
     }
@@ -208,7 +246,6 @@ import { strings } from '../../services/helpers'
             display: flex;
             width: fit-content;
             align-items: center;
-            padding: 10px 10px 10px 0;
             width: 100%;
 
             .list-identifier{
@@ -230,7 +267,6 @@ import { strings } from '../../services/helpers'
             display: flex;
             width: fit-content;
             align-items: center;
-            padding: 10px 10px 10px 0;
             width: 100%;
 
             .list-identifier{
@@ -252,7 +288,6 @@ import { strings } from '../../services/helpers'
         .arrange{
             display: flex;
             align-items: center;
-            padding: 10px;
 
             .list-identifier{
                 width: 10px;

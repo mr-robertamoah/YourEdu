@@ -2,7 +2,7 @@
 
 namespace App\YourEdu;
 
-use App\Traits\FlaggableTrait;
+use App\Traits\HasFlaggableTrait;
 use App\Traits\HasAttachableTrait;
 use App\Traits\HasCommentsTrait;
 use App\Traits\HasParticipantsTrait;
@@ -20,7 +20,7 @@ class Discussion extends Model
     use SoftDeletes,
         HasFactory,
         HasFilesTrait,
-        FlaggableTrait,
+        HasFlaggableTrait,
         HasSocialMediaTrait,
         HasParticipantsTrait,
         HasCommentsTrait,

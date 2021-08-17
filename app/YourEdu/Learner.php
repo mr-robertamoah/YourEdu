@@ -7,6 +7,8 @@ use App\Traits\AccountTrait;
 use App\Traits\AdmissionTrait;
 use App\Traits\HasAnsweredbyTrait;
 use App\Traits\HasFollowsTrait;
+use App\Traits\HasMarkedbyTrait;
+use App\Traits\HasTimerAddedbyTrait;
 use App\Traits\HasWorkbyTrait;
 use App\User;
 use Database\Factories\LearnerFactory;
@@ -24,7 +26,9 @@ class Learner extends Model
         AccountQuestionsTrait,
         HasWorkbyTrait,
         HasAnsweredbyTrait,
-        HasFollowsTrait;
+        HasFollowsTrait,
+        HasTimerAddedbyTrait,
+        HasMarkedbyTrait;
 
     const VALIDACCOUNTTYPE = [
         'learner', 'parent', 'professional', 'facilitator', 'school'

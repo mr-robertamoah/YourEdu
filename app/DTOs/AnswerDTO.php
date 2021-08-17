@@ -3,7 +3,9 @@
 namespace App\DTOs;
 
 use App\Traits\DTOTrait;
+use App\YourEdu\Answer;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 class AnswerDTO
 {
@@ -19,6 +21,7 @@ class AnswerDTO
     public ?MarkDTO $markDTO = null;
     public ?Model $answerable = null;
     public ?Model $answeredby = null;
+    public ?Answer $answerModel = null;
     public ?int $workId = null;
     public bool $chat = false;
     public bool $checkAnswerType = true;
@@ -72,6 +75,30 @@ class AnswerDTO
         $static->account = $account;
         $static->workId = $workId;
         $static->answerType = $answerType ? strtoupper($answerType) : null;
+
+        return $static;
+    }
+
+    public static function createFromRequest(Request $request)
+    {
+        $static = new static();
+
+        $static->userId = $request->user()?->id;
+        $static->answerId = $request->answerId;
+        $static->answer = $request->answer;
+        $static->possibleAnswerIds = $request->possibleAnswerIds ?
+            json_decode($request->possibleAnswerIds) : [];
+        $static->itemId = $request->itemId;
+        $static->item = $request->item;
+        $static->accountId = $request->accountId;
+        $static->account = $request->account;
+        $static->workId = $request->workId;
+        $static->answerType = $request->answerType ?
+            strtoupper($request->answerType) : null;
+        $static->files = $request->file('files') ?: [];
+        $static->removedFiles = $request->removedFiles ?
+            FileDTO::createFromArray(json_decode($request->removedFiles)) :
+            [];
 
         return $static;
     }
@@ -130,6 +157,13 @@ class AnswerDTO
     public function dontCheckAnswerType()
     {
         $this->checkAnswerType = false;
+
+        return $this;
+    }
+
+    public function refresh()
+    {
+        $this->answerModel = $this->answerModel->refresh();
 
         return $this;
     }

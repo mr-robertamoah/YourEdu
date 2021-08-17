@@ -11,32 +11,37 @@ trait HasFilesTrait
         if ($this->images()?->count()) {
             return true;
         }
-        
+
         if ($this->videos()?->count()) {
             return true;
         }
-        
+
         if ($this->images()?->count()) {
             return true;
         }
-        
+
         if ($this->files()?->count()) {
             return true;
         }
 
         return false;
     }
-    
+
+    public function doesntHaveFiles()
+    {
+        return !$this->hasFiles();
+    }
+
     public function allFiles()
     {
         $files = new Collection();
-        
+
         $files = $files->merge($this->images);
-        
+
         $files = $files->merge($this->videos);
-        
+
         $files = $files->merge($this->audios);
-        
+
         $files = $files->merge($this->files);
 
         return $files;

@@ -166,9 +166,52 @@ const DashboadService = {
             return error.response
         }
     },
-    async getWork(data){
+    async addTime(data) {
         try {
-            let response = await ApiService.get(`api/assessment/${data.assessmentId}/work`)
+            let response = await ApiService.post(`api/timer`, data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async updateTime(data) {
+        try {
+            let response = await ApiService.put(`api/timer/${data.timerId}`, data)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async answerAssessment(main) {
+        let {assessmentId, formData, done} = main
+        try {
+            let response = await ApiService.post(`api/assessment/${assessmentId}/answer/${done ? 'done' : ''}`, formData)
+
+            return response
+        } catch (error) {
+            console.log(error);
+            return error.response
+        }
+    },
+    async markAssessment(main) {
+        let {assessmentId, formData, done} = main
+        try {
+            let response = await ApiService.post(`api/assessment/${assessmentId}/mark/${done ? 'done' : ''}`, formData)
+
+            return response
+        } catch (error) {
+            console.log(error.response);
+            return error.response
+        }
+    },
+    async getWork(main) {
+        let {assessmentId, data} = main
+        try {
+            let response = await ApiService.get(`api/assessment/${assessmentId}/work`, data)
 
             return response
         } catch (error) {

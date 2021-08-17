@@ -3,7 +3,9 @@
 namespace App\DTOs;
 
 use App\Traits\DTOTrait;
+use App\YourEdu\Mark;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 class MarkDTO
 {
@@ -13,17 +15,31 @@ class MarkDTO
     public ?string $item = null;
     public ?string $accountId = null;
     public ?string $account = null;
-    public ?string $score = null;
-    public ?string $scoreOver = null;
+    public ?float $score = null;
+    public ?float $scoreOver = null;
     public ?string $remark = null;
     public ?string $state = null;
+    public ?string $markId = null;
     public bool $chat = false;
+    public ?Mark $mark = null;
     public ?Model $markable = null;
     public ?Model $markedby = null;
 
-    public static function new()
+    public static function createFromRequest(Request $request)
     {
-        return new static;
+        $self = new static;
+
+        $self->item = $request->item;
+        $self->itemId = $request->itemId;
+        $self->account = $request->account;
+        $self->accountId = $request->accountId;
+        $self->chat = $request->chat ?: false;
+        $self->markId = $request->markId;
+        $self->score = $request->score ? (float) $request->score : null;
+        $self->remark = $request->remark;
+        $self->userId = $request->user()?->id;
+
+        return $self;
     }
 
     public static function createFromData(
@@ -46,8 +62,8 @@ class MarkDTO
         $static->item = $item;
         $static->accountId = $accountId;
         $static->account = $account;
-        $static->score = $score;
-        $static->scoreOver = $scoreOver;
+        $static->score = $score ? (float) $score : null;
+        $static->scoreOver = $scoreOver ? (float) $scoreOver : null;
         $static->userId = $userId;
         $static->state = $state;
 

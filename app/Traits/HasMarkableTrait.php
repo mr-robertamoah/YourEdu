@@ -8,13 +8,13 @@ trait HasMarkableTrait
 {
     public function marks()
     {
-        return $this->morphMany(Mark::class,'markable');
+        return $this->morphMany(Mark::class, 'markable');
     }
 
     public function isMarkedbyUser($userId)
     {
         return $this->marks()
-            ->whereHasMorph('markedby', '*', function($query) use ($userId) {
+            ->whereHasMorph('markedby', '*', function ($query) use ($userId) {
                 $query->whereUser($userId);
             })
             ->exists();
@@ -22,7 +22,18 @@ trait HasMarkableTrait
 
     public function isNotMarkedbyUser($userId)
     {
-        return ! $this->isMarkedbyUser($userId);
+        return !$this->isMarkedbyUser($userId);
+    }
+
+    public function isMarked()
+    {
+        return $this->marks()
+            ->exists();
+    }
+
+    public function isNotMarked()
+    {
+        return !$this->isMarked();
     }
 
     public function isNotAutoMarkable()
@@ -38,23 +49,28 @@ trait HasMarkableTrait
         return false;
     }
 
+    public function getMarkUsingMarkedby($markedby)
+    {
+        return $this->marks()
+            ->whereMarkedby($markedby)
+            ->first();
+    }
+
     public function scopeWhereNotMarked($query)
     {
         return $query->where(
-                function($query) {
-                    $query->doesntHave('marks');
-                }
-            );
+            function ($query) {
+                $query->doesntHave('marks');
+            }
+        );
     }
 
     public function scopeWhereNotMarkedby($query, $account)
     {
-        return $query->where(function($query) use($account) {
-                $query->whereDoesntHave('marks', function($query) use($account) {
-                    $query
-                        ->where('markedby_type', $account::class)
-                        ->where('markedby_id', $account->id);
-                });
+        return $query->where(function ($query) use ($account) {
+            $query->whereDoesntHave('marks', function ($query) use ($account) {
+                $query->whereMarkedby($account);
             });
+        });
     }
 }
