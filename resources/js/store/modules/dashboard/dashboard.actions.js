@@ -1,4 +1,3 @@
-import router from '../../../router';
 import DashboardService from '../../../services/dashboard.service';
 
 const actions = {
@@ -416,72 +415,75 @@ const actions = {
             commit('REMOVE_COURSE',data.courseId)
         }  
     },
-    async createAssessment({commit},data){
+    async createAssessment({commit, rootGetters},data){
         let response = await DashboardService.createAssessment(data)
-
+        const currentRouteName = rootGetters.getCurrentRouteName()
+        
         if (response.data.message !== 'successful') {
             return {status: false, response}
         }
 
-        if (router.history.current.name === 'dashboard') {       
+        if (currentRouteName === 'dashboard') {       
             commit('ADD_NEW_ASSESSMENT',response.data.assessment)
         }
 
-        if (router.history.current.name === 'home') {       
+        if (currentRouteName === 'home') {       
             commit('home/ASSESSMENT_CREATE_SUCCESS', response.data.assessment, {root: true})
         }
 
-        if (router.history.current.name === 'profile') {       
+        if (currentRouteName === 'profile') {       
             commit('profile/ASSESSMENT_CREATE_SUCCESS', response.data.assessment, {root: true})
         }
 
         return {status: true, assessment: response.data.assessment}
     },
-    async deleteAssessment({commit},data){
+    async deleteAssessment({commit, rootGetters},data){
         let response = await DashboardService.deleteAssessment(data)
+        const currentRouteName = rootGetters.getCurrentRouteName()
 
         if (response.data.message !== 'successful') {
             return {status: false, response}
         }
 
         if (response.data.assessment) {
-            if (router.history.current.name === 'dashboard') {       
+            if (currentRouteName === 'dashboard') {       
                 commit('UPDATE_ASSESSMENT',response.data.assessment)
             }
 
             return {status: true, data: response.data.assessment, action: 'update'}
         } 
 
-        if (router.history.current.name === 'dashboard') {
+        if (currentRouteName === 'dashboard') {
             commit('REMOVE_ASSESSMENT',data.assessmentId)
         }
 
-        if (router.history.current.name === 'home') {       
+        if (currentRouteName === 'home') {       
             commit('home/ASSESSMENT_DELETE_SUCCESS', data, {root: true})
         }
 
-        if (router.history.current.name === 'profile') {       
+        if (currentRouteName === 'profile') {       
             commit('profile/ASSESSMENT_DELETE_SUCCESS', data, {root: true})
         }
 
         return {status: true, data: response.data.assessment, action: 'delete'}
     },
-    async editAssessment({commit},data){
+    async editAssessment({commit, rootGetters},data){
         let response = await DashboardService.updateAssessment(data)
+        const currentRouteName = rootGetters.getCurrentRouteName()
 
         if (response.data.message !== 'successful') {
             return {status: false, response}
         }
         
-        if (router.history.current.name === 'dashboard') {
+        if (currentRouteName === 'dashboard') {
             commit('UPDATE_ASSESSMENT',response.data.assessment)
         }
 
-        if (router.history.current.name === 'home') {       
+        if (currentRouteName === 'home') {       
             commit('home/ASSESSMENT_DELETE_SUCCESS', {assessment: response.data.assessment}, {root: true})
         }
 
-        if (router.history.current.name === 'profile') {       
+        if (currentRouteName === 'profile') {       
             commit('profile/ASSESSMENT_DELETE_SUCCESS', {assessment: response.data.assessment}, {root: true})
         }
 
@@ -491,14 +493,15 @@ const actions = {
             assessmentResource: response.data.assessmentResource
         }
     },
-    async answerAssessment({ commit }, data) {
+    async answerAssessment({ commit, rootGetters }, data) {
         let response = await DashboardService.answerAssessment(data)
+        const currentRouteName = rootGetters.getCurrentRouteName()
 
         if (response.data.message !== 'successful') {
             return { status: false, response }
         }
 
-        if (router.history.current.name === 'home' && data.addUserId) {       
+        if (currentRouteName === 'home' && data.addUserId) {       
             commit('home/ADD_DATA_TO_ITEM_PROPERTY', {
                 item: 'assessment',
                 itemId: data.assessmentId,
@@ -507,7 +510,7 @@ const actions = {
             }, {root: true})
         }
 
-        if (router.history.current.name === 'profile' && data.addUserId) {       
+        if (currentRouteName === 'profile' && data.addUserId) {       
             commit('profile/ADD_DATA_TO_ITEM_PROPERTY', {
                 item: 'assessment',
                 itemId: data.assessmentId,
@@ -540,20 +543,21 @@ const actions = {
 
         return {status: true, work: response.data.work}
     },
-    async addTime({ commit }, main) {
+    async addTime({ commit, rootGetters }, main) {
         let response = await DashboardService.addTime(main.data)
+        const currentRouteName = rootGetters.getCurrentRouteName()
 
         if (response.data.message !== 'successful') {
             return { status: false, response }
         }
 
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/ADD_TIMER_TO_ITEM', {
                 item: main.item, timer: response.data.timer
             }, {root: true})
         }
 
-        if (router.currentRoute.name === 'profile') {
+        if (currentRouteName === 'profile') {
             commit('profile/ADD_TIMER_TO_ITEM', {
                 item: main.item, timer: response.data.timer
             }, {root: true})

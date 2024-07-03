@@ -97,17 +97,17 @@
 </template>
 
 <script>
-import SideBar from '../components/dashboard/SideBar';
-import PostButton from '../components/PostButton';
-import FadeUp from '../components/transitions/FadeUp';
-import EditUser from '../components/forms/EditUser';
-import CreateAccount from '../components/forms/CreateAccount';
-import CreateAcademicYear from '../components/forms/CreateAcademicYear';
-import CreateClass from '../components/forms/CreateClass';
-import CreateCourse from '../components/forms/CreateCourse';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import MainSection from '../components/dashboard/MainSection';
-import AccountModal from '../components/dashboard/AccountModal';
+import SideBar from '../components/dashboard/SideBar.vue';
+import PostButton from '../components/PostButton.vue';
+import FadeUp from '../components/transitions/FadeUp.vue';
+import EditUser from '../components/forms/EditUser.vue';
+import CreateAccount from '../components/forms/CreateAccount.vue';
+import CreateAcademicYear from '../components/forms/CreateAcademicYear.vue';
+import CreateClass from '../components/forms/CreateClass.vue';
+import CreateCourse from '../components/forms/CreateCourse.vue';
+
+import MainSection from '../components/dashboard/MainSection.vue';
+import AccountModal from '../components/dashboard/AccountModal.vue';
 import { mapGetters } from "vuex";
 import CreateExtracurriculum from '../components/forms/CreateExtracurriculum.vue';
 import CreateLesson from '../components/forms/CreateLesson.vue';
@@ -116,7 +116,7 @@ import CreateLesson from '../components/forms/CreateLesson.vue';
         components: {
             AccountModal,
             MainSection,
-            PulseLoader,
+            
             CreateCourse,
             CreateClass,
             CreateAcademicYear,

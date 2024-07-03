@@ -285,10 +285,13 @@ class AuthController extends Controller
 
             DB::commit();
 
+            Auth::login($user);
+
+            $request->session()->regenerate();
+
             return response()->json([
                 'status' => (bool) $user,
                 'user'=> new UserResource($user),
-                'token' => $user->token(),
             ]);
         } catch (\Throwable $th) {
             DB::rollback();
@@ -325,11 +328,14 @@ class AuthController extends Controller
             $user = (new AuthService)->login(
                 UserDTO::createFromRequest($request)
             );
+            ds($user);
+            Auth::login($user);
+
+            $request->session()->regenerate();
 
             return response()->json([
                 'status'=> (bool) $user,
                 'user'=> new UserResource($user),
-                'token'=>$user->token()
             ]);
 
         } catch (\Throwable $th) {

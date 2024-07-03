@@ -35,10 +35,10 @@
                         <template slot="transition" v-if="requests.length">
                             <template
                                 v-for="request in requests"
+                                :key="`account.${request.id}`"
                             >
                                 <account-badge
                                     v-if="request.isAccount"
-                                    :key="`account.${request.id}`"
                                     @clickedAction="clickedRequestAction"
                                     :account="request"
                                     :request="true"
@@ -74,9 +74,9 @@
                         <template slot="transition" v-if="notifications.length">
                             <template
                                 v-for="notification in notifications"
+                                :key="notification.id"
                             >
                                 <participant-badge
-                                    :key="notification.id"
                                     @clickedAction="clickedParticipantAction"
                                     :account="getNotificationAccount(notification.data)"
                                     :message="notification.data.message"
@@ -112,16 +112,15 @@
 </template>
 
 <script>
-import JustFade from './transitions/JustFade';
-import SlideRightGroup from './transitions/SlideRightGroup';
-import MainModal from './MainModal';
-import AccountBadge from "./dashboard/AccountBadge";
-import ParticipantBadge from "./discussion/ParticipantBadge";
-import DiscussionBadge from "./DiscussionBadge";
-import RequestBadge from "./RequestBadge";
-import PulseLoader from "vue-spinner/src/PulseLoader";
-import MessagesModal from "./MessagesModal"
-import DetailsModal from "./DetailsModal"
+import JustFade from './transitions/JustFade.vue';
+import SlideRightGroup from './transitions/SlideRightGroup.vue';
+import MainModal from './MainModal.vue';
+import AccountBadge from "./dashboard/AccountBadge.vue";
+import ParticipantBadge from "./discussion/ParticipantBadge.vue";
+import DiscussionBadge from "./DiscussionBadge.vue";
+import RequestBadge from "./RequestBadge.vue";
+import MessagesModal from "./MessagesModal.vue"
+import DetailsModal from "./DetailsModal.vue"
 import { mapActions, mapGetters } from 'vuex';
 import Alert from './../mixins/Alert.mixin';
     export default {
@@ -131,7 +130,7 @@ import Alert from './../mixins/Alert.mixin';
             MainModal,
             SlideRightGroup,
             JustFade,
-            PulseLoader,
+            
             RequestBadge,
             DiscussionBadge,
             ParticipantBadge,

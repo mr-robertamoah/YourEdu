@@ -111,9 +111,9 @@
 </template>
 
 <script>
-import PossibleAnswerBadge from '../dashboard/PossibleAnswerBadge';
-import DroppableComponent from '../specials/DroppableComponent'
-import TextInput from '../TextInput';
+import PossibleAnswerBadge from '../dashboard/PossibleAnswerBadge.vue';
+import DroppableComponent from '../specials/DroppableComponent.vue';
+import TextInput from '../TextInput.vue';
 import PopUp from '../../mixins/PopUp.mixin';
 import {bus} from '../../app';
 import GreyButton from '../GreyButton.vue';

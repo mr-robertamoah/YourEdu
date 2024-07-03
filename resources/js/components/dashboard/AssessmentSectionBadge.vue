@@ -43,7 +43,7 @@
 </template>
 
 <script>
-import QuestionBadge from './QuestionBadge';
+import QuestionBadge from './QuestionBadge.vue';
     export default {
         components: {
             QuestionBadge,

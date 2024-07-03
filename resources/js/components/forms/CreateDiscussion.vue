@@ -278,17 +278,17 @@
 </template>
 
 <script>
-import TextInput from '../TextInput';
-import TextTextarea from '../TextTextarea';
-import GreyButton from '../GreyButton';
-import PostButton from '../PostButton';
-import PostAttachment from '../PostAttachment';
-import AttachmentBadge from '../AttachmentBadge';
-import FadeUp from '../transitions/FadeUp';
-import MediaCapture from '../MediaCapture';
-import ProfileBar from '../profile/ProfileBar';
-import AutoAlert from '../AutoAlert';
-import WelcomeForm from '.././welcome/WelcomeForm';
+import TextInput from '../TextInput.vue';
+import TextTextarea from '../TextTextarea.vue';
+import GreyButton from '../GreyButton.vue';
+import PostButton from '../PostButton.vue';
+import PostAttachment from '../PostAttachment.vue';
+import AttachmentBadge from '../AttachmentBadge.vue';
+import FadeUp from '../transitions/FadeUp.vue';
+import MediaCapture from '../MediaCapture.vue';
+import ProfileBar from '../profile/ProfileBar.vue';
+import AutoAlert from '../AutoAlert.vue';
+import WelcomeForm from '.././welcome/WelcomeForm.vue';
 import { mapGetters } from 'vuex';
     export default {
         components: {

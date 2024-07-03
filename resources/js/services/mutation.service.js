@@ -1,3 +1,5 @@
+import { default as _ } from 'lodash';
+
 const postOnly =  ['post', 'book', 'poem', 'question', 'activitie', 'riddle']
 
 function addDataToProfileItemProperty({

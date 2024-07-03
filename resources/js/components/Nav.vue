@@ -117,15 +117,16 @@
 </template>
 
 <script>
-import ProfilePicture from "../components/profile/ProfilePicture";
-import ProfileBar from "../components/profile/ProfileBar";
-import FadeRight from "../components/transitions/FadeRight";
-import FadeUp from "../components/transitions/FadeUp";
-import MainAlert from "../components/transitions/MainAlert";
-import RequestModal from "../components/RequestModal";
+import ProfilePicture from "../components/profile/ProfilePicture.vue";
+import ProfileBar from "../components/profile/ProfileBar.vue";
+import FadeRight from "../components/transitions/FadeRight.vue";
+import FadeUp from "../components/transitions/FadeUp.vue";
+import MainAlert from "../components/transitions/MainAlert.vue";
+import RequestModal from "../components/RequestModal.vue";
 import {TokenService} from "../services/token.service";
 import { mapActions, mapGetters } from "vuex";
 import { dates, strings } from '../services/helpers';
+import { useRoute, useRouter } from "vue-router";
 
     export default {
         props: {
@@ -177,21 +178,24 @@ import { dates, strings } from '../services/helpers';
         computed:{
             ...mapGetters(['getProfiles','getUser', 'getLoggedin','getUserFollowRequest',
                 ]),
+            computedRouteName() {
+                return useRoute().name
+            },
             computedRegistration(){
                 return this.getLoggedin ? false : 
-                    this.$route.name !== 'register' ? true : false
+                    this.computedRouteName !== 'register' ? true : false
             },
             computedLogin(){
                 return this.getLoggedin ? false : 
-                    this.$route.name !== 'login' ? true : false
+                    this.computedRouteName !== 'login' ? true : false
             },
             computedWelcome(){
                 return this.getLoggedin ? 
-                    this.$route.name === 'welcome' ? false : true : false
+                    this.computedRouteName === 'welcome' ? false : true : false
             },
             computedDashboard(){
                 return this.getLoggedin ? 
-                    this.$route.name === 'dashboard' ? false : true : false
+                    this.computedRouteName === 'dashboard' ? false : true : false
             },
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
@@ -345,14 +349,14 @@ import { dates, strings } from '../services/helpers';
                                 alert.id = Math.floor(Math.random() * 10000)
                                 this.alerts.unshift(alert)
                                 this.clearAlert(alert.id)
-                                if (notification.admin && this.$route.name === 'dashboard') {                                    
+                                if (notification.admin && this.computedRouteName === 'dashboard') {                                    
                                     this['dashboard/addAccountDetails']({
                                         account: notification.accountData.account,
                                         accountId: notification.accountData.accountId,
                                         what: 'admin',
                                         data: notification.admin
                                     })
-                                } else if (notification.facilitator && this.$route.name === 'dashboard') {                                    
+                                } else if (notification.facilitator && this.computedRouteName === 'dashboard') {                                    
                                     this['dashboard/addAccountDetails']({
                                         account: notification.accountData.account,
                                         accountId: notification.accountData.accountId,
@@ -360,7 +364,7 @@ import { dates, strings } from '../services/helpers';
                                         data: notification.facilitator
                                     })
                                 } else if (notification.school && 
-                                    this.$route.name === 'dashboard' &&
+                                    this.computedRouteName === 'dashboard' &&
                                     notification.accountData.account !== 'admin') {                                    
                                     this['dashboard/addAccountDetails']({
                                         account: notification.accountData.account,
@@ -369,7 +373,7 @@ import { dates, strings } from '../services/helpers';
                                         data: notification.school
                                     })
                                 } else if (notification.school && 
-                                    this.$route.name === 'dashboard' &&
+                                    this.computedRouteName === 'dashboard' &&
                                     notification.accountData.account === 'admin') {                                    
                                     this.addProfile(notification.school)
                                 }
@@ -452,8 +456,11 @@ import { dates, strings } from '../services/helpers';
                     }, 3000);
                 }
             },
-            navLogout(){
-                this.logout()
+            async navLogout(){
+                const result = await this.logout()
+
+                if (result.status)
+                    useRouter().push('/login')
             },
         },
         mounted () {

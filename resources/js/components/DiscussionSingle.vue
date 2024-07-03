@@ -222,10 +222,10 @@
                             >
                                 show discussions
                             </div>
-                            <infinite-loader
+                            <Infinite-Loading
                                 @infinite="infiniteHandler"
                                 v-if="showInfiniteLoader"
-                            ></infinite-loader>
+                            ></Infinite-Loading>
                             <fade-up>
                                 <template slot="transition" v-if="messageSending">
                                     <div class="loading">
@@ -379,22 +379,20 @@
 </template>
 
 <script>
-import MediaModal from './MediaModal';
-import FadeUp from './transitions/FadeUp'
-import DiscussionBadge from './DiscussionBadge';
-import PostButton from './PostButton';
-import DiscussionTextarea from './DiscussionTextarea';
-import OptionalActions from './OptionalActions';
-import MediaCapture from './MediaCapture';
-import TextTextarea from './TextTextarea';
-import TextInput from './TextInput';
-import InfiniteLoader from 'vue-infinite-loading';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import ProfilePicture from './profile/ProfilePicture';
-import SpecialButton from './SpecialButton'
-import DiscussionSingleInfo from './DiscussionSingleInfo';
-import ItemRequestSection from './ItemRequestSection';
-import ItemViewCover from './ItemViewCover'
+import MediaModal from './MediaModal.vue';
+import FadeUp from './transitions/FadeUp.vue'
+import DiscussionBadge from './DiscussionBadge.vue';
+import PostButton from './PostButton.vue';
+import DiscussionTextarea from './DiscussionTextarea.vue';
+import OptionalActions from './OptionalActions.vue';
+import MediaCapture from './MediaCapture.vue';
+import TextTextarea from './TextTextarea.vue';
+import TextInput from './TextInput.vue';
+import ProfilePicture from './profile/ProfilePicture.vue';
+import SpecialButton from './SpecialButton.vue'
+import DiscussionSingleInfo from './DiscussionSingleInfo.vue';
+import ItemRequestSection from './ItemRequestSection.vue';
+import ItemViewCover from './ItemViewCover.vue'
 import Like from '../mixins/Like.mixin';
 import Flag from '../mixins/Flag.mixin';
 import Save from '../mixins/Save.mixin';
@@ -406,11 +404,10 @@ import Comments from '../mixins/Comments.mixin'
 import Attachments from '../mixins/Attachments.mixin'
 import { mapActions, mapGetters } from 'vuex';
 import { strings } from '../services/helpers';
+import { useRoute } from 'vue-router';
     export default {
         components: {
-            PulseLoader,
             ProfilePicture,
-            InfiniteLoader,
             FadeUp,
             MediaCapture,
             OptionalActions,
@@ -869,8 +866,10 @@ import { strings } from '../services/helpers';
                 this.updateDiscussion(data.data)
             },
             async deleteDiscussion(){
+                const route = useRoute()
+                
                 this.loading = true
-                    data = {where: this.$route.name}
+                    data = {where: route.name}
 
                 let response = await this['profile/deleteDiscussion']({
                     discussionId: this.discussion.id,data})
@@ -908,7 +907,7 @@ import { strings } from '../services/helpers';
                 formData.append('deletedFiles', JSON.stringify(data.deletedFiles))
                 data.discussionId = this.discussion.id
                 data.formData = formData
-                data.where = this.$route.name
+                data.where = useRoute().name
 
                 response = await this['profile/updateDiscussion'](data)
 
@@ -1048,7 +1047,7 @@ import { strings } from '../services/helpers';
                     response = null,
                     state = ''
 
-                data.where = this.$route.name
+                data.where = useRoute().name
                 data.item = 'discussion'
                 data.itemId = this.discussion.id
                 if (who) {

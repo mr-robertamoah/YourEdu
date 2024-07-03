@@ -97,7 +97,7 @@ class AuthDTO
 
         return QuestionDTO::new()
             ->addData(
-                body: $data->body ?? null
+                body: $data->body ?? null,
                 hint: $data->hint ?? null
             );
     }

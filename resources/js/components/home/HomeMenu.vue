@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import PostAttachment from '../PostAttachment';
+import PostAttachment from '../PostAttachment.vue';
     export default {
         props: {
             menuValue: {

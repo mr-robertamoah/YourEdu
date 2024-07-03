@@ -6,12 +6,10 @@ import profile from './modules/profile'
 import home from './modules/home'
 import miscellaneous from './modules/miscellaneous'
 import dashboard from './modules/dashboard'
-import Vue from 'vue'
-import Vuex from 'vuex'
 
-Vue.use(Vuex)
+import { createStore } from 'vuex'
 
-export default new Vuex.Store({
+const store = createStore({
     modules: {
         profile,
         miscellaneous,
@@ -23,3 +21,5 @@ export default new Vuex.Store({
     mutations,
     actions
 })
+
+export default store

@@ -33,8 +33,9 @@
 </template>
 
 <script>
-import ProfilePicture from './ProfilePicture'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import { useRouter } from 'vue-router';
+import ProfilePicture from './ProfilePicture.vue'
+
 
     export default {
         props: {
@@ -93,11 +94,13 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
         },
         components: {
             ProfilePicture,
-            PulseLoader,
+            
         },
         methods: {
             goToRoute() {
                 if (this.navigate) {
+                    const router = useRouter()
+
                     let routeObject = {
                             name: this.routeName,
                             params: {
@@ -105,7 +108,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                                 accountId: `${this.profile.accountId}`
                             },
                     }
-                    this.$router.push(routeObject)
+                    router.push(routeObject)
                 } else {
                     this.$emit('clickedProfile',{
                         account: this.profile.account, 

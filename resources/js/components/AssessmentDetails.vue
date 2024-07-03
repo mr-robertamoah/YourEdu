@@ -72,7 +72,8 @@ import { mapGetters } from 'vuex'
 import ProfilePicture from './profile/ProfilePicture.vue'
 import RadioInput from './RadioInput.vue'
 import SpecialButton from './SpecialButton.vue'
-    export default {
+import { default as _ } from 'lodash';
+export default {
         components: {
             ProfilePicture,
             SpecialButton,

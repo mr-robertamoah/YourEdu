@@ -234,19 +234,20 @@
 </template>
 
 <script>
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import PostSingle from './PostSingle';
-import PostPreview from './PostPreview';
-import CommentSingle from './CommentSingle';
-import AnswerSingle from './AnswerSingle';
-import MainList from './MainList'
-import AddAnswer from './AddAnswer'
-import ProfileBar from './profile/ProfileBar'
-import FadeRightFast from './transitions/FadeRightFast'
-import FadeUp from './transitions/FadeUp'
-import SlideUpGroup from './transitions/SlideUpGroup'
+
+import PostSingle from './PostSingle.vue'
+import PostPreview from './PostPreview.vue'
+import CommentSingle from './CommentSingle.vue'
+import AnswerSingle from './AnswerSingle.vue'
+import MainList from './MainList.vue'
+import AddAnswer from './AddAnswer.vue'
+import ProfileBar from './profile/ProfileBar.vue'
+import FadeRightFast from './transitions/FadeRightFast.vue'
+import FadeUp from './transitions/FadeUp.vue'
+import SlideUpGroup from './transitions/SlideUpGroup.vue'
 import { mapActions, mapGetters } from 'vuex';
 import { strings } from '../services/helpers';
+import { useRoute } from 'vue-router'
 
     export default {
         props: {
@@ -276,7 +277,7 @@ import { strings } from '../services/helpers';
             },
         },
         components: {
-            PulseLoader,
+            
             AnswerSingle,
             CommentSingle,
             MainList,
@@ -401,6 +402,9 @@ import { strings } from '../services/helpers';
         },
         computed: {
             ...mapGetters(['getProfiles','getUser']),
+            computedRoute() {
+                return useRoute()
+            },
             computedNoCommentAnswer(){
                 if (this.type === 'posttype' && 
                     (this.data && this.data.typeName === 'question' || this.data.typeName === 'riddle')) {
@@ -489,9 +493,9 @@ import { strings } from '../services/helpers';
                 let item,
                     itemId,
                     response
-                if (this.$route.name === 'post') {
-                    item = this.$route.name
-                    itemId = this.$route.params.itemId
+                if (this.computedRoute.name === 'post') {
+                    item = this.computedRoute.name
+                    itemId = this.computedRoute.params.itemId
                 } else {
                     item = this.itemData.item
                     itemId = this.itemData.itemId
@@ -1073,7 +1077,7 @@ import { strings } from '../services/helpers';
 </script>
 
 <style lang="scss" scoped>
-@use "sass:math";
+
 
 $wrapper-background: rgba(102, 51, 153, .2);
 $modal-background: aliceblue;

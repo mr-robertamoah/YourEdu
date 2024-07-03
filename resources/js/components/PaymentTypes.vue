@@ -329,18 +329,18 @@
 </template>
 
 <script>
-import RadioInput from './RadioInput';
-import ItemBadge from './dashboard/ItemBadge';
-import MainSelect from './MainSelect';
-import TextInput from './TextInput';
-import PriceBadge from './PriceBadge';
-import CommissionBadge from './CommissionBadge';
-import FeeBadge from './FeeBadge';
-import SalaryBadge from './SalaryBadge';
-import DiscountBadge from './DiscountBadge';
-import SubscriptionBadge from './SubscriptionBadge';
-import NumberInput from './NumberInput';
-import DatePicker from './DatePicker';
+import RadioInput from './RadioInput.vue';
+import ItemBadge from './dashboard/ItemBadge.vue';
+import MainSelect from './MainSelect.vue';
+import TextInput from './TextInput.vue';
+import PriceBadge from './PriceBadge.vue';
+import CommissionBadge from './CommissionBadge.vue';
+import FeeBadge from './FeeBadge.vue';
+import SalaryBadge from './SalaryBadge.vue';
+import DiscountBadge from './DiscountBadge.vue';
+import SubscriptionBadge from './SubscriptionBadge.vue';
+import NumberInput from './NumberInput.vue';
+import DatePicker from './DatePicker.vue';
 import TextTextarea from './TextTextarea.vue';
 import { dates } from '../services/helpers';
     export default {

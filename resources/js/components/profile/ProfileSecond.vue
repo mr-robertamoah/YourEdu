@@ -416,24 +416,24 @@
 </template>
 
 <script>
-import PostButton from '../PostButton'
-import Badge from '../Badge'
-import DetailShowcase from './DetailShowcase'
-import ProfilePicture from './ProfilePicture'
-import ProfileDetail from './ProfileDetail'
-import MainTextarea from '../MainTextarea'
-import FadeLeft from '../transitions/FadeLeft'
-import BlackWhiteBadge from '../BlackWhiteBadge'
-import PostCreate from '../PostCreate'
-import SyncLoader from 'vue-spinner/src/SyncLoader'
-import PostSingle from '../PostSingle'
-import LinkItem from '../profile/LinkItem'
-import FilePreview from '../FilePreview'
-import TextInput from '../TextInput'
-import DiscussionSingle from '../DiscussionSingle'
-import PostNone from '../PostNone'
-import GroupSection from './GroupSection'
+import PostButton from '../PostButton.vue'
+import Badge from '../Badge.vue'
+import DetailShowcase from './DetailShowcase.vue'
+import ProfilePicture from './ProfilePicture.vue'
+import ProfileDetail from './ProfileDetail.vue'
+import MainTextarea from '../MainTextarea.vue'
+import FadeLeft from '../transitions/FadeLeft.vue'
+import BlackWhiteBadge from '../BlackWhiteBadge.vue'
+import PostCreate from '../PostCreate.vue'
+import PostSingle from '../PostSingle.vue'
+import LinkItem from '../profile/LinkItem.vue'
+import FilePreview from '../FilePreview.vue'
+import TextInput from '../TextInput.vue'
+import DiscussionSingle from '../DiscussionSingle.vue'
+import PostNone from '../PostNone.vue'
+import GroupSection from './GroupSection.vue'
 import { mapGetters, mapActions } from 'vuex'
+import { useRoute } from 'vue-router'
 
     export default {
         name: 'SecondSection',
@@ -448,7 +448,7 @@ import { mapGetters, mapActions } from 'vuex'
             FilePreview,
             LinkItem,
             PostSingle,
-            SyncLoader,
+            
             PostCreate,
             BlackWhiteBadge,
             FadeLeft,
@@ -551,6 +551,9 @@ import { mapGetters, mapActions } from 'vuex'
                 return this['profile/profilePosts'] && this['profile/profilePosts'].length > 0 ? 
                     this['profile/profilePosts'] : null
             },
+            computedRoute() {
+                return useRoute()
+            },
             computedAbout() {
                 return this['profile/getProfile'] && this['profile/getProfile'].about ?
                     this['profile/getProfile'].about : 'nothing yet'
@@ -633,7 +636,7 @@ import { mapGetters, mapActions } from 'vuex'
             async clickedCreateDiscussion(data){
                 let response,
                     formData = new FormData,
-                    where = this.$route.name
+                    where = this.computedRoute.name
 
                 this.discussionLoading = true
 
@@ -680,8 +683,8 @@ import { mapGetters, mapActions } from 'vuex'
             },
             async clickedMediaIcon(iconData){
                 let data = {
-                    account: this.$route.params.account,
-                    accountId: this.$route.params.accountId,
+                    account: this.computedRoute.params.account,
+                    accountId: this.computedRoute.params.accountId,
                     media: this.mediaType,
                     mediaId: iconData.mediaId
                 }
@@ -733,8 +736,8 @@ import { mapGetters, mapActions } from 'vuex'
                 this.getMediaType = 'public'
                 this.mediaLoading = true
                 let data = {
-                    account: this.$route.params.account,
-                    accountId: this.$route.params.accountId,
+                    account: this.computedRoute.params.account,
+                    accountId: this.computedRoute.params.accountId,
                     nextPage: this.nextPage
                 }
                 if (mediaType.includes('image')) {
@@ -765,8 +768,8 @@ import { mapGetters, mapActions } from 'vuex'
                 this.getMediaType = 'private'
                 this.mediaLoading = true
                 let data = {
-                    account: this.$route.params.account,
-                    accountId: this.$route.params.accountId,
+                    account: this.computedRoute.params.account,
+                    accountId: this.computedRoute.params.accountId,
                     nextPage: this.nextPage
                 }
                 if (mediaType.includes('image')) {
@@ -867,8 +870,8 @@ import { mapGetters, mapActions } from 'vuex'
                     let profileId = this['profile/getProfile'].id
 
                     formData.append('file', this.file)
-                    formData.append('account', this.$route.params.account)
-                    formData.append('accountId', this.$route.params.accountId)
+                    formData.append('account', this.computedRoute.params.account)
+                    formData.append('accountId', this.computedRoute.params.accountId)
 
                     if (this.no) {
                         formData.append('show','PRIVATE')

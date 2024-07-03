@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import BlackWhiteBadge from "./BlackWhiteBadge";
+import BlackWhiteBadge from "./BlackWhiteBadge.vue";
     export default {
         props: {
             hasCircleImg: {

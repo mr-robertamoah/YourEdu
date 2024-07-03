@@ -1,18 +1,11 @@
-import Vue from 'vue'
-import Router from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import routes from './routes'
 import { routerBeforeEach } from './router';
 
-
-Vue.use(Router)
-
-const router = new Router({
-    mode:'history',
-    history:true,
+const router = createRouter({
+    history: createWebHashHistory(),
     routes
 })
-
-
 
 router.beforeEach((to,from,next)=>{
     routerBeforeEach(to,from,next)

@@ -7,10 +7,12 @@
 </template>
 
 <script>
+import { useRouter } from 'vue-router';
+
     export default {
         methods: {
             goBack() {
-                this.$router.go(-1)
+                useRouter().go(-1)
             }
         },
     }

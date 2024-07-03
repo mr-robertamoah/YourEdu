@@ -63,7 +63,7 @@
 </template>
 
 <script>
-import PostButton from './PostButton'
+import PostButton from './PostButton.vue'
 
     export default {
         components: {

@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import FadeRight from '../transitions/FadeRight';
+import FadeRight from '../transitions/FadeRight.vue';
     export default {
         components: {
             FadeRight,

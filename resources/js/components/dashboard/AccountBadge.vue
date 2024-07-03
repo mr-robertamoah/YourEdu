@@ -92,10 +92,10 @@
 </template>
 
 <script>
-import ProfilePicture from '../profile/ProfilePicture'
-import ProfileBar from '../profile/ProfileBar'
-import ActionButton from '../ActionButton'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import ProfilePicture from '../profile/ProfilePicture.vue'
+import ProfileBar from '../profile/ProfileBar.vue'
+import ActionButton from '../ActionButton.vue'
+
 import { mapActions, mapGetters } from 'vuex'
 
     export default {
@@ -132,7 +132,7 @@ import { mapActions, mapGetters } from 'vuex'
             },
         },
         components: {
-            PulseLoader,
+            
             ActionButton,
             ProfileBar,
             ProfilePicture,
@@ -326,7 +326,7 @@ import { mapActions, mapGetters } from 'vuex'
                     return
                 }
                 this.$emit('clearData')
-                this.$router.push({
+                useRouter().push({
                     name: 'profile', 
                     params: {
                         account: this.computedAccountType, 

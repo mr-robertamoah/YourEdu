@@ -58,10 +58,8 @@
 
 <script>
 import { mapActions } from 'vuex';
-import ItemShow from './ItemShow';
-import SlideRightGroup from './transitions/SlideRightGroup';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import { strings } from '../services/helpers';
+import ItemShow from './ItemShow.vue';
+import SlideRightGroup from './transitions/SlideRightGroup.vue';
     export default {
         props: {
             show: {
@@ -70,7 +68,7 @@ import { strings } from '../services/helpers';
             },
         },
         components: {
-            PulseLoader,
+            
             SlideRightGroup,
             ItemShow,
         },

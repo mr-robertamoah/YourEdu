@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import DashboardActionButton from './DashboardActionButton';
+import DashboardActionButton from './DashboardActionButton.vue';
     export default {
         components: {
             DashboardActionButton,

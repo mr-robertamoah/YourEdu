@@ -45,9 +45,9 @@
 </template>
 
 <script>
-import MainTextarea from './MainTextarea'
-import FadeRightFast from './transitions/FadeRightFast'
-import FadeDown from './transitions/FadeDown'
+import MainTextarea from './MainTextarea.vue'
+import FadeRightFast from './transitions/FadeRightFast.vue'
+import FadeDown from './transitions/FadeDown.vue'
 
     export default {
         components: {

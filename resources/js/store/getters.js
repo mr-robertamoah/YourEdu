@@ -1,8 +1,10 @@
 import settings from "../settings"
 
-const { default: profile } = require("./modules/profile")
-
 const getters = {
+    getCurrentRouteName(state){
+        return state.currentRouteName
+    },
+    
     authenticating(state){
         return state.authenticating
     },

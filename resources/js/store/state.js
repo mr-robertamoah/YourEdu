@@ -4,6 +4,7 @@ import { TokenService } from "../services/token.service"
 window.YoureduStorage = new StorageService('localStorage')
 
 const state = {
+    currentRouteName: '',
     loading : false,
     loggedin : false,
     authenticating : false,

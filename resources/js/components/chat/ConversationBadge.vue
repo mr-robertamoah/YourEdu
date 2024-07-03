@@ -40,8 +40,8 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import ProfilePicture from '../profile/ProfilePicture';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import ProfilePicture from '../profile/ProfilePicture.vue';
+
     export default {
         props: {
             conversation: {
@@ -70,7 +70,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
             },
         },
         components: {
-            PulseLoader,
+            
             ProfilePicture,
         },
         data() {

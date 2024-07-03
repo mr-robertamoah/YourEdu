@@ -49,8 +49,6 @@
 </script>
 
 <style lang="scss" scoped>
-@use "sass:math";
-
 $wrapper-background: rgba(102, 51, 153, .2);
 $modal-background: aliceblue;
 $modal-width: 60%;

@@ -61,15 +61,13 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex';
-import AttachmentBadge from './AttachmentBadge';
-import PostAttachment from './PostAttachment';
-import PostButton from './PostButton';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import AutoAlert from './AutoAlert';
+import AttachmentBadge from './AttachmentBadge.vue';
+import PostAttachment from './PostAttachment.vue';
+import PostButton from './PostButton.vue';
+import AutoAlert from './AutoAlert.vue';
     export default {
         components: {
             AutoAlert,
-            PulseLoader,
             PostButton,
             PostAttachment,
             AttachmentBadge,

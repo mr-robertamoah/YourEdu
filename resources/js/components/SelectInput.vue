@@ -49,11 +49,11 @@
                                         item.description.length"
                                     >{{`description: ${item.description}`}}</div>
                                 </div>
-                                <infinite-loader
+                                <Infinite-Loading
                                     v-if="next !== 1"
                                     @infinite="infiniteHandler"
                                     force-use-infinite-wrapper
-                                ></infinite-loader>
+                                ></Infinite-Loading>
                             </template>
                         </div>
                     </template>
@@ -64,13 +64,13 @@
 </template>
 
 <script>
-import FadeLeft from './transitions/FadeLeft';
-import InfiniteLoader from 'vue-infinite-loading';
+import FadeLeft from './transitions/FadeLeft.vue';
+
 
     export default {
         components: {
             FadeLeft,
-            InfiniteLoader,
+            
         },
         props: {
             items: {

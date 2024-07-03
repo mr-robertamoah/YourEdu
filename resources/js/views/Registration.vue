@@ -87,11 +87,11 @@
 </template>
 
 <script>
-import LoginRegisterOutline from '../components/LoginRegisterOutline'
+import { useRoute, useRouter } from 'vue-router';
+import LoginRegisterOutline from '../components/LoginRegisterOutline.vue'
+import TextInput from '../components/TextInput.vue'
 import { mapActions, mapGetters } from "vuex";
-import flatPickr from 'vue-flatpickr-component';
-import 'flatpickr/dist/flatpickr.css';
-import TextInput from '../components/TextInput'
+// import 'flatpickr/dist/flatpickr.css';
 
     export default {
         data() {
@@ -122,7 +122,6 @@ import TextInput from '../components/TextInput'
         components:{
             LoginRegisterOutline, 
             TextInput,
-            flatPickr,
         },
         watch: {
             username(){
@@ -205,13 +204,11 @@ import TextInput from '../components/TextInput'
                 
                 let response = await this.register(registrationCredentials)
 
-                if (response === 'successful') {
-                    this.clearCredentials()
-                } else {
-                    
-                }
+                if (!response.status) return
 
-                
+                if (response.token) useRouter().push( useRoute().query.redirectTo || '/welcome')
+
+                this.clearCredentials()
             },
             ...mapActions(['register']),
             passwordIconChange(){

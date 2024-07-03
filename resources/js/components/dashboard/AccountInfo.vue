@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import ProfilePicture from '../profile/ProfilePicture';
+import ProfilePicture from '../profile/ProfilePicture.vue';
     export default {
         components: {
             ProfilePicture,

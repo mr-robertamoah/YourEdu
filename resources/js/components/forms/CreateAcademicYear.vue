@@ -161,19 +161,19 @@
 </template>
 
 <script>
-import TextInput from '../TextInput'
-import DatePicker from '../DatePicker'
-import MainCheckbox from '../MainCheckbox'
-import AutoAlert from '../AutoAlert'
-import ActionButton from '../ActionButton'
+import TextInput from '../TextInput.vue'
+import DatePicker from '../DatePicker.vue'
+import MainCheckbox from '../MainCheckbox.vue'
+import AutoAlert from '../AutoAlert.vue'
+import ActionButton from '../ActionButton.vue'
 import { mapActions, mapGetters } from 'vuex'
 import { dates } from '../../services/helpers'
 import TextTextarea from '../TextTextarea.vue'
-import AcademicYearSectionBadge from '../dashboard/AcademicYearSectionBadge'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import AcademicYearSectionBadge from '../dashboard/AcademicYearSectionBadge.vue'
+
     export default {
         components: {
-            PulseLoader,
+            
             AcademicYearSectionBadge,
             TextTextarea,
             TextInput,

@@ -38,8 +38,8 @@
 </template>
 
 <script>
-import TextTextarea from './TextTextarea';
-import TextInput from './TextInput';
+import TextTextarea from './TextTextarea.vue';
+import TextInput from './TextInput.vue';
 import LinkBadge from './LinkBadge.vue';
     export default {
         components: {

@@ -98,11 +98,10 @@
 </template>
 
 <script>
-import DatePicker from '../DatePicker'
-import PostButton from '../PostButton'
-import MainList from '../MainList'
-import SyncLoader from 'vue-spinner/src/SyncLoader'
-import TextInput from '../TextInput'
+import DatePicker from '../DatePicker.vue'
+import PostButton from '../PostButton.vue'
+import MainList from '../MainList.vue'
+import TextInput from '../TextInput.vue'
 import { mapActions, mapGetters } from 'vuex'
 import { dates } from '../../services/helpers'
 
@@ -138,7 +137,7 @@ import { dates } from '../../services/helpers'
         },
         components: {
             TextInput,
-            SyncLoader,
+            
             MainList,
             PostButton,
             DatePicker,

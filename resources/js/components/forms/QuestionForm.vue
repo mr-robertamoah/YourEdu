@@ -162,16 +162,17 @@
 </template>
 
 <script>
-import TextTextarea from '../TextTextarea';
-import MediaCapture from '../MediaCapture';
-import TextInput from '../TextInput';
-import MainCheckbox from '../MainCheckbox';
-import NumberInput from '../NumberInput';
-import DatePicker from '../DatePicker';
-import PostButton from '../PostButton';
-import GreyButton from '../GreyButton';
-import PossibleAnswerForm from './PossibleAnswerForm';
-import QuestionBadge from '../dashboard/QuestionBadge';
+import TextTextarea from '../TextTextarea.vue';
+import MediaCapture from '../MediaCapture.vue';
+import TextInput from '../TextInput.vue';
+import MainCheckbox from '../MainCheckbox.vue';
+import NumberInput from '../NumberInput.vue';
+import DatePicker from '../DatePicker.vue';
+import PostButton from '../PostButton.vue';
+import GreyButton from '../GreyButton.vue';
+import PossibleAnswerForm from './PossibleAnswerForm.vue';
+import QuestionBadge from '../dashboard/QuestionBadge.vue';
+import { default as _ } from 'lodash';
 import {bus} from '../../app';
     export default {
         components: {

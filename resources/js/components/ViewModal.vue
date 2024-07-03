@@ -30,8 +30,8 @@
 </template>
 
 <script>
-import FadeRight from "./transitions/FadeRight";
-import GoBack from "./GoBack";
+import FadeRight from "./transitions/FadeRight.vue";
+import GoBack from "./GoBack.vue";
 
     export default {
         props: {
@@ -110,7 +110,7 @@ import GoBack from "./GoBack";
 </script>
 
 <style lang="scss" scoped>
-@use "sass:math";
+
 
 $wrapper-background: whitesmoke;
 $modal-background: aliceblue;

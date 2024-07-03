@@ -1,5 +1,6 @@
-import PostAttachment from '../components/PostAttachment';
-import AttachmentBadge from '../components/AttachmentBadge';
+import PostAttachment from '../components/PostAttachment.vue';
+import AttachmentBadge from '../components/AttachmentBadge.vue';
+import { default as _ } from 'lodash';
 
 export default {
     components: {

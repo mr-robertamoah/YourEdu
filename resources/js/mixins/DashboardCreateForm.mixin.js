@@ -1,3 +1,4 @@
+import { default as _ } from 'lodash';
 import SearchInput from '../components/SearchInput.vue';
 export default {
     components: {

@@ -27,11 +27,12 @@
 </template>
 
 <script>
-import DiscussionModal from './DiscussionModal';
-import CourseModal from './CourseModal';
-import LessonModal from './LessonModal';
-import ClassModal from './ClassModal';
-import CatchAll from '../views/CatchAll';
+import DiscussionModal from './DiscussionModal.vue';
+import CourseModal from './CourseModal.vue';
+import LessonModal from './LessonModal.vue';
+import ClassModal from './ClassModal.vue';
+import CatchAll from '../views/CatchAll.vue';
+import { useRoute } from 'vue-router';
     export default {
         components: {
             CatchAll,
@@ -49,24 +50,27 @@ import CatchAll from '../views/CatchAll';
             },
         },
         computed: {
+            computedRoute() {
+                return useRoute()
+            },
             computedDiscussion() {
-                return (this.$route.name === 'item' && this.$route.params.item === 'discussion') ||
+                return (this.computedRoute.name === 'item' && this.computedRoute.params.item === 'discussion') ||
                     (this.itemData && this.itemData.item === 'discussion')
             },
             computedCourse() {
-                return (this.$route.name === 'item' && this.$route.params.item === 'course') ||
+                return (this.computedRoute.name === 'item' && this.computedRoute.params.item === 'course') ||
                     (this.itemData && this.itemData.item === 'course')
             },
             computedLesson() {
-                return (this.$route.name === 'item' && this.$route.params.item === 'lesson') ||
+                return (this.computedRoute.name === 'item' && this.computedRoute.params.item === 'lesson') ||
                     (this.itemData && this.itemData.item === 'lesson')
             },
             computedClass() {
-                return (this.$route.name === 'item' && this.$route.params.item === 'class') ||
+                return (this.computedRoute.name === 'item' && this.computedRoute.params.item === 'class') ||
                     (this.itemData && this.itemData.item === 'class')
             },
             computedShow() {
-                return this.$route.name === 'item'
+                return this.computedRoute.name === 'item'
             },
         },
     }

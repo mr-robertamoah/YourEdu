@@ -200,13 +200,13 @@
 
 <script>
 import { dates, strings } from '../../services/helpers'
-import DashboardActionButton from './DashboardActionButton'
-import FeeBadge from '../FeeBadge'
-import ProfilePicture from '../profile/ProfilePicture'
-import PriceBadge from '../PriceBadge'
-import OptionalActions from '../OptionalActions'
-import SimpleAccountBadge from '../SimpleAccountBadge'
-import SubscriptionBadge from '../SubscriptionBadge'
+import DashboardActionButton from './DashboardActionButton.vue'
+import FeeBadge from '../FeeBadge.vue'
+import ProfilePicture from '../profile/ProfilePicture.vue'
+import PriceBadge from '../PriceBadge.vue'
+import OptionalActions from '../OptionalActions.vue'
+import SimpleAccountBadge from '../SimpleAccountBadge.vue'
+import SubscriptionBadge from '../SubscriptionBadge.vue'
 import { mapGetters } from 'vuex'
     export default {
         components: {

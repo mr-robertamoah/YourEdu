@@ -45,9 +45,9 @@
 </template>
 
 <script>
-import FilePreview from './FilePreview'
-import FadeLeft from './transitions/FadeLeft'
-import BlackWhiteBadge from './BlackWhiteBadge'
+import FilePreview from './FilePreview.vue'
+import FadeLeft from './transitions/FadeLeft.vue'
+import BlackWhiteBadge from './BlackWhiteBadge.vue'
     export default {
         props: {
             heading: {

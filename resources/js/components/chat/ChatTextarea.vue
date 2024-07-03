@@ -184,11 +184,11 @@
 </template>
 
 <script>
-import VEmojiPicker from 'v-emoji-picker';
-import FadeUp from '../transitions/FadeUp';
-import FilePreview from '../FilePreview';
-import MediaCapture from '../MediaCapture';
-import CreatePost from '../forms/CreatePost';
+// import VEmojiPicker from 'v-emoji-picker';
+import FadeUp from '../transitions/FadeUp.vue';
+import FilePreview from '../FilePreview.vue';
+import MediaCapture from '../MediaCapture.vue';
+import CreatePost from '../forms/CreatePost.vue';
     export default {
         props: {
             placeholder: {
@@ -237,7 +237,7 @@ import CreatePost from '../forms/CreatePost';
             MediaCapture,
             FilePreview,
             FadeUp,
-            VEmojiPicker,
+            // VEmojiPicker,
         },
         data() {
             return {

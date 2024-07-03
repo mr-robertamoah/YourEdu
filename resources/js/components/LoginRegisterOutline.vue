@@ -58,13 +58,13 @@
 </template>
 
 <script>
-import ValidationError from "./ValidationError";
-import SyncLoader from 'vue-spinner/src/SyncLoader'
+import { useRoute } from "vue-router";
+import ValidationError from "./ValidationError.vue";
 import { mapGetters, mapActions } from "vuex";
 
     export default {
         components: {
-            SyncLoader,
+            
             ValidationError,
         },
         data() {
@@ -92,7 +92,7 @@ import { mapGetters, mapActions } from "vuex";
         },
         computed: {
             currentLocation(){
-                return this.$route.name
+                return useRoute().name
             },
             validationErrors(){
                 return this.specialErrorMessage ? this.specialErrorMessage :
@@ -115,7 +115,7 @@ import { mapGetters, mapActions } from "vuex";
                         this.specialErrorMessage = 'The server may be down. Please try again in a few minutes. Apologizes'
                         return true
                     } else if (errorMessage === 'Unauthorized') {
-                        if (this.$route.name === 'login') {
+                        if (useRoute().name === 'login') {
                             this.specialErrorMessage = 'Please enter the correct username or email and password combination'
                         }
                         

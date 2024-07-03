@@ -1,5 +1,5 @@
 import { mapGetters } from 'vuex'
-import ProfileBar from '../components/profile/ProfileBar'
+import ProfileBar from '../components/profile/ProfileBar.vue'
 
 export default {
     components: {

@@ -36,12 +36,12 @@
 </template>
 
 <script>
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import ItemBadge from '../dashboard/ItemBadge';
+
+import ItemBadge from '../dashboard/ItemBadge.vue';
 import Alert from '../../mixins/Alert.mixin';
     export default {
         components: {
-            PulseLoader,
+            
             ItemBadge,
         },
         props: {

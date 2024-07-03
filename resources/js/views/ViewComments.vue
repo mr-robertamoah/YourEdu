@@ -26,11 +26,11 @@
                             </div>
                         </template>
                     </div>
-                    <infinite-loader
+                    <Infinite-Loading
                         @infinite="infiniteHandler"
                         v-if="computedComments"
                         force-use-infinite-wrapper
-                    ></infinite-loader>
+                    ></Infinite-Loading>
                 </template>
             </view-modal>
         </template>
@@ -38,14 +38,13 @@
 </template>
 
 <script>
-import ViewModal from '../components/ViewModal';
-import InfiniteLoader from 'vue-infinite-loading';
-import FadeUp from '../components/transitions/FadeUp';
+import ViewModal from '../components/ViewModal.vue';
+import FadeUp from '../components/transitions/FadeUp.vue';
 import { mapGetters, mapActions } from 'vuex';
     export default {
         components: {
             FadeUp,
-            InfiniteLoader,
+            
             ViewModal,
         },
         props: {

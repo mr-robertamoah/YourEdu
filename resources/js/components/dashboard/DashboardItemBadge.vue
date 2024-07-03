@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import SearchInput from '../SearchInput';
+import SearchInput from '../SearchInput.vue';
 export default {
     components: {
         SearchInput,

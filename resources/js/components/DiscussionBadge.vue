@@ -97,9 +97,9 @@
 </template>
 
 <script>
-import ProfilePicture from './profile/ProfilePicture'
-import OptionalActions from './OptionalActions'
-import ActionButton from './ActionButton'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import OptionalActions from './OptionalActions.vue'
+import ActionButton from './ActionButton.vue'
 import { mapGetters } from 'vuex'
 import { dates, strings } from '../services/helpers'
     export default {

@@ -38,9 +38,9 @@
 </template>
 
 <script>
-import MainTextarea from './MainTextarea';
-import FadeLeftFast from './transitions/FadeLeftFast';
-import FadeRight from './transitions/FadeRight';
+import MainTextarea from './MainTextarea.vue';
+import FadeLeftFast from './transitions/FadeLeftFast.vue';
+import FadeRight from './transitions/FadeRight.vue';
 
     export default {
         props: {

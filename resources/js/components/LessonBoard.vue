@@ -175,6 +175,7 @@ import PopUp from '../mixins/PopUp.mixin';
 import Alert from '../mixins/Alert.mixin'; 
 import MainSelect from './MainSelect.vue';
 import NumberInput from './NumberInput.vue';
+import { default as _ } from 'lodash';
 import RadioInput from './RadioInput.vue';
     export default {
         components: {

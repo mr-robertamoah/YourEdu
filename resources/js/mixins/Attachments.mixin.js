@@ -1,7 +1,8 @@
 import {strings} from '../services/helpers'
-import PostAttachment from '../components/PostAttachment'
-import AttachmentBadge from '../components/AttachmentBadge'
+import PostAttachment from '../components/PostAttachment.vue'
+import AttachmentBadge from '../components/AttachmentBadge.vue'
 import { mapActions } from 'vuex'
+import { useRoute } from 'vue-router'
 
 export default {
     components: {
@@ -40,7 +41,9 @@ export default {
         },
     },
     computed: {
-        
+        computedRouteName() {
+            return useRoute().name
+        },
     },
     methods: {
         ...mapActions([
@@ -52,13 +55,13 @@ export default {
             
             Echo.channel(`youredu.${this.computedItem.item}.${this.computedItem.itemId}`)
                 .listen('.newAttachment', data=>{
-                    this[`${this.$route.name}/newAttachment`]({
+                    this[`${this.computedRouteName.name}/newAttachment`]({
                         ...this.computedItem,
                         attachment: data.attachment
                     })
                 })
                 .listen('.deleteAttachment', data=>{
-                    this[`${this.$route.name}/removeAttachment`]({
+                    this[`${this.computedRouteName.name}/removeAttachment`]({
                         ...this.computedItem,
                         attachmentId: data.attachmentId
                     })
@@ -111,7 +114,7 @@ export default {
                 response = null,
                 state = ''
 
-            data.where = this.$route.name
+            data.where = this.computedRouteName.name
             data.item = this.computedItem.item
             data.itemId = this.computedItem.itemId
             data.postType = this.computedItem.postType

@@ -53,12 +53,12 @@
                                             class="loading" 
                                             :loading="messagesLoading"
                                         ></pulse-loader>
-                                        <infinite-loader
+                                        <Infinite-Loading
                                             v-if="computedInfiniteLoader"
                                             @infinite="infiniteHandler"
                                             force-use-infinite-wrapper
                                             direction="top"
-                                        ></infinite-loader>
+                                        ></Infinite-Loading>
 
                                         <discussion-badge
                                             v-for="message in messages"
@@ -99,16 +99,14 @@
 <script>
 import { mapActions } from 'vuex';
 import Alert from './../mixins/Alert.mixin';
-import InfiniteLoader from 'vue-infinite-loading';
-import DiscussionTextarea from './DiscussionTextarea';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import DiscussionBadge from './DiscussionBadge';
-import ProfilePicture from "./profile/ProfilePicture"
+import DiscussionTextarea from './DiscussionTextarea.vue';
+import DiscussionBadge from './DiscussionBadge.vue';
+import ProfilePicture from "./profile/ProfilePicture.vue"
     export default {
         components: {
-            InfiniteLoader,
+            
             DiscussionTextarea,
-            PulseLoader,
+            
             DiscussionBadge,
             ProfilePicture,
         },

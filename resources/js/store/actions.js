@@ -1,6 +1,5 @@
 import { UserService, AuthenticationError } from "../services/user.service";
 import { ProfileService} from "../services/profile.service";
-import router from '../router'
 import { TokenService } from "../services/token.service";
 
 const actions = {
@@ -170,37 +169,15 @@ const actions = {
         
         commit('LOAD_PROFILE')
 
-        if ((account === 'learner' ||
-            account === 'parent' ||
-            account === 'facilitator' ||
-            account === 'school' ||
-            account === 'professional')
-        ) {
-            let response = await ProfileService.profileGet({account,accountId})
-            if (response.status != 200) {
+        let response = await ProfileService.profileGet({account,accountId})
+        let status = true
 
-                router.push({
-                    name: '404',
-                    params: {
-                        // message: "something might have happened or you are accessing a profile which doen't exits."
-                        message: response.data.message
-                    }
-                }) 
-            }else{
-                commit('profile/GET_PROFILE_SUCCESS',response.data)
-            }
-            commit('LOAD_PROFILE_COMPLETE')
-            return {status: true}
-        } else {
-            router.push({
-                name: '404',
-                params:{
-                    message: `The url you entered doesn't work. Replace ${account} with learner, parent, or any other user type.`
-                }
-            })
-        }
+        if (response.status != 200) status = false
+        else commit('profile/GET_PROFILE_SUCCESS',response.data)
 
         commit('LOAD_PROFILE_COMPLETE')
+
+        return {status}
     },
 
     /////////////////////////////////////////////////////////////////// user
@@ -245,24 +222,32 @@ const actions = {
         }
     },
 
+    setCurrentRouteName({commit}, routeName) {
+        commit('SET_CURRENT_ROUTE_NAME', routeName)
+    },
+
     async login ({commit}, credentials){
         commit('LOGIN_REQUEST')
         commit('RELOAD_REQUEST')
         try {
             const data = await UserService.login(credentials)
 
+            let res = {}
+
             if (!data.errors) {
+                res.status = true
                 commit('LOGIN_SUCCESS', data.token)
                 commit('RELOAD_SUCCESS', data.user)
                 commit('CLEAR_VALIDATION_ERRORS')
                 if (data.token) {
-                    router.push( router.history.current.query.redirectTo || '/')
-                    Echo.options.auth.headers.Authorization = `Bearer ${data.token}`
+                    res.token = data.token
                 }
             } else {
+                res.status = false
                 commit('VALIDATION_ERRORS', data)
             }
             
+            return res
         } catch (e) {
             if (e instanceof AuthenticationError) {
                 commit('LOGIN_FAILURE',e)
@@ -301,20 +286,20 @@ const actions = {
         try {
             const data = await UserService.register(credentials)
             console.log('data in actions',data)
+            let res = {}
+
             if (!data.errors) {
+                res.status = true
                 commit('LOGIN_SUCCESS', data.token)
                 commit('RELOAD_SUCCESS', data.user)
                 commit('CLEAR_VALIDATION_ERRORS')
-                if (data.token) {
-                    router.push( router.history.current.query.redirectTo || '/welcome')
-                }
-                return 'successful'
+                if (data.token) res.token = true
             } else {
                 console.log('error in actions',data)
                 commit('VALIDATION_ERRORS', data)
-                return 'unsuccessful'
             }
             
+            return res
         } catch (e) {
             console.log('action errors', e.errors)
             if (e instanceof AuthenticationError) {
@@ -328,14 +313,17 @@ const actions = {
 
     async logout({commit}){
         let response = await UserService.logout()
+        let status = false
 
         if (response.data.message === 'successful') {
             commit('LOGOUT')
             TokenService.removeToken()
-            router.push('/login')
+            status = true
         } else {
             console.log(response);
         }
+
+        return {status}
     },
 
     refreshToken({commit, state}){

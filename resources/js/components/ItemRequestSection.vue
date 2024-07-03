@@ -72,10 +72,10 @@
                         <div class="loading" v-if="searchLoading">
                             <pulse-loader :loading="searchLoading" size="10px"></pulse-loader>
                         </div>
-                        <infinite-loader
+                        <Infinite-Loading
                             v-if="!searchLoading && showMoreSearchParticipants"
                             @infinite="infiniteHandler"
-                        ></infinite-loader>
+                        ></Infinite-Loading>
                     </div>
                 </div>
             </div>
@@ -84,19 +84,19 @@
 </template>
 
 <script>
-import InfiniteLoader from 'vue-infinite-loading';
-import SearchInput from './SearchInput';
-import GreyButton from './GreyButton';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import ParticipantBadge from './discussion/ParticipantBadge';
+
+import SearchInput from './SearchInput.vue';
+import GreyButton from './GreyButton.vue';
+import ParticipantBadge from './discussion/ParticipantBadge.vue';
+import { default as _ } from 'lodash';
 import { mapActions } from 'vuex';
     export default {
         components: {
             SearchInput,
             GreyButton,
             ParticipantBadge,
-            PulseLoader,
-            InfiniteLoader,
+            
+            
         },
         props: {
             show: {

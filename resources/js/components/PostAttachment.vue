@@ -139,19 +139,19 @@
 </template>
 
 <script>
-import SearchInput from './SearchInput';
-import SelectInput from './SelectInput';
-import TextTextarea from './TextTextarea';
-import FadeDown from './transitions/FadeDown';
-import CreateGrade from './forms/CreateGrade';
-import CreateSubject from './forms/CreateSubject';
-import CreateAttachment from './forms/CreateAttachment';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import SearchInput from './SearchInput.vue';
+import SelectInput from './SelectInput.vue';
+import TextTextarea from './TextTextarea.vue';
+import FadeDown from './transitions/FadeDown.vue';
+import CreateGrade from './forms/CreateGrade.vue';
+import CreateSubject from './forms/CreateSubject.vue';
+import CreateAttachment from './forms/CreateAttachment.vue';
 import { mapActions } from 'vuex';
+import { default as _ } from 'lodash';
 
     export default {
         components: {
-            PulseLoader,
+            
             CreateAttachment,
             CreateSubject,
             CreateGrade,

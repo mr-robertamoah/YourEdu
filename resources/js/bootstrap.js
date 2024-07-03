@@ -1,27 +1,20 @@
-window._ = require('lodash');
+import { default as _ } from 'lodash';
+window._ = _;
 
-/**
- * We'll load jQuery and the Bootstrap jQuery plugin which provides support
- * for JavaScript based Bootstrap features such as modals and tabs. This
- * code may be modified to fit the specific needs of your application.
- */
+import axios from 'axios';
+window.axios = axios;
+
+window.axios.defaults.baseURL = `${import.meta.env.VITE_APP_URL}/api`
+window.axios.defaults.withCredentials = true
+window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+import 'bootstrap';
 
 try {
     window.Popper = require('popper.js').default;
     window.$ = window.jQuery = require('jquery');
 
-    require('bootstrap');
 } catch (e) {}
-
-/**
- * We'll load the axios HTTP library which allows us to easily issue requests
- * to our Laravel back-end. This library automatically handles sending the
- * CSRF token as a header based on the value of the "XSRF" token cookie.
- */
-
-window.axios = require('axios');
-
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
@@ -35,20 +28,21 @@ import { TokenService } from './services/token.service';
 
 window.YoureduStorage = new StorageService('localStorage')
 
-window.Pusher = require('pusher-js');
+import pusherJs from 'pusher-js';
+window.Pusher = pusherJs;
 
-window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: process.env.MIX_PUSHER_APP_KEY,
-    cluster: process.env.MIX_PUSHER_APP_CLUSTER,
-    // encrypted: true,
-    wsHost: process.env.MIX_PUSHER_APP_HOST,
-    wsPort: 6001,
-    forceTLS:false,
-    auth: {
-        headers: {
-            Authorization: `Bearer ${TokenService.getToken()}`
-        }
-    }
-    // disableStats: true
-});
+// window.Echo = new Echo({
+//     broadcaster: 'pusher',
+//     key: import.meta.env.VITE_PUSHER_APP_KEY,
+//     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+//     // encrypted: true,
+//     wsHost: import.meta.env.VITE_PUSHER_APP_HOST,
+//     wsPort: 6001,
+//     forceTLS:false,
+//     auth: {
+//         headers: {
+//             Authorization: `Bearer ${TokenService.getToken()}`
+//         }
+//     }
+//     // disableStats: true
+// });

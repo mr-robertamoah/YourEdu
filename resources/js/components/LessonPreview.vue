@@ -71,8 +71,8 @@
 </template>
 
 <script>
-import ProfilePicture from './profile/ProfilePicture';
-import FilePreview from './FilePreview';
+import ProfilePicture from './profile/ProfilePicture.vue';
+import FilePreview from './FilePreview.vue';
     export default {
         props: {
             lesson: {

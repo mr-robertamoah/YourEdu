@@ -35,10 +35,10 @@
 <script>
 import { mapActions } from 'vuex'
 import { strings } from '../services/helpers'
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+
     export default {
         components: {
-            PulseLoader,
+            
         },
         props: {
             answerId: {

@@ -59,8 +59,8 @@
 </template>
 
 <script>
-import FilePreview from '../FilePreview';
-import PossibleAnswerBadge from './PossibleAnswerBadge';
+import FilePreview from '../FilePreview.vue';
+import PossibleAnswerBadge from './PossibleAnswerBadge.vue';
 import Files from '../../mixins/Files.mixin';
     export default {
         components: {

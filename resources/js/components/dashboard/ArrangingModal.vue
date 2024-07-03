@@ -39,9 +39,9 @@
 
 <script>
 import { bus } from '../../app';
-import DroppableComponent from '../specials/DroppableComponent';
-import PostButton from '../PostButton';
-import ArrangableBadge from './ArrangableBadge';
+import DroppableComponent from '../specials/DroppableComponent.vue';
+import PostButton from '../PostButton.vue';
+import ArrangableBadge from './ArrangableBadge.vue';
 import { strings } from '../../services/helpers';
     export default {
         components: {

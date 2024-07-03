@@ -735,9 +735,9 @@ class AuthService
 
         $userDTO = $userDTO->withUser($user);
         
-        $personalToken = $this->createLoginsAndToken($userDTO);
+        // $personalToken = $this->createLoginsAndToken($userDTO);
 
-        $user = $this->attachAccessTokenToUser($personalToken, $userDTO);
+        // $user = $this->attachAccessTokenToUser($personalToken, $userDTO);
 
         return $user;
     }
@@ -757,9 +757,9 @@ class AuthService
             
         if (Hash::check($userDTO->password, $user->password)) {
 
-            $personalToken = $this->createLoginsAndToken($userDTO);
+            // $personalToken = $this->createLoginsAndToken($userDTO);
 
-            $user = $this->attachAccessTokenToUser($personalToken, $userDTO);
+            // $user = $this->attachAccessTokenToUser($personalToken, $userDTO);
 
             return $user;
         }        
@@ -774,7 +774,7 @@ class AuthService
     {
         $this->checkUser($authDTO);
 
-        $this->revokeUserCurrentToken($authDTO);
+        // $this->revokeUserCurrentToken($authDTO);
     }
 
     private function ensureQuestionHasAnswer($question, $authDTO)

@@ -81,12 +81,13 @@
 </template>
 
 <script>
-import AutoAlert from '../AutoAlert'
-import PostButton from '../PostButton'
-import MainList from '../MainList'
-import TextInput from '../TextInput'
-import TextTextarea from '../TextTextarea'
+import AutoAlert from '../AutoAlert.vue'
+import PostButton from '../PostButton.vue'
+import MainList from '../MainList.vue'
+import TextInput from '../TextInput.vue'
+import TextTextarea from '../TextTextarea.vue'
 import { mapActions, mapGetters } from 'vuex'
+import { useRoute } from 'vue-router'
 
     export default {
         props: {
@@ -193,7 +194,7 @@ import { mapActions, mapGetters } from 'vuex'
                     occupation: inputOccupation,
                     location: inputLocation,
                     address: inputAddress,
-                    account: this.$route.params.account,
+                    account: useRoute().params.account,
                 }
 
                 this['profile/updateProfile']({

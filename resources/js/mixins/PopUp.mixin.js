@@ -1,4 +1,4 @@
-import PopUp from '../components/specials/PopUp'
+import PopUp from '../components/specials/PopUp.vue'
 export default {
     components: {
         PopUp,

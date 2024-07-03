@@ -25,8 +25,8 @@
 </template>
 
 <script>
-import BlackWhiteBadge from "../BlackWhiteBadge";
-import JustFade from "../transitions/JustFade";
+import BlackWhiteBadge from "../BlackWhiteBadge.vue";
+import JustFade from "../transitions/JustFade.vue";
 
     export default {
         props: {

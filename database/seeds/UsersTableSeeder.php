@@ -68,7 +68,7 @@ class UsersTableSeeder extends Seeder
 
         $user4->schools()->create([
             'company_name' => 'first school international',
-            'role' => 'TRADITIONAL',
+            // 'role' => 'TRADITIONAL',
         ]);
 
         $user4->schools()->create([

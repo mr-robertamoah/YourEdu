@@ -74,15 +74,14 @@
 </template>
 
 <script>
-import RequestBadge from '../RequestBadge';
-import MessagesModal from "../MessagesModal"
-import DetailsModal from "../DetailsModal"
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import RequestBadge from '../RequestBadge.vue';
+import MessagesModal from "../MessagesModal.vue";
+import DetailsModal from "../DetailsModal.vue";
 import { mapActions } from 'vuex'
 import Alert from '../../mixins/Alert.mixin';
     export default {
         components: {
-            PulseLoader,
+            
             RequestBadge,
             DetailsModal,
             MessagesModal,

@@ -41,8 +41,7 @@ class User extends Authenticatable
         AccountCommissionTrait,
         AccountFilesTrait,
         AccountQuestionsTrait,
-        HasAnsweredbyTrait,
-        ModelTrait;
+        HasAnsweredbyTrait;
 
     const MINIMUM_ADULT_AGE = 18;
     const MAX_PROFESSIONAL_SLOTS = 3;

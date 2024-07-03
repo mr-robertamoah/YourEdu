@@ -51,7 +51,7 @@
                     @click="clickedCloseAttachments"
                     v-if="showAttachments || showEmoji"
                 ></div>
-                <v-emoji-picker 
+                <!-- <v-emoji-picker 
                     @select="selectEmoji"
                     :showSearch="false"
                     :emojiWithBorder="false"
@@ -59,7 +59,7 @@
                     v-if="showEmoji"
                     :continuousList="true"
                     class="picker"
-                ></v-emoji-picker>
+                ></v-emoji-picker> -->
                 <div class="main-attachments"
                     v-if="showAttachments"
                 >
@@ -154,13 +154,13 @@
 </template>
 
 <script>
-import VEmojiPicker from 'v-emoji-picker';
-import MediaCapture from './MediaCapture';
-import FilePreview from './FilePreview';
+// import VEmojiPicker from 'v-emoji-picker';
+import MediaCapture from './MediaCapture.vue';
+import FilePreview from './FilePreview.vue';
 import { files } from '../services/helpers';
     export default {
         components: {
-            VEmojiPicker,
+            // VEmojiPicker,
             MediaCapture,
             FilePreview,
         },

@@ -32,9 +32,9 @@
 </template>
 
 <script>
-import TextTextarea from '../TextTextarea';
-import TextInput from '../TextInput';
-import ItemBadge from './ItemBadge';
+import TextTextarea from '../TextTextarea.vue';
+import TextInput from '../TextInput.vue';
+import ItemBadge from './ItemBadge.vue';
     export default {
         components: {
             ItemBadge,

@@ -316,14 +316,14 @@
 </template>
 
 <script>
-import SpecialButton from './SpecialButton'
-import ItemViewCover from './ItemViewCover'
-import ProfilePicture from './profile/ProfilePicture';
-import AssessmentSectionMiniBadge from './dashboard/AssessmentSectionMiniBadge'
-import QuestionAnsweringBadge from './dashboard/QuestionAnsweringBadge'
-import ItemRequestSection from './ItemRequestSection';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import FadeUp from './transitions/FadeUp'
+import { default as _ } from 'lodash';
+import SpecialButton from './SpecialButton.vue'
+import ItemViewCover from './ItemViewCover.vue'
+import ProfilePicture from './profile/ProfilePicture.vue';
+import AssessmentSectionMiniBadge from './dashboard/AssessmentSectionMiniBadge.vue'
+import QuestionAnsweringBadge from './dashboard/QuestionAnsweringBadge.vue'
+import ItemRequestSection from './ItemRequestSection.vue';
+import FadeUp from './transitions/FadeUp.vue'
 import Alert from '../mixins/Alert.mixin';
 import Like from '../mixins/Like.mixin';
 import Flag from '../mixins/Flag.mixin';
@@ -351,7 +351,6 @@ import PostButton from './PostButton.vue';
             AssessmentSectionAnsweringForm,
             AssessmentSectionMarkingForm,
             ItemRequestSection,
-            PulseLoader,
             AssessmentDetails,
             PostButton,
         },
@@ -597,13 +596,14 @@ import PostButton from './PostButton.vue';
                 'profile/deleteAnswer', 'profile/updateAnswer',
             ]),
             listen() {
+                const route = useRoute()
                 
                 Echo.channel(`youredu.assessment.${this.assessment.id}`)
                     .listen('.updateAssessment', data=>{
-                        this[`${this.$route.name}/replaceAssessment`](data.assessment)
+                        this[`${route.name}/replaceAssessment`](data.assessment)
                     })
                     .listen('.deleteAssessment', data=>{
-                        this[`${this.$route.name}/removeAssessment`](data)
+                        this[`${route.name}/removeAssessment`](data)
                     })
             },
             goBack() {

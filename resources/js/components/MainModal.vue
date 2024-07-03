@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import FadeRight from "./transitions/FadeRight";
+import FadeRight from "./transitions/FadeRight.vue";
     export default {
         props: {
             show: {
@@ -173,7 +173,7 @@ import FadeRight from "./transitions/FadeRight";
 </script>
 
 <style lang="scss" scoped>
-@use "sass:math";
+
 
 $wrapper-background: rgba(102, 51, 153, .2);
 $modal-width: 60%;

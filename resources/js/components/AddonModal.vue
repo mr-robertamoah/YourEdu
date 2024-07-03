@@ -32,8 +32,7 @@
 </template>
 
 <script>
-import JustFade from './transitions/JustFade';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import JustFade from './transitions/JustFade.vue';
     export default {
         props: {
             show: {
@@ -62,7 +61,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
             },
         },
         components: {
-            PulseLoader,
             JustFade,
         },
         methods: {
@@ -74,7 +72,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
 </script>
 
 <style lang="scss" scoped>
-@use "sass:math";
 
 $wrapper-background: transparent;
 $modal-background: aliceblue;

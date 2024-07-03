@@ -293,22 +293,22 @@
 </template>
 
 <script>
-import ProfilePicture from './profile/ProfilePicture'
-import ProfileBar from './profile/ProfileBar'
-import MainTextarea from './MainTextarea'
-import AnswerMark from './AnswerMark'
-import PostButton from './PostButton'
-import FlagReason from './FlagReason'
-import MainList from './MainList'
-import FadeRightFast from './transitions/FadeRightFast'
-import FadeRight from './transitions/FadeRight'
-import AddComment from './AddComment'
-import OptionalActions from './OptionalActions'
-import RemarksBadge from './RemarksBadge'
-import FadeUp from './transitions/FadeUp'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import ProfileBar from './profile/ProfileBar.vue'
+import MainTextarea from './MainTextarea.vue'
+import AnswerMark from './AnswerMark.vue'
+import PostButton from './PostButton.vue'
+import FlagReason from './FlagReason.vue'
+import MainList from './MainList.vue'
+import FadeRightFast from './transitions/FadeRightFast.vue'
+import FadeRight from './transitions/FadeRight.vue'
+import AddComment from './AddComment.vue'
+import OptionalActions from './OptionalActions.vue'
+import RemarksBadge from './RemarksBadge.vue'
+import FadeUp from './transitions/FadeUp.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { dates, strings } from '../services/helpers'
+import { useRoute, useRouter } from 'vue-router'
 
     export default {
         props: {
@@ -342,7 +342,6 @@ import { dates, strings } from '../services/helpers'
             },
         },
         components: {
-            PulseLoader,
             FadeUp,
             AddComment,
             FadeRight,
@@ -670,9 +669,12 @@ import { dates, strings } from '../services/helpers'
                 this.profilesAppear()
             },
             clickedProfilePicture(){
-                if (this.$route.name !== 'profile' &&
+                const route = useRoute()
+                const router = useRouter()
+
+                if (route.name !== 'profile' &&
                     this.computedAnswerOwnerAccount) {
-                    this.$router.push({
+                    router.push({
                         name: 'profile',
                         params: {
                             account: this.computedAnswerOwnerAccount.account,
@@ -680,9 +682,9 @@ import { dates, strings } from '../services/helpers'
                         }
                     })
                 } else if (this.computedAnswerOwnerAccount) {
-                    if (this.$route.params.account !== this.computedAnswerOwnerAccount.account &&
-                        this.$route.params.accountId !== this.computedAnswerOwnerAccount.accountId) {
-                        this.$router.push({
+                    if (route.params.account !== this.computedAnswerOwnerAccount.account &&
+                        route.params.accountId !== this.computedAnswerOwnerAccount.accountId) {
+                        router.push({
                         name: 'profile',
                         params: {
                             account: this.computedAnswerOwnerAccount.account,
@@ -784,7 +786,7 @@ import { dates, strings } from '../services/helpers'
                                 itemId: this.answer.id,
                             }
 
-                            newData.where = this.$route.name
+                            newData.where = useRoute().name
                             let response = await this['profile/deleteLike'](newData)
                             if (response === 'unsuccessful') {
                                 this.isLiked = true
@@ -1032,7 +1034,7 @@ import { dates, strings } from '../services/helpers'
                     response = null,
                     state = ''
 
-                data.where = this.$route.name
+                data.where = useRoute().name
                 if (who) {
                     data.account = who.account
                     data.accountId = who.accountId
@@ -1084,7 +1086,7 @@ import { dates, strings } from '../services/helpers'
                     accountId: who.accountId,
                 }
 
-                data.where = this.$route.name
+                data.where = useRoute().name
                 let response = await this['profile/createLike'](data)
 
                 if (response === 'unsuccessful') {
@@ -1101,7 +1103,7 @@ import { dates, strings } from '../services/helpers'
             async flag(who){
                 this.loading = true
                 let data = {}
-                data.where = this.$route.name
+                data.where = useRoute().name
                 let response = null
                 if (who) {
                     data.account = who.account

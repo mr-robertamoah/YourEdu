@@ -86,11 +86,11 @@
                             size="10px"
                         ></pulse-loader>
 
-                        <infinite-loader
+                        <Infinite-Loading
                             v-if="!accountsLoading && accountsNextPage && accountsNextPage > 1"
                             @infinite="infiniteHandler"
                             force-use-infinite-wrapper
-                        ></infinite-loader>
+                        ></Infinite-Loading>
                         
                         <div 
                             v-if="computedWards.length"
@@ -213,11 +213,11 @@
                                 ></item-badge>
                             </div>
 
-                            <infinite-loader
+                            <Infinite-Loading
                                 v-if="!selectableItemsLoading && selectableItemsNextPage && selectableItemsNextPage > 1"
                                 @infinite="itemsInfiniteHandler"
                                 force-use-infinite-wrapper
-                            ></infinite-loader>
+                            ></Infinite-Loading>
                         </div>
                         <div class="attachments" v-if="attachments.length">
                             <attachment-badge
@@ -325,25 +325,25 @@
 </template>
 
 <script>
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import MainList from './MainList';
-import ActionButton from './ActionButton';
-import OtherUserAccount from './chat/OtherUserAccount';
-import SearchInput from './SearchInput';
-import FilePreview from './FilePreview';
-import NumberInput from './NumberInput';
-import MainCheckbox from './MainCheckbox';
-import RadioInput from './RadioInput';
-import AttachmentBadge from './AttachmentBadge';
-import TextTextarea from './TextTextarea';
-import TextInput from './TextInput';
-import MainSelect from './MainSelect';
-import PostAttachment from './PostAttachment';
-import PaymentTypes from './PaymentTypes';
-import GreyButton from './GreyButton';
-import ItemBadge from './dashboard/ItemBadge';
-import InfiniteLoader from 'vue-infinite-loading';
+
+import MainList from './MainList.vue';
+import ActionButton from './ActionButton.vue';
+import OtherUserAccount from './chat/OtherUserAccount.vue';
+import SearchInput from './SearchInput.vue';
+import FilePreview from './FilePreview.vue';
+import NumberInput from './NumberInput.vue';
+import MainCheckbox from './MainCheckbox.vue';
+import RadioInput from './RadioInput.vue';
+import AttachmentBadge from './AttachmentBadge.vue';
+import TextTextarea from './TextTextarea.vue';
+import TextInput from './TextInput.vue';
+import MainSelect from './MainSelect.vue';
+import PostAttachment from './PostAttachment.vue';
+import PaymentTypes from './PaymentTypes.vue';
+import GreyButton from './GreyButton.vue';
+import ItemBadge from './dashboard/ItemBadge.vue';
 import { mapActions, mapGetters } from 'vuex';
+import { default as _ } from 'lodash';
 import Alert from '../mixins/Alert.mixin';
     export default {
         components: {
@@ -353,7 +353,7 @@ import Alert from '../mixins/Alert.mixin';
             PaymentTypes,
             PostAttachment,
             OtherUserAccount,
-            InfiniteLoader,
+            
             MainList,
             MainSelect,
             TextInput,
@@ -364,7 +364,7 @@ import Alert from '../mixins/Alert.mixin';
             NumberInput,
             FilePreview,
             SearchInput,
-            PulseLoader,
+            
         },
         mixins: [Alert],
         props: {

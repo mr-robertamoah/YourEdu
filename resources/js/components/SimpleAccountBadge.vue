@@ -39,8 +39,8 @@
 </template>
 
 <script>
-import ProfilePicture from './profile/ProfilePicture';
-import DashboardActionButton from './dashboard/DashboardActionButton';
+import ProfilePicture from './profile/ProfilePicture.vue';
+import DashboardActionButton from './dashboard/DashboardActionButton.vue';
     export default {
         components: {
             ProfilePicture,

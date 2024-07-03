@@ -143,16 +143,16 @@
 </template>
 
 <script>
-import SpecialButton from '../SpecialButton'
-import ProfileBar from '../profile/ProfileBar'
-import FadeUp from '../transitions/FadeUp'
-import PostButton from '../PostButton'
-import ProfilePicture from './ProfilePicture'
-import FilePreview from '../FilePreview'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import SpecialButton from '../SpecialButton.vue'
+import ProfileBar from '../profile/ProfileBar.vue'
+import FadeUp from '../transitions/FadeUp.vue'
+import PostButton from '../PostButton.vue'
+import ProfilePicture from './ProfilePicture.vue'
+import FilePreview from '../FilePreview.vue'
+import NumberOf from '../NumberOf.vue'
 import {dates} from '../../services/helpers'
-import NumberOf from '../NumberOf'
 import { mapGetters, mapActions } from 'vuex'
+import { useRoute } from 'vue-router'
 
     export default {
         name: 'FirstSection',
@@ -166,7 +166,7 @@ import { mapGetters, mapActions } from 'vuex'
             FadeUp,
             ProfileBar,
             SpecialButton,
-            PulseLoader,
+            
             FilePreview,
             PostButton,
             ProfilePicture,
@@ -231,6 +231,9 @@ import { mapGetters, mapActions } from 'vuex'
                 }
                 return this['profile/getAccount'] ? 
                     this['profile/getAccount'] : ''
+            },
+            computedRoute() {
+                return useRoute()
             },
             computedFollowings(){
                 if (this['profile/getProfile']) {
@@ -355,8 +358,8 @@ import { mapGetters, mapActions } from 'vuex'
                     let profileId = this['profile/getProfile'].id
 
                     formData.append('file', this.file)
-                    formData.append('account', this.$route.params.account)
-                    formData.append('accountId', this.$route.params.accountId)
+                    formData.append('account', this.computedRoute.params.account)
+                    formData.append('accountId', this.computedRoute.params.accountId)
 
                     let data = {
                         profileId, formData
@@ -403,8 +406,8 @@ import { mapGetters, mapActions } from 'vuex'
                     let data = {
                         account: who.account, //the account about to follow
                         accountId: who.accountId,
-                        follow: this.$route.params.account, // account about to be followed
-                        followId: this.$route.params.accountId,
+                        follow: this.computedRoute.params.account, // account about to be followed
+                        followId: this.computedRoute.params.accountId,
                     }
 
                     let response =  await this['profile/follow'](data)

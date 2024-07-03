@@ -88,8 +88,8 @@
 <script>
 import { mapGetters } from 'vuex';
 import { dates } from '../../services/helpers';
-import AnswerSingle from '../AnswerSingle';
-import OptionalActions from '../OptionalActions';
+import AnswerSingle from '../AnswerSingle.vue';
+import OptionalActions from '../OptionalActions.vue';
     export default {
         components: {
             OptionalActions,

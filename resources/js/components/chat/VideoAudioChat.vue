@@ -107,9 +107,9 @@
 </template>
 
 <script>
-import VideoAudioChatMedia from './VideoAudioChatMedia';
-import DiscussionTextarea from '../DiscussionTextarea';
-import MessageBadge from './MessageBadge';
+import VideoAudioChatMedia from './VideoAudioChatMedia.vue';
+import DiscussionTextarea from '../DiscussionTextarea.vue';
+import MessageBadge from './MessageBadge.vue';
     export default {
         components: {
             MessageBadge,

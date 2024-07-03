@@ -115,10 +115,10 @@
                                         @clickedAccount="getSelectedAccount"
                                     ></simple-account-badge>
                                 </template>
-                                <infinite-loader
+                                <Infinite-Loading
                                     v-if="computedShowInfiniteLoader"
                                     @infinte="infiniteHandler"
-                                ></infinite-loader>
+                                ></Infinite-Loading>
                                 <div class="no-data"
                                     v-if="computedShowNoData"
                                 >
@@ -171,19 +171,18 @@
 </template>
 
 <script>
-import SearchInput from '../SearchInput';
-import MainCheckbox from '../MainCheckbox';
-import NumberInput from '../NumberInput';
-import TextTextarea from '../TextTextarea';
-import TextInput from '../TextInput';
-import GreyButton from '../GreyButton';
-import PostButton from '../PostButton';
-import RadioInput from '../RadioInput';
-import SimpleAccountBadge from '../SimpleAccountBadge';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import InfiniteLoader from 'vue-infinite-loading';
+import SearchInput from '../SearchInput.vue';
+import MainCheckbox from '../MainCheckbox.vue';
+import NumberInput from '../NumberInput.vue';
+import TextTextarea from '../TextTextarea.vue';
+import TextInput from '../TextInput.vue';
+import GreyButton from '../GreyButton.vue';
+import PostButton from '../PostButton.vue';
+import RadioInput from '../RadioInput.vue';
+import SimpleAccountBadge from '../SimpleAccountBadge.vue';
 import { mapActions, mapGetters } from 'vuex';
 import Alert from '../../mixins/Alert.mixin';
+import { default as _ } from 'lodash';
 import { bus } from '../../app';
     export default {
         components: {
@@ -196,8 +195,8 @@ import { bus } from '../../app';
             NumberInput,
             MainCheckbox,
             SearchInput,
-            InfiniteLoader,
-            PulseLoader,
+            
+            
         },
         props: {
             show: {

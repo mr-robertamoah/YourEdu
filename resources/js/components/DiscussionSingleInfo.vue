@@ -73,11 +73,11 @@
                             <pulse-loader :loading="participantsLoading" size="10px"></pulse-loader>
                         </div>
                     </div>
-                    <infinite-loader
+                    <Infinite-Loading
                         @infinite="infiniteHandlerParticipants"
                         v-if="nextPage && nextPage > 1"
                         force-use-infinite-wrapper
-                    ></infinite-loader>
+                    ></Infinite-Loading>
                 </div>
                 <just-fade>
                     <template slot="transition" v-if="showEdit">
@@ -299,19 +299,17 @@
 </template>
 
 <script>
-import OtherUserAccount from './chat/OtherUserAccount';
-import GreyButton from './GreyButton';
-import PostButton from './PostButton';
-import InfiniteLoader from 'vue-infinite-loading';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import FadeUp from './transitions/FadeUp'
+import OtherUserAccount from './chat/OtherUserAccount.vue';
+import GreyButton from './GreyButton.vue';
+import PostButton from './PostButton.vue';
+import FadeUp from './transitions/FadeUp.vue';
     export default {
         components: {
             OtherUserAccount,
             GreyButton,
             PostButton,
-            PulseLoader,
-            InfiniteLoader,
+            
+            
             FadeUp,
         },
         props: {

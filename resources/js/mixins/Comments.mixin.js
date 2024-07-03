@@ -1,4 +1,6 @@
 import { mapActions } from "vuex"
+import { default as _ } from 'lodash';
+import { useRoute } from "vue-router";
 
 export default {
     data() {
@@ -19,19 +21,20 @@ export default {
             'home/newomment','profile/newComment', 'profile/deleteComment',
         ]),
         listenForComments() {
-            
+            const route = useRoute()
+
             Echo.channel(`youredu.${this.computedItem.item}.${this.computedItem.itemId}`)
                 .listen('.updateComment', commentData=>{
-                    this[`${this.$route.name}/replaceComment`](commentData)
+                    this[`${route.name}/replaceComment`](commentData)
                 })
                 .listen('.deleteComment', data=>{
-                    this[`${this.$route.name}/removeComment`]({
+                    this[`${route.name}/removeComment`]({
                         ...data,
                         ...this.computedItem
                     })
                 })
                 .listen('.newComment', comment=>{
-                    this[`${this.$route.name}/newComment`](comment)
+                    this[`${route.name}/newComment`](comment)
                 })
         }
     },

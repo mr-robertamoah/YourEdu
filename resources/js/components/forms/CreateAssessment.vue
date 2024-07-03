@@ -298,29 +298,29 @@
 </template>
 
 <script>
-import RadioInput from '../RadioInput';
-import AssessmentSectionForm from './AssessmentSectionForm';
-import TextTextarea from '../TextTextarea';
-import TextInput from '../TextInput';
-import PostButton from '../PostButton';
-import GreyButton from '../GreyButton';
-import MainCheckbox from '../MainCheckbox';
-import MainSelect from '../MainSelect';
-import NumberInput from '../NumberInput';
-import ItemBadge from '../dashboard/ItemBadge';
-import SearchInput from '../SearchInput';
-import DatePicker from '../DatePicker';
-import AssessmentSectionBadge from '../dashboard/AssessmentSectionBadge';
-import ArrangingModal from '../dashboard/ArrangingModal';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import RadioInput from '../RadioInput.vue';
+import AssessmentSectionForm from './AssessmentSectionForm.vue';
+import TextTextarea from '../TextTextarea.vue';
+import TextInput from '../TextInput.vue';
+import PostButton from '../PostButton.vue';
+import GreyButton from '../GreyButton.vue';
+import MainCheckbox from '../MainCheckbox.vue';
+import MainSelect from '../MainSelect.vue';
+import NumberInput from '../NumberInput.vue';
+import ItemBadge from '../dashboard/ItemBadge.vue';
+import SearchInput from '../SearchInput.vue';
+import DatePicker from '../DatePicker.vue';
+import AssessmentSectionBadge from '../dashboard/AssessmentSectionBadge.vue';
+import ArrangingModal from '../dashboard/ArrangingModal.vue';
 import Alert from '../../mixins/Alert.mixin';
 import { mapActions, mapGetters } from 'vuex';
 import {bus} from '../../app';
 import { strings } from '../../services/helpers';
-import CreateDiscussion from './CreateDiscussion';
-import ProfileBar from '../profile/ProfileBar';
-import PostAttachment from '../PostAttachment';
-import AttachmentBadge from '../AttachmentBadge';
+import CreateDiscussion from './CreateDiscussion.vue';
+import ProfileBar from '../profile/ProfileBar.vue';
+import PostAttachment from '../PostAttachment.vue';
+import AttachmentBadge from '../AttachmentBadge.vue';
+import { default as _ } from 'lodash';
 import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
     export default {
         components: {
@@ -341,7 +341,7 @@ import CreateItemAttachments from '../../mixins/CreateItemAttachments.mixin';
             RadioInput,
             TextInput,
             TextTextarea,
-            PulseLoader,
+            
             ProfileBar
         },
         props: {

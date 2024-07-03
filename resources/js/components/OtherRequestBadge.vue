@@ -70,13 +70,12 @@
 
 <script>
 import { mapActions } from 'vuex';
-import ActionButton from './ActionButton';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import ProfilePicture from './profile/ProfilePicture';
+import ActionButton from './ActionButton.vue';
+import ProfilePicture from './profile/ProfilePicture.vue';
     export default {
         components: {
             ProfilePicture,
-            PulseLoader,
+            
             ActionButton,
         },
         props: {

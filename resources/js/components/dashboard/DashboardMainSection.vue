@@ -291,11 +291,11 @@
 </template>
 
 <script>
-import AccountBadge from './AccountBadge';
-import DashboardSubSection from './DashboardSubSection';
-import DashboardSectionAccount from './DashboardSectionAccount';
-import DashboardActionButton from './DashboardActionButton';
-import StateBadge from './StateBadge';
+import AccountBadge from './AccountBadge.vue';
+import DashboardSubSection from './DashboardSubSection.vue';
+import DashboardSectionAccount from './DashboardSectionAccount.vue';
+import DashboardActionButton from './DashboardActionButton.vue';
+import StateBadge from './StateBadge.vue';
     export default {
         components: {
             StateBadge,

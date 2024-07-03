@@ -1,19 +1,17 @@
-const Login = () => import(/* webpackChunkName: 'Login' */ '../views/Login.vue')
-const Registration = () => import(/* webpackChunkName: 'Registration' */ '../views/Registration.vue')
-const Home = () => import(/* webpackChunkName: 'Home' */ '../views/Home.vue')
-const Dashboard = () => import(/* webpackChunkName: 'Dashboard' */ '../views/Dashboard.vue')
-const Welcome = () => import(/* webpackChunkName: 'Welcome' */ "../views/Welcome.vue")
-const About = () => import(/* webpackChunkName: 'About' */ "../views/About.vue")
-const Profile = () => import(/* webpackChunkName: 'Profile' */ "../views/Profile.vue")
-const PostModal = () => import(/* webpackChunkName: 'PostModal' */ "../components/PostModal.vue")
-const WorkAnsweringForm = () => import(/* webpackChunkName: 'WorkAnsweringForm' */ "../components/forms/WorkAnsweringForm.vue")
-const DiscussionModal = () => import(/* webpackChunkName: 'DiscussionModal' */ "../components/DiscussionModal.vue")
-const ModalSwitcher = () => import(/* webpackChunkName: 'ModalSwitcher' */ "../components/ModalSwitcher.vue")
-const ViewComments = () => import(/* webpackChunkName: 'ViewComments' */ "../components/ViewComments.vue")
-const CatchAll = () => import(/* webpackChunkName: 'CatchAll' */ "../views/CatchAll.vue")
-const Testing = () => import(/* webpackChunkName: 'Testing' */ "../views/Testing.vue")
-
-
+import Login from '../views/Login.vue'
+import Registration from '../views/Registration.vue'
+import Home from '../views/Home.vue'
+import Dashboard from '../views/Dashboard.vue'
+import Welcome from "../views/Welcome.vue"
+import About from "../views/About.vue"
+import Profile from "../views/Profile.vue"
+import PostModal from "../components/PostModal.vue"
+import WorkAnsweringForm from "../components/forms/WorkAnsweringForm.vue"
+import DiscussionModal from "../components/DiscussionModal.vue"
+import ModalSwitcher from "../components/ModalSwitcher.vue"
+import ViewComments from "../components/ViewComments.vue"
+import CatchAll from "../views/CatchAll.vue"
+import Testing from "../views/Testing.vue"
 
 const routes =  [
     {
@@ -106,8 +104,9 @@ const routes =  [
         component: CatchAll,
     },
     {
-        path: '*',
-        redirect: '404'
+        path: '/:pathMatch(.*)*',
+        name: 'not-found',
+        component: CatchAll
     },
 ]
 

@@ -70,10 +70,10 @@
 
 <script>
 import { mapActions } from 'vuex';
-import ItemShow from './ItemShow';
-import AccountBadge from './dashboard/AccountBadge';
-import SlideRightGroup from './transitions/SlideRightGroup';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import ItemShow from './ItemShow.vue';
+import AccountBadge from './dashboard/AccountBadge.vue';
+import SlideRightGroup from './transitions/SlideRightGroup.vue';
+
     export default {
         props: {
             show: {
@@ -82,7 +82,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader';
             },
         },
         components: {
-            PulseLoader,
+            
             SlideRightGroup,
             AccountBadge,
             ItemShow,

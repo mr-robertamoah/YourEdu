@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\YourEduController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -11,21 +13,7 @@
 |
 */
 
-// use App\Events\TestEvent;
-
-// Route::get('/broadcast', function ()
-// {
-//     broadcast(new TestEvent('hello')) ;
-// });
-
-// use Carbon\Carbon;
-// use Illuminate\Http\Request;
-
-// Route::get('/test', function (Request $request) {
-
-//     ray(new Carbon("2021-06-30T07:23:10.039Z"))->green();
-// });
-Route::get('/{any}', 'Api\YourEduController@index')->where('any', '.*');
+// Route::get('/{any}', [YourEduController::class,'index'])->where('any', '.*');
 
 // Route::get('/', function () {
 //     return view('welcome');

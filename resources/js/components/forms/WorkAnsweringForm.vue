@@ -57,15 +57,15 @@
 </template>
 
 <script>
-import AssessmentSectionAnsweringForm from './AssessmentSectionAnsweringForm';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import AssessmentSectionAnsweringForm from './AssessmentSectionAnsweringForm.vue';
 import Alert from '../../mixins/Alert.mixin';
-import PostButton from '../PostButton';
+import PostButton from '../PostButton.vue';
 import { mapActions, mapGetters } from 'vuex';
+import { useRoute, useRouter } from 'vue-router';
     export default {
         components: {
             AssessmentSectionAnsweringForm,
-            PulseLoader,
+            
             PostButton
         },
         mixins: [Alert],
@@ -101,26 +101,29 @@ import { mapActions, mapGetters } from 'vuex';
             ...mapActions(['dashboard/getWork']),
             closeModal() {
                 this.$emit('closeWorkAnsweringForm')
+                const router = useRouter()
+                const route = useRoute()
                 
-                if (this.$route.fullPath.includes('dashboard')) {
-                    this.$router.push({name: 'dashboard'})
+                if (route.fullPath.includes('dashboard')) {
+                    router.push({name: 'dashboard'})
                 }
                 
-                if (this.$route.fullPath.includes('profile')) {
-                    this.$router.push({name: 'profile'})
+                if (route.fullPath.includes('profile')) {
+                    router.push({name: 'profile'})
                 }
 
-                if (this.$route.fullPath.includes('/work')) {
-                    this.$router.push({name: 'home'})
+                if (route.fullPath.includes('/work')) {
+                    router.push({name: 'home'})
                 }
             },
             async getWork() {
+                const route = useRoute()
 
                 let data,
                     response
                 
                 data = {
-                    assessmentId: this.$route.params.assessmentId
+                    assessmentId: route.params.assessmentId
                 }
 
                 this.mainLoading = true

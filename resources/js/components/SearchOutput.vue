@@ -109,9 +109,9 @@
 </template>
 
 <script>
-import JustFade from './transitions/JustFade'
-import ProfilePicture from './profile/ProfilePicture'
-import AccountBadge from './dashboard/AccountBadge'
+import JustFade from './transitions/JustFade.vue'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import AccountBadge from './dashboard/AccountBadge.vue'
 import { strings } from '../services/helpers'
 import { mapGetters } from 'vuex'
 

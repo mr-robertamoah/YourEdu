@@ -46,10 +46,9 @@
 </template>
 
 <script>
-import ProfilePicture from '../profile/ProfilePicture'
-import ProfileBar from '../profile/ProfileBar'
-import ActionButton from '../ActionButton'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import ProfilePicture from '../profile/ProfilePicture.vue'
+import ProfileBar from '../profile/ProfileBar.vue'
+import ActionButton from '../ActionButton.vue'
 import { mapActions, mapGetters } from 'vuex'
 import { dates } from '../../services/helpers'
 
@@ -105,7 +104,7 @@ import { dates } from '../../services/helpers'
             },
         },
         components: {
-            PulseLoader,
+            
             ActionButton,
             ProfileBar,
             ProfilePicture,
@@ -203,7 +202,7 @@ import { dates } from '../../services/helpers'
                 }
 
                 this.$emit('clearData')
-                this.$router.push({
+                useRouter().push({
                     name: 'profile', 
                     params: {
                         account: this.computedAccountType, 

@@ -38,9 +38,9 @@
 </template>
 
 <script>
-import AccountBadge from '../dashboard/AccountBadge';
-import DiscussionBadge from '../DiscussionBadge';
-import ProfilePicture from "../profile/ProfilePicture"
+import AccountBadge from '../dashboard/AccountBadge.vue';
+import DiscussionBadge from '../DiscussionBadge.vue';
+import ProfilePicture from "../profile/ProfilePicture.vue"
     export default {
         components: {
             DiscussionBadge,

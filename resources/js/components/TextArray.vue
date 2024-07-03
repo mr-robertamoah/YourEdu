@@ -65,8 +65,8 @@
 </template>
 
 <script>
-import TextTextarea from './TextTextarea'
-import PostButton from './PostButton'
+import TextTextarea from './TextTextarea.vue'
+import PostButton from './PostButton.vue'
 
     export default {
         components: {

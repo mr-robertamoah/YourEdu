@@ -1,3 +1,4 @@
+import { useRoute } from "vue-router"
 import { mapActions } from "vuex"
 
 export default {
@@ -57,7 +58,7 @@ export default {
                 data.adminId = this.schoolAdmin.id
             }
             
-            data.where = this.$route.name
+            data.where = useRoute().name
             if (who) {
                 data.account = who.account
                 data.accountId = who.accountId

@@ -111,10 +111,10 @@
 </template>
 
 <script>
-import DiscountBadge from './DiscountBadge';
-import FeeBadge from './FeeBadge';
-import CommissionBadge from './CommissionBadge';
-import SalaryBadge from './SalaryBadge';
+import DiscountBadge from './DiscountBadge.vue';
+import FeeBadge from './FeeBadge.vue';
+import CommissionBadge from './CommissionBadge.vue';
+import SalaryBadge from './SalaryBadge.vue';
     export default {
         components: {
             SalaryBadge,

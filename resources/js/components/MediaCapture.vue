@@ -93,7 +93,7 @@
 </template>
 
 <script>
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+
 import UploadedFiles from '../mixins/UploadedFiles.mixin.js';
 import TrimMedia from './TrimMedia.vue';
 import PopUp from '../mixins/PopUp.mixin.js';
@@ -101,7 +101,7 @@ import Trim from '../mixins/TrimMedia.mixin.js';
 import getBlobDuration from 'get-blob-duration';
     export default {
         components: {
-            PulseLoader,
+            
             TrimMedia,
         },
         props: {

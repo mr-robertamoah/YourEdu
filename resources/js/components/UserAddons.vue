@@ -52,11 +52,11 @@
 </template>
 
 <script>
-import JustFade from './transitions/JustFade';
-import FadeRight from './transitions/FadeRight';
-import FlagModal from './FlagModal';
-import ChatModal from './ChatModal';
-import SaveModal from './SaveModal';
+import JustFade from './transitions/JustFade.vue';
+import FadeRight from './transitions/FadeRight.vue';
+import FlagModal from './FlagModal.vue';
+import ChatModal from './ChatModal.vue';
+import SaveModal from './SaveModal.vue';
 import { mapGetters } from 'vuex'
     export default {
         components: {

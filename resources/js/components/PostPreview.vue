@@ -72,8 +72,8 @@
 
 <script>
 import {strings} from '../services/helpers'
-import MainTextarea from './MainTextarea'
-import PostButton from './PostButton'
+import MainTextarea from './MainTextarea.vue'
+import PostButton from './PostButton.vue'
 
     export default {
         props: {

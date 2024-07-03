@@ -169,7 +169,7 @@
 </template>
 
 <script>
-import ProfileBar from '../profile/ProfileBar'
+import ProfileBar from '../profile/ProfileBar.vue'
 import { mapGetters } from 'vuex'
     export default {
         components: {

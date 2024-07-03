@@ -228,7 +228,8 @@
 </template>
 
 <script>
-    export default {
+import { default as _ } from 'lodash';
+export default {
         /*
          * The component's data.
          */

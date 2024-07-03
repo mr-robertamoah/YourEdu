@@ -234,10 +234,10 @@
                                     @postModalCommentEdited="postModalCommentEdited"
                                 ></comment-single>
 
-                                <infinite-loader
+                                <Infinite-Loading
                                     v-if="commentsNextPage !== 1"
                                     @infinite="commentsInfiniteLoader"
-                                ></infinite-loader>
+                                ></Infinite-Loading>
                             </div>
                             <div class="no-data" v-else>
                                 no comments yet
@@ -251,24 +251,20 @@
 </template>
 
 <script>
-import RotateLoader from 'vue-spinner/src/RotateLoader';
-import AddComment from '../AddComment';
-import ItemBadge from './ItemBadge';
-import StateBadge from './StateBadge';
-import InfiniteLoader from 'vue-infinite-loading';
-import DashboardSectionAccount from './DashboardSectionAccount';
-import DashboardSubSection from './DashboardSubSection';
+import AddComment from '../AddComment.vue';
+import ItemBadge from './ItemBadge.vue';
+import StateBadge from './StateBadge.vue';
+import DashboardSectionAccount from './DashboardSectionAccount.vue';
+import DashboardSubSection from './DashboardSubSection.vue';
 import { mapActions, mapGetters } from 'vuex'
 import { bus } from '../../app'
     export default {
         components: {
             DashboardSubSection,
             DashboardSectionAccount,
-            InfiniteLoader,
             StateBadge,
             ItemBadge,
             AddComment,
-            RotateLoader,
         },
         props: {
             show: {

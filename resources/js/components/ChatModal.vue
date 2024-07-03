@@ -165,7 +165,7 @@
                                 </div>
                             </div>
 
-                            <infinite-loading
+                            <Infinite-Loading
                                 @infinite="infiniteHandler"
                                 v-if="computedConversations.length"
                                 force-use-infinite-wrapper
@@ -173,7 +173,7 @@
                                 <template slot="noResults">
                                     that's it :)
                                 </template>
-                            </infinite-loading>
+                            </Infinite-Loading>
                         </div>
                     </template>
                 </fade-right>
@@ -200,7 +200,7 @@
                                         class="message-badge"
                                         v-if="message.hasOwnProperty('message')"
                                         :message="message"
-                                        :key="index"
+                                        :key="index + 'message'"
                                         @clickedMedia="clickedMedia"
                                         @clickedOption="clickedOption"
                                     ></message-badge>
@@ -208,7 +208,7 @@
                                         class="question-badge"
                                         v-else
                                         :question="message"
-                                        :key="index"
+                                        :key="index + 'question'"
                                         @clickedMedia="clickedMedia"
                                         @clickedAnswer="clickedAnswer"
                                         @markChatAnswer="markChatAnswer"
@@ -295,20 +295,19 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
-import FadeRight from './transitions/FadeRight'
-import UserAccount from './chat/UserAccount'
-import ChatTextarea from './chat/ChatTextarea'
-import MessageBadge from './chat/MessageBadge'
-import QuestionBadge from './chat/QuestionBadge'
-import ConversationBadge from './chat/ConversationBadge'
-import OtherUserAccount from './chat/OtherUserAccount'
-import ProfilePicture from './profile/ProfilePicture'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import FadeRight from './transitions/FadeRight.vue'
+import UserAccount from './chat/UserAccount.vue'
+import ChatTextarea from './chat/ChatTextarea.vue'
+import MessageBadge from './chat/MessageBadge.vue'
+import QuestionBadge from './chat/QuestionBadge.vue'
+import ConversationBadge from './chat/ConversationBadge.vue'
+import OtherUserAccount from './chat/OtherUserAccount.vue'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import { default as _ } from 'lodash';
 import { dates, strings } from '../services/helpers'
-import InfiniteLoading from 'vue-infinite-loading'
+
     export default {
         components: {
-            PulseLoader,
             ProfilePicture,
             OtherUserAccount,
             ConversationBadge,
@@ -317,7 +316,7 @@ import InfiniteLoading from 'vue-infinite-loading'
             ChatTextarea,
             UserAccount,
             FadeRight,
-            InfiniteLoading,
+            
         },
         data() {
             return {

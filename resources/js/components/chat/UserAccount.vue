@@ -34,8 +34,8 @@
 </template>
 
 <script>
-import ProfilePicture from '../profile/ProfilePicture';
-import ActionButton from '../ActionButton';
+import ProfilePicture from '../profile/ProfilePicture.vue';
+import ActionButton from '../ActionButton.vue';
     export default {
         props: {
             account: {

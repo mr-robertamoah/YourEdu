@@ -70,11 +70,11 @@
                     infinite-wrapper
                 ></profile-second>
             </div>
-                <infinite-loading
+                <Infinite-Loading
                     @infinite="infiniteHandler"
                     v-if="computedPosts"
                     force-use-infinite-wrapper
-                ></infinite-loading>
+                ></Infinite-Loading>
         </div>
         <!-- for editing profiel -->
         <fade-up>
@@ -143,27 +143,26 @@
 </template>
 
 <script>
-import PostButton from '../components/PostButton'
-import EditProfile from '../components/forms/EditProfile'
-import FadeUp from '../components/transitions/FadeUp'
-import JustFade from '../components/transitions/JustFade'
-import AppNav from '../components/Nav'
-import MainList from '../components/MainList'
-import ProfileBar from '../components/profile/ProfileBar'
-import FlagReason from '../components/FlagReason'
-import ProfileFirst from '../components/profile/ProfileFirst'
-import ProfileSecond from '../components/profile/ProfileSecond'
-import SyncLoader from 'vue-spinner/src/SyncLoader'
-import InfiniteLoading from 'vue-infinite-loading'
+import PostButton from '../components/PostButton.vue'
+import EditProfile from '../components/forms/EditProfile.vue'
+import FadeUp from '../components/transitions/FadeUp.vue'
+import JustFade from '../components/transitions/JustFade.vue'
+import AppNav from '../components/Nav.vue'
+import MainList from '../components/MainList.vue'
+import ProfileBar from '../components/profile/ProfileBar.vue'
+import FlagReason from '../components/FlagReason.vue'
+import ProfileFirst from '../components/profile/ProfileFirst.vue'
+import ProfileSecond from '../components/profile/ProfileSecond.vue'
 import { mapGetters, mapActions } from "vuex";
+import { useRoute, useRouter } from 'vue-router'
 
     export default {
         components: {
-            InfiniteLoading,
+            
             AppNav,
             JustFade,
             FadeUp,
-            SyncLoader,
+            
             EditProfile,
             PostButton,
             ProfileBar,
@@ -284,6 +283,9 @@ import { mapGetters, mapActions } from "vuex";
                 }
                 return true
             },
+            computedRoute() {
+                return useRoute()
+            },
         },
         methods: {
             ...mapActions(['profileGet','profile/getProfilePosts','profile/clearPosts',
@@ -295,7 +297,7 @@ import { mapGetters, mapActions } from "vuex";
                 'profile/newAttachment','profile/removeAttachment',
             ]),
             listen(){
-                Echo.channel(`youredu.${this.$route.params.account}.${this.$route.params.accountId}`)
+                Echo.channel(`youredu.${this.computedRoute.params.account}.${this.computedRoute.params.accountId}`)
                 .listen('.newPost', (post)=>{
                     console.log(post)
                     this['profile/newPost'](post.post)
@@ -465,8 +467,8 @@ import { mapGetters, mapActions } from "vuex";
                 if (who) {
                     data.account = who.account
                     data.accountId = who.accountId
-                    data.item = this.$route.params.account
-                    data.itemId = this.$route.params.accountId
+                    data.item = this.computedRoute.params.account
+                    data.itemId = this.computedRoute.params.accountId
                     data.reason = this.flagReason
 
                     response = await this['profile/createFlag'](data)
@@ -547,13 +549,34 @@ import { mapGetters, mapActions } from "vuex";
                     this.showList = false
                 }
             },
-            getData() {
+            async getData() {
                 let account = this.profileAccount
                 let accountId = this.profileAccountId
 
-                this.profileGet({
+                const router = useRouter()
+
+                if (!['learner', 'parent', 'facilitator', 'school', 'professional'].includes(account)) {
+                    router.push({
+                        name: '404',
+                        params:{
+                            message: `The url you entered doesn't work. Replace ${account} with learner, parent, or any other user type.`
+                        }
+                    })
+
+                    return
+                }
+
+                const result = await this.profileGet({
                     account, accountId
                 })
+
+                if (!result.status)
+                    router.push({
+                        name: '404',
+                        params: {
+                            message: response.data.message ?? "something might have happened or you are accessing a profile which doen't exits."
+                        }
+                    }) 
             },
         },
     }

@@ -43,7 +43,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/unregister', [AuthController::class, 'unregister']);
 Route::post('/authentication-failed', [AuthController::class, 'authFailed'])->name('auth-failed');
@@ -110,8 +109,10 @@ Route::get('dashboard/{item}/{itemId}', [DashboardController::class, 'getItemDet
 //         ]);
 // });
 
-Route::group(['middleware' => 'auth:api'], function () {
+Route::middleware('auth:sanctum')->group(function () {
 
+    Route::post('/logout', [AuthController::class, 'logout']);
+    
     Route::post('/class', [ClassController::class, 'createClass']);
     Route::delete('/class/{classId}', [ClassController::class, 'deleteClass']);
     Route::put('/class/{classId}', [ClassController::class, 'updateClass']);

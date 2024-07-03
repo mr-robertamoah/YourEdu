@@ -97,8 +97,8 @@
 </template>
 
 <script>
-import PostButton from './PostButton'
-import MediaCapture from './MediaCapture'
+import PostButton from './PostButton.vue'
+import MediaCapture from './MediaCapture.vue'
 
     export default {
         components: {

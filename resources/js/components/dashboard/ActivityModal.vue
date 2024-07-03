@@ -85,11 +85,11 @@
                             @viewItem="viewItem"
                         ></activity-badge>
 
-                        <infinite-loader
+                        <Infinite-Loading
                             v-if="activitiesNextPage !== 1"
                             @infinite="activitiesInfiniteLoader"
                             force-use-infinite-wrapper
-                        ></infinite-loader>
+                        ></Infinite-Loading>
                     </div>
                 </template>
                 <div class="no-data"
@@ -104,18 +104,18 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex';
-import ActivityBadge from './ActivityBadge';
-import ProfilePicture from '../profile/ProfilePicture';
-import FadeRight from '../transitions/FadeRight';
-import DashboardModal from './DashboardModal';
-import InfiniteLoader from 'vue-infinite-loading'
+import ActivityBadge from './ActivityBadge.vue';
+import ProfilePicture from '../profile/ProfilePicture.vue';
+import FadeRight from '../transitions/FadeRight.vue';
+import DashboardModal from './DashboardModal.vue';
+
     export default {
         components: {
             DashboardModal,
             FadeRight,
             ProfilePicture,
             ActivityBadge,
-            InfiniteLoader,
+            
         },
         props: {
             account: {

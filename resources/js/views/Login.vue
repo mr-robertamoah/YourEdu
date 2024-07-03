@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="bg-red-600">
         <app-nav></app-nav>
         
         <login-register-outline title="Login" 
@@ -61,8 +61,9 @@
 </template>
 
 <script>
-import LoginRegisterOutline from '../components/LoginRegisterOutline'
-import TextInput from '../components/TextInput'
+import { useRoute, useRouter } from 'vue-router';
+import LoginRegisterOutline from '../components/LoginRegisterOutline.vue'
+import TextInput from '../components/TextInput.vue'
 import { mapActions, mapGetters } from "vuex";
 
     export default {
@@ -148,8 +149,14 @@ import { mapActions, mapGetters } from "vuex";
                             loginOrRegister: true
                         }
                     }
-                    
-                    await this.login(loginCredentials)
+                    loginCredentials.redirectTo = useRoute().query.redirectTo
+
+                    const res = await this.login(loginCredentials)
+
+                    if (res.status && res.token) {
+                        useRouter().push( useRoute().query.redirectTo || '/')
+                        Echo.options.auth.headers.Authorization = `Bearer ${data.token}`
+                    }
 
                     this.followersAndFollowings()
                 }

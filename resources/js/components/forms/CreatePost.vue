@@ -128,16 +128,15 @@
 </template>
 
 <script>
-import TextInput from '../TextInput'
-import NumberInput from '../NumberInput'
-import FileInput from '../FileInput'
-import {dates} from '../../services/helpers'
-import DatePicker from '../DatePicker'
-import TextTextarea from '../TextTextarea'
-import TextArray from '../TextArray'
-import MainTextarea from '../MainTextarea'
-import PostButton from '../PostButton'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import TextInput from '../TextInput.vue'
+import NumberInput from '../NumberInput.vue'
+import FileInput from '../FileInput.vue'
+import DatePicker from '../DatePicker.vue'
+import TextTextarea from '../TextTextarea.vue'
+import TextArray from '../TextArray.vue'
+import MainTextarea from '../MainTextarea.vue'
+import PostButton from '../PostButton.vue'
+
 
     export default {
         props: {
@@ -171,7 +170,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
             },
         },
         components: {
-            PulseLoader,
+            
             PostButton,
             MainTextarea,
             TextArray,

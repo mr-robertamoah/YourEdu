@@ -114,26 +114,26 @@
                 >
                 </search-output>
 
-        <infinite-loading
+        <Infinite-Loading
             @infinite="infiniteHandler"
             v-if="computedPosts.length"
             force-use-infinite-wrapper
-        ></infinite-loading>
+        ></Infinite-Loading>
     </div>
 </template>
 
 <script>
 import HomeMain from '../components/home/HomeMain.vue'
-import HomeMenu from '../components/home/HomeMenu'
-import YourEduLogo from '../components/YourEduLogo'
-import HomeSide from '../components/home/HomeSide'
-import FadeUp from '../components/transitions/FadeUp'
-import SmallModal from '../components/SmallModal'
-import SearchInput from '../components/SearchInput'
-import SearchOutput from '../components/SearchOutput'
-import InfiniteLoading from 'vue-infinite-loading'
+import HomeMenu from '../components/home/HomeMenu.vue'
+import YourEduLogo from '../components/YourEduLogo.vue'
+import HomeSide from '../components/home/HomeSide.vue'
+import FadeUp from '../components/transitions/FadeUp.vue'
+import SmallModal from '../components/SmallModal.vue'
+import SearchInput from '../components/SearchInput.vue'
+import SearchOutput from '../components/SearchOutput.vue'
 import { mapActions, mapGetters } from 'vuex'
 import FadeDown from '../components/transitions/FadeDown.vue'
+import { default as _ } from 'lodash';
 import HomeMenuBar from '../components/HomeMenuBar.vue'
 
     export default {
@@ -146,7 +146,7 @@ import HomeMenuBar from '../components/HomeMenuBar.vue'
             SmallModal,
             FadeUp,
             HomeSide,
-            InfiniteLoading,
+            
             FadeDown,
             HomeMenuBar,
         },

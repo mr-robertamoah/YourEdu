@@ -24,8 +24,8 @@
 </template>
 
 <script>
-import DraggableComponent from '../specials/DraggableComponent';
-import DroppableComponent from '../specials/DroppableComponent';
+import DraggableComponent from '../specials/DraggableComponent.vue';
+import DroppableComponent from '../specials/DroppableComponent.vue';
     export default {
         components: {
             DroppableComponent,

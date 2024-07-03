@@ -150,17 +150,16 @@
 </template>
 
 <script>
-import SlideUpGroup from '../transitions/SlideUpGroup';
-import MainModal from '../MainModal';
-import TextInput from '../TextInput';
-import TextArray from '../TextArray';
-import NumberInput from '../NumberInput';
-import PostButton from '../PostButton';
-import TextTextarea from '../TextTextarea';
-import WelcomeForm from '../welcome/WelcomeForm';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import ProfileBar from '../profile/ProfileBar';
-import _ from 'lodash';
+import SlideUpGroup from '../transitions/SlideUpGroup.vue';
+import MainModal from '../MainModal.vue';
+import TextInput from '../TextInput.vue';
+import TextArray from '../TextArray.vue';
+import NumberInput from '../NumberInput.vue';
+import PostButton from '../PostButton.vue';
+import TextTextarea from '../TextTextarea.vue';
+import WelcomeForm from '../welcome/WelcomeForm.vue';
+import ProfileBar from '../profile/ProfileBar.vue';
+import { default as _ } from 'lodash';
 import { mapActions, mapGetters } from 'vuex';
     export default {
         props: {
@@ -171,7 +170,7 @@ import { mapActions, mapGetters } from 'vuex';
         },
         components: {
             ProfileBar,
-            PulseLoader,
+            
             WelcomeForm,
             TextTextarea,
             PostButton,

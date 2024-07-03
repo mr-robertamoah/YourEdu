@@ -34,8 +34,8 @@
 
 <script>
 import { strings } from '../services/helpers'
-import ProfilePicture from './profile/ProfilePicture'
-import ActionButton from './ActionButton'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import ActionButton from './ActionButton.vue'
 import { mapGetters } from 'vuex'
     export default {
         props: {

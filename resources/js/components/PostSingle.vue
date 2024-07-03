@@ -214,17 +214,16 @@
 </template>
 
 <script>
-import ProfilePicture from './profile/ProfilePicture'
-import PostButton from './PostButton'
-import MainTextarea from './MainTextarea'
-import PostPreview from './PostPreview'
-import LessonPreview from './LessonPreview'
-import NumberOf from './NumberOf'
-import CreatePost from './forms/CreatePost'
-import OptionalActions from './OptionalActions'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
-import FadeUp from './transitions/FadeUp'
-import JustFade from './transitions/JustFade'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import PostButton from './PostButton.vue'
+import MainTextarea from './MainTextarea.vue'
+import PostPreview from './PostPreview.vue'
+import LessonPreview from './LessonPreview.vue'
+import NumberOf from './NumberOf.vue'
+import CreatePost from './forms/CreatePost.vue'
+import OptionalActions from './OptionalActions.vue'
+import FadeUp from './transitions/FadeUp.vue'
+import JustFade from './transitions/JustFade.vue'
 import Like from '../mixins/Like.mixin';
 import Flag from '../mixins/Flag.mixin';
 import Save from '../mixins/Save.mixin';
@@ -236,6 +235,7 @@ import SmallModal from '../mixins/SmallModal.mixin'
 import Comments from '../mixins/Comments.mixin'
 import {dates, strings, files} from '../services/helpers'
 import { mapGetters, mapActions } from 'vuex'
+import { useRoute, useRouter } from 'vue-router'
 
     export default {
         name: 'PostSingle',
@@ -250,7 +250,7 @@ import { mapGetters, mapActions } from 'vuex'
             PostPreview,
             MainTextarea,
             PostButton,
-            PulseLoader,
+            
         },
         props: {
             post: {
@@ -432,13 +432,14 @@ import { mapGetters, mapActions } from 'vuex'
                 'profile/removePost','profile/replacePost',
             ]),
             listen() {
+                const route = useRoute()
                 
                 Echo.channel(`youredu.post.${this.post.id}`)
                     .listen('.updatePost', data=>{
-                        this[`${this.$route.name}/replacePost`](data.post)
+                        this[`${route.name}/replacePost`](data.post)
                     })
                     .listen('.deletePost', data=>{
-                        this[`${this.$route.name}/removePost`](data)
+                        this[`${route.name}/removePost`](data)
                     })
             },
             clickedShowPostPreview(data){
@@ -466,9 +467,12 @@ import { mapGetters, mapActions } from 'vuex'
                 this.$emit('clickedShowPostComments',{post: this.post,type:'post'})
             },
             clickedProfilePicture(){
-                if (this.$route.name !== 'profile' &&
+                const router = useRouter()
+                const route = useRoute()
+
+                if (route.name !== 'profile' &&
                     this.computedPostOwnerAccount) {
-                    this.$router.push({
+                    router.push({
                         name: 'profile',
                         params: {
                             account: this.computedPostOwnerAccount.account,
@@ -476,9 +480,9 @@ import { mapGetters, mapActions } from 'vuex'
                         }
                     })
                 } else if (this.computedPostOwnerAccount) {
-                    if (this.$route.params.account !== this.computedPostOwnerAccount.account &&
-                        this.$route.params.accountId !== this.computedPostOwnerAccount.accountId) {
-                        this.$router.push({
+                    if (route.params.account !== this.computedPostOwnerAccount.account &&
+                        route.params.accountId !== this.computedPostOwnerAccount.accountId) {
+                        router.push({
                         name: 'profile',
                         params: {
                             account: this.computedPostOwnerAccount.account,
@@ -602,8 +606,10 @@ import { mapGetters, mapActions } from 'vuex'
                 formData.append('accountId',this.computedOwner.accountId)
                 formData.append('postId',this.post.id)
                 
+                const route = useRoute()
+
                 otherData['postId'] = this.post.id
-                otherData['where'] = this.$route.name
+                otherData['where'] = route.name
 
                 let main = {
                     otherData, formData
@@ -633,7 +639,7 @@ import { mapGetters, mapActions } from 'vuex'
                     account: this.computedOwner.account,
                     accountId: this.computedOwner.accountId,
                 }
-                data.where = this.$route.name
+                data.where = useRoute().name
                 let response = await this['profile/deletePost'](data)
                 
                 if (response === 'successful') {

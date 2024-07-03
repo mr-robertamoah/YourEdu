@@ -267,27 +267,27 @@
 </template>
 
 <script>
-import PostButton from '../components/PostButton'
-import FilePreview from '../components/FilePreview'
-import CreatePost from '../components/forms/CreatePost'
-import CreateLesson from '../components/forms/CreateLesson'
-import JustFade from '../components/transitions/JustFade'
-import FadeRight from '../components/transitions/FadeRight'
-import ProfilePicture from '../components/profile/ProfilePicture'
-import MainTextarea from '../components/MainTextarea'
-import MainPreview from '../components/MainPreview'
-import AttachmentBadge from '../components/AttachmentBadge'
-import ProfileBar from '../components/profile/ProfileBar'
-import ValidationError from '../components/ValidationError'
-import MediaCapture from '../components/MediaCapture'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
-import PostAttachment from '../components/PostAttachment'
+import PostButton from '../components/PostButton.vue'
+import FilePreview from '../components/FilePreview.vue'
+import CreatePost from '../components/forms/CreatePost.vue'
+import CreateLesson from '../components/forms/CreateLesson.vue'
+import JustFade from '../components/transitions/JustFade.vue'
+import FadeRight from '../components/transitions/FadeRight.vue'
+import ProfilePicture from '../components/profile/ProfilePicture.vue'
+import MainTextarea from '../components/MainTextarea.vue'
+import MainPreview from '../components/MainPreview.vue'
+import AttachmentBadge from '../components/AttachmentBadge.vue'
+import ProfileBar from '../components/profile/ProfileBar.vue'
+import ValidationError from '../components/ValidationError.vue'
+import MediaCapture from '../components/MediaCapture.vue'
+import PostAttachment from '../components/PostAttachment.vue'
 import {files, strings} from '../services/helpers'
 import {mapActions, mapGetters} from 'vuex'
+import { useRoute } from 'vue-router'
 
     export default {
         components: {
-            PulseLoader,
+            
             MediaCapture,
             ValidationError,
             ProfileBar,
@@ -375,6 +375,9 @@ import {mapActions, mapGetters} from 'vuex'
                 return this.textareaContent !== '' || this.file || this.showPostButton || 
                     (this.mainPreviewData && this.mainPreviewData.hasOwnProperty('published')) ?
                     true : false
+            },
+            computedRoute() {
+                return useRoute()
             },
             computedProfiles(){
                 return this.getProfiles ? this.getProfiles : []
@@ -510,12 +513,12 @@ import {mapActions, mapGetters} from 'vuex'
                 this.showPreview = false
             },
             clickedCreatePost(){
-                if (this.computedProfiles.length > 1 && this.$route.name === "home") {
+                if (this.computedProfiles.length > 1 && this.computedRoute.name === "home") {
                     this.showProfiles = true
                     setTimeout(() => {
                         this.showProfiles = false
                     }, 5000);
-                } else if (this.computedProfiles.length === 1 && this.$route.name === "home") {
+                } else if (this.computedProfiles.length === 1 && this.computedRoute.name === "home") {
                     this.account = this.computedProfiles[0].account
                     this.accountId = this.computedProfiles[0].accountId
                     this.createPost()
@@ -609,14 +612,14 @@ import {mapActions, mapGetters} from 'vuex'
                     formData.append('account', this.account)
                     formData.append('accountId', this.accountId)
                 } else {
-                    formData.append('account', this.$route.params.account)
-                    formData.append('accountId', this.$route.params.accountId)
+                    formData.append('account', this.computedRoute.params.account)
+                    formData.append('accountId', this.computedRoute.params.accountId)
                 }
 
                 formData.append('content', this.textareaContent)                
                 
                 let response = await this['profile/createPost']({formData,
-                    where: this.$route.name})
+                    where: this.computedRoute.name})
 
                 this.loading = false
                 if (response !== 'unsuccessful') {

@@ -1,3 +1,4 @@
+import { useRoute } from "vue-router"
 import { mapActions } from "vuex"
 
 export default {
@@ -28,6 +29,11 @@ export default {
             this.likeData.isLiked = false
         },
     },
+    computed: {
+        computedRoute() {
+            return useRoute()
+        },
+    },
     methods: {
         ...mapActions([
             'profile/createLike', 'profile/deleteLike',
@@ -38,13 +44,13 @@ export default {
             
             Echo.channel(`youredu.${this.computedItem.item}.${this.computedItem.itemId}`)
                 .listen('.newLike', data=>{
-                    this[`${this.$route.name}/newLike`]({
+                    this[`${this.computedRoute.name}/newLike`]({
                         ...this.computedItem,
                         like: data.like
                     })
                 })
                 .listen('.deleteLike', data=>{
-                    this[`${this.$route.name}/removeLike`]({
+                    this[`${this.computedRoute.name}/removeLike`]({
                         ...this.computedItem,
                         likeId: data.likeId
                     })
@@ -104,7 +110,7 @@ export default {
                 data.adminId = this.schoolAdmin.id
             }
 
-            data.where = this.$route.name
+            data.where = this.computedRoute.name
 
             let response = await this['profile/deleteLike'](data)
 
@@ -137,7 +143,7 @@ export default {
                 data.adminId = this.schoolAdmin.id
             }
             
-            data.where = this.$route.name
+            data.where = this.computedRoute.name
 
             let response = await this['profile/createLike'](data)
 

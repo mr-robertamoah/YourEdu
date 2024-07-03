@@ -129,15 +129,16 @@
 </template>
 
 <script>
-import TextTextarea from '../TextTextarea';
-import QuestionForm from './QuestionForm';
-import TextInput from '../TextInput';
-import PostButton from '../PostButton';
-import MainCheckbox from '../MainCheckbox';
-import MainSelect from '../MainSelect';
-import AssessmentSectionBadge from '../dashboard/AssessmentSectionBadge';
-import QuestionBadge from '../dashboard/QuestionBadge';
-import NumberInput from '../NumberInput';
+import TextTextarea from '../TextTextarea.vue';
+import QuestionForm from './QuestionForm.vue';
+import TextInput from '../TextInput.vue';
+import PostButton from '../PostButton.vue';
+import MainCheckbox from '../MainCheckbox.vue';
+import MainSelect from '../MainSelect.vue';
+import AssessmentSectionBadge from '../dashboard/AssessmentSectionBadge.vue';
+import QuestionBadge from '../dashboard/QuestionBadge.vue';
+import NumberInput from '../NumberInput.vue';
+import { default as _ } from 'lodash';
 import {bus} from '../../app';
     export default {
         components: {

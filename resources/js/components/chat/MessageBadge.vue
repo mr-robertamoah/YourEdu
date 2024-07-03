@@ -63,7 +63,7 @@
 <script>
 import { mapGetters } from 'vuex'
 import { dates } from '../../services/helpers'
-import OptionalActions from '../OptionalActions';
+import OptionalActions from '../OptionalActions.vue';
     export default {
         components: {
             OptionalActions,

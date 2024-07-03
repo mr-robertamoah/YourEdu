@@ -81,17 +81,17 @@
 </template>
 
 <script>
-import PostCreate from '../PostCreate'
-import PostCreateAlt from '../PostCreateAlt'
-import PostButton from '../PostButton'
-import CreateDiscussion from '../forms/CreateDiscussion'
-import CreateAssessment from '../forms/CreateAssessment'
-import PostSingle from '../PostSingle'
-import DiscussionSingle from '../DiscussionSingle'
-import AssessmentSingle from '../AssessmentSingle'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import PostCreate from '../PostCreate.vue'
+import PostCreateAlt from '../PostCreateAlt.vue'
+import PostButton from '../PostButton.vue'
+import CreateDiscussion from '../forms/CreateDiscussion.vue'
+import CreateAssessment from '../forms/CreateAssessment.vue'
+import PostSingle from '../PostSingle.vue'
+import DiscussionSingle from '../DiscussionSingle.vue'
+import AssessmentSingle from '../AssessmentSingle.vue'
+
 import { mapGetters, mapActions } from 'vuex'
-import InfiniteLoading from 'vue-infinite-loading'
+
 
     export default {
         components: {
@@ -100,11 +100,11 @@ import InfiniteLoading from 'vue-infinite-loading'
             PostButton,
             PostCreate,
             PostCreateAlt,
-            PulseLoader,
+            
             AssessmentSingle,
             DiscussionSingle,
             PostSingle,
-            InfiniteLoading,
+            
         },
         props: {
             loading: {

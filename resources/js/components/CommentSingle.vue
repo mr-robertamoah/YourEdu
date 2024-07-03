@@ -168,18 +168,17 @@
 </template>
 
 <script>
-import PostButton from './PostButton'
-import ProfilePicture from './profile/ProfilePicture'
-import NumberOf from './NumberOf'
-import WelcomeForm from './welcome/WelcomeForm'
-import AddComment from './AddComment'
-import ProfileBar from './profile/ProfileBar'
-import AutoAlert from './AutoAlert'
-import OptionalActions from './OptionalActions'
-import JustFade from './transitions/JustFade'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
-import FlagReason from './FlagReason'
-import FadeUp from './transitions/FadeUp'
+import PostButton from './PostButton.vue'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import NumberOf from './NumberOf.vue'
+import WelcomeForm from './welcome/WelcomeForm.vue'
+import AddComment from './AddComment.vue'
+import ProfileBar from './profile/ProfileBar.vue'
+import AutoAlert from './AutoAlert.vue'
+import OptionalActions from './OptionalActions.vue'
+import JustFade from './transitions/JustFade.vue'
+import FlagReason from './FlagReason.vue'
+import FadeUp from './transitions/FadeUp.vue'
 import Like from '../mixins/Like.mixin';
 import Flag from '../mixins/Flag.mixin';
 import Save from '../mixins/Save.mixin';
@@ -189,6 +188,7 @@ import Comments from '../mixins/Comments.mixin';
 import SmallModal from '../mixins/SmallModal.mixin';
 import {dates, strings} from '../services/helpers'
 import { mapGetters, mapActions } from 'vuex'
+import { useRoute, useRouter } from 'vue-router'
 
     export default {
         name: 'SingleComment',
@@ -200,7 +200,6 @@ import { mapGetters, mapActions } from 'vuex'
             ProfileBar,
             AddComment,
             WelcomeForm,
-            PulseLoader,
             NumberOf,
             ProfilePicture,
             PostButton,
@@ -446,18 +445,23 @@ import { mapGetters, mapActions } from 'vuex'
                 this.$emit('viewModalCommentEditedMain',comment) //emit to the viewcomment this came from
             },
             listen(){
+                const route = useRoute()
+                
                 Echo.channel(`youredu.comment.${this.comment.id}`)
                     .listen('.updateComment', data=>{
-                        this[`${this.$route.name}/replaceComment`](data.comment)
+                        this[`${route.name}/replaceComment`](data.comment)
                     })
                     .listen('.deleteComment', data=>{
-                        this[`${this.$route.name}/removeComment`](data)
+                        this[`${route.name}/removeComment`](data)
                     })
             },
             clickedProfilePicture(){
-                if (this.$route.name !== 'profile' &&
+                const router = useRouter()
+                const route = useRoute()
+
+                if (route.name !== 'profile' &&
                     this.computedCommentOwnerAccount) {
-                    this.$router.push({
+                    router.push({
                         name: 'profile',
                         params: {
                             account: this.computedCommentOwnerAccount.account,
@@ -467,9 +471,9 @@ import { mapGetters, mapActions } from 'vuex'
                 }
                 
                 if (this.computedCommentOwnerAccount) {
-                    if (this.$route.params.account !== this.computedCommentOwnerAccount.account &&
-                        this.$route.params.accountId !== this.computedCommentOwnerAccount.accountId) {
-                        this.$router.push({
+                    if (route.params.account !== this.computedCommentOwnerAccount.account &&
+                        route.params.accountId !== this.computedCommentOwnerAccount.accountId) {
+                        router.push({
                         name: 'profile',
                         params: {
                             account: this.computedCommentOwnerAccount.account,
@@ -574,6 +578,8 @@ import { mapGetters, mapActions } from 'vuex'
                 this.deleteComment()
             },
             async deleteComment() {
+                const route = useRoute()
+                
                 this.loading = true
                 let data = {
                     commentId: this.comment.id,
@@ -581,7 +587,7 @@ import { mapGetters, mapActions } from 'vuex'
                     itemId: this.comment.commentable_id,
                     account: this.profile.account,
                     accountId: this.profile.accountId,
-                    where: this.$route.name
+                    where: route.name
                 }
 
                 if (this.schoolAdmin) {

@@ -4,12 +4,12 @@ namespace App\Traits;
 
 trait ModelTrait
 {
-    public function hasAttribute(string $attribute)
+    public function hasAttribute($attribute)
     {
         return array_key_exists($attribute, $this->getAttributes());
     }
 
-    public function doesntHaveAttribute(string $attribute)
+    public function doesntHaveAttribute($attribute)
     {
         return ! $this->hasAttribute($attribute);
     }

@@ -495,25 +495,24 @@
 </template>
 
 <script>
-import TextInput from '../TextInput';
-import TextTextarea from '../TextTextarea';
-import PostButton from '../PostButton';
-import MainCheckbox from '../MainCheckbox';
-import PostAttachment from '../PostAttachment';
-import MainSelect from '../MainSelect';
-import AttachmentBadge from '../AttachmentBadge';
-import CreateDiscussion from './CreateDiscussion';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import ItemBadge from '../dashboard/ItemBadge';
-import AutoAlert from '../AutoAlert';
-import AddLink from '../AddLink';
-import PaymentTypes from '../PaymentTypes';
-import FilesPreviewBackend from '../FilesPreviewBackend';
-import FadeUp from '../transitions/FadeUp';
-import MediaCapture from '../MediaCapture';
-import PriceBadge from '../PriceBadge';
-import LinkBadge from '../LinkBadge';
-import WelcomeForm from '.././welcome/WelcomeForm';
+import TextInput from '../TextInput.vue';
+import TextTextarea from '../TextTextarea.vue';
+import PostButton from '../PostButton.vue';
+import MainCheckbox from '../MainCheckbox.vue';
+import PostAttachment from '../PostAttachment.vue';
+import MainSelect from '../MainSelect.vue';
+import AttachmentBadge from '../AttachmentBadge.vue';
+import CreateDiscussion from './CreateDiscussion.vue';
+import ItemBadge from '../dashboard/ItemBadge.vue';
+import AutoAlert from '../AutoAlert.vue';
+import AddLink from '../AddLink.vue';
+import PaymentTypes from '../PaymentTypes.vue';
+import FilesPreviewBackend from '../FilesPreviewBackend.vue';
+import FadeUp from '../transitions/FadeUp.vue';
+import MediaCapture from '../MediaCapture.vue';
+import PriceBadge from '../PriceBadge.vue';
+import LinkBadge from '../LinkBadge.vue';
+import WelcomeForm from '.././welcome/WelcomeForm.vue';
 import { bus } from '../../app';
 import { mapActions, mapGetters } from 'vuex';
 import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
@@ -523,7 +522,7 @@ import { strings } from '../../services/helpers';
             MainSelect,
             AttachmentBadge,
             CreateDiscussion,
-            PulseLoader,
+            
             ItemBadge,
             FilesPreviewBackend,
             PaymentTypes,

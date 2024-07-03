@@ -363,27 +363,26 @@
 </template>
 
 <script>
-import MainCheckbox from '../MainCheckbox';
-import MainSelect from '../MainSelect';
-import TextTextarea from '../TextTextarea';
-import PostButton from '../PostButton';
-import TextInput from '../TextInput';
-import AttachmentBadge from '../AttachmentBadge';
-import PostAttachment from '../PostAttachment';
-import AutoAlert from '../AutoAlert';
-import PaymentTypes from '../PaymentTypes';
-import PriceBadge from '../PriceBadge';
-import SubscriptionBadge from '../SubscriptionBadge';
-import ItemBadge from '../dashboard/ItemBadge';
-import CreateDiscussion from './CreateDiscussion';
-import AddSection from '../dashboard/AddSection';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
+import MainCheckbox from '../MainCheckbox.vue';
+import MainSelect from '../MainSelect.vue';
+import TextTextarea from '../TextTextarea.vue';
+import PostButton from '../PostButton.vue';
+import TextInput from '../TextInput.vue';
+import AttachmentBadge from '../AttachmentBadge.vue';
+import PostAttachment from '../PostAttachment.vue';
+import AutoAlert from '../AutoAlert.vue';
+import PaymentTypes from '../PaymentTypes.vue';
+import PriceBadge from '../PriceBadge.vue';
+import SubscriptionBadge from '../SubscriptionBadge.vue';
+import ItemBadge from '../dashboard/ItemBadge.vue';
+import CreateDiscussion from './CreateDiscussion.vue';
+import AddSection from '../dashboard/AddSection.vue';
 import { mapActions, mapGetters } from 'vuex'
 import {bus} from '../../app';
 import DashboardCreateForm from '../../mixins/DashboardCreateForm.mixin';
     export default {
         components: {
-            PulseLoader,
+            
             ItemBadge,
             SubscriptionBadge,
             PriceBadge,

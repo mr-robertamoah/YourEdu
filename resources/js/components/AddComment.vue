@@ -98,21 +98,19 @@
 </template>
 
 <script>
-import MainTextarea from './MainTextarea'
-import PostButton from './PostButton'
-import DotLoader from 'vue-spinner/src/DotLoader'
-import ProfilePicture from './profile/ProfilePicture'
-import FilePreview from './FilePreview'
-import AutoAlert from './AutoAlert'
-import JustFade from './transitions/JustFade'
-import FadeLeftFast from './transitions/FadeLeftFast'
+import MainTextarea from './MainTextarea.vue'
+import PostButton from './PostButton.vue'
+import ProfilePicture from './profile/ProfilePicture.vue'
+import FilePreview from './FilePreview.vue'
+import AutoAlert from './AutoAlert.vue'
+import JustFade from './transitions/JustFade.vue'
+import FadeLeftFast from './transitions/FadeLeftFast.vue'
 import Profiles from '../mixins/Profiles.mixin';
 import { mapGetters, mapActions } from 'vuex'
 import { strings } from '../services/helpers'
 
     export default {
         components: {
-            DotLoader,
             FadeLeftFast,
             JustFade,
             AutoAlert,
@@ -333,11 +331,13 @@ import { strings } from '../services/helpers'
                         this.schoolAdmin.id : who.admin.id) 
                 }              
                 
+                const route = useRoute()
+                
                 let response = null
                 if (this.edit) {
                     data = {
                         commmentId: this.editableData.id,
-                        where: this.$route.name,
+                        where: route.name,
                         item: strings.getAccount(this.editableData.commentable_type),
                         itemId: this.editableData.commentable_id
                     }
@@ -346,7 +346,7 @@ import { strings } from '../services/helpers'
                 } else {
                     data = {
                         onPostModal: this.onPostModal,
-                        where: this.$route.name,
+                        where: route.name,
                     }
                     formData.append('item', this.what.item),
                     formData.append('itemId', this.what.itemId),

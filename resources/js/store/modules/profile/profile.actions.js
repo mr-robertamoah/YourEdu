@@ -1,4 +1,3 @@
-import router from "../../../router/index"
 import { ProfileService } from "../../../services/profile.service"
 
 const actions = {
@@ -436,22 +435,24 @@ const actions = {
             return 'unsuccessful'
         }
     },
-    async deleteLike({commit},data){
+    async deleteLike({commit, rootGetters},data){
         let response = await ProfileService.likeDelete(data)
         if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','liking unsuccessful')
             return 'unsuccessful'
         }
 
-        if (router.currentRoute.name === 'profile') {
+        const currentRouteName = rootGetters.getCurrentRouterName
+
+        if (currentRouteName === 'profile') {
             commit('LIKE_DELETE_SUCCESS', data)
         }
         
-        if (router.currentRoute.name === 'dashboard') {
+        if (currentRouteName === 'dashboard') {
             commit('dashboard/LIKE_DELETE_SUCCESS', data, {root: true})
         }
         
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/LIKE_DELETE_SUCCESS', data, {root: true})
         }
         return data
@@ -512,46 +513,48 @@ const actions = {
 
     ////////////////////////////////////// attachments
 
-    async createAttachment({commit},data){
+    async createAttachment({commit, rootGetters},data){
         let response = await ProfileService.attachmentCreate(data)
 
         if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','attaching unsuccessful')
             return {status: false, message:'unsuccessful'}
         }
+        const currentRouteName = rootGetters.getCurrentRouterName
 
         data['attachment'] = response.data.attachment
 
-        if (router.currentRoute.name === 'profile') {
+        if (currentRouteName === 'profile') {
             commit('ATTACHMENT_CREATE_SUCCESS', data)
         }
         
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/ATTACHMENT_CREATE_SUCCESS', data, {root: true})
         }
         
-        if (router.currentRoute.name === 'dashboard') {
+        if (currentRouteName === 'dashboard') {
             commit('dashboard/ATTACHMENT_CREATE_SUCCESS', data, {root: true})
         }
         return {status: true,attachment: response.data.attachment}
     },
-    async deleteAttachment({commit},data){
+    async deleteAttachment({commit, rootGetters},data){
         let response = await ProfileService.attachmentDelete(data)
 
         if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','unattaching unsuccessful')
             return {status: false, message:'unsuccessful'}
         }
+        const currentRouteName = rootGetters.getCurrentRouterName
 
-        if (router.currentRoute.name === 'profile') {
+        if (currentRouteName === 'profile') {
             commit('ATTACHMENT_DELETE_SUCCESS', data)
         }
         
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
         }
         
-        if (router.currentRoute.name === 'dashbaord') {
+        if (currentRouteName === 'dashbaord') {
             commit('dashbaord/ATTACHMENT_DELETE_SUCCESS', data, {root: true})
         }
         return {data,status: true}
@@ -609,7 +612,7 @@ const actions = {
 
     //////////////////////////////////////// comments
 
-    async createComment({commit},mainData){
+    async createComment({commit, rootGetters},mainData){
         commit('COMMENTING_START')
         let response = await ProfileService.createComment(mainData)
         commit('COMMENTING_END')
@@ -617,12 +620,13 @@ const actions = {
             commit('PROFILE_FAILURE','commenting unsuccessful')
             return 'unsuccessful'
         }
+        const currentRouteName = rootGetters.getCurrentRouterName
 
-        if (router.currentRoute.name === 'dashboard') {
+        if (currentRouteName === 'dashboard') {
             commit('dashboard/COMMENT_SUCCESS',response.data, {root: true})
         }
         
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/COMMENT_SUCCESS', {
                 comment: response.data.comment,
                 item: mainData.formData.get('item'),
@@ -630,7 +634,7 @@ const actions = {
             }, { root: true })
         }
         
-        if (router.currentRoute.name === 'profile') {
+        if (currentRouteName === 'profile') {
             commit('COMMENT_SUCCESS', {
                 comment: response.data.comment,
                 item: mainData.formData.get('item'),
@@ -639,7 +643,7 @@ const actions = {
         }
         return response.data
     },
-    async deleteComment({commit},data){
+    async deleteComment({commit, rootGetters},data){
         commit('COMMENTING_START')
         let response = await ProfileService.deleteComment(data)
 
@@ -648,16 +652,17 @@ const actions = {
             commit('PROFILE_FAILURE','comment update unsuccessful')
             return 'unsuccessful'
         }
+        const currentRouteName = rootGetters.getCurrentRouterName
 
-        if (router.currentRoute.name === 'profile') {
+        if (currentRouteName === 'profile') {
             commit('COMMENT_DELETE_SUCCESS',data)
         }
         
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/COMMENT_DELETE_SUCCESS',data, {root: true})
         }
         
-        if (router.currentRoute.name === 'dashboard') {
+        if (currentRouteName === 'dashboard') {
             commit('dashboard/COMMENT_DELETE_SUCCESS',data, {root: true})
         }
         return data
@@ -1066,8 +1071,9 @@ const actions = {
         if (response.data.message !== 'successful') {
             return {status: false, response}
         }
-        
-        if (router.currentRoute.name === 'home') {
+        const currentRouteName = rootGetters.getCurrentRouterName
+
+        if (currentRouteName === 'home') {
             
             if (data.type !== 'marker') {
 
@@ -1087,7 +1093,7 @@ const actions = {
             }
         }
 
-        if (router.currentRoute.name === 'profile') {
+        if (currentRouteName === 'profile') {
             
             if (data.type !== 'marker') {
 
@@ -1123,19 +1129,20 @@ const actions = {
             return {status: false, response: response}
         }
     },
-    async deleteDiscussion({commit},data){
+    async deleteDiscussion({commit, rootGetters},data){
         let response = await ProfileService.discussionDelete(data)
 
         if (response.data.message !== 'successful') {
             commit('PROFILE_FAILURE','discussion deletion unsuccessful')
             return {status: false, response: response}
         }
+        const currentRouteName = rootGetters.getCurrentRouterName
 
-        if (router.currentRoute.name === 'profile') {
+        if (currentRouteName === 'profile') {
             commit('DISCUSSION_DELETE_SUCCESS',data)
         }
         
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/DISCUSSION_DELETE_SUCCESS',data, {root: true})
         }
         return {status: true}
@@ -1214,7 +1221,7 @@ const actions = {
         }
 
     },
-    async inviteAccount({commit},data){
+    async inviteAccount({commit, rootGetters},data){
         let response = await ProfileService.inviteAccount(data)
 
         if (response.data.message !== 'successful') {
@@ -1225,14 +1232,16 @@ const actions = {
             return {status: true}
         }
         
-        if (router.currentRoute.name === 'profile') {
+        const currentRouteName = rootGetters.getCurrentRouterName
+
+        if (currentRouteName === 'profile') {
             commit('CREATE_PENDING_ITEM_PARTICIPANT',{
                 pendingParticipant: response.data.pendingParticipant,
                 ...data.computedItem
             })
         }
         
-        if (router.currentRoute.name === 'home') {
+        if (currentRouteName === 'home') {
             commit('home/CREATE_PENDING_ITEM_PARTICIPANT',{
                 pendingParticipant: response.data.pendingParticipant,
                 ...data.computedItem
@@ -1254,28 +1263,29 @@ const actions = {
             
         return {status: false, response: response}
     },
-    async joinItem({commit}, data){
+    async joinItem({commit, rootGetters}, data){
         let response = await ProfileService.joinItem(data)
 
         if (response.data.message !== 'successful') {
             return {status: false, response: response}
         }
+        const currentRouteName = rootGetters.getCurrentRouterName
 
-        if (response.data.pendingParticipant  && router.currentRoute.name === 'home') {
+        if (response.data.pendingParticipant  && currentRouteName === 'home') {
             commit('home/CREATE_PENDING_ITEM_PARTICIPANT',{
                 pendingParticipant: response.data.pendingParticipant,
                 ...data.computedItem
             }, {root: true})
         } 
 
-        if (response.data.pendingParticipant  && router.currentRoute.name === 'profile') {
+        if (response.data.pendingParticipant  && currentRouteName === 'profile') {
             commit('CREATE_PENDING_ITEM_PARTICIPANT',{
                 pendingParticipant: response.data.pendingParticipant,
                 ...data.computedItem
             })
         } 
         
-        if ((response.data.pendingParticipant || response.data.marker)  && router.currentRoute.name === 'home') {
+        if ((response.data.pendingParticipant || response.data.marker)  && currentRouteName === 'home') {
             commit('home/CREATE_ITEM_PARTICIPANT',{
                 participant: response.data.participant,
                 marker: response.data.marker,
@@ -1283,7 +1293,7 @@ const actions = {
             }, {root: true})
         }
         
-        if ((response.data.pendingParticipant || response.data.marker)  && router.currentRoute.name === 'profile') {
+        if ((response.data.pendingParticipant || response.data.marker)  && currentRouteName === 'profile') {
             commit('CREATE_ITEM_PARTICIPANT',{
                 participant: response.data.participant,
                 marker: response.data.marker,

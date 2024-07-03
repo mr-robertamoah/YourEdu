@@ -41,8 +41,8 @@
 </template>
 
 <script>
-import SyncLoader from 'vue-spinner/src/SyncLoader';
-import AutoAlert from './AutoAlert'
+;
+import AutoAlert from './AutoAlert.vue'
 
     export default {
         props: {
@@ -82,7 +82,7 @@ import AutoAlert from './AutoAlert'
         },
         components: {
             AutoAlert,
-            SyncLoader,
+            
         },
         computed: {
             computedAlert() {
@@ -101,7 +101,7 @@ import AutoAlert from './AutoAlert'
 </script>
 
 <style lang="scss" scoped>
-@use "sass:math";
+
 
 $wrapper-background: transparent;
 $modal-background: whitesmoke;

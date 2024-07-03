@@ -74,17 +74,15 @@
 </template>
 
 <script>
-import CreateResponse from "./forms/CreateResponse"
-import ProfilePicture from "./profile/ProfilePicture"
-import ActionButton from "./ActionButton"
+import CreateResponse from "./forms/CreateResponse.vue"
+import ProfilePicture from "./profile/ProfilePicture.vue"
+import ActionButton from "./ActionButton.vue"
 import { mapActions } from 'vuex'
-import PulseLoader from "vue-spinner/src/PulseLoader";
     export default {
         components: {
             ActionButton,
             ProfilePicture,
             CreateResponse,
-            PulseLoader,
         },
         props: {
             request: {

@@ -1,5 +1,6 @@
 import { mapActions, mapGetters } from 'vuex';
-import FlagCover from '../components/FlagCover';
+import FlagCover from '../components/FlagCover.vue';
+import { useRoute } from 'vue-router';
 
 export default {
     components: {
@@ -37,7 +38,10 @@ export default {
         },
     },
     computed: {
-        ...mapGetters(['isAdult'])
+        ...mapGetters(['isAdult']),
+        computedRoute() {
+            return useRoute()
+        },
     },
     methods: {
         ...mapActions([
@@ -49,7 +53,7 @@ export default {
             
             Echo.channel(`youredu.${this.computedItem.item}.${this.computedItem.itemId}`)
                 .listen('.newFlag', data=>{
-                    this[`${this.$route.name}/newFlag`]({
+                    this[`${this.computedRoute.name}/newFlag`]({
                         ...this.computedItem,
                         flag: data.flag
                     })
@@ -60,7 +64,7 @@ export default {
                         
                         return
                     }
-                    this[`${this.$route.name}/removeFlag`]({
+                    this[`${this.computedRoute.name}/removeFlag`]({
                         ...this.computedItem,
                         flagId: data.flagId
                     })
@@ -116,7 +120,7 @@ export default {
             let data = {}
             let response = null
 
-            data.where = this.$route.name
+            data.where = this.computedRoute.name
             data.itemId = this.computedItem.itemId
             data.item = this.computedItem.item
             

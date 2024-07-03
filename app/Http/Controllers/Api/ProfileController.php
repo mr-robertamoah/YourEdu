@@ -25,8 +25,6 @@ use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
-    //
-
     public function profileMediaChange(Request $request, $media,$mediaId)
     {
         $mainMedia = null;
@@ -412,7 +410,6 @@ class ProfileController extends Controller
 
     public function profileGet($account, $accountId)
     {
-        // return [$account, $accountId];
         $mainAccount = null;
 
         try {

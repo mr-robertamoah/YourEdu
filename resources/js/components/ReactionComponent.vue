@@ -123,11 +123,11 @@
 </template>
 
 <script>
-import AddComment from './AddComment';
-import FlagReason from './FlagReason';
-import PostButton from './PostButton';
-import NumberOf from './NumberOf';
-import ProfileBar from './profile/ProfileBar';
+import AddComment from './AddComment.vue';
+import FlagReason from './FlagReason.vue';
+import PostButton from './PostButton.vue';
+import NumberOf from './NumberOf.vue';
+import ProfileBar from './profile/ProfileBar.vue';
 import { mapGetters } from 'vuex';
     export default {
         components: {

@@ -350,31 +350,29 @@
 </template>
 
 <script>
-import AutoAlert from '../AutoAlert'
-import MainList from '../MainList'
-import TextInput from '../TextInput'
-import DatePicker from '../DatePicker'
-import SearchInput from '../SearchInput'
-import MainSelect from '../MainSelect'
-import AttachmentBadge from '../AttachmentBadge'
-import MainCheckbox from '../MainCheckbox'
-import ProfilePicture from '../profile/ProfilePicture'
-import InfiniteLoader from 'vue-infinite-loading'
-import PostButton from '../PostButton'
-import FilePreview from '../FilePreview'
-import NumberInput from '../NumberInput'
-import RadioInput from '../RadioInput'
-import SyncLoader from 'vue-spinner/src/SyncLoader'
+import AutoAlert from '../AutoAlert.vue'
+import MainList from '../MainList.vue'
+import TextInput from '../TextInput.vue'
+import DatePicker from '../DatePicker.vue'
+import SearchInput from '../SearchInput.vue'
+import MainSelect from '../MainSelect.vue'
+import AttachmentBadge from '../AttachmentBadge.vue'
+import MainCheckbox from '../MainCheckbox.vue'
+import ProfilePicture from '../profile/ProfilePicture.vue'
+import PostButton from '../PostButton.vue'
+import FilePreview from '../FilePreview.vue'
+import NumberInput from '../NumberInput.vue'
+import RadioInput from '../RadioInput.vue'
 import { mapActions } from 'vuex'
 import { dates } from '../../services/helpers'
     export default {
         components: {
-            InfiniteLoader,
+            
             RadioInput,
             NumberInput,
             FilePreview,
             PostButton,
-            SyncLoader,
+            
             ProfilePicture,
             MainCheckbox,
             AttachmentBadge,

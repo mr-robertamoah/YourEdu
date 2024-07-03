@@ -50,11 +50,11 @@
                                 ></comment-single>
                             </div>
                         </template>
-                        <infinite-loader
+                        <Infinite-Loading
                             @infinite="infiniteHandler"
                             v-if="nextPage === null || nextPage > 0"
                             force-use-infinite-wrapper
-                        ></infinite-loader>
+                        ></Infinite-Loading>
                     </div>
                     <fade-up>
                         <template slot="transition" v-if="showLoginRegister">
@@ -77,18 +77,17 @@
 </template>
 
 <script>
-import ViewModal from '../components/ViewModal';
-import InfiniteLoader from 'vue-infinite-loading';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import FadeUp from '../components/transitions/FadeUp';
-import AnswerSingle from '../components/AnswerSingle';
+import ViewModal from '../components/ViewModal.vue';
+import FadeUp from '../components/transitions/FadeUp.vue';
+import AnswerSingle from '../components/AnswerSingle.vue';
 import { mapGetters, mapActions } from 'vuex';
+import { useRoute } from 'vue-router';
     export default {
         components: {
             AnswerSingle,
             FadeUp,
-            PulseLoader,
-            InfiniteLoader,
+            
+            
             ViewModal,
         },
         props: {
@@ -170,12 +169,14 @@ import { mapGetters, mapActions } from 'vuex';
 
             },
             async getComment(){ //also for answer
+                const route = useRoute()
+                
                 let item,
                     itemId,
                     response
                 if (!this.itemData) {
-                    item = this.$route.name
-                    itemId = this.$route.params.itemId
+                    item = route.name
+                    itemId = route.params.itemId
                 } else {
                     item = this.itemData.item
                     itemId = this.itemData.itemId

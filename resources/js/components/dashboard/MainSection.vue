@@ -798,10 +798,10 @@
                                             no users
                                         </div>
 
-                                        <infinite-loader
+                                        <Infinite-Loading
                                             v-if="usersNextPage !== 1"
                                             @infinite="usersInfiniteLoader"
-                                        ></infinite-loader>
+                                        ></Infinite-Loading>
                                     </div>
                                 </template>
                             </dashboard-sub-section>
@@ -825,11 +825,11 @@
                                             no accounts
                                         </div>
 
-                                        <infinite-loader
+                                        <Infinite-Loading
                                             v-if="accountsNextPage !== 1"
                                             @infinite="accountsInfiniteLoader"
                                             force-use-infinite-wrapper
-                                        ></infinite-loader>
+                                        ></Infinite-Loading>
                                     </div>
                                 </template>
                             </dashboard-sub-section>
@@ -1273,10 +1273,10 @@
                                 @postModalCommentEdited="postModalCommentEdited"
                             ></comment-single>
 
-                            <infinite-loader
+                            <Infinite-Loading
                                 v-if="commentsNextPage !== 1"
                                 @infinite="commentsInfiniteLoader"
-                            ></infinite-loader>
+                            ></Infinite-Loading>
                         </div>
                         <div class="no-data" v-else>
                             no comments yet
@@ -1520,49 +1520,49 @@
 </template>
 
 <script>
-import PostButton from '../PostButton'
-import AccountInfo from './AccountInfo'
-import DashboardItemBadge from './DashboardItemBadge'
-import ProfilePicture from '../profile/ProfilePicture'
-import FadeRight from '../transitions/FadeRight'
-import EditProfile from '../forms/EditProfile'
-import ActionButton from '../ActionButton'
-import CreateClass from '../forms/CreateClass'
-import CreateAssessment from '../forms/CreateAssessment'
-import CreateProgram from '../forms/CreateProgram'
-import CreateCourse from '../forms/CreateCourse'
-import CreateCollaboration from '../forms/CreateCollaboration'
-import CreateExtracurriculum from '../forms/CreateExtracurriculum'
-import CreateLesson from '../forms/CreateLesson'
-import InfiniteLoader from 'vue-infinite-loading'
-import CommentSingle from '../CommentSingle'
-import AddComment from '../AddComment'
-import FadeUp from '../transitions/FadeUp'
-import AccountBadge from '../dashboard/AccountBadge'
-import OptionalActions from '../OptionalActions'
-import DashboardRequestModal from './DashboardRequestModal'
-import ActivityModal from './ActivityModal'
-import InvitationModal from '../InvitationModal'
-import MainSelect from '../MainSelect'
-import DashboardSubSection from './DashboardSubSection'
-import DashboardSectionAccount from './DashboardSectionAccount'
-import DashboardMainSection from './DashboardMainSection'
-import DashboardActionButton from './DashboardActionButton'
-import ViewComments from '../ViewComments'
-import ViewAccountItems from './ViewAccountItems'
-import LessonModal from '../LessonModal'
-import DashboardItemModal from './DashboardItemModal'
-import PostModal from '../PostModal'
-import ModalSwitcher from '../ModalSwitcher'
-import AttachmentModal from '../AttachmentModal'
-import WardModal from './WardModal'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import PostButton from '../PostButton.vue'
+import AccountInfo from './AccountInfo.vue'
+import DashboardItemBadge from './DashboardItemBadge.vue'
+import ProfilePicture from '../profile/ProfilePicture.vue'
+import FadeRight from '../transitions/FadeRight.vue'
+import EditProfile from '../forms/EditProfile.vue'
+import ActionButton from '../ActionButton.vue'
+import CreateClass from '../forms/CreateClass.vue'
+import CreateAssessment from '../forms/CreateAssessment.vue'
+import CreateProgram from '../forms/CreateProgram.vue'
+import CreateCourse from '../forms/CreateCourse.vue'
+import CreateCollaboration from '../forms/CreateCollaboration.vue'
+import CreateExtracurriculum from '../forms/CreateExtracurriculum.vue'
+import CreateLesson from '../forms/CreateLesson.vue'
+import CommentSingle from '../CommentSingle.vue'
+import AddComment from '../AddComment.vue'
+import FadeUp from '../transitions/FadeUp.vue'
+import AccountBadge from '../dashboard/AccountBadge.vue'
+import OptionalActions from '../OptionalActions.vue'
+import DashboardRequestModal from './DashboardRequestModal.vue'
+import ActivityModal from './ActivityModal.vue'
+import InvitationModal from '../InvitationModal.vue'
+import MainSelect from '../MainSelect.vue'
+import DashboardSubSection from './DashboardSubSection.vue'
+import DashboardSectionAccount from './DashboardSectionAccount.vue'
+import DashboardMainSection from './DashboardMainSection.vue'
+import DashboardActionButton from './DashboardActionButton.vue'
+import ViewComments from '../ViewComments.vue'
+import ViewAccountItems from './ViewAccountItems.vue'
+import LessonModal from '../LessonModal.vue'
+import DashboardItemModal from './DashboardItemModal.vue'
+import PostModal from '../PostModal.vue'
+import ModalSwitcher from '../ModalSwitcher.vue'
+import AttachmentModal from '../AttachmentModal.vue'
+import WardModal from './WardModal.vue'
 import { mapActions, mapGetters } from 'vuex'
 import { dates } from '../../services/helpers'
+import { default as _ } from 'lodash';
 import {bus} from '../../app';
+import { useRouter } from 'vue-router'
     export default {
         components: {
-            PulseLoader,
+            
             WardModal,
             AttachmentModal,
             ModalSwitcher,
@@ -1584,7 +1584,7 @@ import {bus} from '../../app';
             FadeUp,
             AddComment,
             CommentSingle,
-            InfiniteLoader,
+            
             CreateProgram,
             CreateAssessment,
             CreateClass,
@@ -2207,7 +2207,7 @@ import {bus} from '../../app';
                             action: 'edit'
                         })
                     } else if (data.buttonData.text === 'profile') {
-                        this.$router.push({
+                        useRouter().push({
                             name: 'profile', 
                             params: {
                                 account: data.buttonData.data.account,

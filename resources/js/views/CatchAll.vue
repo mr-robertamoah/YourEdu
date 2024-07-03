@@ -7,6 +7,8 @@
 </template>
 
 <script>
+import { useRoute } from 'vue-router';
+
     export default {
         data() {
             return {
@@ -23,8 +25,10 @@
         },
         computed: {
             computedMessage() {
-                return this.message.length ? this.message : this.$route.name === 'item'
-                    ? `${this.$route.params.item} does not exist` : ''
+                const route = useRoute()
+
+                return this.message.length ? this.message : route.name === 'item'
+                    ? `${route.params.item} does not exist` : ''
             }
         },
     }

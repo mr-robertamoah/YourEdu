@@ -57,10 +57,10 @@
                                 >
                                     {{`oops... no ${item}`}}
                                 </div>
-                                <infinite-loader
+                                <Infinite-Loading
                                     v-if="computedNextPage"
                                     @infinite="infiniteHandler"
-                                ></infinite-loader>
+                                ></Infinite-Loading>
                             </div>
                         </template>
                     </welcome-form>
@@ -71,20 +71,17 @@
 </template>
 
 <script>
-import ProfilePicture from '../profile/ProfilePicture';
-import PulseLoader from 'vue-spinner/src/PulseLoader';
-import InfiniteLoader from 'vue-infinite-loading';
-import DashboardSectionAccount from './DashboardSectionAccount';
-import SearchInput from '../SearchInput';
+import ProfilePicture from '../profile/ProfilePicture.vue';
+import DashboardSectionAccount from './DashboardSectionAccount.vue';
+import SearchInput from '../SearchInput.vue';
 import { mapActions, mapGetters } from 'vuex'
+import { default as _ } from 'lodash';
 import { bus } from '../../app';
     export default {
         components: {
             SearchInput,
             DashboardSectionAccount,
-            PulseLoader,
             ProfilePicture,
-            InfiniteLoader,
         },
         props: {
             show: {

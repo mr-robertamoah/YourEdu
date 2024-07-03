@@ -9,8 +9,6 @@
 </template>
 
 <script>
-import WorkAnsweringForm from '../components/forms/WorkAnsweringForm'
-import AssessmentSingle from '../components/AssessmentSingle'
 import LessonBoard from '../components/LessonBoard.vue'
 import ResizingComponent from '../components/specials/ResizingComponent.vue'
 
@@ -22,8 +20,6 @@ import ResizingComponent from '../components/specials/ResizingComponent.vue'
             }
         },
         components: {
-            WorkAnsweringForm,
-            AssessmentSingle,
             ResizingComponent,
             LessonBoard,
         },

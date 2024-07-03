@@ -1,5 +1,3 @@
-import TrimMedia from '../components/TrimMedia.vue'
-
 export default {
     data() {
         return {

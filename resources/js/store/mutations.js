@@ -7,6 +7,10 @@ const mutations = {
         state.authenticatingErrorMessage = ''
     },
 
+    SET_CURRENT_ROUTE_NAME(state, routeName){
+        state.currentRouteName = routeName
+    },
+
     LOGIN_SUCCESS(state, token){
         // console.log('login success data',data)
         state.authenticating = false

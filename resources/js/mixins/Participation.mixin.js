@@ -1,3 +1,4 @@
+import { useRoute } from 'vue-router'
 import {mapActions} from 'vuex'
 
 export default {
@@ -13,6 +14,9 @@ export default {
                 this.computedItemable.pendingParticipants.findIndex(pending=>{
                     return pending.userId === this.getUser.id
                 }) > -1
+        },
+        computedRouteName() {
+            return useRoute().name
         },
     },
     methods: {
@@ -33,7 +37,7 @@ export default {
             Echo.channel(`youredu.${this.computedItem.item}.${this.computedItem.itemId}`)
                 .listen('.newParticipant', data=>{
                     
-                    this[`${this.$route.name}/newItemParticipant`]({
+                    this[`${this.computedRouteName}/newItemParticipant`]({
                         ...data,
                         ...this.computedItem
                     })
@@ -43,7 +47,7 @@ export default {
                 })
                 .listen('.updateParticipant', data=>{
                     
-                    this[`${this.$route.name}/updateItemParticipant`]({
+                    this[`${this.computedRouteName}/updateItemParticipant`]({
                         ...data,
                         ...this.computedItem
                     })
@@ -60,7 +64,7 @@ export default {
                 })
                 .listen('.removeParticipant', data=>{
                     
-                    this[`${this.$route.name}/removeItemParticipant`]({
+                    this[`${this.computedRouteName}/removeItemParticipant`]({
                         ...data,
                         ...this.computedItem
                     })
@@ -78,14 +82,14 @@ export default {
                         this.alertMessage = 'new join request received'
                     }
 
-                    this[`${this.$route.name}/newItemPendingParticipant`]({
+                    this[`${this.computedRouteName}/newItemPendingParticipant`]({
                         ...data,
                         ...this.computedItem
                     })
                 })
                 .listen('.removePendingParticipant', data=>{
                     
-                    this[`${this.$route.name}/removeItemPendingParticipant`]({
+                    this[`${this.computedRouteName}/removeItemPendingParticipant`]({
                         ...data,
                         ...this.computedItem
                     })

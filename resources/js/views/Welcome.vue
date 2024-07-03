@@ -223,18 +223,18 @@
 </template>
 
 <script>
-import PlaceDescription from '../components/welcome/PlaceDescription'
-import FadeInOut from '../components/transitions/FadeInOut'
-import FadeUp from '../components/transitions/FadeUp'
-import FadeLeft from '../components/transitions/FadeLeft'
-import WelcomeButton from '../components/welcome/WelcomeButton'
-import PostButton from '../components/PostButton'
-import EditUser from '../components/forms/EditUser'
-import CreateAccount from '../components/forms/CreateAccount'
-import BlackWhiteBadge from '../components/BlackWhiteBadge'
-import SyncLoader from 'vue-spinner/src/SyncLoader'
+import PlaceDescription from '../components/welcome/PlaceDescription.vue'
+import FadeInOut from '../components/transitions/FadeInOut.vue'
+import FadeUp from '../components/transitions/FadeUp.vue'
+import FadeLeft from '../components/transitions/FadeLeft.vue'
+import WelcomeButton from '../components/welcome/WelcomeButton.vue'
+import PostButton from '../components/PostButton.vue'
+import EditUser from '../components/forms/EditUser.vue'
+import CreateAccount from '../components/forms/CreateAccount.vue'
+import BlackWhiteBadge from '../components/BlackWhiteBadge.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { dates } from "../services/helpers";
+import { useRouter } from 'vue-router'
 
     export default {
         components: {
@@ -245,7 +245,7 @@ import { dates } from "../services/helpers";
             FadeLeft,
             PlaceDescription,
             PostButton,
-            SyncLoader,
+            
             BlackWhiteBadge,
             WelcomeButton,
         },
@@ -331,16 +331,20 @@ import { dates } from "../services/helpers";
         },
         methods: {
             clickedPostButton(data){
+                const router = useRouter()
+                
                 if (data === 'profiles') {
                     this.showProfiles = true
                 } else if (data === 'dashboard') {
-                    this.$router.push({name:'dashboard'})
+                    router.push({name:'dashboard'})
                 }  else if (data === 'home') {
-                    this.$router.push({name:'home'})
+                    router.push({name:'home'})
                 } 
             },
             clickedProfile(profile){
-                this.$router.push({
+                const router = useRouter()
+
+                router.push({
                     name: 'profile',
                     params:{
                         account: profile.account,

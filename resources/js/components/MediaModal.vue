@@ -124,7 +124,7 @@
 </template>
 
 <script>
-import FadeRight from "./transitions/FadeRight";
+import FadeRight from "./transitions/FadeRight.vue";
 import { mapGetters } from 'vuex';
     export default {
         props: {
@@ -247,7 +247,7 @@ import { mapGetters } from 'vuex';
 </script>
 
 <style lang="scss" scoped>
-@use "sass:math";
+
 
 $wrapper-background: rgba(102, 51, 153, .2);
 $modal-background: aliceblue;

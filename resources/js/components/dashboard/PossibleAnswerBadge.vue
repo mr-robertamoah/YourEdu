@@ -86,9 +86,9 @@
 </template>
 
 <script>
-import DraggableComponent from '../specials/DraggableComponent'
-import DroppableComponent from '../specials/DroppableComponent'
-import MainCheckbox from '../MainCheckbox'
+import DraggableComponent from '../specials/DraggableComponent.vue'
+import DroppableComponent from '../specials/DroppableComponent.vue'
+import MainCheckbox from '../MainCheckbox.vue'
 import { strings } from '../../services/helpers'
     export default {
         components: {

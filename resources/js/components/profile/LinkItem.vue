@@ -34,7 +34,7 @@
 </template>
 
 <script>
-import FadeLeftFast from '../transitions/FadeLeftFast';
+import FadeLeftFast from '../transitions/FadeLeftFast.vue';
     export default {
         props: {
             link: {

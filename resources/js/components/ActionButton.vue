@@ -10,8 +10,6 @@
 </template>
 
 <script>
-import PulseLoader from 'vue-spinner/src/PulseLoader'
-
     export default {
         props: {
             green: {
@@ -38,9 +36,6 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
                 type: String,
                 default: ''
             },
-        },
-        components: {
-            PulseLoader,
         },
         data() {
             return {
