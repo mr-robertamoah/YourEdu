@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="storage/app/public/logo.png" alt="YourEdu Logo" width="400"/>
+<img src="public/logo.png" alt="YourEdu Logo" width="400"/>
 </div>
 
 
@@ -16,7 +16,7 @@ Explore the [app](https://bobdev.tech) or visit its [landing page](https://bobde
 ### Team
 
 <p style="display: flex; align-items: center; gap: 10px;">
-    <img src="storage/app/public/robertamoah.png" style="border-radius: 100%" width="45" heigth="45" />
+    <img src="public/robertamoah.png" style="border-radius: 100%" width="45" heigth="45" />
     Robert Amoah (<a href="https://www.linkedin.com/in/mr-robert-amoah">linkedIn</a>, <a href="https://x.com/Mr_robertamoah">X</a>) - Full stack developer 
 </p>
 
