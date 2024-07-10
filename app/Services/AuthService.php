@@ -636,11 +636,11 @@ class AuthService
         }
 
         if (Str::length($userDTO->password) < 6) {
-            $message = "the password {$userDTO->password} should be more than 6 characters";
+            $message = "the password should be more than 6 characters";
         }
 
         if ($userDTO->password !== $userDTO->passwordConfirmation && $confirm) {
-            $message = "password {$userDTO->password} and password confirmation {$userDTO->passwordConfirmation} should be the same.";
+            $message = "password and password confirmation should be the same.";
         }
 
         if (! isset($message)) {

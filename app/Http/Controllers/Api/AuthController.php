@@ -290,7 +290,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             return response()->json([
-                'status' => (bool) $user,
+                'status' => true,
                 'user'=> new UserResource($user),
             ]);
         } catch (\Throwable $th) {
